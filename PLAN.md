@@ -55,30 +55,51 @@ Stop publishing generic English SEO articles. The site can't win against big med
 
 ---
 
-## 2. Technology choice
+## 2. Technology choice (updated: Hostinger Cloud hosting + MySQL)
 
-### Recommendation: **Next.js + Payload CMS + PostgreSQL**, with Claude for AI
+### Constraints
+- **Hosting:** Hostinger Cloud hosting (LiteSpeed web server, PHP, MySQL, cron, hPanel, Cloudflare in front).
+- **Database:** MySQL.
+- **Must be very fast**, with an easy submission process and good user profiles.
+
+On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-start** on the next visit, and the managed database is MySQL. PHP under LiteSpeed is always warm and has a built-in full-page cache. So the best stack for *this* host is PHP-based, not the earlier Next.js + Postgres idea.
+
+### Recommendation: **Laravel + Filament + MySQL** (server-rendered, cached)
 
 | Layer | Choice | Why |
 |---|---|---|
-| CMS + admin | **Payload CMS 3** (open source, runs *inside* Next.js) | Real admin panel, built-in auth and roles, drafts and version history, scheduled publishing, field-level access control, hooks where AI review plugs in. No plugins to maintain. You own the code and data. |
-| Frontend | **Next.js** (App Router, server components, ISR) | Static-fast pages, perfect SEO control, image optimization, one codebase with the CMS. |
-| Database | **PostgreSQL** (Neon or Supabase managed) | Reliable, cheap, good full-text search; `pgvector` for "related stories" and plagiarism similarity. |
-| Media | **Cloudflare R2** + Cloudflare Images/CDN | You already use Cloudflare. No egress fees. The 3,199 images move here. |
-| Hosting | **Vercel** (Pro) *or* a single VPS with Docker/Coolify (budget option) | Vercel means no server work. A VPS costs about ₹600–1,000/month but you have to maintain it. |
-| Search | Postgres full-text first; Meilisearch later if needed | Bengali-aware search. |
-| Email / newsletter | **Resend** (transactional) + **Listmonk** or Buttondown (newsletter) | Replaces MailPoet + MC4WP. |
-| Payments | **Razorpay** (India) + Stripe (diaspora) | Memberships, contest fees, anthology orders. |
-| AI | **Claude API** (Anthropic): Sonnet for review, Haiku for bulk tagging and SEO metadata | Strong at Bengali and English, follows editorial rubrics, structured JSON output. |
-| Analytics | Google Search Console + Plausible/Umami (privacy-friendly) | |
+| Framework | **Laravel** (latest stable, PHP 8.3+) | Runs natively on Hostinger. Mature, well documented, and easy to hire for in India. Auth, queues, mail, scheduler and storage are built in. |
+| Admin / editor panel | **Filament** | A polished admin for editors: submission queue, AI report view, approve/reject, users, issues and settings. Built in days, not months. |
+| Public site | **Blade templates + Tailwind CSS + Alpine.js** (small JS), **Livewire** only where interactive (submit form, profile edit, follow, comments) | Pure HTML pages with almost no JS, so reading pages load instantly even on slow 4G. |
+| Database | **MySQL 8 / MariaDB** (Hostinger) | Same database family as WordPress, so migration is simple. Full-text search for Bengali + English. |
+| Speed layer | **LiteSpeed Cache (LSCache for Laravel)** full-page cache + **Cloudflare** CDN/edge cache, WebP/AVIF images, self-hosted subset Bengali fonts | Cached pages are served in milliseconds. Target: **LCP < 1.5 s on mobile, < 50 KB JS per page.** |
+| Background jobs | Laravel queue (database driver) run by **Hostinger cron every minute** | AI review, image resizing and emails run in the background. The writer never waits. |
+| Rich text editor | **Tiptap** (used in Filament and the submission form) | Clean paste from Word / Google Docs, Bengali Unicode, autosave. |
+| Media | Keep on Hostinger at the **same path `/wp-content/uploads/...`**, behind Cloudflare | Old image URLs, Google Image rankings and backlinks keep working. Cloudflare R2 is an optional later move. |
+| Login | Email + password, **Google login**, and **magic link** (passwordless email) | No friction for new writers. |
+| Email | Hostinger SMTP at first, then **Resend / Brevo** for reliability; newsletter via Brevo or self-hosted Listmonk | Replaces MailPoet + MC4WP. |
+| Payments | **Razorpay** (India) + Stripe (diaspora), later | Memberships, contest fees, anthology orders. |
+| AI | **Claude API** called from Laravel jobs: Sonnet for editorial review, Haiku for bulk tagging and SEO metadata | Strong Bengali, structured JSON output, editable rubric. |
+| Analytics | Google Search Console + Umami/Plausible | |
+| Code & deploy | GitHub repository, then **auto-deploy to Hostinger via Git** (hPanel Git deploy or GitHub Actions + SSH) | Every change is tracked and can be rolled back. |
 
-### Alternatives I considered and rejected
-- **Stay on WordPress, just clean it up.** Cheapest short-term, but the AI workflow and magazine-issue generator would need yet more plugins. That's the same problem you have now.
-- **Ghost.** Excellent for SEO and newsletters, but weak for public contributor submissions, custom review workflows and issue layouts.
-- **Sanity / Contentful (hosted headless).** Good, but monthly costs grow per user/seat, and your data sits on someone else's platform.
-- **Pure static (Astro + Markdown).** Fast, but can't handle user accounts, submissions or memberships.
+### Other stacks considered for Hostinger Cloud
+| Option | Verdict |
+|---|---|
+| **Laravel + Filament** (recommended) | Best balance of speed, built-in features and fit with the host. |
+| **Lean WordPress rebuild** (custom light theme, about 5 plugins, custom plugin for AI and submissions) | Cheapest and keeps users and URLs with zero migration. But the plugin and update burden returns over time, and a custom submission + profile UX fights WordPress. Good fallback if budget is very tight. |
+| **Next.js on Hostinger Node.js hosting** | Excellent framework, but idle-stop cold starts on this host hurt "very fast". It's better suited to Vercel or a VPS. |
+| **Static site (Astro) + separate backend** | Fastest reading pages, but two systems to run, and submissions and profiles still need a backend. Too complex for a small team. |
+| **Ghost / hosted headless CMS** | Doesn't run on Hostinger Cloud shared plans, and contributor workflows are weak. |
 
-**Rough running cost:** ₹2,500–5,000/month (hosting + database + email + AI for about 400 submissions). Expect AI cost per reviewed piece to be well under ₹5.
+**Rough running cost:** your Hostinger Cloud plan + Claude API (expect well under ₹5 per reviewed piece) + optional email service (free tiers cover the start).
+
+### How "very fast" is guaranteed
+1. Every public page is **server-rendered and fully cached** (LSCache + Cloudflare). The cache is cleared only for the pages that change when a post is published or edited.
+2. **No heavy theme or page builder.** Hand-built templates have one CSS file (about 15 KB) and almost no JS.
+3. **Responsive images** (WebP/AVIF, `srcset`, lazy-load), generated in the background at upload.
+4. **Bengali fonts self-hosted and subset**, with `font-display: swap`.
+5. A **performance budget checked on every deploy** (Lighthouse CI): a change that makes pages slower doesn't ship.
 
 ---
 
@@ -96,6 +117,24 @@ Stop publishing generic English SEO articles. The site can't win against big med
 6. **Editor dashboard**: a queue sorted by AI score, side-by-side AI report, one-click Approve / Request changes / Reject with a templated, kind message.
 7. **Mobile-first**. Most readers are on mid-range Android phones with patchy 4G, so the page budget is under 100 KB of JS.
 
+### Submission process: designed for "submit in under 2 minutes"
+1. **Big "লেখা পাঠান / Submit your writing" button** on every page. You can start writing *before* logging in; login is asked only at the end (Google, magic link or email).
+2. **One screen:** title, the text (paste from Word / Google Docs / WhatsApp, which gets cleaned automatically), section (Kobita / Golpo / …) and an optional cover image. Tags and SEO are filled by AI, not by the writer.
+3. **Autosave** every few seconds, so nothing is ever lost. Works well on mobile, and Bengali keyboards (Avro, Gboard) work naturally.
+4. **Preview exactly as it will appear** (poem mode keeps line breaks).
+5. One tick-box originality declaration, then Submit.
+6. **Status tracker + email/WhatsApp-style notifications**: Received → Being reviewed → Accepted / Changes requested → Scheduled → Published. Feedback is shown kindly, with "Edit & resubmit" in one click.
+7. Writers can see **all their drafts, submissions and published works** in "My writings".
+
+### User profiles
+- **Public profile URL:** `hatpakha.com/writer/<username>` with photo, cover, bio (Bengali/English), location, social links, "writer since", badges (Published, Featured, Contest winner, Trusted writer).
+- **Works** grouped by section, plus featured works pinned by the writer, followers count, total reads.
+- **Follow** writers, then get new works in your feed / weekly email.
+- **Writer dashboard:** reads per piece, comments, submission history, AI feedback history (writers learn from it), membership status.
+- **Reader profile** (light): saved/bookmarked pieces, followed writers, comment history.
+- **Privacy controls:** writers choose what is public (e.g. hide location). Pen names are supported.
+- **Legacy authors** from WordPress get profiles automatically and can **claim** them by email.
+
 ### Design language
 A *hatpakha* is a hand fan, so use that as the motif: warm paper-cream background, deep ink text, one accent colour (terracotta/alpona red), generous white space, illustrated issue covers. Calm, literary and trustworthy.
 
@@ -109,7 +148,7 @@ A *hatpakha* is a hand fan, so use that as the motif: warm paper-cream backgroun
 Submission
    │
    ├─▶ 1. Safety & policy check     (hate, sexual content, defamation, spam links)   → auto-reject + reason
-   ├─▶ 2. Originality check         (embeddings vs. our 1,393-post archive +
+   ├─▶ 2. Originality check         (similarity vs. our 1,393-post archive +
    │                                 web plagiarism API e.g. Copyleaks)               → flag
    ├─▶ 3. Editorial review (Claude) → JSON report:
    │        • genre, language, quality score 1–10 against our rubric
@@ -139,20 +178,23 @@ Every month (and for the Sharodiya special):
 
 ## 5. Migration: copy all users, content and everything
 
-### What I need from you
-1. **Hostinger hPanel access**, or: a **full database dump** (phpMyAdmin → Export → SQL) and a **zip of `wp-content/uploads`**.
-2. A WordPress admin account (for WXR export and checks).
-3. Google Search Console access (owner).
-4. MailPoet / Mailchimp subscriber exports, and WooCommerce orders if any matter.
+### What you will provide (your plan: export users, published + pending posts, and the uploads folder)
+1. **Full MySQL database export** from phpMyAdmin (Export → *Custom* → all tables → SQL). This one file contains **everything**: users, **published, pending, draft, scheduled and private posts**, comments, categories/tags, Yoast SEO data, co-authors and newsletter subscribers. Export every table, not only `wp_posts`.
+2. **The uploads folder.** ⚠️ Please **do not overwrite the live `public_html`** yet, because WordPress is still running there. Put the copy in a separate folder (e.g. `/home/<user>/migration/uploads/`) or a staging subdomain (`new.hatpakha.com`). At launch it moves to `public_html/wp-content/uploads/` so all old image URLs keep working.
+3. **Google Search Console owner access** and the **Hostinger plan name** (to confirm PHP version, SSH, cron and Git deploy).
+4. **Security:** the database contains password hashes and personal data. **Never commit it to GitHub or paste it in chat.** Keep it on the Hostinger server or a private drive. The migration script reads it directly from MySQL.
+
+### Staging approach
+`new.hatpakha.com` (subdomain on the same Hostinger Cloud plan, with its own MySQL database) → import a copy of the WordPress DB → run the migration → review → final re-import of new posts → switch the main domain.
 
 ### What we move, and how
 | Data | Method | Notes |
 |---|---|---|
-| Posts, pages | DB dump → migration script → Payload | Keep date, author, status, category, featured image, **exact slug**. Convert HTML/shortcodes (tagDiv, Gutenberg) to clean rich text. |
-| Users (authors, subscribers) | `wp_users` + `wp_usermeta` → Payload users | **Passwords keep working**: we import the WordPress password hash (phpass `$P$…` / WP 6.8+ bcrypt `$wp$…`), check it at first login, then re-hash. If that fails, a "set new password" email. |
+| Posts, pages (all statuses: published, **pending**, draft, scheduled) | WP MySQL → Laravel migration command → new MySQL tables | Keep date, author, status, category, featured image, **exact slug**. Convert HTML/shortcodes (tagDiv, Gutenberg) to clean rich text. |
+| Users (authors, subscribers) | `wp_users` + `wp_usermeta` → new `users` + `profiles` | **Passwords keep working**: we import the WordPress password hash (phpass `$P$…` / WP 6.8+ bcrypt `$wp$…`), check it at first login, then re-hash. If that fails, a "set new password" email. |
 | Co-authors / guest authors | Co-Authors Plus taxonomy → author profiles | |
-| Media (3,199) | uploads zip → R2, rewrite URLs in content | Also generate modern WebP/AVIF sizes. |
-| Comments (397) | `wp_comments` → comments collection | |
+| Media (3,199) | uploads folder kept at the same `/wp-content/uploads/` path; DB records imported | Generate WebP/AVIF sizes in the background; original URLs keep working. |
+| Comments (397) | `wp_comments` → `comments` table | |
 | Categories | 32 → about **10 clean sections** with 301s for merged ones | |
 | Tags | 2,278 → controlled list of about **150**; others 301 to the parent section | AI helps map them. |
 | Newsletter subscribers | CSV import | Re-consent email once. |
@@ -202,7 +244,7 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 | Phase | Weeks | Deliverables |
 |---|---|---|
 | **0. Access & audit** | 1 | DB dump, uploads, Search Console; full URL inventory; content-audit labels |
-| **1. Foundation** | 2–4 | Next.js + Payload scaffold, data model (posts, authors, sections, issues, submissions), design system, reading page, home, author pages |
+| **1. Foundation** | 2–4 | Laravel + Filament scaffold, MySQL data model (posts, authors, sections, issues, submissions), design system, reading page, home, author pages |
 | **2. Migration** | 4–6 | Migration scripts for users/posts/media/comments, redirect map + automated redirect tests, staging site with full archive |
 | **3. Submissions + AI review** | 6–8 | Submit flow, status tracker, Claude review pipeline, editor dashboard, email notifications |
 | **4. Launch** | 9 | Cutover, Search Console monitoring, first new monthly issue |
@@ -224,10 +266,11 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 ---
 
 ## 10. Decisions needed from you
-1. **Hosting:** Vercel (easiest) or a VPS (cheapest)?
+1. ~~Hosting~~ → **decided: Hostinger Cloud + MySQL.** Stack: **Laravel + Filament** (or the lean-WordPress fallback?)
 2. **Language focus:** Bengali-first with English secondary (recommended), or fully bilingual?
 3. **The 2024 English listicles:** keep, rewrite or noindex? (Recommended: noindex or remove most of them.)
 4. **Monetisation to launch first:** Sharodiya anthology + contests (recommended), or memberships?
-5. **Access:** please share the DB dump + uploads (or Hostinger access) so migration can start.
+5. **Access:** DB export + uploads copy on the server (not in `public_html` yet), plus the Hostinger plan name.
+6. **Staging subdomain:** OK to create `new.hatpakha.com`?
 
-Once you confirm, the next step is **Phase 1**: scaffold the Next.js + Payload project in this repository.
+No code until you approve. Once you confirm, the next step is **Phase 1**: scaffold the Laravel + Filament project in this repository.
