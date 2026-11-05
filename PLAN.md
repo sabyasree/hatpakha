@@ -295,6 +295,42 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 - **Regular monthly issues:** use a simpler **standard monthly cover template** (theme photo or illustration + title), so they take little design work.
 - **Workload with AI:** about 2–3 hours per regular issue and 1–2 days per festival special (selection, editor's note, cover text). Everything else (layout, PDF, EPUB, flipbook, share images, newsletter) is automatic.
 - **If the team is small in year 1:** publish only the 6 festival issues **plus বর্ষা** (7 issues), to fill the June–September gap, and add the other regular issues in year 2. Weekly web publishing and the Sunday newsletter continue either way.
+
+### Which issue does a piece go into? (backlog + new submissions)
+**Key idea: a piece does not wait for its issue.** It goes live on the website as soon as it is approved, in the weekly schedule. The monthly issue is a **collection** that includes it later in the flipbook, PDF and EPUB. So nobody waits months just because of the calendar.
+
+**Assignment rules** (AI suggests, editor confirms in the *Issue planner* board):
+1. **Season or festival match first.** AI reads each piece and tags its themes, which point to an issue:
+
+   | Themes in the piece | Issue |
+   |---|---|
+   | books, reading, Boi Mela | বইমেলা |
+   | Ekushe, mother tongue, language | ভাষা |
+   | love, spring, colours, Dol | বসন্ত |
+   | new beginnings, Boishakh | নববর্ষ |
+   | Tagore, Nazrul | রবীন্দ্র-নজরুল |
+   | summer, holidays, children, humour | গ্রীষ্ম |
+   | rain, monsoon | বর্ষা |
+   | travel, mountains, Srabon | শ্রাবণ |
+   | Durga Puja, autumn, kash flowers, homecoming | শারদীয়া |
+   | ghost, mystery, lamps | দীপাবলি |
+   | harvest, village, fog | হেমন্ত |
+   | top-rated of the year | বর্ষসেরা |
+
+2. **Evergreen pieces** (no season) go to the **next issue that still has room in their section**, **oldest first** (first come, first served).
+3. **Section balance per issue.** Typical target: about 12 poems, 5 stories, 2 travel pieces, 2 essays and 1 humour piece. Festival specials get more.
+4. **Fairness:** at most 1 poem + 1 prose piece per author in an issue, and new writers are prioritised in every issue.
+5. **Waiting limit:** a writer gets a **decision within 7 days**. If the matching festival issue is more than 3 months away, the piece is **published on the web now** and still placed in that issue later.
+
+### Clearing the existing backlog at relaunch
+| Step | What happens |
+|---|---|
+| 1. Export | Pending/draft posts come over from the DB with their **original submission date** (this keeps the queue order fair). |
+| 2. AI triage (one run) | For every pending piece: quality score, section, themes, suggested issue, and possible duplicate (already published on Hatpakha or elsewhere on the web). |
+| 3. Apology + check email | Every waiting author gets a personal email: *"Sorry for the long wait. Hatpakha is coming back. Your piece is accepted / needs a small change / not selected this time."* Accepted authors are asked to confirm the piece is still unpublished elsewhere and to accept the new terms (one click). |
+| 4. Relaunch issue **"ফিরে এলাম"** | The **first new issue** is built mostly from the **best of the backlog**. The theme "coming back" also fits the Sharodiya contest theme "ফিরে আসা". |
+| 5. Spread the rest | The remaining accepted pieces go to the next 2–3 issues by the rules above, and on the web at 3–5 per week. That restarts fresh content for Google. |
+| 6. Old published posts | They stay in the archive at the same URLs. They are resurfaced through mood picks, topic hubs, the "আর্কাইভ থেকে" (from the archive) slot (1–2 classic pieces per issue) and yearly anthologies. They are **not** re-issued as new. |
 - **Sections** (about 10): Kobita · Golpo · Anugolpo · Probondho · Rommo Rachana · Bhraman · Onubad · Shishu-Kishor · Interview · Editorial.
 - **Submission guidelines** page with word limits, originality rules, response time (7 days, which the AI pipeline makes realistic).
 - **Editorial board**: 1 editor-in-chief + 2–3 volunteer section editors at first. AI reports cut each review to about 3 minutes.
