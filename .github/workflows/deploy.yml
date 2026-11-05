@@ -74,7 +74,8 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude='.git' --exclude='node_modules' --exclude='tests' \
-            --exclude='/.env' --exclude='/storage/' --exclude='/public/wp-content/uploads/' --exclude='/public/storage' \
+            --exclude='/.env' --exclude='/storage/' --exclude='/public/storage' \
+            --include='/public/wp-content/uploads/.htaccess' --exclude='/public/wp-content/uploads/*' \
             -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT:-22}" \
             ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
 

@@ -22,7 +22,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Tests: 23 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ⬜ Self-host and subset fonts (currently Google Fonts CSS)
-- ⬜ Image pipeline: WebP/AVIF sizes for old uploads; upload scanner/quarantine for the WordPress uploads folder
+- ✅ Staging: WordPress imported (same counts as local), uploads copied (6.7 GB), owner promoted to admin
+- ⬜ Uploads clean-up: remove plugin leftovers (e.g. `uploads/mailpoet` PHP cache) from the copy; review WordPress admin/editor accounts imported with panel access
+- ⬜ Image pipeline: WebP/AVIF sizes for old uploads
 - ⬜ Mobile layouts polished against design boards ৩–৭
 - ⬜ Category merge redirects reviewed by the owner (23 old categories → 10 sections; see `ImportWordPress::SECTION_MAP`)
 
