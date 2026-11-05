@@ -46,6 +46,15 @@ jobs:
         run: |
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
+      - name: Refuse unsafe deploy paths
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          # The Laravel root (with .env, vendor, storage) must never sit inside a web root (docs/DEPLOYMENT.md).
+          case "$DEPLOY_PATH" in
+            ''|*public_html*|*/www/*|*/htdocs*) echo "DEPLOY_PATH must be outside public_html, e.g. /home/<user>/apps/hatpakha-staging"; exit 1 ;;
+          esac
+
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

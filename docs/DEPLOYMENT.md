@@ -23,7 +23,7 @@
    mkdir -p ~/apps/hatpakha-staging/public
    rm -r ~/domains/hatpakha.com/public_html/new
    ln -s ~/apps/hatpakha-staging/public ~/domains/hatpakha.com/public_html/new
-   cd ~/apps/hatpakha-staging && pwd                  # this is DEPLOY_PATH
+   cd ~/apps/hatpakha-staging && pwd                  # this is DEPLOY_PATH (the deploy refuses any path inside public_html)
    ```
    Side effect: `hatpakha.com/new/` also reaches the staging app's public folder (never `.env`). Staging is noindex, so this is harmless; to block it, add at the top of WordPress's `public_html/.htaccess`:
    ```apache
