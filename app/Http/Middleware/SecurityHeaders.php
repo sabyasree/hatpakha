@@ -37,6 +37,12 @@ class SecurityHeaders
             'upgrade-insecure-requests',
         ]);
 
+        // Don't advertise the PHP version (docs/SECURITY.md §1).
+        $response->headers->remove('X-Powered-By');
+        if (! app()->runningUnitTests() && function_exists('header_remove')) {
+            header_remove('X-Powered-By');
+        }
+
         $response->headers->set('Content-Security-Policy', $csp);
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

@@ -25,6 +25,7 @@ class SecurityTest extends TestCase
         $this->assertStringContainsString("frame-ancestors 'self'", $csp);
         $res->assertHeader('X-Content-Type-Options', 'nosniff');
         $res->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $res->assertHeaderMissing('X-Powered-By');
     }
 
     public function test_old_wordpress_attack_paths_are_gone(): void
