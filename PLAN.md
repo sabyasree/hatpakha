@@ -132,14 +132,15 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 
 ### Design language: "পাখা খুলুক" (let the fan open)
 Design canvas (all screens): https://claude.ai/artifact/4iCfy5Pt1DJqTyC2DNUUcG
-- **Design 2.0 (current direction, "editorial, logo-true"):** see the canvas boards "২.০ · ডিজাইন নিয়ম" and "২.০ · হোম".
+- **Chosen direction: Design 1.0** (vivid "পাখা খুলুক": cyan `#00AEEF`, red `#E8112D`, pink `#FF6B8B`, yellow `#FFC93C`, navy `#13212C`, white `#FFFBF4`; gradients and gold foil on heroes, covers and contest banners; Anek Bangla headlines, Noto Serif Bengali reading text, Galada accents; sunrise-fan hero, fan mood dial, taped story pages, stamp travel cards, postcard newsletter, ticket-stub contest). **Approved by the owner on 5 Nov 2026.**
+  - Kept from the 2.0 review, without changing the look: real authors and real opening lines instead of placeholder brackets in anything public, and an SVG logo.
+- *(Design 2.0 "editorial, logo-true" was explored and **not chosen**; its notes are below for reference only.)*
   - **Colours: exactly the four logo colours** (sampled from the logo file): sky `#2DAAE2` (brand, covers), fan red `#CB1B32` (actions, key labels), fan pink `#F08D90` and fan peach `#EFC08D` (illustration only). Plus ink `#15191D`, secondary text `#49525A`, hairline `#DCD7CE`, paper `#F8F6F1`; text-safe sky `#0E6E9E` for links. **No purple, magenta or neon gradients, and no gloss.**
   - **Type:** Noto Serif Bengali for headlines and reading (book-like), Anek Bangla for UI and labels. Galada only on festival covers.
   - **Shape:** 2–6px corners; pill shapes only for tags; hairline rules instead of shadows; no tilted cards, stickers or offset shadows.
   - **Motif discipline:** the fan appears in 3 places only: logo, issue covers, section dividers.
   - **Content:** real authors, real opening lines and real images. No placeholder brackets in anything shown to the public. One consistent line-icon set (Lucide); no Unicode symbols as icons; no "✦ AI" sparkles.
   - **Human finish:** a Bengali illustrator for covers, a native Bengali copy editor for UI text, and a vector (SVG) version of the logo.
-- *(Design 1.0, superseded: vivid gradients, gold foil, tilted scrapbook cards. Kept on the canvas for reference.)*
 - **Festival covers:** বইমেলা, বসন্ত, নববর্ষ, পঁচিশে বৈশাখ, শারদীয়া and দীপাবলি. One template system with the logo, the fan motif and a gold-foil title; reused for the hero, social images, the newsletter and the e-book.
 - **Mobile-first:** bottom tab bar (হোম · রিল · সংখ্যা · আমি), floating "লিখুন" button, Kobita Reels, and swipe flipbook.
 
