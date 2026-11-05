@@ -130,8 +130,13 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 - **Privacy controls:** writers choose what is public (e.g. hide location). Pen names are supported.
 - **Legacy authors** from WordPress get profiles automatically and can **claim** them by email.
 
-### Design language
-A *hatpakha* is a hand fan, so use that as the motif: warm paper-cream background, deep ink text, one accent colour (terracotta/alpona red), generous white space, illustrated issue covers. Calm, literary and trustworthy.
+### Design language: "পাখা খুলুক" (let the fan open)
+Design canvas (all screens): https://claude.ai/artifact/4iCfy5Pt1DJqTyC2DNUUcG
+- **Brand colours (vivid, from the logo):** cyan `#00AEEF`, red `#E8112D`, pink `#FF6B8B`, sunny yellow `#FFC93C`, deep navy text `#13212C`, warm white ground `#FFFBF4`. Gradients and gold foil are used for heroes, covers and contest banners.
+- **Type:** Anek Bangla (variable width) for headlines and UI, Noto Serif Bengali for reading, Galada (signboard hand-lettering) for stickers and sign-offs like "আবার আসবেন".
+- **Signature motifs:** the logo's fan as a rising sun in the hero; a fan dial for choosing a mood; taped scrapbook story pages; postage-stamp travel cards; a postcard newsletter; ticket-stub contest entry; halftone print texture.
+- **Festival covers:** বইমেলা, বসন্ত, নববর্ষ, পঁচিশে বৈশাখ, শারদীয়া and দীপাবলি. One template system with the logo, the fan motif and a gold-foil title; reused for the hero, social images, the newsletter and the e-book.
+- **Mobile-first:** bottom tab bar (হোম · রিল · সংখ্যা · আমি), floating "লিখুন" button, Kobita Reels, and swipe flipbook.
 
 ---
 
@@ -166,8 +171,28 @@ Every month (and for the Sharodiya special):
 1. The editor picks a theme or lets AI propose 3 themes from approved pieces.
 2. AI drafts the **table of contents**: selection, ordering and section balance (poetry/prose/travel), plus a draft **editor's note**.
 3. The system builds the cover from a template (title, issue no., ISSN, featured names) plus an AI-assisted or commissioned illustration.
-4. Outputs: a **web issue page**, a **print-ready PDF** (Paged.js/Typst with proper Bengali shaping), and a **newsletter edition**.
+4. Outputs: a **web issue page**, a **print-ready PDF**, an **EPUB e-book**, a **flipbook**, and a **newsletter edition** (details below).
 5. The editor reviews and clicks "Publish issue". The issue gets `PublicationIssue` structured data with the ISSN.
+
+### E-book & flipbook: built automatically for every issue
+When the editor clicks **"সংখ্যা প্রকাশ" (Publish issue)**, a background job builds everything with no manual work:
+
+| Output | How it is made | Notes |
+|---|---|---|
+| **Print PDF** (A5, with bleed) + **screen PDF** (smaller) | Issue HTML laid out with **Paged.js in headless Chromium**, run by a **GitHub Actions job** that the site triggers. The PDF is uploaded back to the server. | Chromium's text shaping renders Bengali conjuncts (যুক্তাক্ষর) correctly. Hostinger can't run Chromium, so GitHub Actions does it, within free minutes. **Fallback:** mPDF on the server (PHP, Bengali via OpenType layout); its rendering must be checked before relying on it. |
+| **EPUB 3** | Generated in PHP on the server (XHTML chapters + cover + table of contents, Noto Serif Bengali embedded) and validated with `epubcheck` in the same Actions job | Opens in Google Play Books, Apple Books and phone e-book apps, and on Kindle via "Send to Kindle". |
+| **Flipbook** (web) | **PDF.js** (Mozilla) renders the screen PDF pages and **StPageFlip** (open-source page-curl library) turns them | Desktop: two-page spread with page-curl, thumbnails, keyboard ← →, full screen. Mobile: one page at a time, swipe, page dots. Pages load lazily so it stays fast. Deep links like `/sonkha/2026-11/read?page=12`. |
+| **Cover & share images** | Festival cover template → 1200×630 (link previews), 1080×1350 (Instagram), 1080×1920 (Status/Reels) | Used automatically for WhatsApp/Facebook previews. |
+
+- **Each piece = one chapter:** title, author, section and the author's profile link on the last line. New pieces start on a new page, poems keep their line breaks, and long stories flow over as many pages as needed.
+- **Sponsor pages** from the Sharodiya sponsor packages go into the PDF/flipbook automatically, and the back cover carries the next-issue teaser.
+- **SEO:** the flipbook is for the reading experience. Google indexes the normal HTML article pages, and the flipbook page links to each article.
+- **Money:**
+  - Reading the flipbook is free.
+  - **PDF/EPUB download in exchange for an email address** (newsletter growth).
+  - The same print PDF feeds **print-on-demand** copies of the Sharodiya issue.
+  - AdSense sits beside the flipbook on desktop, never inside the pages.
+- **Archive:** the migration also builds e-books for past "issues" grouped by year or theme, e.g. "হাতপাখা কবিতা সংকলন ২০১২–২০২৪".
 
 ---
 
@@ -265,7 +290,7 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 | **2. Migration** | 4–6 | Migration scripts for users/posts/media/comments, redirect map + automated redirect tests, staging site with full archive |
 | **3. Submissions + AI review** | 6–8 | Submit flow, status tracker, Claude review pipeline, editor dashboard, email notifications |
 | **4. Launch** | 9 | Cutover, Search Console monitoring, first new monthly issue |
-| **5. Issues & money** | 10–14 | Issue generator (web + PDF), newsletter, Razorpay memberships, contest module |
+| **5. Issues & money** | 10–14 | Issue generator (web issue + print PDF + EPUB + flipbook + share images), festival cover templates, newsletter, contest module, payment gateway when approved |
 | **6. Growth** | ongoing | Sharodiya issue, anthologies, workshops, audio recitations (writers record their own), translations |
 
 ---
