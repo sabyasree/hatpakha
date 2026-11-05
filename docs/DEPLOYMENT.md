@@ -17,6 +17,14 @@
    ~/domains/new.hatpakha.com/public_html → symlink to app/public
    ```
    Point the document root at `app/public`, never at the Laravel root.
+   When creating the subdomain in hPanel, tick **Custom folder for subdomain** so it is **not** created inside the main site's `public_html` (otherwise the app would also be reachable at `hatpakha.com/new/` and `.env` could be downloadable). Then over SSH:
+   ```bash
+   cd ~/domains/new.hatpakha.com      # the folder hPanel created
+   ls -la public_html                 # should hold only Hostinger's default files
+   mkdir -p app/public
+   mv public_html public_html.bak
+   ln -s app/public public_html
+   ```
 3. **SSH key for deploys**: generate a new key pair just for GitHub Actions (`ssh-keygen -t ed25519 -C hatpakha-deploy`), add the public key in Hostinger → SSH Access, keep the private key only in GitHub.
 4. **GitHub → Settings → Environments** → create `staging` and `production`, each with these **secrets**:
 
