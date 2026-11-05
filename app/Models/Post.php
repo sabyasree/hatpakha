@@ -71,7 +71,7 @@ class Post extends Model
 
     public function isPoem(): bool { return $this->format === 'poem'; }
 
-    public function url(): string { return url('/'.Slug::encode($this->slug).'/'); }
+    public function url(): string { return \App\Support\Url::to('/'.Slug::encode($this->slug)); }
 
     public function metaTitle(): string { return $this->seo_title ?: $this->title; }
 

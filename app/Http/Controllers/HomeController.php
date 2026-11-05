@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Author;
+use App\Models\Comment;
+use App\Models\Post;
+use App\Seo\JsonLd;
+use App\Seo\Seo;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+
+class HomeController extends Controller
+{
+    public function __invoke(Request $request)
+    {
+        // Old WordPress "?p=123" links → the post's permanent URL.
+        if (ctype_digit((string) $request->query('p'))) {
+            $post = Post::published()->where('legacy_wp_id', (int) $request->query('p'))->firstOrFail();
+
+            return redirect($post->url(), 301);
+        }
+
+        // Cache only IDs/scalars: Laravel refuses to unserialize models from the cache (a good default).
+        $ids = Cache::remember('home:v2:'.now()->toDateString(), now()->addMinutes(15), function () {
+            $base = fn () => Post::published()->latest('published_at');
+            $poemIds = $base()->where('format', 'poem')->where('language', 'bn')->limit(60)->pluck('id');
+
+            return [
+                // Poem of the day: deterministic per date, so the cached page and share cards agree.
+                'poemOfDay' => $poemIds->isEmpty() ? null : $poemIds[crc32(now()->toDateString()) % $poemIds->count()],
+                'stories' => $base()->whereHas('section', fn ($q) => $q->where('slug', 'short-stories'))->limit(4)->pluck('id')->all(),
+                'travel' => $base()->whereHas('section', fn ($q) => $q->where('slug', 'travel'))->limit(5)->pluck('id')->all(),
+                // "এই দিনে": a piece published this calendar week in an earlier year.
+                'onThisDay' => Post::published()->whereYear('published_at', '<', now()->year)
+                    ->whereMonth('published_at', now()->month)->get(['id', 'slug', 'published_at'])
+                    ->filter(fn (Post $p) => abs($p->published_at->day - now()->day) <= 3)
+                    ->sortBy(fn (Post $p) => crc32($p->slug.now()->toDateString()))->first()?->id,
+                // "পাঠকের চিঠি": real reader comments, opted-in only (docs/SECURITY.md §8).
+                'letters' => Comment::where('status', 'approved')->where('feature_opt_out', false)
+                    ->latest()->limit(200)->get(['id', 'body'])
+                    ->filter(fn ($c) => mb_strlen($c->body) >= 40 && mb_strlen($c->body) <= 260 && preg_match('/[\x{0985}-\x{09B9}]/u', $c->body))
+                    ->take(4)->pluck('id')->all(),
+                'counts' => [
+                    'years' => now()->year - 2012,
+                    'writers' => Author::where('published_count', '>', 0)->count(),
+                    'pieces' => Post::published()->count(),
+                ],
+            ];
+        });
+
+        $load = fn (array $idList) => Post::with(['authors', 'section'])->whereKey($idList)->get()
+            ->sortBy(fn ($p) => array_search($p->id, $idList))->values();
+
+        $data = [
+            'poemOfDay' => $ids['poemOfDay'] ? Post::with('authors')->find($ids['poemOfDay']) : null,
+            'stories' => $load($ids['stories']),
+            'travel' => $load($ids['travel']),
+            'onThisDay' => $ids['onThisDay'] ? Post::with('authors')->find($ids['onThisDay']) : null,
+            'letters' => Comment::with('post')->whereKey($ids['letters'])->get(),
+            'counts' => $ids['counts'],
+        ];
+
+        $seo = new Seo(
+            title: 'হাতপাখা — বাংলা সাহিত্যের অনলাইন পত্রিকা',
+            description: 'হাতপাখা: ২০১২ থেকে বাংলা কবিতা, গল্প, প্রবন্ধ ও ভ্রমণকথার অনলাইন পত্রিকা। ISSN 2321-3035। লেখা পাঠান বিনামূল্যে।',
+            jsonLd: [JsonLd::organization(), JsonLd::website(), JsonLd::periodical()],
+        );
+
+        return view('home', $data + ['seo' => $seo]);
+    }
+}

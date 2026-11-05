@@ -13,5 +13,5 @@ class Tag extends Model
 
     public function posts(): BelongsToMany { return $this->belongsToMany(Post::class); }
 
-    public function url(): string { return url('/tag/'.rawurlencode($this->slug).'/'); }
+    public function url(): string { return \App\Support\Url::to('/tag/'.rawurlencode($this->slug)); }
 }

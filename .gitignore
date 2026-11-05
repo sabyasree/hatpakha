@@ -28,3 +28,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Old WordPress media is copied to the server at deploy, never committed (only the .htaccess guard is).
+/public/wp-content/uploads/*
+!/public/wp-content/uploads/.htaccess

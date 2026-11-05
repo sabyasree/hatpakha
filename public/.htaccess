@@ -1,3 +1,5 @@
+# Hatpakha front controller. Trailing slashes are KEPT (WordPress URLs end with "/"):
+# the app enforces them (App\Http\Middleware\EnforceTrailingSlash). See docs/SEO.md §1.
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
@@ -5,21 +7,23 @@
 
     RewriteEngine On
 
-    # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+    # Never execute or serve scripts from upload folders (docs/SECURITY.md §5).
+    RewriteRule ^(wp-content/uploads|media)/.*\.(php\d?|phtml|phar|pl|py|cgi|sh|asp|aspx|jsp|htaccess)$ - [F,L,NC]
 
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # Send requests to the front controller (except real files).
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Long cache for fingerprinted build assets and uploaded media.
+    <FilesMatch "\.(css|js|woff2|webp|avif|jpe?g|png|gif|svg)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
 </IfModule>

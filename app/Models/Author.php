@@ -45,6 +45,6 @@ class Author extends Model
 
     public function url(): string
     {
-        return url('/author/'.rawurlencode($this->slug).'/');
+        return \App\Support\Url::to('/author/'.rawurlencode($this->slug));
     }
 }

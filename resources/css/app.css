@@ -3,7 +3,56 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Design tokens: ONLY the logo palette + tints/shades (docs/DESIGN.md). Do not add other hues. */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-sky: #2DAAE2;
+    --color-sky-light: #7CCBEE;
+    --color-sky-deep: #1A86C2;
+    --color-sky-night: #12304A;
+    --color-red: #CB1B32;
+    --color-red-deep: #B0162B;
+    --color-red-dark: #7A1022;
+    --color-pink: #F08D90;
+    --color-peach: #EFC08D;
+    --color-peach-light: #FBEBD8;
+    --color-peach-deep: #E39A6A;
+    --color-navy: #13212C;
+    --color-paper: #FFFBF4;
+    --color-ink2: #4D5A63;
+    --color-rule: #E8DCCB;
+    --color-sky-tint: #DDF1FA;
+
+    --font-display: 'Anek Bangla', 'Noto Sans Bengali', system-ui, sans-serif;
+    --font-serif: 'Noto Serif Bengali', 'Noto Serif', Georgia, serif;
+    --font-hand: 'Galada', 'Anek Bangla', cursive;
+    --font-sans: 'Anek Bangla', 'Noto Sans Bengali', system-ui, sans-serif;
 }
+
+@layer base {
+    html { background: var(--color-paper); color: var(--color-navy); -webkit-text-size-adjust: 100%; }
+    body { font-family: var(--font-sans); }
+    :focus-visible { outline: 3px solid var(--color-sky-deep); outline-offset: 2px; }
+    a { text-underline-offset: 3px; }
+}
+
+/* Reading text (stories, essays). */
+.prose-bn { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.95; }
+.prose-bn p { margin: 1.1em 0; }
+.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; }
+.prose-bn blockquote { margin: 1.4em 0; padding-left: 1em; border-left: 4px solid var(--color-red); font-family: var(--font-display); font-weight: 700; font-size: 1.25em; color: var(--color-red); }
+.prose-bn img { max-width: 100%; height: auto; border-radius: 4px; }
+.prose-bn figcaption { font-family: var(--font-sans); font-size: .85rem; color: var(--color-ink2); }
+
+/* Poem mode: tight lines, stanza = paragraph. */
+.poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; }
+.poem-bn p { margin: 0 0 .45em; }
+.poem-bn img { max-width: 100%; height: auto; margin: 0 auto 1em; border-radius: 4px; }
+
+.tilt-a { transform: rotate(-1.6deg); }
+.tilt-b { transform: rotate(1.4deg); }
+@media (prefers-reduced-motion: no-preference) {
+    .lift { transition: transform .2s ease; }
+    .lift:hover { transform: rotate(0) translateY(-4px); }
+}
+.halftone { background-image: radial-gradient(var(--color-navy) 1.2px, transparent 1.6px); background-size: 14px 14px; opacity: .14; }
+.lined { background-image: repeating-linear-gradient(transparent 0 31px, rgba(19,33,44,.08) 31px 32px); }

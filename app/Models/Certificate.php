@@ -27,5 +27,5 @@ class Certificate extends Model
 
     public function isValid(): bool { return $this->revoked_at === null; }
 
-    public function verifyUrl(): string { return url('/certificate/'.$this->code.'/'); }
+    public function verifyUrl(): string { return \App\Support\Url::to('/certificate/'.$this->code); }
 }

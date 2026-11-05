@@ -13,5 +13,5 @@ class Issue extends Model
 
     public function posts(): HasMany { return $this->hasMany(Post::class); }
 
-    public function url(): string { return url('/sonkha/'.$this->slug.'/'); }
+    public function url(): string { return \App\Support\Url::to('/sonkha/'.$this->slug); }
 }

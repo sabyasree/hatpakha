@@ -2,6 +2,13 @@
 
 return [
 
+    // Google AdSense publisher ID (ca-pub-…). Ads render only when set. docs/SEO.md §5.
+    'adsense' => [
+        'client' => env('ADSENSE_CLIENT'),
+        'slot_article' => env('ADSENSE_SLOT_ARTICLE'),
+        'slot_home' => env('ADSENSE_SLOT_HOME'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
