@@ -11,19 +11,25 @@
 
 ## One-time setup (owner)
 1. **Hostinger**: create the subdomain `new.hatpakha.com` and a MySQL database + user. Enable SSH access.
-2. **Folder layout** on the server:
+2. **Folder layout.** Hostinger forces a subdomain's custom folder to sit inside the main site's `public_html`, so only a **symlink** goes there; the Laravel app lives in the home folder, outside every web root:
    ```
-   ~/domains/new.hatpakha.com/app/          ← DEPLOY_PATH (Laravel root)
-   ~/domains/new.hatpakha.com/public_html → symlink to app/public
+   ~/apps/hatpakha-staging/            ← DEPLOY_PATH (Laravel root, .env lives here)
+   ~/apps/hatpakha-staging/public/     ← the only web-visible folder
+   ~/domains/hatpakha.com/public_html/new → symlink to ~/apps/hatpakha-staging/public
    ```
-   Point the document root at `app/public`, never at the Laravel root.
-   When creating the subdomain in hPanel, tick **Custom folder for subdomain** so it is **not** created inside the main site's `public_html` (otherwise the app would also be reachable at `hatpakha.com/new/` and `.env` could be downloadable). Then over SSH:
+   In hPanel → Subdomains: subdomain `new`, tick **Custom folder for subdomain**, folder name `new`, leave **Use public_html directory** unticked. Then over SSH:
    ```bash
-   cd ~/domains/new.hatpakha.com      # the folder hPanel created
-   ls -la public_html                 # should hold only Hostinger's default files
-   mkdir -p app/public
-   mv public_html public_html.bak
-   ln -s app/public public_html
+   ls -la ~/domains/hatpakha.com/public_html/new     # only Hostinger's default files expected
+   mkdir -p ~/apps/hatpakha-staging/public
+   rm -r ~/domains/hatpakha.com/public_html/new
+   ln -s ~/apps/hatpakha-staging/public ~/domains/hatpakha.com/public_html/new
+   cd ~/apps/hatpakha-staging && pwd                  # this is DEPLOY_PATH
+   ```
+   Side effect: `hatpakha.com/new/` also reaches the staging app's public folder (never `.env`). Staging is noindex, so this is harmless; to block it, add at the top of WordPress's `public_html/.htaccess`:
+   ```apache
+   RewriteEngine On
+   RewriteCond %{HTTP_HOST} ^(www\.)?hatpakha\.com$ [NC]
+   RewriteRule ^new(/|$) - [F,L]
    ```
 3. **SSH key for deploys**: generate a new key pair just for GitHub Actions (`ssh-keygen -t ed25519 -C hatpakha-deploy`), add the public key in Hostinger → SSH Access, keep the private key only in GitHub.
 4. **GitHub → Settings → Environments** → create `staging` and `production`, each with these **secrets**:
