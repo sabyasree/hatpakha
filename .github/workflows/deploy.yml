@@ -1,0 +1,91 @@
+# Deploys to Hostinger over SSH (docs/DEPLOYMENT.md).
+#   push to "staging" → environment "staging"    (new.hatpakha.com)
+#   push to "main"    → environment "production" (hatpakha.com)
+# All values come from GitHub → Settings → Environments → <env> → Secrets. Nothing secret is in the repo.
+name: Deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_mysql, gd, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Test before deploying
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci && npm run build
+          cp .env.example .env && php artisan key:generate
+          php artisan test
+          rm .env
+
+      - name: Build production bundle
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload code (keeps .env, storage and old media on the server)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          rsync -az --delete \
+            --exclude='.git' --exclude='node_modules' --exclude='tests' \
+            --exclude='.env' --exclude='storage/' --exclude='public/wp-content/uploads/' \
+            -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT:-22}" \
+            ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
+
+      - name: Write .env and run release tasks
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          printf '%s\n' "$ENV_FILE" | ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "umask 077 && cat > '${DEPLOY_PATH}/.env'"
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
+            mkdir -p storage/framework/{cache,sessions,views} storage/logs && \
+            php artisan down --retry=30 || true; \
+            php artisan migrate --force && \
+            php artisan optimize:clear && php artisan optimize && \
+            php artisan filament:optimize && \
+            php artisan up"
+
+      - name: Remove key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

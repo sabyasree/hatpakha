@@ -1,0 +1,47 @@
+# Runs on every push and pull request. A red CI blocks deploys (deploy.yml needs this to pass).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'          # same as Hostinger
+          extensions: mbstring, intl, pdo_sqlite, pdo_mysql, gd, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install and build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Tests (SEO + security rules are enforced here)
+        run: php artisan test
+
+      - name: Dependency security audit
+        run: |
+          composer audit --no-interaction
+          npm audit --omit=dev --audit-level=high

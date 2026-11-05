@@ -427,4 +427,15 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 ### Still open
 1. The payment gateway: approval date, and which one (Cashfree or Razorpay).
 
-No code until you approve. Once you confirm, the next step is **Phase 1**: scaffold the Laravel + Filament project in this repository.
+Approved; Phase 1 started 5 Nov 2026. Live status: [`docs/PROGRESS.md`](docs/PROGRESS.md).
+
+### Project documents
+| Doc | What it is |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Rules for any AI agent or developer |
+| [`docs/PROGRESS.md`](docs/PROGRESS.md) | What's done, what's next |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Decision log (append-only) |
+| [`docs/SEO.md`](docs/SEO.md), [`docs/SECURITY.md`](docs/SECURITY.md), [`docs/DESIGN.md`](docs/DESIGN.md) | Binding specs |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code and data model |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Hostinger + GitHub Actions setup |
+| [`docs/DB-AUDIT.md`](docs/DB-AUDIT.md) | Old database analysis |
