@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,7 +31,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('desk')
             ->login()
             ->passwordReset()
-            ->multiFactorAuthentication([AppAuthentication::make()->recoverable()], isRequired: true)
+            ->multiFactorAuthentication([
+                AppAuthentication::make()->recoverable(),
+                EmailAuthentication::make()->codeExpiryMinutes(5),
+            ], isRequired: true)
             ->brandName('হাতপাখা ডেস্ক')
             ->brandLogo(asset('images/logo-wordmark.png'))
             ->brandLogoHeight('2.25rem')

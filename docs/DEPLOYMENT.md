@@ -55,7 +55,7 @@
 | `APP_KEY` | its own (`php artisan key:generate --show`) | a **different** one |
 | `DB_*` | staging database | production database |
 | `SEO_INDEXABLE` | `false` (robots `Disallow: /` + `X-Robots-Tag: noindex`) | `false` until cutover, then **`true`** |
-| `MAIL_*` | can be `MAIL_MAILER=log` | real SMTP |
+| `MAIL_*` | real SMTP if anyone uses **email 2FA** or password reset on staging (with `log`, codes only go to `storage/logs`) | real SMTP |
 | `ADSENSE_*` | empty (no ads on staging) | your AdSense IDs |
 
    Never reuse the staging `APP_KEY` or DB password in production.

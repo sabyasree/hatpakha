@@ -14,7 +14,8 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 - **Legacy WordPress hashes** (`$P$` phpass, `$wp$` bcrypt): verified once at login, then immediately re-hashed and the legacy hash deleted. The legacy hash is never logged or exposed. ✅test
 - Login options: email + password, Google (Socialite), and **magic link** (signed URL, single use, 15-minute expiry).
 - Email verification is required before submitting.
-- **Two-factor authentication (TOTP) is mandatory** for editors and admins (Filament MFA).
+- **Two-factor authentication is mandatory** for editors and admins (Filament MFA). Two methods: authenticator app (TOTP, with recovery codes; **recommended for admins**) or a 6-digit **email code** (valid 5 minutes, max 2 sends per window). ✅test
+  - Email 2FA is only as safe as the mailbox: anyone who controls the email can also reset the password, so admins should use the app, or both.
 - Rate limits ✅test: login 5 per minute per IP+email; password reset 3 per hour; registration 5 per hour per IP; submissions 3 per day per writer.
 - Generic error messages (no "user exists" leaks).
 

@@ -6,6 +6,7 @@ use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\Email\Contracts\HasEmailAuthentication;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,7 +19,7 @@ use SensitiveParameter;
 
 #[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'legacy_password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
-class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -32,6 +33,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'role' => Role::class,
             'app_authentication_secret' => 'encrypted',
             'app_authentication_recovery_codes' => 'encrypted:array',
+            'has_email_authentication' => 'boolean',
         ];
     }
 
@@ -77,6 +79,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function saveAppAuthenticationRecoveryCodes(#[SensitiveParameter] ?array $codes): void
     {
         $this->app_authentication_recovery_codes = $codes;
+        $this->save();
+    }
+
+    // --- Filament email 2FA (one-time code sent to the user's email) ---
+
+    public function hasEmailAuthentication(): bool
+    {
+        return (bool) $this->has_email_authentication;
+    }
+
+    public function toggleEmailAuthentication(bool $condition): void
+    {
+        $this->has_email_authentication = $condition;
         $this->save();
     }
 }
