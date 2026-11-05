@@ -111,8 +111,9 @@ Sponsor package idea: **Title sponsor ₹50k–1L · Section sponsor ₹10k–25
 
 | Phase | Build | Revenue unlocked |
 |---|---|---|
-| Launch | Ad slots (manual, lazy, CLS-safe), ads.txt, affiliate link support, sponsor banner per section, newsletter signup | A1–A4 |
-| +1–2 months | Razorpay (UPI), contest module (entry, payment, judging, results page, e-certificate PDF), paid feedback / fast-track options in the submit flow | B1–B3 |
+| **Launch (decided)** | **AdSense** ad slots (manual, lazy, CLS-safe), ads.txt · **Contest module, free entry**: contest pages, themed submission, AI shortlist, judges' panel, results page, winner badges, e-certificate PDF · newsletter signup · sponsor banner per section | A1, A3, A4, B1 (free) |
+| **When the payment gateway is approved** (Cashfree / Razorpay) | Switch on **paid contest entries** (₹49–149), paid feedback / fast-track, tips. The code is gateway-agnostic, so this is a settings toggle plus keys. | B1 (paid), B2, B3, C2 |
+| Later | Affiliate link support | A2 |
 | +3–4 months | Tip-a-writer, workshops (event + payment + Zoom link), shop for prints/anthologies (print-on-demand) | B4, B6, C1, C2 |
 | Before Sharodiya | Sharodiya issue builder, sponsor placements, pre-order shop, print-ready PDF | Sharodiya |
 | Later | Writer Pro, ad-free membership, audio | B7, C3, C4 |

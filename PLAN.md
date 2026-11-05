@@ -295,9 +295,16 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 | Publishing | Free for everyone; monetization per `MONETIZATION.md` |
 | Ads | Google AdSense (existing account), manual placements only |
 
+| Monetization phase 1 | **AdSense + contests.** Contests start **free to enter** (prizes: publication, featured badge, e-certificate, sponsor gifts). **Paid entries, paid feedback and tips** switch on once the payment gateway (Cashfree / Razorpay) account is approved. The code is gateway-agnostic. |
+| Data hand-over | You copy the full DB export + uploads folder to the server (outside the live `public_html`) |
+| Deploy | GitHub Actions → Hostinger over **SSH**, same approach as your other project |
+
+### Secrets / `.env` policy
+- `.env.example` (no real values) **is** committed.
+- Real values (DB password, `APP_KEY`, Claude API key, payment-gateway keys, SMTP password, SSH key) are stored in **GitHub → Settings → Environments (`staging`, `production`) → Secrets**. The deploy workflow writes `.env` on the server at deploy time.
+- **A real `.env` is never committed**, even in a private repo: git history keeps it forever, every collaborator and CI tool can read it, and leaked API or payment keys can be abused within minutes.
+
 ### Still open
-1. Which monetization streams to switch on first (recommended: AdSense + newsletter at launch, contests + Razorpay in month 2, Sharodiya 2027 as the first big event).
-2. Data hand-over: full DB export + uploads copy placed on the server outside the live `public_html`.
-3. GitHub Actions secrets for deploy (SSH host/user/key) are added by you in GitHub → Settings → Secrets. **Never put them in the repository.**
+1. The payment gateway: approval date, and which one (Cashfree or Razorpay).
 
 No code until you approve. Once you confirm, the next step is **Phase 1**: scaffold the Laravel + Filament project in this repository.
