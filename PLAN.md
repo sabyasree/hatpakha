@@ -322,6 +322,16 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 4. **Fairness:** at most 1 poem + 1 prose piece per author in an issue, and new writers are prioritised in every issue.
 5. **Waiting limit:** a writer gets a **decision within 7 days**. If the matching festival issue is more than 3 months away, the piece is **published on the web now** and still placed in that issue later.
 
+### Real backlog (from the DB audit, see `docs/DB-AUDIT.md`)
+**424 pending posts from 221 authors.** But **392 are from 2016–2019**, only **28 from 2022–2026**, and 125 belong to one account (repeated titles from 2016). So they need **different handling by age**:
+
+| Tier | Posts | Action |
+|---|---:|---|
+| **A: recent (2022–2026)** | 28 | Normal review now; the best go into the relaunch issue "ফিরে এলাম". Apology email to each author. |
+| **B: cleanup** | ~45 + the 125-post account reviewed as one batch | Very short or empty (30), duplicates (13), test-like posts. Closed without publishing (archived, not deleted). |
+| **C: old but possibly good (2016–2019)** | ~230 after cleanup | AI triage scores them all. The **top ~60–80** authors get an email: *"In 2016 you sent us 'X'. We'd love to publish it now. Is it still unpublished, and may we?"* Only pieces with a **yes** are published, as a series "**অপ্রকাশিত পাণ্ডুলিপি**" (unpublished manuscripts) and in the "আর্কাইভ থেকে" slot of each issue. The rest are closed politely. |
+| **Drafts** | 53 | Never submitted. They appear in each author's "My writings" dashboard after migration, so the author can finish and submit them. |
+
 ### Clearing the existing backlog at relaunch
 | Step | What happens |
 |---|---|
