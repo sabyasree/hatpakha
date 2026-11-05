@@ -81,6 +81,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
             php -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);' || { echo 'Server CLI PHP is older than 8.3:'; php -v; exit 1; } && \
             mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/app/public storage/app/private && \
+            { php artisan db:show --json >/dev/null || { echo 'Cannot connect to the database: check DB_HOST/DB_DATABASE/DB_USERNAME/DB_PASSWORD in ENV_FILE. Site left as it was.'; exit 1; }; } && \
             php artisan down --retry=30 || true; \
             php artisan migrate --force && \
             php artisan db:seed --force && \
