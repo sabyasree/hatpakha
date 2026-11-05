@@ -133,15 +133,9 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 ### Design language: "পাখা খুলুক" (let the fan open)
 Design canvas (all screens): https://claude.ai/artifact/4iCfy5Pt1DJqTyC2DNUUcG
 - **Chosen direction: Design 1.0 in the logo's colours** (vivid "পাখা খুলুক" layout, recoloured on owner request to the **exact logo palette**: sky `#2DAAE2`, fan red `#CB1B32`, fan pink `#F08D90`, fan peach `#EFC08D`, plus their tints and shades (sky `#7CCBEE`/`#1A86C2`/`#12304A`, red `#B0162B`/`#7A1022`, peach `#FBEBD8`/`#E39A6A`), navy text `#13212C`, white `#FFFBF4`. **No colours outside the logo family** in the interface. Exceptions: WhatsApp/success green, neutral greys, and natural object colours inside illustrations (leaves, clay). White text always sits on red or navy, never on pink or peach; gradients and gold foil on heroes, covers and contest banners; Anek Bangla headlines, Noto Serif Bengali reading text, Galada accents; sunrise-fan hero, fan mood dial, taped story pages, stamp travel cards, postcard newsletter, ticket-stub contest). **Approved by the owner on 5 Nov 2026.**
-  - Kept from the 2.0 review, without changing the look: real authors and real opening lines instead of placeholder brackets in anything public, and an SVG logo.
-- *(Design 2.0 "editorial, logo-true" was explored and **not chosen**; its notes are below for reference only.)*
-  - **Colours: exactly the four logo colours** (sampled from the logo file): sky `#2DAAE2` (brand, covers), fan red `#CB1B32` (actions, key labels), fan pink `#F08D90` and fan peach `#EFC08D` (illustration only). Plus ink `#15191D`, secondary text `#49525A`, hairline `#DCD7CE`, paper `#F8F6F1`; text-safe sky `#0E6E9E` for links. **No purple, magenta or neon gradients, and no gloss.**
-  - **Type:** Noto Serif Bengali for headlines and reading (book-like), Anek Bangla for UI and labels. Galada only on festival covers.
-  - **Shape:** 2–6px corners; pill shapes only for tags; hairline rules instead of shadows; no tilted cards, stickers or offset shadows.
-  - **Motif discipline:** the fan appears in 3 places only: logo, issue covers, section dividers.
-  - **Content:** real authors, real opening lines and real images. No placeholder brackets in anything shown to the public. One consistent line-icon set (Lucide); no Unicode symbols as icons; no "✦ AI" sparkles.
-  - **Human finish:** a Bengali illustrator for covers, a native Bengali copy editor for UI text, and a vector (SVG) version of the logo.
-- **Festival covers:** বইমেলা, বসন্ত, নববর্ষ, পঁচিশে বৈশাখ, শারদীয়া and দীপাবলি. One template system with the logo, the fan motif and a gold-foil title; reused for the hero, social images, the newsletter and the e-book.
+  - Always: real authors and real opening lines (never placeholder brackets in anything public), and an SVG logo.
+  - **Human touch** (approved): "পাঠকের চিঠি" (real reader comments, shown with permission or an opt-out), "এই দিনে" (on-this-day archive pick), the editor's hand-drawn "সম্পাদকের পছন্দ" note, real counts (14 years · 488 writers · 1,393 pieces), and real reasons in the UI copy (e.g. the 2019 lost-story comment explaining autosave).
+- **12 issue covers:** 6 festival specials (বইমেলা, বসন্ত, নববর্ষ, রবীন্দ্র-নজরুল, শারদীয়া, দীপাবলি) with gold-foil titles and folk-art illustration, and 6 monthly issues (ভাষা, গ্রীষ্ম, বর্ষা, শ্রাবণ, হেমন্ত, বর্ষসেরা) with solid titles. One template system with the logo masthead, cover lines and an ISSN barcode, reused for the hero, social images, the newsletter and the e-book. Final art is by a human illustrator; the shape-built covers are layout templates.
 - **Mobile-first:** bottom tab bar (হোম · রিল · সংখ্যা · আমি), floating "লিখুন" button, Kobita Reels, and swipe flipbook.
 
 ---
@@ -201,6 +195,15 @@ When the editor clicks **"সংখ্যা প্রকাশ" (Publish issue)
 - **Archive:** the migration also builds e-books for past "issues" grouped by year or theme, e.g. "হাতপাখা কবিতা সংকলন ২০১২–২০২৪".
 
 ---
+
+### AI provider & cost
+- **Provider-neutral AI layer** (one Laravel interface, e.g. via the Prism package). Claude and OpenAI are both supported; switching is a config change.
+- **Provider decision: a blind test in Phase 3.** Run 30 real backlog pieces through both providers, have the editor score the reports without knowing which is which, then pick the winner and keep the other as fallback. Test budget: under ₹500.
+- **Model tiers:** a small model (Claude Haiku 5.5 class) for tags, moods, SEO and captions; a mid model (Claude Sonnet 5.5 class) for submission review; the flagship (Claude Opus 5.5 class) optionally for contest shortlists.
+- **Prices used for planning** (Claude, per 1M tokens, Nov 2026): Haiku 5.5 $0.10 / $0.50; Sonnet 5.5 $2 / $10; Opus 5.5 $4 / $20. Batch is 50% off, and cached prompt input is about 10× cheaper. OpenAI's tiers are similar; check the official page at decision time.
+- **Estimated running cost:** about **₹1,300–1,800 per month** at 400 submissions per month (≈ ₹2,500–3,500 if the flagship model does every review). **One-time migration:** about ₹600 (tags and moods for 1,393 posts, triage of 424 pending, both in batch).
+- **What uses NO AI:** PDF, EPUB and flipbook generation, covers, title cards, scheduling, emails, on-this-day and the mood picker (tags are precomputed). **Reader traffic never triggers AI.**
+- **Cost guards:** a monthly spend cap in the provider console; cheap pre-filters (empty, short, spam) before any AI call; a per-writer daily limit (3 submissions); batch for non-urgent work; caching of the rubric; an AI-spend tile on the admin dashboard.
 
 ## 4b. Automation map: what runs by itself and what needs a person
 
@@ -264,7 +267,8 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 **Technical (built into the code, no plugins):**
 - Server-rendered HTML, fast LCP, minimal JS. One correct `sitemap.xml` index (posts, authors, issues, sections), clean robots.txt.
 - Structured data: `Article`/`CreativeWork` (with `genre: Poetry/Short story`), `Person` for authors, `BreadcrumbList`, `Periodical` + `PublicationIssue` with **ISSN 2321-3035**, `WebSite` + SearchAction.
-- `lang="bn"` / `lang="en"` per article, `hreflang` where translations exist. New slugs transliterated to Latin (`/kobita/kon-jon-tumi`); old Bengali slugs kept as they are.
+- `lang="bn"` / `lang="en"` per article, `hreflang` where translations exist. All posts live at `/{slug}/` as on WordPress: old Bengali slugs are kept exactly, and new slugs are transliterated to Latin (`/kon-jon-tumi/`).
+- **Full binding checklist: [`docs/SEO.md`](docs/SEO.md)** (URL policy, meta, JSON-LD, indexing rules, sitemaps, IndexNow, Core Web Vitals budget, launch monitoring).
 - Open Graph / WhatsApp previews with auto-generated share cards (title + author over the issue artwork).
 - Noindex thin archives; canonical tags everywhere; RSS feeds per section and author.
 
@@ -274,6 +278,17 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 - Topic hubs: "Bengali love poems", "Puja stories", "Tagore", "travel in Bengal". These are curated, evergreen collections.
 - Writers share their own pages, so we get natural backlinks and social traffic. Add a "Published in Hatpakha" badge writers can embed.
 - Approach Bengali literature groups, college magazines and little magazines for collaboration and backlinks.
+
+---
+
+## 6b. Security (summary; full binding checklist: [`docs/SECURITY.md`](docs/SECURITY.md))
+- HTTPS + HSTS, strict security headers (nonce CSP), secure cookies.
+- Legacy WordPress passwords verified once, then re-hashed; Google login and magic links; **mandatory 2FA for editors and admins**; rate limits on login, reset, register and submit.
+- Policies for every model; the admin panel only for editors and above; **AI never takes actions**, only advises.
+- Rich text sanitised with an allowlist; Turnstile + honeypot against spam; submissions treated as untrusted input to the AI (prompt injection).
+- Uploads re-encoded; **no PHP can execute in upload folders**; the old uploads folder is scanned and suspicious files quarantined during migration; old WordPress attack paths return 410.
+- Secrets only in GitHub Environments; least-privilege DB users; `composer audit` / `npm audit` in CI.
+- Audit log of editorial actions, daily backups with a quarterly restore test, DPDP-compliant privacy (consent, delete and export my data).
 
 ---
 
