@@ -273,7 +273,28 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 
 ## 7. Editorial operations (magazine editor view)
 
-- **Calendar**: monthly issue (1st of the month), weekly newsletter (Sunday), annual Sharodiya (Mahalaya), a Boimela special (January–February), Rabindra Jayanti / Nazrul Jayanti specials.
+- **Rhythm**: articles go live on the website **every week** (at least 3 per week). The weekly newsletter goes out on Sunday. A **monthly issue** collects the best of the month as a flipbook, PDF and EPUB.
+- **Issue calendar: 12 issues a year = 6 festival specials + 6 regular monthly issues.** The 6 festivals are not evenly spaced (March–May has three, June–September has none), so a fixed "every 2 months" schedule doesn't fit them. Festival issues are released **on the festival day**; regular issues on the **1st of the month**.
+
+| Month | Issue | Type | Release | Notes |
+|---|---|---|---|---|
+| January | **বইমেলা সংখ্যা** | Festival | Boi Mela opening day | Launch the book-publishing service and Boi Mela meet-up |
+| February | **ভাষা সংখ্যা** (২১ ফেব্রুয়ারি) | Regular | 1 Feb | International Mother Language Day; also Saraswati Puja |
+| March | **বসন্ত সংখ্যা** | Festival | Dol Purnima | Love poems, colours |
+| April | **নববর্ষ সংখ্যা** | Festival | ১ বৈশাখ | Haalkhata; new-year stories |
+| May | **রবীন্দ্র-নজরুল সংখ্যা** | Festival | ২৫ বৈশাখ | Covers Tagore and Nazrul Jayanti; **Sharodiya contest opens** |
+| June | **গ্রীষ্মের ছুটি / আম-কাঁঠাল সংখ্যা** | Regular | 1 June | Light, humour, children's writing |
+| July | **বর্ষা সংখ্যা** | Regular | 1 July | Monsoon poems, a very Bengali theme |
+| August | **শ্রাবণ সংখ্যা** | Regular | 1 Aug | ২২ শ্রাবণ remembrance; travel writing; **Sharodiya contest closes** |
+| Sept / Oct | **শারদীয়া (পূজাবার্ষিকী)** | Festival · **flagship** | Mahalaya | Biggest issue: contest winners, sponsors, **print-on-demand copies** |
+| Oct / Nov | **দীপাবলি সংখ্যা** | Festival | Kali Puja | Ghost and thriller stories |
+| November | **হেমন্ত সংখ্যা** | Regular | 1 Nov (or merged with Dipaboli when they fall in the same month) | Nabanna, harvest |
+| December | **বর্ষসেরা সংখ্যা** | Regular | 15 Dec | Best of the year chosen by readers' votes + editors; awards |
+
+- **Festival specials:** gold-foil folk-art cover, the full e-book, sponsors and a big social push.
+- **Regular monthly issues:** use a simpler **standard monthly cover template** (theme photo or illustration + title), so they take little design work.
+- **Workload with AI:** about 2–3 hours per regular issue and 1–2 days per festival special (selection, editor's note, cover text). Everything else (layout, PDF, EPUB, flipbook, share images, newsletter) is automatic.
+- **If the team is small in year 1:** publish only the 6 festival issues **plus বর্ষা** (7 issues), to fill the June–September gap, and add the other regular issues in year 2. Weekly web publishing and the Sunday newsletter continue either way.
 - **Sections** (about 10): Kobita · Golpo · Anugolpo · Probondho · Rommo Rachana · Bhraman · Onubad · Shishu-Kishor · Interview · Editorial.
 - **Submission guidelines** page with word limits, originality rules, response time (7 days, which the AI pipeline makes realistic).
 - **Editorial board**: 1 editor-in-chief + 2–3 volunteer section editors at first. AI reports cut each review to about 3 minutes.
