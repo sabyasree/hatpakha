@@ -35,13 +35,8 @@ Stop publishing generic English SEO articles. The site can't win against big med
 - **New writers** who want an editor, a real ISSN-registered publication and readers
 - Bilingual readers (Bengali + English) in West Bengal, Bangladesh and the diaspora
 
-### Business model (in order of how easy each one is)
-1. **Sharodiya / Puja annual digital issue + print-on-demand anthology.** Bengal already has this tradition (the old "Puja 2020" category shows it worked before). Sponsors and pre-orders.
-2. **Writing contests** with a small entry fee (₹100–200), winners published in the issue, certificates.
-3. **Writer membership** (₹99–199/month): priority review, detailed AI + editor feedback, author page badge, early anthology access.
-4. **Contributor book publishing**: compile a writer's Hatpakha pieces into an ISBN e-book or print book (service fee).
-5. **Reader membership / tips** (optional, later), newsletter sponsorship, a few tasteful ads (no ad clutter on reading pages).
-6. **Workshops** (online, paid): poetry, story craft, translation.
+### Business model
+Publishing stays **free**. Revenue comes from AdSense (base layer), affiliate links, local brand sponsors, optional paid extras for writers (contests, detailed feedback, fast-track, book publishing, workshops) and the yearly **Sharodiya** issue. **Full research and numbers: [`MONETIZATION.md`](MONETIZATION.md).**
 
 ### KPIs to track from day 1
 | Metric | 6-month target | 12-month target |
@@ -68,7 +63,7 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 
 | Layer | Choice | Why |
 |---|---|---|
-| Framework | **Laravel** (latest stable, PHP 8.3+) | Runs natively on Hostinger. Mature, well documented, and easy to hire for in India. Auth, queues, mail, scheduler and storage are built in. |
+| Framework | **Laravel** (latest stable) on **PHP 8.4** | Runs natively on Hostinger. Mature, well documented, and easy to hire for in India. Auth, queues, mail, scheduler and storage are built in. |
 | Admin / editor panel | **Filament** | A polished admin for editors: submission queue, AI report view, approve/reject, users, issues and settings. Built in days, not months. |
 | Public site | **Blade templates + Tailwind CSS + Alpine.js** (small JS), **Livewire** only where interactive (submit form, profile edit, follow, comments) | Pure HTML pages with almost no JS, so reading pages load instantly even on slow 4G. |
 | Database | **MySQL 8 / MariaDB** (Hostinger) | Same database family as WordPress, so migration is simple. Full-text search for Bengali + English. |
@@ -81,7 +76,7 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 | Payments | **Razorpay** (India) + Stripe (diaspora), later | Memberships, contest fees, anthology orders. |
 | AI | **Claude API** called from Laravel jobs: Sonnet for editorial review, Haiku for bulk tagging and SEO metadata | Strong Bengali, structured JSON output, editable rubric. |
 | Analytics | Google Search Console + Umami/Plausible | |
-| Code & deploy | GitHub repository, then **auto-deploy to Hostinger via Git** (hPanel Git deploy or GitHub Actions + SSH) | Every change is tracked and can be rolled back. |
+| Code & deploy | GitHub repository → **GitHub Actions** builds assets and deploys to Hostinger over SSH (`staging` branch → new.hatpakha.com, `main` → hatpakha.com) | Every change is tracked and can be rolled back. |
 
 ### Other stacks considered for Hostinger Cloud
 | Option | Verdict |
@@ -265,12 +260,22 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 
 ---
 
-## 10. Decisions needed from you
-1. ~~Hosting~~ → **decided: Hostinger Cloud + MySQL.** Stack: **Laravel + Filament** (or the lean-WordPress fallback?)
-2. **Language focus:** Bengali-first with English secondary (recommended), or fully bilingual?
-3. **The 2024 English listicles:** keep, rewrite or noindex? (Recommended: noindex or remove most of them.)
-4. **Monetisation to launch first:** Sharodiya anthology + contests (recommended), or memberships?
-5. **Access:** DB export + uploads copy on the server (not in `public_html` yet), plus the Hostinger plan name.
-6. **Staging subdomain:** OK to create `new.hatpakha.com`?
+## 10. Decisions
+
+### Decided (Nov 2026)
+| Topic | Decision |
+|---|---|
+| Hosting | Hostinger Cloud hosting, **PHP 8.4**, MySQL |
+| Stack | **Laravel + Filament** (Blade + Tailwind + Alpine, Livewire where interactive) |
+| Language | **Bengali-first.** Existing English posts are kept in a separate **English** section (`/english/`, `lang="en"`), which is also the higher-RPM commercial section |
+| Staging | `new.hatpakha.com` |
+| Deployment | **GitHub Actions → Hostinger** (SSH deploy on push to `main`; staging from a `staging` branch) |
+| Publishing | Free for everyone; monetization per `MONETIZATION.md` |
+| Ads | Google AdSense (existing account), manual placements only |
+
+### Still open
+1. Which monetization streams to switch on first (recommended: AdSense + newsletter at launch, contests + Razorpay in month 2, Sharodiya 2027 as the first big event).
+2. Data hand-over: full DB export + uploads copy placed on the server outside the live `public_html`.
+3. GitHub Actions secrets for deploy (SSH host/user/key) are added by you in GitHub → Settings → Secrets. **Never put them in the repository.**
 
 No code until you approve. Once you confirm, the next step is **Phase 1**: scaffold the Laravel + Filament project in this repository.
