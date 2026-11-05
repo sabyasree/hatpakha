@@ -18,7 +18,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ SEO: meta + canonical + JSON-LD (Periodical with ISSN), sitemaps, RSS, robots, URL policy with 301/410
 - ✅ Security: CSP nonce, headers, sanitiser, legacy password re-hash, rate limiters, upload script blocking, legacy WP paths 410
 - ✅ Admin `/desk`: branded, editor+ only, mandatory TOTP 2FA, admin-only user management
-- ✅ Tests: 21 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
+- ✅ Tests: 23 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ⬜ Self-host and subset fonts (currently Google Fonts CSS)
 - ⬜ Image pipeline: WebP/AVIF sizes for old uploads; upload scanner/quarantine for the WordPress uploads folder
@@ -26,7 +27,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ⬜ Category merge redirects reviewed by the owner (23 old categories → 10 sections; see `ImportWordPress::SECTION_MAP`)
 
 ## Next up (in order)
-1. Owner: create the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
+1. 🟡 Owner (in progress): create the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
 2. Deploy to staging; import the DB there; copy the uploads (with the scan).
 3. Finish the Phase 1 leftovers above.
 4. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.

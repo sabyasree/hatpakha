@@ -2,6 +2,9 @@
 
 Every page and feature must meet this checklist. The CI tests in `tests/Feature/Seo*` enforce the items marked ✅test.
 
+## 0. Only the live site is indexable
+Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `X-Robots-Tag: noindex, nofollow` and `robots.txt` is `Disallow: /`. Staging and local must never be indexed. ✅test
+
 ## 1. URLs: never lose an old URL
 | Content | URL pattern | Notes |
 |---|---|---|

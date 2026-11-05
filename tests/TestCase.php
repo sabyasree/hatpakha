@@ -13,6 +13,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         $this->withoutVite();
+        // Test the live-site behaviour by default; staging (noindex) has its own test.
+        config(['seo.indexable' => true]);
     }
 
     /**

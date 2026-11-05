@@ -15,6 +15,10 @@ class SitemapController extends Controller
 
     public function robots()
     {
+        if (! config('seo.indexable')) {
+            return response("User-agent: *\nDisallow: /\n")->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
+
         $lines = [
             'User-agent: *',
             'Disallow: /desk',

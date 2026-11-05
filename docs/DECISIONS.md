@@ -23,3 +23,4 @@ Format: **date · decision · reason · decided by**.
 | D16 | 2026-11-05 | Pending backlog (424, mostly 2016–19) handled in **tiers** (recent / cleanup / ask-author) | Real data audit (docs/DB-AUDIT.md) | Owner |
 | D17 | 2026-11-05 | Package: `symfony/html-sanitizer` for rich text | Maintained, allowlist-based sanitiser | Claude |
 | D18 | 2026-11-05 | Home page caches **IDs, not models** | Laravel 13 refuses to unserialize models from the cache (security default kept) | Claude |
+| D19 | 2026-11-05 | Two GitHub Environments, `staging` (new.hatpakha.com) and `production`; the site is **noindex unless `SEO_INDEXABLE=true`** (production only, from cutover) | Test safely; staging must never compete with the live site in Google | Owner (environments) + Claude (noindex flag) |

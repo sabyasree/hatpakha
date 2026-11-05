@@ -99,4 +99,21 @@ class SeoUrlTest extends TestCase
         $this->get('/sitemap-posts-1.xml')->assertOk()->assertSee(url('/in-sitemap').'/', false)->assertDontSee('not-in-sitemap');
         $this->get('/robots.txt')->assertOk()->assertSee('Sitemap: '.url('/sitemap.xml'), false)->assertDontSee('Disallow: /wp-content');
     }
+
+    public function test_staging_is_never_indexable(): void
+    {
+        config(['seo.indexable' => false]);
+        $this->makePost(['slug' => 'staging-post']);
+
+        $this->get('/robots.txt')->assertOk()->assertSee("Disallow: /\n", false)->assertDontSee('Sitemap:');
+        $this->get('/staging-post/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->get('/')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    public function test_live_site_has_no_blanket_noindex_header(): void
+    {
+        $this->makePost(['slug' => 'live-post']);
+
+        $this->get('/live-post/')->assertOk()->assertHeaderMissing('X-Robots-Tag');
+    }
 }

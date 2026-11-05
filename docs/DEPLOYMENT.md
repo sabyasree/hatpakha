@@ -31,7 +31,20 @@
 | `ENV_FILE` | The full production `.env` content (start from `.env.example`) |
 
    For production, add a required reviewer on the `production` environment.
-5. In `ENV_FILE`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://new.hatpakha.com/`, a fresh `APP_KEY` (`php artisan key:generate --show`), DB credentials, mail settings, `ADSENSE_*`.
+5. `ENV_FILE` values that differ per environment:
+
+| Key | `staging` | `production` |
+|---|---|---|
+| `APP_ENV` | `production` | `production` |
+| `APP_DEBUG` | `false` | `false` |
+| `APP_URL` | `https://new.hatpakha.com` | `https://hatpakha.com` |
+| `APP_KEY` | its own (`php artisan key:generate --show`) | a **different** one |
+| `DB_*` | staging database | production database |
+| `SEO_INDEXABLE` | `false` (robots `Disallow: /` + `X-Robots-Tag: noindex`) | `false` until cutover, then **`true`** |
+| `MAIL_*` | can be `MAIL_MAILER=log` | real SMTP |
+| `ADSENSE_*` | empty (no ads on staging) | your AdSense IDs |
+
+   Never reuse the staging `APP_KEY` or DB password in production.
 
 ## WordPress data
 1. Import the old dump into a **separate** database on the server; put its credentials in `LEGACY_DB_*`.
