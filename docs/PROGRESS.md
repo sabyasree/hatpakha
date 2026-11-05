@@ -27,8 +27,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ⬜ Category merge redirects reviewed by the owner (23 old categories → 10 sections; see `ImportWordPress::SECTION_MAP`)
 
 ## Next up (in order)
-1. 🟡 Owner (in progress): create the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
-2. Deploy to staging; import the DB there; copy the uploads (with the scan).
+1. ✅ Owner: created the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
+2. 🟡 First staging deploy (branch `staging`); then import the DB there; copy the uploads (with the scan).
 3. Finish the Phase 1 leftovers above.
 4. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.
 

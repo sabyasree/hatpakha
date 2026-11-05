@@ -7,7 +7,7 @@
 | `main` | `production` | https://hatpakha.com (after cutover) |
 
 `.github/workflows/ci.yml` runs on every push/PR (tests, `composer audit`, `npm audit`).
-`.github/workflows/deploy.yml` runs on push to `staging`/`main`: tests → production build → rsync over SSH → writes `.env` → `migrate --force` → `optimize` → `filament:optimize`.
+`.github/workflows/deploy.yml` runs on push to `staging`/`main`: tests → production build → rsync over SSH → writes `.env` → PHP version check → `migrate --force` → `db:seed --force` (idempotent) → `optimize` → `filament:optimize`.
 
 ## One-time setup (owner)
 1. **Hostinger**: create the subdomain `new.hatpakha.com` and a MySQL database + user. Enable SSH access.
