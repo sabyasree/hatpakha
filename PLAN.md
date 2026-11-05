@@ -130,6 +130,13 @@ On Hostinger, Node.js apps (Next.js) are **stopped after idle time and cold-star
 - **Privacy controls:** writers choose what is public (e.g. hide location). Pen names are supported.
 - **Legacy authors** from WordPress get profiles automatically and can **claim** them by email.
 
+### Author certificates ("প্রকাশনা সনদ")
+- **Every published writer can download a certificate** from their "My writings" page: Hatpakha logo, ISSN 2321-3035, the piece title, the issue (e.g. "শারদীয়া ১৪৩৪"), the publication date, the editor's signature, and a **QR code + short code** that opens a public verification page `/certificate/{code}/`. That page is why the certificate can be trusted (in job and college applications) and can't be forged.
+- **Kinds:** publication, contest winner, finalist, participant.
+- **Tiers:** free digital PDF; **premium** design with the issue cover and the editor's signature (paid, ₹49–99; free for contest winners); **printed and framed** copy shipped by a print-on-demand partner (₹299–499). Pricing and rollout: `MONETIZATION.md` B4.
+- Generated automatically on publish (PDF via the same Chromium/PDF pipeline as the e-book; no AI cost). An editor can **revoke** a certificate (e.g. plagiarism found later); the verification page then says "revoked".
+- One-click share to Facebook, LinkedIn and WhatsApp (an image version of the certificate). Every share is free promotion.
+
 ### Design language: "পাখা খুলুক" (let the fan open)
 Design canvas (all screens): https://claude.ai/artifact/4iCfy5Pt1DJqTyC2DNUUcG
 - **Chosen direction: Design 1.0 in the logo's colours** (vivid "পাখা খুলুক" layout, recoloured on owner request to the **exact logo palette**: sky `#2DAAE2`, fan red `#CB1B32`, fan pink `#F08D90`, fan peach `#EFC08D`, plus their tints and shades (sky `#7CCBEE`/`#1A86C2`/`#12304A`, red `#B0162B`/`#7A1022`, peach `#FBEBD8`/`#E39A6A`), navy text `#13212C`, white `#FFFBF4`. **No colours outside the logo family** in the interface. Exceptions: WhatsApp/success green, neutral greys, and natural object colours inside illustrations (leaves, clay). White text always sits on red or navy, never on pink or peach; gradients and gold foil on heroes, covers and contest banners; Anek Bangla headlines, Noto Serif Bengali reading text, Galada accents; sunrise-fan hero, fan mood dial, taped story pages, stamp travel cards, postcard newsletter, ticket-stub contest). **Approved by the owner on 5 Nov 2026.**
@@ -378,7 +385,7 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 | **2. Migration** | 4–6 | Migration scripts for users/posts/media/comments, redirect map + automated redirect tests, staging site with full archive |
 | **3. Submissions + AI review** | 6–8 | Submit flow, status tracker, Claude review pipeline, editor dashboard, email notifications |
 | **4. Launch** | 9 | Cutover, Search Console monitoring, first new monthly issue |
-| **5. Issues & money** | 10–14 | Issue generator (web issue + print PDF + EPUB + flipbook + share images), festival cover templates, newsletter, contest module, payment gateway when approved |
+| **5. Issues & money** | 10–14 | Issue generator (web issue + print PDF + EPUB + flipbook + share images), festival cover templates, newsletter, contest module, **author certificates (free tier + verification page)**, payment gateway when approved (then premium/printed certificates) |
 | **6. Growth** | ongoing | Sharodiya issue, anthologies, workshops, audio recitations (writers record their own), translations |
 
 ---

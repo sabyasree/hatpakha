@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/** A public byline: a registered writer, a guest author (no account) or the "হাতপাখা ডেস্ক". */
+class Author extends Model
+{
+    protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime'];
+    }
+
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+
+    public function posts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class)->withPivot('position');
+    }
+
+    public function certificates(): HasMany { return $this->hasMany(Certificate::class); }
+
+    public function publicName(): string
+    {
+        return $this->display_name_bn ?: $this->display_name;
+    }
+
+    /** First letter for the generated initials avatar. */
+    public function initial(): string
+    {
+        return mb_substr($this->publicName(), 0, 1);
+    }
+
+    /** SEO rule: author pages with fewer than 3 published pieces are noindex (docs/SEO.md §4). */
+    public function isIndexable(): bool
+    {
+        return $this->published_count >= 3;
+    }
+
+    public function url(): string
+    {
+        return url('/author/'.rawurlencode($this->slug).'/');
+    }
+}

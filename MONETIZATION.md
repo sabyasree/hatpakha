@@ -38,7 +38,7 @@
 | B1 | **Writing contests** (monthly theme + big ones: Sharodiya, Boi Mela, Rabindra Jayanti) | ₹49–149 entry; prizes + publication + e-certificate | Recognition. Entry fees are already normal in the Bengali literary scene. |
 | B2 | **Detailed editorial feedback** | ₹99–299 per piece | AI-assisted plus a human editor's notes. Free submissions still get short feedback. |
 | B3 | **Fast-track review** (48 h response instead of 7 days) | ₹49 | Speed only, never acceptance. |
-| B4 | **Print certificates / framed poem prints** | ₹199–499 + shipping | Gifts and pride. Print-on-demand partner, no stock. |
+| B4 | **Author certificates ("প্রকাশনা সনদ")**: free digital PDF for every published piece (with ISSN and a QR verification link). **Paid:** premium design with the editor's signature + issue cover (₹49–99), printed and framed copy shipped (₹299–499), framed poem print (₹399+) | ₹0 / ₹49–99 / ₹299–499 | Pride, sharing on Facebook/WhatsApp, and value for job and college applications. Each certificate has a public verification page, so it is credible. Contest winners get the premium version free. Print-on-demand partner, no stock. See PLAN.md §3 "Author certificates". |
 | B5 | **Book publishing service** (writer's collected works → e-book + paperback, ISBN, Boi Mela launch) | ₹6,000–25,000 packages | The highest margin. Writers already pay small presses for this. |
 | B6 | **Online workshops** (poetry, story craft, translation, "how to get published") | ₹299–999 | Recordings resold later. |
 | B7 | **"Writer Pro" profile** (optional, later) | ₹49/month or ₹399/year | Custom profile theme, detailed read stats, priority in "Featured writers". Free profiles stay fully functional. |
@@ -114,7 +114,8 @@ Sponsor package idea: **Title sponsor ₹50k–1L · Section sponsor ₹10k–25
 | **Launch (decided)** | **AdSense** ad slots (manual, lazy, CLS-safe), ads.txt · **Contest module, free entry**: contest pages, themed submission, AI shortlist, judges' panel, results page, winner badges, e-certificate PDF · newsletter signup · sponsor banner per section | A1, A3, A4, B1 (free) |
 | **When the payment gateway is approved** (Cashfree / Razorpay) | Switch on **paid contest entries** (₹49–149), paid feedback / fast-track, tips. The code is gateway-agnostic, so this is a settings toggle plus keys. | B1 (paid), B2, B3, C2 |
 | Later | Affiliate link support | A2 |
-| +3–4 months | Tip-a-writer, workshops (event + payment + Zoom link), shop for prints/anthologies (print-on-demand) | B4, B6, C1, C2 |
+| **Launch (free tier)** | Free digital publication certificate (PDF + QR verification page) for every published piece and contest entry | B4 (free) |
+| +3–4 months | Tip-a-writer, workshops (event + payment + Zoom link), shop for prints/anthologies (print-on-demand), **premium and printed certificates** | B4 (paid), B6, C1, C2 |
 | Before Sharodiya | Sharodiya issue builder, sponsor placements, pre-order shop, print-ready PDF | Sharodiya |
 | Later | Writer Pro, ad-free membership, audio | B7, C3, C4 |
 
