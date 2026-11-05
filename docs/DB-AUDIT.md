@@ -47,3 +47,18 @@ Wordfence and other security logs, LiteSpeed, Revolution Slider, BuddyPress, Giv
 1. **Backlog plan:** see PLAN.md → "Clearing the existing backlog" (tiered approach for the 424 pending posts).
 2. **Spam-account filter** at user migration: accounts with no posts, no comments, no newsletter consent and a known spam pattern are not imported (kept in a list for review).
 3. **Old URLs:** all 1,393 published posts keep their slugs; private and plugin pages get 301 redirects or 410.
+
+## Does the design fit the data? (checked against the real database)
+| Data fact | Design impact |
+|---|---|
+| 82% of published posts have a featured image (1,149), **but most are small**: 291 under 400px, 467 at 400–800px, only 18 at 1200px or more. 244 have no image | **Typography-led cards stay** (as designed). Post images are used only in small slots (≤ 400px). Big heroes use **issue cover art**, never post photos. Posts without a usable image get an **auto-generated typographic card** (title + fan motif in a brand colour) |
+| 434 long posts (6,000+ chars), 456 medium, 503 short | A **long-form story reading page** is needed (progress bar, reading time, resume where you left off, font settings). Poem Reels suit the 503 short ones |
+| 71% Bengali titles (987), **29% non-Bengali (406)**, including romanized Bengali like "noi ami chhotto" | The English section is bigger than expected. AI suggests a Bengali-script title for romanized ones (the editor approves) |
+| Titles average 18 chars, but 97 are over 40 chars (max 107) | Giant display titles need **auto-sizing by length**, and line clamps on cards |
+| 488 published authors, **286 with only one post**. About half have a photo; 127 have a bio | Profiles need a **compact mode** for 1–2 posts, **initials avatars** in brand colours, a default fan-pattern cover, no zero-stat tiles, and a "claim this profile" link |
+| 443 posts credited through Co-Authors guest authors (591 author terms); 118 posts sit under the "Hatpakha Magazine" account with no named author | Profiles must also exist for **guest authors without accounts**. AI pulls the real byline from the text where possible, otherwise "হাতপাখা ডেস্ক" |
+| 186 posts have inline images, 34 have YouTube embeds | The reading page supports figures and a **light YouTube embed** (loads only on click, to keep the page fast) |
+| Almost no posts in 2022–2026 | At launch, homepage sections are filled from the backlog plus the archive ("আর্কাইভ থেকে", "এই দিনে": on this day) |
+| 2,278 tags, no mood data | A one-time AI pass gives every published post a section, controlled tags and **moods** for the mood fan |
+| Only 397 comments | Comments stay light, and no "0 comments" counters are shown |
+| No issue structure in the old content | No fake back issues. The archive is grouped by **year and collection** instead |
