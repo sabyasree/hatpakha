@@ -171,6 +171,28 @@ Every month (and for the Sharodiya special):
 
 ---
 
+## 4b. Automation map: what runs by itself and what needs a person
+
+**Target:** about **5–8 hours per week** of human work for one editor at about 40 published pieces per month (plus sales time for sponsors and Sharodiya).
+
+| Level | What |
+|---|---|
+| 🟢 **Fully automatic** (no human after setup) | Scheduled publishing · page cache clearing · sitemap, SEO meta, structured data, share cards · image resizing (WebP/AVIF) · all emails to writers (received, status, feedback, published, share kit) · weekly newsletter assembled from the week's posts and sent · Facebook page / Instagram auto-post (Meta Graph API) · AdSense ad serving · contest entry payments, receipts, e-certificates · tips/payout records · daily DB + files backup · uptime monitoring · deploy on push (GitHub Actions) · **weekly AI business report** emailed to you (traffic, RPM, submissions, revenue, what to fix) |
+| 🟡 **AI does the work, a human clicks approve** | Submission review → editor approves / rejects (2–3 min each) · monthly issue (AI picks pieces, order, editor's note, cover text) → editor publishes · contest shortlist → judges pick winners · social captions and quote cards · tag/category clean-up and the old-content audit · replies to common writer questions |
+| 🔵 **Can become automatic later** (switch in settings, after about 6 months of trusted data) | **Auto-approve** when: writer is *Trusted*, AI score ≥ threshold, no safety / plagiarism / similarity flags. The piece is published on a delay (e.g. 12 h) so an editor can still veto, and the editor gets a daily digest of everything auto-approved. |
+| 🔴 **Always human** | Editorial policy and the AI rubric · plagiarism / copyright / defamation disputes and takedowns · final contest winners · **selling sponsorships** and brand relationships · Sharodiya printing and vendors · book-publishing service (editing, ISBN, print) · workshops · refunds / payment disputes · AdSense policy issues · a 10-minute weekly spot-check of AI decisions |
+| ⚪ **One-time setup by you** | DB export + uploads copy · DNS switch at launch · Search Console · Razorpay KYC · AdSense ads.txt · GitHub deploy secrets · Meta (Facebook/Instagram) app connection |
+
+**Why not 100% automatic from day 1:**
+1. User-submitted content can break **AdSense policies**. One bad piece (adult, hate, copied) can get the AdSense account limited.
+2. AI can misjudge Bengali literary nuance, satire or plagiarism, and **no tool reliably detects AI-written text**.
+3. The ISSN credibility and writers' trust depend on real editorial judgement.
+4. Sales, printing and money disputes involve people and contracts.
+
+**Not available automatically:** posting to a **WhatsApp Channel** (no official API). The system prepares the message and image; someone taps "share" (about 1 minute).
+
+---
+
 ## 5. Migration: copy all users, content and everything
 
 ### What you will provide (your plan: export users, published + pending posts, and the uploads folder)
