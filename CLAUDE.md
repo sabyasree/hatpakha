@@ -46,6 +46,7 @@ cp .env.example .env && php artisan key:generate
 php artisan migrate --seed
 php artisan hatpakha:import-wp            # import old WordPress DB (LEGACY_DB_* in .env)
 php artisan hatpakha:role you@example.com admin   # give an existing user a role
+php artisan hatpakha:password you@example.com     # set a password at a hidden prompt (--reset-2fa to redo 2FA)
 php artisan test                          # must be green
 php artisan serve
 ```
