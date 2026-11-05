@@ -28,9 +28,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## Next up (in order)
 1. ✅ Owner: created the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
-2. 🟡 First staging deploy (branch `staging`); then import the DB there; copy the uploads (with the scan).
+2. ✅ Staging live at new.hatpakha.com (app outside the web root via symlink). ⛔ Owner: Cloudflare cache rule to bypass new.hatpakha.com + purge (zone caches HTML even with `no-cache`). Then import the DB there; copy the uploads (with the scan).
 3. Finish the Phase 1 leftovers above.
-4. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.
+4. Before launch: Cloudflare cache rules for production (cache guest HTML; bypass `/desk*`, `/livewire*`, `/submit*`, `/account*` and requests with the session cookie).
+5. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.
 
 ## Later phases (from PLAN.md §8)
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
