@@ -52,6 +52,9 @@ final class ReviewService
         if (AiSwitch::paused()) {
             return 'AI is paused by an admin';
         }
+        if (Team::paused('editor')) {
+            return 'AI editor is paused';
+        }
         if (blank(config("ai.{$provider}.key"))) {
             return "No API key for {$provider}";
         }

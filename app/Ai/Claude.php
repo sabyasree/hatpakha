@@ -30,7 +30,7 @@ final class Claude
     /** @return array{0: ?array, 1: ?string} */
     public static function json(string $purpose, string $system, string $user, array $schema, ?string $model = null, int $maxTokens = 8000, ?int $postId = null): array
     {
-        if ($why = self::blocked()) {
+        if ($why = self::blocked() ?? Team::blockedFor($purpose)) {
             return [null, $why];
         }
         if (self::$fake) {

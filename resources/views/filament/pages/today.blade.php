@@ -120,7 +120,7 @@
                 <x-filament::section id="tasks" icon="heroicon-o-briefcase">
                     <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
                     <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
-                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য')])
+                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান')])
                     @foreach ($t['tasks'] as $task)
                         <div class="hp-row" wire:key="task{{ $task->id }}">
                             <div style="min-width:0;flex:1 1 16rem">
@@ -131,7 +131,7 @@
                                 @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'newsletter') {{ ($this->sendNewsletterAction)(['task' => $task->id]) }} @endif
-                                @if (in_array($task->type, ['report', 'health'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
+                                @if (in_array($task->type, ['report', 'health', 'alert', 'quality'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
                                 {{ ($this->dismissTaskAction)(['task' => $task->id]) }}
                             </div>
                         </div>
@@ -192,6 +192,7 @@
                             @else
                                 <x-filament::button size="sm" color="danger" icon="heroicon-o-pause" wire:click="pauseAi" wire:confirm="{{ __('এআই থামাবেন? নতুন কাজ আর খরচ বন্ধ থাকবে, বাকি সব আগের মতো চলবে।') }}">{{ __('এআই থামান') }}</x-filament::button>
                             @endif
+                            <x-filament::button size="sm" color="gray" tag="a" :href="\App\Filament\Pages\AiTeam::getUrl()">{{ __('এআই দল') }}</x-filament::button>
                             <x-filament::button size="sm" color="gray" tag="a" :href="\App\Filament\Pages\AiSettings::getUrl()">{{ __('মানদণ্ড ও খরচ') }}</x-filament::button>
                         </div>
                     @endif

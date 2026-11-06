@@ -21,6 +21,7 @@ final class Illustrator
     public static function blocked(): ?string
     {
         return Claude::blocked()
+            ?? (Team::paused('designer') ? 'Graphic designer is paused' : null)
             ?? (blank(config('ai.openai.key')) ? 'No OpenAI key for images' : null)
             ?? (blank(config('ai.openai.image_model')) ? 'Set OPENAI_IMAGE_MODEL' : null);
     }

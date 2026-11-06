@@ -221,7 +221,7 @@ class Dashboard extends BaseDashboard
     public function readTaskAction(): \Filament\Actions\Action
     {
         return \Filament\Actions\Action::make('readTask')->label(__('পড়ুন'))->icon('heroicon-o-document-text')->size('sm')->color('gray')
-            ->modalHeading(fn (array $arguments) => $this->task($arguments)->type === 'report' ? __('মাসের হিসাব') : __('সাইটের স্বাস্থ্য'))
+            ->modalHeading(fn (array $arguments) => $this->task($arguments)->title)
             ->modalContent(fn (array $arguments) => view('filament.editor-task', ['task' => $this->task($arguments)]))
             ->modalSubmitActionLabel(__('পড়েছি'))
             ->action(fn (array $arguments) => $this->task($arguments)->close());

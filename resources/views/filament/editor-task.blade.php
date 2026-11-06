@@ -12,6 +12,21 @@
             <li>{{ __('চিঠির পাঠক (সম্মতি দিয়েছেন)') }}: {{ $n($p['subscribers'] ?? 0) }}</li>
             <li>{{ __('এআই খরচ') }}: {{ $n(number_format((float) ($p['ai_cost'] ?? 0), 2)) }} {{ __('ডলার') }}</li>
         </ul>
+    @elseif ($task->type === 'quality')
+        <p style="margin:0 0 .6rem">{{ $p['summary'] ?? '' }}</p>
+        <ul style="margin:0 0 .6rem;padding-inline-start:1.2rem;list-style:disc">
+            @foreach ((array) ($p['cases'] ?? []) as $c)
+                <li><strong>{{ $c['title'] }}</strong> · {{ ['fair' => __('ঠিক'), 'too_harsh' => __('বেশি কড়া'), 'too_generous' => __('বেশি নরম'), 'wrong_decision' => __('সিদ্ধান্ত ভুল')][$c['verdict']] ?? $c['verdict'] }} — {{ $c['comment'] }}</li>
+            @endforeach
+        </ul>
+        @if (! empty($p['suggestions']))
+            <p style="margin:0;font-weight:700">{{ __('মানদণ্ডে যা যোগ করা যায়') }}</p>
+            <ol style="margin:0;padding-inline-start:1.4rem;list-style:decimal">@foreach ($p['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol>
+        @endif
+    @elseif ($task->type === 'alert')
+        <p style="margin:0">{{ $task->title }}</p>
+        @if (! empty($p['errors']))<ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['errors'] as $e)<li style="opacity:.8">{{ $e }}</li>@endforeach</ul>@endif
+        <p style="margin:.6rem 0 0;opacity:.75">{{ __('ঠিক হয়ে গেলে প্রধান সম্পাদক নিজেই সতর্কতা সরিয়ে দেবে।') }}</p>
     @else
         <ol style="margin:0;padding-inline-start:1.4rem;list-style:decimal">
             @foreach ((array) ($p['problems'] ?? []) as $pr)

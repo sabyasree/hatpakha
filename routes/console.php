@@ -13,4 +13,5 @@ Schedule::command('hatpakha:ai-shift daily')->dailyAt('09:30')->timezone('Asia/K
 Schedule::command('hatpakha:ai-shift weekly')->weeklyOn(1, '08:30')->timezone('Asia/Kolkata')->withoutOverlapping(60); // Monday: picks + site health
 Schedule::command('hatpakha:ai-shift newsletter')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');                     // Saturday: Sunday newsletter draft
 Schedule::command('hatpakha:ai-shift monthly')->monthlyOn(1, '08:15')->timezone('Asia/Kolkata');                       // 1st: last month's report
+Schedule::command('hatpakha:ai-shift chief')->hourlyAt(45)->withoutOverlapping(30);                                  // editor-in-chief checks (no AI)
 Schedule::command('hatpakha:ai-shift brief')->dailyAt('08:00')->timezone('Asia/Kolkata');

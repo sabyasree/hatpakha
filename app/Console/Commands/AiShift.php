@@ -25,7 +25,7 @@ use Illuminate\Console\Command;
  */
 class AiShift extends Command
 {
-    protected $signature = 'hatpakha:ai-shift {task : inbox|backlog|issue|daily|weekly|newsletter|monthly|brief}';
+    protected $signature = 'hatpakha:ai-shift {task : inbox|backlog|issue|daily|weekly|newsletter|monthly|chief|brief}';
 
     protected $description = "The AI editor's scheduled work";
 
@@ -34,6 +34,14 @@ class AiShift extends Command
         Setting::put('ai.heartbeat', now()->toIso8601String());
         if ($this->argument('task') === 'brief') {
             return $this->brief();
+        }
+        if ($this->argument('task') === 'chief') {
+            // The editor-in-chief's checks use no AI, so they run even when the team is paused (D49).
+            if (! \App\Ai\Team::paused('chief')) {
+                $this->line('Alerts: '.implode(' | ', \App\Ai\Chief::check()));
+            }
+
+            return self::SUCCESS;
         }
         if ($why = Claude::blocked()) {
             $this->line("Resting: {$why}.");
@@ -116,6 +124,7 @@ class AiShift extends Command
     {
         \App\Ai\EditorJobs::picks();
         \App\Ai\EditorJobs::health();
+        \App\Ai\Chief::qualityReview();
 
         return self::SUCCESS;
     }
