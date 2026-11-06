@@ -14,7 +14,7 @@ class Author extends Model
 
     protected function casts(): array
     {
-        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime'];
+        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime', 'honoured_at' => 'datetime'];
     }
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }

@@ -85,26 +85,40 @@
     @endif
 
     @if ($honoured->isNotEmpty())
-        {{-- Writers the magazine has honoured (D66) --}}
+        {{-- Writers the magazine has honoured (D66, D76): photo, honour, the editor's words, two pieces to read. --}}
         <section class="mx-auto max-w-[1320px] px-5 py-10" aria-labelledby="honoured-h">
             <div class="font-hand text-2xl text-red">হাতপাখার সম্মান</div>
             <h2 id="honoured-h" class="font-display text-4xl font-extrabold">সম্মানিত লেখক</h2>
-            <div class="mt-6 grid gap-5 {{ [1 => 'md:grid-cols-1', 2 => 'md:grid-cols-2', 3 => 'md:grid-cols-3'][min(3, $honoured->count())] }}">
+            <div class="mt-6 grid gap-5 {{ [1 => '', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3'][min(3, $honoured->count())] }}">
                 @foreach ($honoured as $h)
-                    <a href="{{ $h->url() }}" class="lift block rounded-3xl border-2 border-navy bg-white p-5 hover:bg-peach-light">
-                        <div class="flex items-center gap-3">
+                    @php($pieces = $h->posts()->published()->latest('published_at')->limit(2)->get(['posts.id', 'posts.slug', 'posts.title', 'posts.published_at']))
+                    <article class="relative overflow-hidden rounded-3xl border-2 border-navy bg-white {{ $honoured->count() === 1 ? 'md:grid md:grid-cols-[auto_1fr]' : '' }}">
+                        <div class="flex items-center gap-4 bg-peach-light p-5 {{ $honoured->count() === 1 ? 'md:flex-col md:justify-center md:px-10 md:text-center' : '' }}">
                             @if ($h->avatar_path)
-                                <img src="{{ $h->avatar_path }}" alt="" loading="lazy" width="64" height="64" class="h-16 w-16 rounded-full border-2 border-navy object-cover">
+                                <img src="{{ $h->avatar_path }}" alt="" loading="lazy" width="96" height="96" class="h-20 w-20 flex-none rounded-full border-[3px] border-red object-cover md:h-24 md:w-24">
                             @else
-                                <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-navy bg-gradient-to-br from-peach to-peach-deep text-2xl font-extrabold" aria-hidden="true">{{ $h->initial() }}</span>
+                                <span class="flex h-20 w-20 flex-none items-center justify-center rounded-full border-[3px] border-red bg-gradient-to-br from-peach to-peach-deep text-3xl font-extrabold md:h-24 md:w-24" aria-hidden="true">{{ $h->initial() }}</span>
                             @endif
                             <div class="min-w-0">
-                                <div class="font-display text-xl font-extrabold leading-tight">{{ $h->publicName() }}</div>
-                                <div class="text-sm font-extrabold text-red-dark">★ {{ $h->honour_label }}</div>
+                                <span class="inline-block rounded-full bg-red px-3 py-1 text-sm font-extrabold text-white">★ {{ $h->honour_label }}</span>
+                                <div class="mt-2 font-display text-2xl font-extrabold leading-tight"><a href="{{ $h->url() }}" class="hover:text-red">{{ $h->publicName() }}</a></div>
                             </div>
                         </div>
-                        @if ($h->honour_note)<p class="mt-3 line-clamp-4 font-serif leading-relaxed">“{{ $h->honour_note }}”</p>@endif
-                    </a>
+                        <div class="p-5 md:p-7">
+                            @if ($h->honour_note)
+                                <blockquote class="font-serif text-lg leading-relaxed md:text-xl">“{{ $h->honour_note }}”</blockquote>
+                                <div class="mt-2 text-sm font-bold text-ink2">— হাতপাখার সম্পাদকমণ্ডলী</div>
+                            @endif
+                            @if ($pieces->isNotEmpty())
+                                <ul class="mt-4 grid gap-2 border-t border-rule pt-4">
+                                    @foreach ($pieces as $pc)
+                                        <li><a href="{{ $pc->url() }}" class="font-serif text-lg font-bold hover:text-red">{{ $pc->title }}</a></li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            <a href="{{ $h->url() }}" class="mt-4 inline-flex h-11 items-center rounded-full bg-navy px-5 font-bold text-white">সব লেখা পড়ুন →</a>
+                        </div>
+                    </article>
                 @endforeach
             </div>
         </section>
