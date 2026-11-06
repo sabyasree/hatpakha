@@ -149,7 +149,7 @@ class MakeImageVariants extends Command
             return;
         }
         foreach ($todo as [$w, $out]) {
-            $img = $w >= imagesx($src) ? $src : imagescale($src, $w, -1, IMG_BICUBIC);
+            $img = $w >= imagesx($src) ? $src : $this->resize($src, $w);
             if (! $img) {
                 $this->recordFailure($stats, 'resize failed', $rel);
 
@@ -186,6 +186,31 @@ class MakeImageVariants extends Command
         }
 
         return end(Images::WIDTHS);
+    }
+
+    /**
+     * Resize to a width, keeping the aspect ratio and transparency. imagecopyresampled works on every
+     * GD build; imagescale(IMG_BICUBIC) returned false on Hostinger's GD for every image.
+     */
+    private function resize(\GdImage $src, int $width): \GdImage|false
+    {
+        $sw = imagesx($src);
+        $sh = imagesy($src);
+        $height = max(1, (int) round($sh * $width / $sw));
+        $dst = imagecreatetruecolor($width, $height);
+        if (! $dst) {
+            return false;
+        }
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        imagefilledrectangle($dst, 0, 0, $width, $height, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+        if (! imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, $sw, $sh)) {
+            imagedestroy($dst);
+
+            return false;
+        }
+
+        return $dst;
     }
 
     private function load(string $file, int $type): \GdImage|false
