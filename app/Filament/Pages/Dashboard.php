@@ -75,6 +75,9 @@ class Dashboard extends BaseDashboard
             'aiEnabled' => (bool) config('ai.enabled'),
             'aiPaused' => AiSwitch::paused(),
             'aiSpent' => $isAdmin ? AiUsage::spentThisMonthUsd() : 0,
+            // The AI editor's shift (D44): when it last worked (cron heartbeat) and what it did in 24 hours.
+            'heartbeat' => ($h = \App\Models\Setting::get('ai.heartbeat')) ? \Illuminate\Support\Carbon::parse($h) : null,
+            'brief' => \App\Ai\Brief::today(),
             'auditOpen' => $isAdmin ? Post::whereIn('audit_label', ['merge', 'noindex', 'remove'])->whereNull('audit_decision')->count() : 0,
         ];
     }

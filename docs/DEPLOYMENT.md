@@ -60,6 +60,17 @@
 
    Never reuse the staging `APP_KEY` or DB password in production.
 
+## The AI editor's clock (cron), one line per environment (D44)
+The AI editor works on a schedule (every 10 minutes, hourly, daily; see `routes/console.php`). Add ONE cron job
+in hPanel → Advanced → Cron Jobs → "Custom", every minute (`* * * * *`):
+
+```
+cd /home/<user>/apps/hatpakha-staging && php artisan schedule:run >> /dev/null 2>&1
+```
+
+(Production: the same with the production folder.) /desk → আজকের কাজ shows "শেষ কাজ: … আগে"; if it says the
+clock is not running, this line is missing. The schedule only prepares work and respects the pause button.
+
 ## WordPress data
 1. Import the old dump into a **separate** database on the server; put its credentials in `LEGACY_DB_*`.
 2. `php artisan migrate --seed --force` then `php artisan hatpakha:import-wp` (safe to re-run).

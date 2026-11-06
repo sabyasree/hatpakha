@@ -76,6 +76,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Monthly issue proposal (from the 20th, automatic on the admin's dashboard; or on demand): lineup, theme from the calendar, title, cover lines; owner approves on the issue page (untick to drop pieces, release date); editorial drafted under the owner's name, published after the owner edits
 - ✅ Comment pre-screen (ঠিক আছে / স্প্যাম / দেখে নিন) + "approve all AI-ok"
 - ✅ আজকের কাজ redesigned: greeting, four numbers, "আপনার অনুমোদনের অপেক্ষায়" (issue, editorial, pictures, submissions with AI verdict, fixes, thumbnail), comments with AI verdicts, AI editor panel (status, spend, pause), next issue, two-week publishing calendar; desk shows India time
+- ✅ Continuous shift (D44): scheduler routine (10 min / hourly / daily / 08:00 brief), heartbeat + last-24-hours activity on আজকের কাজ, warning when the clock isn't running
+- 🟡 Owner: add the cron line in hPanel (docs/DEPLOYMENT.md) for staging (and later production)
 - 🟡 Owner: set `OPENAI_IMAGE_MODEL` (+ `OPENAI_IMAGE_PRICE`) in ENV_FILE; then the batch makes pictures
 - 🟡 Backlog batch on staging (`hatpakha:ai-editor --backlog --images`, started by a `[run-ai-editor]` deploy, runs in the background, log: storage/logs/ai-editor.log)
 

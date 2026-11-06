@@ -150,7 +150,16 @@
                 <x-slot name="heading">এআই সম্পাদক</x-slot>
                 <div style="line-height:1.9">
                     <div>অবস্থা: <x-filament::badge :color="$aiState[1]">{{ $aiState[0] }}</x-filament::badge></div>
-                    <div class="hp-muted">নতুন লেখা এলেই: রিপোর্ট, বানান-সংশোধন, সিদ্ধান্তের প্রস্তাব, লেখককে খসড়া বার্তা, ট্যাগ, গুগলের তথ্য, ছবি না থাকলে প্রচ্ছদ। মন্তব্যও আগে পড়ে রাখে। কিছুই নিজে প্রকাশ করে না।</div>
+                    <div class="hp-muted">সারাদিন কাজ করে: নতুন লেখা ও মন্তব্য (প্রতি ১০ মিনিটে), পুরনো লেখা ও ছবি (প্রতি ঘণ্টায়), পরের সংখ্যা (২০ তারিখ থেকে), আর সকাল ৮টায় আপনার জন্য সারাংশ। কিছুই নিজে প্রকাশ করে না।</div>
+                    @php($b = $t['brief'])
+                    <div style="margin-top:.4rem">গত ২৪ ঘণ্টায়: {{ Bn::num($b['prepared']) }}টি লেখা তৈরি · {{ Bn::num($b['pictures']) }}টি ছবি · {{ Bn::num($b['comments_screened']) }}টি মন্তব্য পড়েছে</div>
+                    @if ($t['heartbeat'] && $t['heartbeat']->gt(now()->subMinutes(30)))
+                        <div class="hp-muted">শেষ কাজ: {{ Bn::num((string) $t['heartbeat']->locale('bn')->diffForHumans()) }} · প্রতি ১০ মিনিটে নতুন কাজ দেখে</div>
+                    @elseif ($t['isAdmin'])
+                        <div style="margin-top:.4rem;padding:.6rem .8rem;border-radius:.6rem;border:1px solid #E39A6A">
+                            <strong>এআই সম্পাদকের ঘড়ি চলছে না।</strong> নিয়মিত কাজের জন্য hPanel-এ একটি Cron লাইন যোগ করতে হবে (docs/DEPLOYMENT.md)। ততক্ষণ নতুন জমা এলে তখনই কাজ করে।
+                        </div>
+                    @endif
                     @if ($t['isAdmin'])
                         <div style="margin-top:.4rem">এই মাসের খরচ: <strong>{{ Bn::num(number_format($t['aiSpent'], 2)) }} ডলার</strong></div>
                         <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem">
