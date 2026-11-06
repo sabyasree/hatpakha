@@ -43,5 +43,12 @@ jobs:
 
       - name: Dependency security audit
         run: |
-          composer audit --no-interaction
+          # Retry only when the advisory download fails (network); real findings still fail the build.
+          for i in 1 2 3; do
+            set +e; out=$(composer audit --no-interaction 2>&1); code=$?; set -e
+            echo "$out"
+            if [ $code -eq 0 ]; then break; fi
+            if echo "$out" | grep -q "curl error"; then echo "Network error, retrying in $((i*15))s"; sleep $((i*15)); else exit $code; fi
+            if [ $i -eq 3 ]; then exit $code; fi
+          done
           npm audit --omit=dev --audit-level=high
