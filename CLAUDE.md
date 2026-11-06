@@ -48,6 +48,8 @@ php artisan hatpakha:import-wp            # import old WordPress DB (LEGACY_DB_*
 php artisan hatpakha:role you@example.com admin   # give an existing user a role
 php artisan hatpakha:password you@example.com     # set a password at a hidden prompt (--reset-2fa to redo 2FA)
 php artisan hatpakha:images                       # WebP sizes for images used by posts (safe to re-run)
+php artisan hatpakha:audit                        # content-audit + backlog-tier SUGGESTIONS (changes nothing)
+php artisan hatpakha:url-audit --base=https://new.hatpakha.com --sitemap=https://hatpakha.com/sitemap.xml
 php artisan test                          # must be green
 php artisan serve
 ```
@@ -62,6 +64,11 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - `app/Filament`: admin panel resources
 - `resources/views`: Blade pages; `components/` (layout, seo, fan motif, title card, ad slot)
 - `tests/Feature/SeoUrlTest.php`, `tests/Feature/SecurityTest.php`: guardrail tests
+
+## 6b. Gotchas
+- Filament closures get arguments **by parameter name**: use `$query`, `$record`, `$state`, `$data` (a `$q` gets null).
+- Laravel 13 refuses to unserialize models from the cache: cache IDs/scalars (D18).
+- Pipe test output carefully: use `set -o pipefail` so a failing `php artisan test | tail` stops the commit.
 
 ## 7. Language
 UI copy is **Bengali-first** (English section for English content). Code, comments and docs are in English. Write UI text simply; a native Bengali copy editor reviews it before launch.

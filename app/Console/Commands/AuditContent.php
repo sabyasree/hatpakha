@@ -50,9 +50,33 @@ class AuditContent extends Command
         $this->table(['Suggestion', 'Posts'], collect($counts)->map(fn ($n, $l) => [ContentAudit::LABELS[$l]." ({$l})", $n])->values()->all());
         arsort($reasons);
         $this->table(['Reason', 'Posts'], collect($reasons)->map(fn ($n, $w) => [$w, $n])->values()->all());
+        $this->tierBacklog($posts);
         $this->info('Nothing was changed on the site. Review in /desk → লেখা → filter "অডিট".');
 
         return self::SUCCESS;
+    }
+
+    /** Pending posts → backlog tiers A/B/C (shown in /desk; nothing is closed automatically). */
+    private function tierBacklog($published): void
+    {
+        $norm = fn ($p) => mb_strtolower(preg_replace('/[\s\p{P}]+/u', '', $p->title)).'|'.($p->authors->first()?->id ?? 0);
+        $publishedKeys = $published->mapWithKeys(fn ($p) => [$norm($p) => true])->all();
+        $pending = Post::where('status', 'pending')->with('authors')->get();
+        $dups = ContentAudit::duplicates($pending->map(function ($p) {
+            $p->published_at ??= $p->submitted_at ?? $p->created_at;
+
+            return $p;
+        }));
+        $batch = $pending->groupBy(fn ($p) => $p->authors->first()?->id)->map->count()->filter(fn ($n) => $n >= 50)->keys()->first();
+
+        $counts = ['A' => 0, 'B' => 0, 'C' => 0];
+        foreach ($pending as $p) {
+            $r = ContentAudit::tier($p, $publishedKeys, $batch ? (int) $batch : null, $dups);
+            $p->published_at = null; // only used for ordering above; never saved
+            Post::whereKey($p->id)->update(['backlog_tier' => $r['tier'], 'audit_reasons' => $r['reasons'] ? json_encode($r['reasons'], JSON_UNESCAPED_UNICODE) : null]);
+            $counts[$r['tier']]++;
+        }
+        $this->table(['Pending tier', 'Posts'], collect($counts)->map(fn ($n, $t) => [ContentAudit::TIERS[$t], $n])->values()->all());
     }
 
     /** @return array<int,array<int,string>> */

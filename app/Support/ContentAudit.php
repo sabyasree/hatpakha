@@ -100,6 +100,52 @@ final class ContentAudit
         return ['label' => $label, 'reasons' => $reasons, 'merge_into' => $label === 'merge' ? $duplicateOf : null];
     }
 
+    public const TIERS = ['A' => 'A: সাম্প্রতিক (২০২২–)', 'B' => 'B: বাছাই-বাদ (ফাঁকা/নকল/পরীক্ষা)', 'C' => 'C: পুরনো, ভালো হতে পারে'];
+
+    /**
+     * Pending backlog tier with reasons (PLAN.md "Real backlog"). Suggestion only.
+     *
+     * @param  array<int,true>  $publishedKeys  normalised "title|author" of published posts
+     * @return array{tier:string,reasons:array<int,string>}
+     */
+    public static function tier(Post $post, array $publishedKeys, ?int $batchAuthorId, array $pendingDuplicates): array
+    {
+        $reasons = [];
+        $text = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $post->body_html))));
+        $words = $text === '' ? 0 : count(preg_split('/\s+/u', $text));
+        $authorId = $post->authors->first()?->id;
+        $key = mb_strtolower(preg_replace('/[\s\p{P}]+/u', '', $post->title)).'|'.($authorId ?? 0);
+
+        $cleanup = false;
+        if ($words < 30) {
+            $reasons[] = "খুব ছোট বা ফাঁকা ({$words} শব্দ)";
+            $cleanup = true;
+        }
+        if (isset($publishedKeys[$key])) {
+            $reasons[] = 'একই শিরোনামে এই লেখকের লেখা আগেই প্রকাশিত';
+            $cleanup = true;
+        }
+        if (isset($pendingDuplicates[$post->id])) {
+            $reasons[] = "একই লেখা আবার জমা পড়েছে (#{$pendingDuplicates[$post->id]})";
+            $cleanup = true;
+        }
+        if (preg_match('/^\s*(test|testing|asdf|demo|untitled|পরীক্ষা)\b/iu', $post->title)) {
+            $reasons[] = 'পরীক্ষামূলক লেখা বলে মনে হচ্ছে';
+            $cleanup = true;
+        }
+        if ($batchAuthorId && $authorId === $batchAuthorId) {
+            $reasons[] = 'একই লেখকের অনেক লেখা জমা আছে: একসঙ্গে বিচার করুন';
+        }
+
+        $year = ($post->submitted_at ?? $post->created_at)?->year ?? 0;
+        $tier = $cleanup ? 'B' : ($year >= 2022 ? 'A' : 'C');
+        if ($tier === 'A') {
+            $reasons[] = 'সাম্প্রতিক জমা: এখনই পড়ে দেখার মতো';
+        }
+
+        return ['tier' => $tier, 'reasons' => $reasons];
+    }
+
     /** Duplicate detection: same normalised title + same first author → later post points to earlier. */
     public static function duplicates(Collection $posts): array
     {
