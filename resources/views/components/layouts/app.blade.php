@@ -36,10 +36,10 @@
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-paper focus:p-2">মূল লেখায় যান</a>
 
     <header class="border-b-2 border-navy bg-paper">
-        <div class="mx-auto flex max-w-[1320px] items-center justify-between gap-5 px-5 py-3">
+        <div class="mx-auto flex max-w-[1320px] items-center justify-between gap-5 px-5 py-3 max-[359px]:gap-2 max-[359px]:px-4">
             <a href="{{ url('/') }}/" class="flex flex-none flex-col items-end" aria-label="হাতপাখা — প্রথম পাতা">
-                <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto md:h-12">
-                <span class="-mt-1 text-[11px] font-bold">ISSN: 2321-3035</span>
+                <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto max-[359px]:h-7 md:h-12">
+                <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
             <nav aria-label="বিভাগ" class="hidden gap-7 text-lg font-semibold lg:flex">
                 @foreach (\App\Models\Section::navLinks() as [$name, $href])
@@ -47,10 +47,10 @@
                 @endforeach
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
             </nav>
-            <div class="flex items-center gap-1 sm:gap-3">
+            <div class="flex min-w-0 items-center gap-1 max-[359px]:gap-0 sm:gap-3">
                 {{-- All sections on phones and tablets (the bottom bar has only two) --}}
                 <details class="relative lg:hidden">
-                    <summary class="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full px-3 font-bold hover:bg-peach-light [&::-webkit-details-marker]:hidden">বিভাগ <span aria-hidden="true">▾</span></summary>
+                    <summary class="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full px-3 font-bold max-[359px]:px-2 hover:bg-peach-light [&::-webkit-details-marker]:hidden">বিভাগ <span aria-hidden="true">▾</span></summary>
                     <div class="absolute right-0 top-12 z-50 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border-2 border-navy bg-paper p-3 shadow-[4px_4px_0_#13212C]">
                         <nav aria-label="সব বিভাগ" class="grid grid-cols-2 gap-2">
                             @foreach (\App\Models\Section::allLinks() as [$name, $href])
@@ -60,16 +60,16 @@
                         </nav>
                     </div>
                 </details>
-                <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 items-center justify-center rounded-full hover:bg-peach-light" aria-label="খুঁজুন" title="খুঁজুন">
+                <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-peach-light max-[359px]:w-10" aria-label="খুঁজুন" title="খুঁজুন">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
                 </a>
                 @auth
-                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 items-center font-bold hover:text-red" aria-label="আমার লেখা">
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 min-w-11 flex-none items-center justify-center font-bold hover:text-red" aria-label="আমার লেখা">
                         <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-navy bg-peach-light sm:hidden" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
                         <span class="hidden sm:inline">আমার লেখা</span>
                     </a>
                 @else
-                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 items-center font-bold hover:text-red">লগ-ইন</a>
+                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap px-1 font-bold hover:text-red">লগ-ইন</a>
                 @endauth
                 <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
             </div>
