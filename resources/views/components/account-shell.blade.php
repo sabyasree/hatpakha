@@ -5,6 +5,7 @@
     $tabs = [
         'home' => ['সারসংক্ষেপ', \App\Support\Url::to('/account')],
         'writings' => ['লেখা', \App\Support\Url::to('/account/writings')],
+        'profile' => ['প্রোফাইল', \App\Support\Url::to('/account/profile')],
         'reading' => ['পড়ার তালিকা', \App\Support\Url::to('/account/reading')],
         'settings' => ['সেটিংস', \App\Support\Url::to('/account/settings')],
     ];
@@ -18,7 +19,7 @@
             <span class="flex h-12 w-12 flex-none items-center justify-center rounded-full border-2 border-navy bg-gradient-to-br from-peach to-peach-deep text-xl font-extrabold" aria-hidden="true">{{ mb_substr($user->name, 0, 1) }}</span>
         @endif
         <div class="min-w-0 flex-1">
-            <div class="truncate font-display text-2xl font-extrabold leading-tight">{{ $author?->publicName() ?: $user->name }}</div>
+            <h1 class="truncate font-display text-2xl font-extrabold leading-tight">{{ $author?->publicName() ?: $user->name }}</h1>
             <div class="flex flex-wrap items-center gap-x-2 text-sm text-ink2">
                 @if ($user->hasVerifiedEmail())<span class="font-bold text-sky-night">✓ যাচাই করা</span>@endif
                 @if ($author && $author->published_count > 0)<a href="{{ $author->url() }}" class="font-bold text-sky-deep underline">আমার লেখক-পাতা</a>@endif
@@ -48,10 +49,11 @@
 </section>
 
 <nav aria-label="অ্যাকাউন্ট" class="sticky top-0 z-30 mt-5 border-y-2 border-navy bg-paper/95 backdrop-blur">
-    <div class="mx-auto flex max-w-[1000px] overflow-x-auto px-2 [&>*]:flex-none">
+    {{-- Phones: five equal tabs, all visible; wider screens: a row from the left --}}
+    <div class="mx-auto grid max-w-[1000px] grid-cols-5 sm:flex sm:px-2">
         @foreach ($tabs as $key => [$label, $href])
             <a href="{{ $href }}" @if ($tab === $key) aria-current="page" @endif
-                class="flex h-12 items-center border-b-4 px-3 font-bold sm:px-5 {{ $tab === $key ? 'border-red text-red' : 'border-transparent hover:text-red' }}">{{ $label }}</a>
+                class="flex h-12 items-center justify-center border-b-4 px-0.5 text-center text-[13px] font-bold leading-tight sm:px-5 sm:text-base {{ $tab === $key ? 'border-red text-red' : 'border-transparent hover:text-red' }}">{{ $label }}</a>
         @endforeach
     </div>
 </nav>

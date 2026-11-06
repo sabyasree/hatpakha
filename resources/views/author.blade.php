@@ -67,7 +67,7 @@
                         </form>
                     @endif
                     @if ($isOwner)
-                        <a href="{{ \App\Support\Url::to('/account/settings') }}#profile" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">প্রোফাইল সাজান</a>
+                        <a href="{{ \App\Support\Url::to('/account/profile') }}" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">প্রোফাইল সাজান</a>
                     @endif
                     <a href="https://wa.me/?text={{ rawurlencode($author->publicName().'-এর লেখা, হাতপাখায়: '.$author->url()) }}" rel="noopener" target="_blank" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">শেয়ার</a>
                 </div>

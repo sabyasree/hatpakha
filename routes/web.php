@@ -85,6 +85,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account/writings', [\App\Http\Controllers\AccountController::class, 'writings'])->name('account.writings');
     Route::get('/account/reading', [\App\Http\Controllers\AccountController::class, 'reading'])->name('account.reading');
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
+    Route::get('/account/profile', [\App\Http\Controllers\AccountController::class, 'profile'])->name('account.profile');
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
     Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');
     Route::post('/account/audio/{post}', [\App\Http\Controllers\AccountController::class, 'audio'])->whereNumber('post')->middleware('throttle:10,1');

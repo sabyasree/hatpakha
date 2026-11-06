@@ -10,7 +10,7 @@
 <x-layouts.app :seo="$seo">
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         // Old links to the one-page account (#profile, #security, #letters, #reading, #writing) still land in the right place.
-        (function () { var h = location.hash.slice(1), m = { profile: 'settings/#profile', security: 'settings/#security', letters: 'settings/#letters', reading: 'reading/', writing: 'writings/' };
+        (function () { var h = location.hash.slice(1), m = { profile: 'profile/', security: 'settings/#security', letters: 'settings/#letters', reading: 'reading/', writing: 'writings/' };
             if (m[h]) location.replace('{{ Url::to('/account') }}' + m[h]); })();
     </script>
     <x-account-shell tab="home" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">

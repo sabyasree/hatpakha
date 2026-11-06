@@ -111,7 +111,8 @@ class AccountTest extends TestCase
         $this->get('/account/writings/?status=published&page=3')->assertOk()->assertDontSee('আরও দেখুন');
         $this->get('/account/writings/?q='.urlencode('প্রকাশিত 7'))->assertOk()->assertSee('প্রকাশিত 7')->assertDontSee('প্রকাশিত 8');
         $this->get('/account/writings/?status=action')->assertSee('ঠিক করার লেখা')->assertDontSee('প্রকাশিত 1<');
-        $this->get('/account/settings/')->assertOk()->assertSee('লেখক-প্রোফাইল')->assertSee('নিরাপত্তা')->assertSee('id="letters"', false);
+        $this->get('/account/profile/')->assertOk()->assertSee('লেখক-প্রোফাইল')->assertSee('প্রোফাইল রাখুন')->assertSee('aria-current="page"', false);
+        $this->get('/account/settings/')->assertOk()->assertSee('নিরাপত্তা')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
         $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect(url('/account/settings').'/#letters');
     }
 }

@@ -99,6 +99,12 @@ class AccountController extends Controller
         ]);
     }
 
+    /** The writer's own profile, a main tab of its own (owner): photo, cover, names, links, about. */
+    public function profile(Request $request)
+    {
+        return view('account.profile', self::shell($request, 'profile', 'লেখক-প্রোফাইল'));
+    }
+
     public function settings(Request $request)
     {
         return view('account.settings', self::shell($request, 'settings', 'সেটিংস') + ['setup' => self::twoFactorSetup($request)]);
@@ -167,7 +173,7 @@ class AccountController extends Controller
         }
         $author->forceFill($changes)->save();
 
-        return redirect(Url::to('/account/settings').'#profile')->with('status', 'প্রোফাইল সাজানো হয়েছে।');
+        return redirect(Url::to('/account/profile'))->with('status', 'প্রোফাইল সাজানো হয়েছে।');
     }
 
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
