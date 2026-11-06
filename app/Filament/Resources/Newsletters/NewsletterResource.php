@@ -52,7 +52,7 @@ class NewsletterResource extends Resource
         return $schema->components([
             Radio::make('audience')->label(__('কাকে পাঠাবেন'))->required()->default('readers')->inline()
                 ->options(fn () => collect(Newsletter::AUDIENCES)->mapWithKeys(fn ($l, $k) => [$k => __($l).' ('.\App\Support\Bn::num((string) NewsletterSender::count($k)).')'])->all())
-                ->helperText(__('পাঠক = যাঁরা নিজে চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন। লেখক = যাঁদের অ্যাকাউন্ট যাচাই করা ও যাঁরা বন্ধ করেননি। একজন দু\'বার পাবেন না।'))
+                ->helperText(__('পাঠক = যাঁরা চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন, আর ই-মেল যাচাই করা সব অ্যাকাউন্ট (যাঁরা বন্ধ করেননি)। লেখক = যাচাই করা লেখক-অ্যাকাউন্ট। একজন দু\'বার পাবেন না।'))
                 ->columnSpanFull(),
             TextInput::make('subject')->label(__('বিষয় (ই-মেলের শিরোনাম)'))->required()->maxLength(120)->columnSpanFull(),
             Textarea::make('intro')->label(__('শুরুর কথা'))->rows(5)->maxLength(3000)->columnSpanFull()

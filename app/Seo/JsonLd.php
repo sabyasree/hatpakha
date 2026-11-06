@@ -63,6 +63,9 @@ final class JsonLd
             'alternateName' => $a->display_name_bn ? $a->display_name : null,
             'url' => $a->url(),
             'description' => $a->bio ? mb_substr(strip_tags($a->bio), 0, 300) : null,
+            'image' => $a->avatar_path ? url($a->avatar_path) : null,
+            'homeLocation' => $a->city ? ['@type' => 'Place', 'name' => $a->city] : null,
+            'sameAs' => array_values(array_filter((array) $a->links, fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
         ]);
     }
 

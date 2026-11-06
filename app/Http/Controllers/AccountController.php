@@ -36,7 +36,132 @@ class AccountController extends Controller
             // The writer's own certificates (D12, D56), each with its public verification page.
             'certificates' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get(),
             'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
+            'author' => \App\Models\Author::where('user_id', $user->id)->first(),
+            'twoFactorOn' => filled($user->app_authentication_secret),
+            'setup' => self::twoFactorSetup($request),
         ]);
+    }
+
+    /** While 2FA is being set up: the QR code and the key to type by hand. */
+    private static function twoFactorSetup(Request $request): ?array
+    {
+        $secret = $request->session()->get('2fa_setup');
+        if (! $secret) {
+            return null;
+        }
+        $qr = rescue(function () use ($secret) {
+            \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+
+            return \Filament\Auth\MultiFactor\App\AppAuthentication::make()->brandName('হাতপাখা')->generateQrCodeDataUri($secret);
+        }, null, false);
+
+        return ['secret' => trim(chunk_split($secret, 4, ' ')), 'qr' => is_string($qr) && str_starts_with($qr, 'data:image/') ? $qr : null];
+    }
+
+    /** The writer's public profile (D59): Bengali name, bio, city, links, photo and cover. */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:80'],
+            'name_bn' => ['nullable', 'string', 'max:80'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'city' => ['nullable', 'string', 'max:60'],
+            'website' => ['nullable', 'url:https', 'max:200'],
+            'facebook' => ['nullable', 'url:https', 'max:200', 'regex:~^https://(www\.|m\.)?facebook\.com/~i'],
+            'instagram' => ['nullable', 'url:https', 'max:200', 'regex:~^https://(www\.)?instagram\.com/~i'],
+            'avatar' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
+            'cover' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
+            'remove_avatar' => ['nullable', 'boolean'],
+            'remove_cover' => ['nullable', 'boolean'],
+        ], [
+            'website.url' => 'ওয়েবসাইটের ঠিকানা https:// দিয়ে শুরু হবে।',
+            'facebook.regex' => 'ফেসবুক পাতার পুরো ঠিকানা দিন (https://facebook.com/…)।',
+            'instagram.regex' => 'ইনস্টাগ্রামের পুরো ঠিকানা দিন (https://instagram.com/…)।',
+            'avatar.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।', 'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
+            'avatar.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।', 'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
+        ]);
+        $user->forceFill(['name' => strip_tags($data['name'])])->save();
+        $author = \App\Models\Author::where('user_id', $user->id)->first() ?? \App\Models\Author::create([
+            'user_id' => $user->id, 'display_name' => $user->name, 'slug' => 'writer-'.$user->id,
+        ]);
+        $links = array_filter(['website' => $data['website'] ?? null, 'facebook' => $data['facebook'] ?? null, 'instagram' => $data['instagram'] ?? null]);
+        $changes = [
+            'display_name' => strip_tags($data['name']),
+            'display_name_bn' => strip_tags((string) ($data['name_bn'] ?? '')) ?: null,
+            'bio' => trim(strip_tags((string) ($data['bio'] ?? ''))) ?: null,
+            'city' => strip_tags((string) ($data['city'] ?? '')) ?: null,
+            'links' => $links ?: null,
+        ];
+        foreach (['avatar' => 'avatar_path', 'cover' => 'cover_path'] as $field => $column) {
+            if ($request->hasFile($field)) {
+                $new = \App\Support\ProfileImage::store($request->file($field), $field);
+                \App\Support\ProfileImage::remove($author->{$column});
+                $changes[$column] = $new;
+            } elseif ($request->boolean('remove_'.$field)) {
+                \App\Support\ProfileImage::remove($author->{$column});
+                $changes[$column] = null;
+            }
+        }
+        $author->forceFill($changes)->save();
+
+        return redirect(Url::to('/account').'#profile')->with('status', 'প্রোফাইল সাজানো হয়েছে।');
+    }
+
+    public function updateNewsletter(Request $request)
+    {
+        $request->user()->forceFill(['mail_opt_out' => ! $request->boolean('newsletter')])->save();
+
+        return redirect(Url::to('/account').'#letters')->with('status', $request->boolean('newsletter') ? 'চিঠি চালু থাকল।' : 'চিঠি বন্ধ হয়েছে। নিজের লেখার খবর আগের মতোই পাবেন।');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()->uncompromised()],
+        ], ['current_password.current_password' => 'এখনকার পাসওয়ার্ড মিলছে না।', 'password.confirmed' => 'দুটি পাসওয়ার্ড মেলেনি।',
+            'password.uncompromised' => 'এই পাসওয়ার্ডটি অন্য কোনো সাইটের ফাঁস হওয়া তালিকায় আছে। অন্য একটি দিন।']);
+        $request->user()->forceFill(['password' => $request->input('password'), 'legacy_password' => null])->save();
+        \Illuminate\Support\Facades\Auth::logoutOtherDevices($request->input('password'));
+        \App\Models\AuditLog::record('user.password_changed', $request->user());
+
+        return redirect(Url::to('/account').'#security')->with('status', 'পাসওয়ার্ড বদলেছে। অন্য সব জায়গা থেকে লগ-আউট করা হয়েছে।');
+    }
+
+    /** 2FA, step 1 (D59): a new secret, kept in the session until the first code proves the app has it. */
+    public function twoFactorStart(Request $request)
+    {
+        $request->session()->put('2fa_setup', \Filament\Auth\MultiFactor\App\AppAuthentication::make()->generateSecret());
+
+        return redirect(Url::to('/account').'#security');
+    }
+
+    public function twoFactorConfirm(Request $request)
+    {
+        $secret = (string) $request->session()->get('2fa_setup');
+        $request->validate(['code' => ['required', 'digits:6']], ['code.digits' => 'অ্যাপের ৬ অঙ্কের কোডটি দিন।']);
+        $mfa = \Filament\Auth\MultiFactor\App\AppAuthentication::make();
+        if ($secret === '' || ! $mfa->verifyCode((string) $request->input('code'), $secret)) {
+            return redirect(Url::to('/account').'#security')->withErrors(['code' => 'কোডটি মিলছে না। অ্যাপে দেখানো এখনকার কোডটি দিন।']);
+        }
+        $codes = $mfa->generateRecoveryCodes();
+        $user = $request->user();
+        $user->forceFill(['app_authentication_secret' => $secret, 'app_authentication_recovery_codes' => array_map(fn ($c) => \Illuminate\Support\Facades\Hash::make($c), $codes)])->save();
+        $request->session()->forget('2fa_setup');
+        \App\Models\AuditLog::record('user.2fa_enabled', $user);
+
+        return redirect(Url::to('/account').'#security')->with(['status' => 'দুই-ধাপের যাচাই চালু হয়েছে।', 'recovery_codes' => $codes]);
+    }
+
+    public function twoFactorDisable(Request $request)
+    {
+        abort_if($request->user()->hasRole(\App\Enums\Role::Editor), 403);   // desk accounts must keep 2FA (docs/SECURITY.md)
+        $request->validate(['current_password' => ['required', 'current_password']], ['current_password.current_password' => 'পাসওয়ার্ড মিলছে না।']);
+        $request->user()->forceFill(['app_authentication_secret' => null, 'app_authentication_recovery_codes' => null])->save();
+        \App\Models\AuditLog::record('user.2fa_disabled', $request->user());
+
+        return redirect(Url::to('/account').'#security')->with('status', 'দুই-ধাপের যাচাই বন্ধ হয়েছে।');
     }
 
     public function updateName(Request $request)

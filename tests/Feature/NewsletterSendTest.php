@@ -54,9 +54,11 @@ class NewsletterSendTest extends TestCase
         Mail::assertNothingSent();
 
         $n->update(['audience' => 'both']);
+        // D59: every verified account is a reader by default unless it switched the letter off.
         $this->assertSame(['reader@example.test', 'writer@example.test'], NewsletterSender::recipients('both')->pluck('email')->sort()->values()->all());
+        $this->assertNotContains('quiet@example.test', NewsletterSender::recipients('readers')->pluck('email')->all());
 
-        $owner = User::factory()->create(['role' => Role::Admin]);
+        $owner = User::factory()->create(['role' => Role::Admin, 'mail_opt_out' => true]);
         $this->assertSame(2, NewsletterSender::queue($n, $owner));
         $this->assertSame(1, NewsletterSender::batch(1));
         $this->assertSame(1, NewsletterSender::batch(5));
@@ -79,7 +81,7 @@ class NewsletterSendTest extends TestCase
 
     public function test_desk_pages_draft_preview_and_send(): void
     {
-        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        $this->actingAs(User::factory()->create(['role' => Role::Admin, 'mail_opt_out' => true]));
         Filament::setCurrentPanel(Filament::getPanel('desk'));
         NewsletterSubscriber::create(['email' => 'reader@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
         Claude::$fake = fn () => ['subject' => 'লেখকদের চিঠি', 'intro' => 'নতুন লেখা পাঠান।', 'closing' => 'শুভেচ্ছা'];

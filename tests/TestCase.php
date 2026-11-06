@@ -15,6 +15,9 @@ abstract class TestCase extends BaseTestCase
         $this->withoutVite();
         // Test the live-site behaviour by default; staging (noindex) has its own test.
         config(['seo.indexable' => true]);
+        // The breached-password check (D59) must not call the internet from tests: "not found".
+        \Illuminate\Support\Facades\Http::preventStrayRequests(false);
+        \Illuminate\Support\Facades\Http::fake(['api.pwnedpasswords.com/*' => \Illuminate\Support\Facades\Http::response('', 200)]);
     }
 
     /**

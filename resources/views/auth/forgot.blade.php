@@ -3,6 +3,7 @@
         <form method="POST" action="{{ \App\Support\Url::to('/forgot-password') }}">
             @csrf
             <x-field name="email" type="email" label="ইমেল" autocomplete="email" required autofocus />
+            <x-turnstile />
             <button class="h-12 w-full rounded-full bg-red font-bold text-white">লিংক পাঠান</button>
         </form>
     </x-form-card>

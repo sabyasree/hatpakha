@@ -57,7 +57,15 @@ class ArchiveController extends Controller
             jsonLd: [['@type' => 'ProfilePage', 'mainEntity' => JsonLd::person($author)]],
         );
 
-        return view('author', compact('author', 'posts', 'seo'));
+        // D59: what the header shows: sections they write in, writing since, links.
+        // Plain post query (the relation would add pivot columns, which strict MySQL refuses in GROUP BY).
+        $all = fn () => \App\Models\Post::published()->whereHas('authors', fn ($q) => $q->whereKey($author->id));
+        $sections = $all()->join('sections', 'sections.id', '=', 'posts.section_id')
+            ->selectRaw('sections.name_bn as name, sections.slug as slug, count(*) as n')->groupBy('sections.name_bn', 'sections.slug')->orderByDesc('n')->limit(5)->get();
+        $since = $all()->min('posts.published_at');
+        $isOwner = $author->user_id && $request->user()?->id === $author->user_id;
+
+        return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner'));
     }
 
     /**

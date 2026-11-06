@@ -756,5 +756,6 @@
     "এআই (সাপ্তাহিক)": "AI (weekly)",
     "এআই (লেখকদের চিঠি)": "AI (writers' letter)",
     "এআই (আপনার বিষয়)": "AI (your topic)",
-    "চিঠির খসড়া তৈরি: ": "Newsletter draft ready: "
+    "চিঠির খসড়া তৈরি: ": "Newsletter draft ready: ",
+    "পাঠক = যাঁরা চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন, আর ই-মেল যাচাই করা সব অ্যাকাউন্ট (যাঁরা বন্ধ করেননি)। লেখক = যাচাই করা লেখক-অ্যাকাউন্ট। একজন দু'বার পাবেন না।": "Readers = people who signed up and confirmed, plus every account with a verified email (unless they switched it off). Writers = verified writer accounts. Nobody gets it twice."
 }

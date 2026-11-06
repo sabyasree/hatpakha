@@ -25,13 +25,21 @@ final class NewsletterSender
         return ! in_array(config('mail.default'), ['log', 'array'], true);
     }
 
-    /** Readers: confirmed opt-in only. Writers: registered writers who have not opted out. */
+    /**
+     * Readers: confirmed sign-ups, plus every account with a verified e-mail that has not switched
+     * the letter off (owner's decision, D59: accounts get the letter by default, one click to stop).
+     * Writers: registered writers who have not opted out.
+     */
     public static function recipients(string $audience): Collection
     {
         $out = collect();
         if (in_array($audience, ['readers', 'both'], true)) {
             NewsletterSubscriber::mailable()->get(['id', 'email'])
                 ->each(fn ($s) => $out->push(['email' => mb_strtolower(trim($s->email)), 'kind' => 'subscriber', 'id' => $s->id]));
+            User::where('mail_opt_out', false)->whereNotNull('email_verified_at')
+                ->when(\Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason'), fn ($q) => $q->whereNull('spam_reason'))
+                ->get(['id', 'email'])
+                ->each(fn ($u) => $out->push(['email' => mb_strtolower(trim($u->email)), 'kind' => 'writer', 'id' => $u->id]));
         }
         if (in_array($audience, ['writers', 'both'], true)) {
             User::where('mail_opt_out', false)->whereNotNull('email_verified_at')

@@ -28,7 +28,13 @@ class Author extends Model
 
     public function publicName(): string
     {
-        return $this->display_name_bn ?: $this->display_name;
+        if ($this->display_name_bn) {
+            return $this->display_name_bn;
+        }
+        // Old WordPress logins ("sambuddha_chatterjee") read as names ("Sambuddha Chatterjee") until the writer sets one (D59).
+        $n = (string) $this->display_name;
+
+        return preg_match('/^[a-z0-9]+([_.\-][a-z0-9]+)+$/', $n) ? ucwords(preg_replace('/[_.\-]+/', ' ', $n)) : $n;
     }
 
     /** First letter for the generated initials avatar. */

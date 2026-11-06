@@ -180,7 +180,7 @@ final class CoverImage
     }
 
     /** No script can ever run from the upload folder (LiteSpeed/Apache read this). */
-    private static function guardFolder(): void
+    public static function guardFolder(): void
     {
         $f = public_path('media/.htaccess');
         if (! is_file($f)) {

@@ -16,3 +16,21 @@ if (article && navigator.sendBeacon) {
     };
     setTimeout(send, 5000);
 }
+
+// Profile photo / cover: show the chosen picture straight away (D59). The server re-checks and crops it.
+document.querySelectorAll('[data-preview-input]').forEach((input) => {
+    input.addEventListener('change', () => {
+        const kind = input.dataset.previewInput;
+        const img = document.querySelector(`[data-preview="${kind}"]`);
+        const file = input.files && input.files[0];
+        if (!img || !file || !/^image\/(jpeg|png|webp)$/.test(file.type)) return;
+        // data: URL (the site's CSP allows data: images, not blob:)
+        const reader = new FileReader();
+        reader.onload = () => {
+            img.src = reader.result;
+            img.classList.remove('hidden');
+            document.querySelector(`[data-preview-fallback="${kind}"]`)?.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+});

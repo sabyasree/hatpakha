@@ -64,20 +64,32 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\AuthController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [\App\Http\Controllers\Auth\AuthController::class, 'reset'])->middleware('throttle:password-reset')->name('password.update');
 });
+// D59: after sign-up, the link in the e-mail verifies the address and signs the writer in.
+Route::get('/register/check-email', [\App\Http\Controllers\Auth\AuthController::class, 'checkEmail'])->name('register.check');
+Route::get('/login/2fa', [\App\Http\Controllers\Auth\AuthController::class, 'showTwoFactor'])->middleware('guest')->name('login.2fa');
+Route::post('/login/2fa', [\App\Http\Controllers\Auth\AuthController::class, 'twoFactor'])->middleware(['guest', 'throttle:6,1']);
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
+    Route::get('/email/verify', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
+});
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->group(function () {
     Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account');
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
-    Route::get('/email/verify', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'notice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
-    Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
+    Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');
+    Route::post('/account/newsletter', [\App\Http\Controllers\AccountController::class, 'updateNewsletter']);
+    Route::post('/account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->middleware('throttle:5,1');
+    Route::post('/account/2fa/start', [\App\Http\Controllers\AccountController::class, 'twoFactorStart'])->middleware('throttle:10,1');
+    Route::post('/account/2fa/confirm', [\App\Http\Controllers\AccountController::class, 'twoFactorConfirm'])->middleware('throttle:6,1');
+    Route::post('/account/2fa/disable', [\App\Http\Controllers\AccountController::class, 'twoFactorDisable'])->middleware('throttle:5,1');
 });
 
 // The submission-page helper chat (D52): guests get public answers, writers their own pieces' status.
 Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'ask'])->middleware('throttle:30,1')->name('chat');
 
 // Submissions (Phase 3b): the only way to submit (D29). Writers only see/edit their own pieces.
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->group(function () {
     Route::get('/submit', [\App\Http\Controllers\SubmissionController::class, 'create'])->name('submit');
     Route::post('/submit', [\App\Http\Controllers\SubmissionController::class, 'store']);
     Route::post('/submit/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->middleware('throttle:60,1');

@@ -22,6 +22,9 @@ class CommentController extends Controller
         abort_unless($post->isLive(), 404);
         $user = $request->user();
         $back = $post->url().'#comments';
+        if ($user && AccountController::verificationRequired() && ! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages(['body' => 'মন্তব্য করার আগে ই-মেল যাচাই করুন (আপনার ইনবক্সে লিংক আছে)।'])->redirectTo($back);   // D59
+        }
 
         if (filled($request->input('website')) || ! self::humanSpeed((string) $request->input('started'))) {
             throw ValidationException::withMessages(['body' => 'কিছু একটা ঠিক হয়নি। পাতাটি আবার খুলে চেষ্টা করুন।'])->redirectTo($back);
