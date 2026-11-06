@@ -208,3 +208,41 @@ document.querySelectorAll('a[data-more-rows]').forEach((more) => {
         more.removeAttribute('aria-busy');
     });
 });
+// Bottom sheet "বন্ধ" and backdrop close the ⋯ menu.
+document.addEventListener('click', (e) => {
+    const c = e.target.closest?.('[data-close-menu]');
+    if (c) { e.preventDefault(); c.closest('details').open = false; }
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.querySelectorAll('details[data-row-menu][open]').forEach((d) => { d.open = false; });
+});
+// One-tap remove with "ফিরিয়ে আনুন" (UX review): the row hides, a small message offers undo for a few seconds.
+document.querySelectorAll('form[data-undoable]').forEach((form) => {
+    const send = () => fetch(form.action, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value },
+    }).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const row = form.closest('[data-row]');
+        send().then(() => {
+            if (row) row.hidden = true;
+            document.querySelector('[data-undo-toast]')?.remove();
+            const toast = document.createElement('div');
+            toast.setAttribute('data-undo-toast', '');
+            toast.setAttribute('role', 'status');
+            toast.className = 'fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-navy px-4 py-3 font-bold text-white shadow-[4px_4px_0_#CB1B32] md:bottom-6';
+            toast.innerHTML = '<span class="flex-1"></span><button type="button" class="h-10 rounded-full bg-paper px-4 text-navy">ফিরিয়ে আনুন</button>';
+            toast.querySelector('span').textContent = form.dataset.undoable;
+            toast.querySelector('button').addEventListener('click', () => send().then(() => { if (row) row.hidden = false; toast.remove(); }));
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 6000);
+        }).catch(() => form.submit());
+    });
+});
+// "সব দেখুন" for followed writers: show the rest in place.
+document.querySelector('[data-show-follow]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('[data-more-follow]').forEach((li) => { li.hidden = false; });
+    e.currentTarget.remove();
+});

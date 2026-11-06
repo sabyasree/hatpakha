@@ -13,7 +13,7 @@
                             <span class="block font-serif text-lg font-bold leading-snug">{{ $p->title }}</span>
                             <span class="text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }}</span>
                         </a>
-                        <form method="POST" action="{{ route('save', $p) }}">@csrf
+                        <form method="POST" action="{{ route('save', $p) }}" data-undoable="তালিকা থেকে সরানো হল">@csrf
                             <button class="flex h-11 w-11 items-center justify-center rounded-full text-xl text-ink2 hover:bg-peach-light hover:text-red" aria-label="তালিকা থেকে সরান: {{ $p->title }}" title="তালিকা থেকে সরান">✕</button></form>
                     </li>
                 @endforeach
@@ -30,17 +30,20 @@
         @else
             <ul class="mt-3 grid gap-2 sm:grid-cols-2">
                 @foreach ($following as $f)
-                    <li class="flex items-center gap-2 rounded-2xl border-2 border-navy bg-white p-2 pl-3">
+                    <li data-row @if ($loop->index >= 8 && ! request('following')) hidden data-more-follow @endif class="flex items-center gap-2 rounded-2xl border-2 border-navy bg-white p-2 pl-3">
                         <a href="{{ $f->url() }}" class="flex min-h-11 min-w-0 flex-1 items-center gap-3">
                             @if ($f->avatar_path)<img src="{{ $f->avatar_path }}" alt="" class="h-10 w-10 flex-none rounded-full object-cover">
                             @else<span class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-peach-light font-extrabold text-red-dark" aria-hidden="true">{{ $f->initial() }}</span>@endif
                             <span class="truncate font-bold">{{ $f->publicName() }}</span>
                         </a>
-                        <form method="POST" action="{{ route('follow', $f) }}">@csrf
-                            <button class="flex h-11 items-center rounded-full px-3 text-sm font-bold text-ink2 hover:bg-peach-light hover:text-red" aria-label="অনুসরণ বন্ধ: {{ $f->publicName() }}">অনুসরণ বন্ধ</button></form>
+                        <form method="POST" action="{{ route('follow', $f) }}" data-undoable="অনুসরণ বন্ধ হল">@csrf
+                            <button class="flex h-10 items-center rounded-full border-2 border-navy px-3 text-sm font-bold hover:bg-peach-light" aria-label="অনুসরণ বন্ধ: {{ $f->publicName() }}">অনুসরণ বন্ধ</button></form>
                     </li>
                 @endforeach
             </ul>
+            @if ($following->count() > 8 && ! request('following'))
+                <a href="?following=all" data-show-follow class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব দেখুন ({{ Bn::num((string) $following->count()) }}) →</a>
+            @endif
         @endif
     </x-account-shell>
 </x-layouts.app>

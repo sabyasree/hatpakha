@@ -3,7 +3,7 @@
 @php
     $avatar = $author?->avatar_path;
     $tabs = [
-        'home' => ['হোম', \App\Support\Url::to('/account')],
+        'home' => ['সারসংক্ষেপ', \App\Support\Url::to('/account')],
         'writings' => ['লেখা', \App\Support\Url::to('/account/writings')],
         'reading' => ['পড়ার তালিকা', \App\Support\Url::to('/account/reading')],
         'settings' => ['সেটিংস', \App\Support\Url::to('/account/settings')],
@@ -25,7 +25,9 @@
             </div>
         </div>
     </div>
-    <a href="{{ \App\Support\Url::to('/submit') }}" class="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-red font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-8">+ নতুন লেখা পাঠান</a>
+    @if ($tab === 'home')
+        <a href="{{ \App\Support\Url::to('/submit') }}" class="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-red font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-8">+ নতুন লেখা পাঠান</a>
+    @endif
 
     @if (session('submitted'))
         <div role="status" class="mt-5 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">

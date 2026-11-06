@@ -25,12 +25,16 @@
             </div>
         @else
             {{-- One line of numbers; each part opens its list --}}
+            @php
+                $nums = array_filter([
+                    [$published, 'প্রকাশিত', 'published'], [$inReview, 'সম্পাদকের কাছে', 'review'], [$certCount, 'শংসাপত্র', 'certificates'],
+                ], fn ($x) => $x[0] > 0);
+            @endphp
             <p class="flex flex-wrap gap-x-3 gap-y-1 text-sm font-bold">
-                <a href="{{ Url::to('/account/writings') }}?status=published" class="underline decoration-rule underline-offset-4 hover:text-red">{{ Bn::num((string) $published) }} প্রকাশিত</a>
-                <span aria-hidden="true" class="text-ink2">·</span>
-                <a href="{{ Url::to('/account/writings') }}?status=review" class="underline decoration-rule underline-offset-4 hover:text-red">{{ Bn::num((string) $inReview) }} সম্পাদকের কাছে</a>
-                @if ($certCount)<span aria-hidden="true" class="text-ink2">·</span>
-                    <a href="{{ Url::to('/account/writings') }}?status=certificates" class="underline decoration-rule underline-offset-4 hover:text-red">{{ Bn::num((string) $certCount) }} শংসাপত্র</a>@endif
+                @foreach ($nums as [$v, $label, $key])
+                    @if (! $loop->first)<span aria-hidden="true" class="text-ink2">·</span>@endif
+                    <a href="{{ Url::to('/account/writings') }}?status={{ $key }}" class="underline decoration-rule underline-offset-4 hover:text-red">{{ Bn::num((string) $v) }} {{ $label }}</a>
+                @endforeach
             </p>
         @endif
 

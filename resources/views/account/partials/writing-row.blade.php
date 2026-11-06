@@ -19,20 +19,23 @@
             <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $chip }}">{{ $label }}</span>
             {{ $p->section?->name_bn }} · {{ Bn::date($p->published_at ?? $p->submitted_at ?? $p->updated_at) }}
             @if ($p->audio_status === 'approved')<span title="লেখকের কণ্ঠে পাঠ আছে" aria-label="পাঠ আছে">🎙</span>@endif
-            @if ($cert)<span title="শংসাপত্র আছে" aria-label="শংসাপত্র আছে" class="text-red">★</span>@endif
+            @if ($cert)<span title="শংসাপত্র আছে" class="text-red"><svg class="inline h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" role="img" aria-label="শংসাপত্র আছে"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7"/></svg></span>@endif
         </span>
     </a>
     @if ($editable)
-        <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full {{ $p->status === 'draft' ? 'border-2 border-navy' : 'bg-red text-white' }} px-4 text-sm font-bold">{{ ['changes' => 'ঠিক করুন', 'confirm' => 'সম্মতি দিন', 'draft' => 'লিখুন'][$p->status] }}</a>
+        <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full {{ $p->status === 'draft' ? 'border-2 border-navy' : 'bg-red text-white' }} px-4 text-sm font-bold">{{ ['changes' => 'ঠিক করুন', 'confirm' => 'সম্মতি দিন', 'draft' => 'লিখতে থাকুন'][$p->status] }}</a>
     @elseif (in_array($p->status, ['published', 'scheduled'], true))
         {{-- ⋯ menu: everything extra for this piece, out of the list's way --}}
         <details class="relative flex-none" data-row-menu>
             <summary class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full hover:bg-peach-light [&::-webkit-details-marker]:hidden" aria-label="আরও: {{ $p->title }}">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
             </summary>
-            <div class="absolute right-0 top-12 z-20 w-[min(20rem,calc(100vw-2.5rem))] rounded-2xl border-2 border-navy bg-paper p-2 shadow-[4px_4px_0_#13212C]">
+            {{-- Phones: a bottom sheet over everything (UX review); wider screens: a small popover --}}
+            <button type="button" data-close-menu class="fixed inset-0 z-50 bg-navy/40 sm:hidden" aria-label="বন্ধ"></button>
+            <div class="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-3xl border-t-2 border-navy bg-paper p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_0_#13212C] sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-12 sm:z-20 sm:max-h-none sm:w-80 sm:rounded-2xl sm:border-2 sm:p-2 sm:pb-2 sm:shadow-[4px_4px_0_#13212C]">
+                <div class="mb-1 flex items-center justify-between px-3 sm:hidden"><strong class="truncate font-serif">{{ $p->title }}</strong><button type="button" data-close-menu class="flex h-11 items-center rounded-full px-3 font-bold text-ink2">বন্ধ</button></div>
                 @if ($p->status === 'published')
-                    <a href="{{ $p->url() }}" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">লেখাটি দেখুন</a>
+                    <a href="{{ $p->url() }}" class="flex min-h-12 items-center rounded-xl px-3 font-bold hover:bg-peach-light">লেখাটি দেখুন</a>
                     <a href="https://wa.me/?text={{ rawurlencode($p->title.' — '.$p->url()) }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">শেয়ার করুন</a>
                     @if ($cert)
                         <a href="{{ $cert->verifyUrl() }}" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">শংসাপত্র দেখুন</a>

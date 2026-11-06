@@ -12,8 +12,8 @@
                 <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">লেখক-প্রোফাইল</span><span class="text-sm text-ink2">ছবি, প্রচ্ছদ, নাম, নিজের কথা: আপনার লেখক-পাতায় যা দেখা যায়</span></span>
                 <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
             </summary>
-            <div class="border-t-2 border-rule p-4 sm:p-5">
-            <form method="POST" action="{{ Url::to('/account/profile') }}" enctype="multipart/form-data" class="overflow-hidden rounded-2xl border-2 border-rule bg-white">
+            <div class="border-t-2 border-rule p-3 sm:p-5">
+            <form method="POST" action="{{ Url::to('/account/profile') }}" enctype="multipart/form-data" class="overflow-hidden sm:rounded-2xl sm:border-2 sm:border-rule bg-white">
                 @csrf
                 {{-- Live preview of cover + photo --}}
                 <div class="relative h-36 bg-sky md:h-48">
@@ -22,7 +22,7 @@
                     <label class="absolute right-3 top-3 flex h-10 cursor-pointer items-center rounded-full bg-white/95 px-4 text-sm font-bold shadow">
                         প্রচ্ছদ বদলান<input type="file" name="cover" accept="image/jpeg,image/png,image/webp" data-preview-input="cover" class="sr-only"></label>
                 </div>
-                <div class="px-5 pb-5">
+                <div class="pb-2 sm:px-5 sm:pb-5">
                     <div class="-mt-12 flex items-end gap-4">
                         <div class="relative">
                             <img data-preview="avatar" @if ($avatar) src="{{ $avatar }}" @endif alt="" class="{{ $avatar ? '' : 'hidden' }} h-24 w-24 rounded-full border-4 border-white object-cover outline outline-2 outline-navy">
@@ -59,9 +59,9 @@
                 <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">নিরাপত্তা</span><span class="text-sm text-ink2">দুই-ধাপের যাচাই {{ $twoFactorOn ? '(চালু)' : '(বন্ধ)' }} · পাসওয়ার্ড</span></span>
                 <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
             </summary>
-            <div class="border-t-2 border-rule p-4 sm:p-5">
+            <div class="border-t-2 border-rule p-3 sm:p-5">
             <div class="grid gap-5 md:grid-cols-2">
-                <div class="rounded-3xl border-2 border-navy bg-white p-5">
+                <div class="sm:rounded-3xl sm:border-2 sm:border-navy bg-white sm:p-5">
                     <h3 class="text-xl font-extrabold">দুই-ধাপের যাচাই</h3>
                     @if ($twoFactorOn)
                         <p class="mt-2"><span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">✓ চালু আছে</span></p>
@@ -99,7 +99,7 @@
                         </form>
                     @endif
                 </div>
-                <div class="rounded-3xl border-2 border-navy bg-white p-5">
+                <div class="sm:rounded-3xl sm:border-2 sm:border-navy bg-white sm:p-5">
                     <h3 class="text-xl font-extrabold">পাসওয়ার্ড বদলান</h3>
                     <form method="POST" action="{{ Url::to('/account/password') }}" class="mt-3">@csrf
                         <x-field name="current_password" type="password" label="এখনকার পাসওয়ার্ড" autocomplete="current-password" required />
@@ -117,7 +117,7 @@
                 <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">চিঠি</span><span class="text-sm text-ink2">হাতপাখার সাপ্তাহিক চিঠি {{ $user->mail_opt_out ? '(বন্ধ)' : '(চালু)' }}</span></span>
                 <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
             </summary>
-            <div class="border-t-2 border-rule p-4 sm:p-5">
+            <div class="border-t-2 border-rule p-3 sm:p-5">
             <form method="POST" action="{{ Url::to('/account/newsletter') }}" class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-navy bg-white p-5">
                 @csrf
                 <div class="min-w-0">
