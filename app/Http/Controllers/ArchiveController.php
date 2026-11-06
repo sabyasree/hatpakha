@@ -77,7 +77,10 @@ class ArchiveController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')]])],
         );
 
-        return view('archive-index', compact('years', 'issues', 'sections', 'total', 'seo'));
+        // The archivist's approved themed collections (D55), newest first.
+        $collections = \App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->latest('approved_at')->limit(6)->get();
+
+        return view('archive-index', compact('years', 'issues', 'sections', 'total', 'seo', 'collections'));
     }
 
     public function archiveYear(int $year)

@@ -175,6 +175,54 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** The archivist's collection (D55): approve to show it on /archive/. */
+    public function approveCollectionAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('approveCollection')->label(__('দেখুন ও অনুমোদন'))->icon('heroicon-o-check')->size('sm')
+            ->modalHeading(fn (array $arguments) => $this->task($arguments)->subject?->title)
+            ->fillForm(fn (array $arguments) => ['title' => $this->task($arguments)->subject?->title, 'intro' => $this->task($arguments)->subject?->intro])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\TextInput::make('title')->label(__('নাম'))->required()->maxLength(150),
+                \Filament\Forms\Components\Textarea::make('intro')->label(__('ভূমিকা'))->rows(3)->maxLength(1200),
+                \Filament\Forms\Components\Placeholder::make('list')->label(__('লেখা'))->content(fn () => $this->task($arguments)->subject?->posts()
+                    ->map(fn ($p) => $p->title.' — '.($p->authors->first()?->publicName() ?? ''))->implode(' · ')),
+            ])
+            ->modalSubmitActionLabel(__('অনুমোদন'))
+            ->action(function (array $data, array $arguments) {
+                $task = $this->task($arguments);
+                $c = $task->subject;
+                abort_unless($c instanceof \App\Models\Collection && auth()->user()->hasRole(\App\Enums\Role::Admin), 403);
+                $c->forceFill(['title' => strip_tags($data['title']), 'intro' => strip_tags((string) $data['intro']), 'status' => 'approved', 'approved_at' => now()])->save();
+                \App\Models\AuditLog::record('collection.approved', null, ['collection' => $c->id]);
+                $task->close();
+                Notification::make()->title($c->kind === 'theme' ? __('আর্কাইভ পাতায় দেখা যাবে') : __('অনুমোদিত'))->success()->send();
+            });
+    }
+
+    /** Tag tidy-up (D55): the owner ticks which duplicates to merge (old tag pages 301 to the kept tag). */
+    public function mergeTagsAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('mergeTags')->label(__('মেলান'))->icon('heroicon-o-arrows-pointing-in')->size('sm')
+            ->modalHeading(__('একই রকম ট্যাগ মেলানো'))
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\CheckboxList::make('pairs')->label(__('কোনগুলো মেলাবেন?'))->columns(1)->bulkToggleable()
+                    ->options(collect($this->task($arguments)->payload['pairs'] ?? [])->mapWithKeys(fn ($p, $i) => [$i => '"'.$p['drop_name'].'" → "'.$p['keep_name'].'" ('.\App\Support\Bn::num((string) $p['posts']).')'])->all()),
+            ])
+            ->modalSubmitActionLabel(__('মেলান'))
+            ->action(function (array $data, array $arguments) {
+                abort_unless(auth()->user()->hasRole(\App\Enums\Role::Admin), 403);
+                $task = $this->task($arguments);
+                $pairs = $task->payload['pairs'] ?? [];
+                foreach ((array) ($data['pairs'] ?? []) as $i) {
+                    if (isset($pairs[$i]) && \App\Models\Tag::whereKey([$pairs[$i]['keep'], $pairs[$i]['drop']])->count() === 2) {
+                        \App\Ai\Archivist::mergeTag($pairs[$i]['keep'], $pairs[$i]['drop']);
+                    }
+                }
+                $task->close();
+                Notification::make()->title(__('ট্যাগ মেলানো হয়েছে'))->success()->send();
+            });
+    }
+
     /** Weekly picks: edit the note, then they go on the home page. */
     public function approvePickAction(): \Filament\Actions\Action
     {

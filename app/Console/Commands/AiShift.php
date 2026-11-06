@@ -164,6 +164,11 @@ class AiShift extends Command
         \App\Ai\EditorJobs::report();
         \App\Ai\Marketer::spotlight();
         \App\Ai\Analyst::monthly();
+        \App\Ai\Archivist::collection();
+        \App\Ai\Archivist::tags();
+        if (now('Asia/Kolkata')->month === 1) {
+            \App\Ai\Archivist::anthology();
+        }
         \App\Ai\SeoExpert::refresh();
 
         return self::SUCCESS;

@@ -17,6 +17,23 @@
         </div>
     </section>
 
+    @foreach ($collections as $collection)
+        {{-- Archivist's collection (D55), approved by the owner. --}}
+        <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="col-{{ $collection->id }}">
+            <div class="font-hand text-xl text-red">সংকলন</div>
+            <h2 id="col-{{ $collection->id }}" class="font-display text-2xl font-extrabold">{{ $collection->title }}</h2>
+            @if ($collection->intro)<p class="mt-2 max-w-[65ch] font-serif text-ink2">{{ $collection->intro }}</p>@endif
+            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                @foreach ($collection->posts() as $p)
+                    <li><a href="{{ $p->url() }}" class="lift block rounded-xl border-2 border-navy bg-paper p-3 hover:bg-peach-light">
+                        <span class="block font-display text-lg font-bold">{{ $p->title }}</span>
+                        <span class="text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }}</span>
+                    </a></li>
+                @endforeach
+            </ul>
+        </section>
+    @endforeach
+
     @if ($issues->isNotEmpty())
         <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="issues">
             <h2 id="issues" class="mb-4 font-display text-2xl font-extrabold">সংখ্যা</h2>
