@@ -23,7 +23,7 @@ class MakeImageVariants extends Command
     /** @var array<string,array{count:int,example:string}> */
     private array $reasons = [];
 
-    private function fail(array &$stats, string $why, string $rel): void
+    private function recordFailure(array &$stats, string $why, string $rel): void
     {
         $stats['failed']++;
         $this->reasons[$why] ??= ['count' => 0, 'example' => $rel];
@@ -103,12 +103,12 @@ class MakeImageVariants extends Command
         }
         $info = @getimagesize($file);
         if (! $info) {
-            $this->fail($stats, 'not a readable image ('.filesize($file).' bytes)', $rel);
+            $this->recordFailure($stats, 'not a readable image ('.filesize($file).' bytes)', $rel);
 
             return;
         }
         if ($info[0] * $info[1] > self::MAX_PIXELS) {
-            $this->fail($stats, 'too large (over 40 megapixels)', $rel);
+            $this->recordFailure($stats, 'too large (over 40 megapixels)', $rel);
 
             return;
         }
@@ -139,19 +139,19 @@ class MakeImageVariants extends Command
             $src = $this->load($file, $info[2]);
         } catch (\Throwable $e) {
             $src = false;
-            $this->fail($stats, 'load error: '.mb_substr($e->getMessage(), 0, 80), $rel);
+            $this->recordFailure($stats, 'load error: '.mb_substr($e->getMessage(), 0, 80), $rel);
 
             return;
         }
         if (! $src) {
-            $this->fail($stats, 'could not decode '.image_type_to_extension($info[2], false).': '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
+            $this->recordFailure($stats, 'could not decode '.image_type_to_extension($info[2], false).': '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
 
             return;
         }
         foreach ($todo as [$w, $out]) {
             $img = $w >= imagesx($src) ? $src : imagescale($src, $w, -1, IMG_BICUBIC);
             if (! $img) {
-                $this->fail($stats, 'resize failed', $rel);
+                $this->recordFailure($stats, 'resize failed', $rel);
 
                 continue;
             }
@@ -159,12 +159,12 @@ class MakeImageVariants extends Command
             imagesavealpha($img, true);
             error_clear_last();
             if (! is_writable(dirname($out))) {
-                $this->fail($stats, 'folder not writable', $rel);
+                $this->recordFailure($stats, 'folder not writable', $rel);
             } elseif (@imagewebp($img, $out, 78)) {
                 $stats['made']++;
                 $stats['saved_kb'] += max(0, (filesize($file) - filesize($out)) / 1024 / count($todo));
             } else {
-                $this->fail($stats, 'WebP write failed: '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
+                $this->recordFailure($stats, 'WebP write failed: '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
             }
             if ($img !== $src) {
                 imagedestroy($img);
