@@ -29,7 +29,7 @@ class UserForm
                 ->helperText(fn ($operation) => $operation === 'create' ? 'নতুন অ্যাকাউন্টে পাসওয়ার্ড বানানোর লিংক এই ঠিকানায় যাবে।' : null),
             Select::make('role')->label('ভূমিকা')->required()->default(Role::Reader->value)->options(self::roles())
                 ->disabled(fn (?User $record) => $record?->is(auth()->user()))
-                ->helperText('সম্পাদক বা তার উপরে হলে /desk খোলা যায় (২-ধাপ যাচাই বাধ্যতামূলক)। প্রতিটি বদল লগে থাকে।'),
+                ->helperText('সম্পাদক বা তার উপরে হলে ডেস্ক খোলা যায় (২-ধাপ যাচাই বাধ্যতামূলক)। প্রতিটি বদল লগে থাকে।'),
             TextInput::make('spam_reason')->label('স্প্যাম চিহ্ন (কারণ)')->maxLength(120)
                 ->helperText('খালি রাখলে স্বাভাবিক অ্যাকাউন্ট। চিহ্নিত অ্যাকাউন্ট মুছে ফেলা হয় না।'),
             Section::make('তথ্য')->columns(2)->visibleOn('edit')->schema([

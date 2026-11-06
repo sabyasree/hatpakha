@@ -2,7 +2,7 @@
 @php($r = $review?->report)
 <div class="space-y-4 text-sm leading-relaxed">
     @if (! $review)
-        <p>এখনও কোনও AI রিপোর্ট নেই।</p>
+        <p>এখনও কোনও এআই রিপোর্ট নেই।</p>
     @elseif ($review->status !== 'done')
         <p><strong>রিপোর্ট হয়নি:</strong> {{ $review->error }}</p>
     @else

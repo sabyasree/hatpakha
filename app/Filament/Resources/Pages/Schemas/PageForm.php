@@ -17,7 +17,7 @@ class PageForm
             ->components([
                 TextInput::make('title')->label('শিরোনাম')->required()->maxLength(200),
                 // The URL is fixed once created: old links and Google depend on it (docs/SEO.md §1).
-                TextInput::make('slug')->label('ঠিকানা (URL)')->prefix('/')->suffix('/')
+                TextInput::make('slug')->label('ঠিকানা')->prefix('/')->suffix('/')
                     ->required()->maxLength(200)->unique(ignoreRecord: true)
                     ->regex('/^[\p{L}\p{M}\p{N}-]+$/u')
                     ->disabledOn('edit')->helperText('একবার তৈরি হলে বদলানো যায় না।'),
@@ -27,9 +27,9 @@ class PageForm
                     Select::make('status')->label('অবস্থা')->options(['published' => 'প্রকাশিত', 'draft' => 'খসড়া'])->required()->default('published'),
                     TextInput::make('sort')->label('ফুটারে ক্রম')->numeric()->default(100),
                     Toggle::make('show_in_footer')->label('ফুটারে লিংক দেখাও'),
-                    Toggle::make('noindex')->label('Google-এ দেখাবে না (noindex)'),
-                    TextInput::make('seo_title')->label('SEO শিরোনাম')->maxLength(70),
-                    TextInput::make('seo_description')->label('SEO বিবরণ')->maxLength(160),
+                    Toggle::make('noindex')->label('গুগলে দেখাবে না'),
+                    TextInput::make('seo_title')->label('গুগলের জন্য শিরোনাম')->maxLength(70),
+                    TextInput::make('seo_description')->label('গুগলের জন্য বিবরণ')->maxLength(160),
                 ]),
             ]);
     }

@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
  */
 final class ContentAudit
 {
-    public const LABELS = ['keep' => 'রাখুন', 'improve' => 'উন্নত করুন', 'merge' => 'একত্র করুন', 'noindex' => 'Google থেকে লুকান', 'remove' => 'সরান (410)'];
+    public const LABELS = ['keep' => 'রাখুন', 'improve' => 'উন্নত করুন', 'merge' => 'একত্র করুন', 'noindex' => 'গুগল থেকে লুকান', 'remove' => 'সরান (৪১০)'];
 
     private const RANK = ['keep' => 0, 'improve' => 1, 'merge' => 2, 'noindex' => 3, 'remove' => 4];
 
@@ -53,7 +53,7 @@ final class ContentAudit
         }
         $hasPdf = (bool) preg_match('~href="[^"]+\.pdf"~i', $html);
         if ($hasPdf && $words < 30) {
-            $flag('improve', 'লেখা শুধু PDF ফাইলে: পাতায় লেখাটি টাইপ করে দিলে পাঠক ও Google পড়তে পারবে');
+            $flag('improve', 'লেখা শুধু PDF ফাইলে: পাতায় লেখাটি টাইপ করে দিলে পাঠক ও গুগল পড়তে পারবে');
         }
         if ($words < 5 && ! $hasMedia && ! $hasPdf) {
             $flag('remove', 'লেখা প্রায় ফাঁকা');
@@ -100,7 +100,7 @@ final class ContentAudit
         return ['label' => $label, 'reasons' => $reasons, 'merge_into' => $label === 'merge' ? $duplicateOf : null];
     }
 
-    public const TIERS = ['A' => 'A: সাম্প্রতিক (২০২২–)', 'B' => 'B: বাছাই-বাদ (ফাঁকা/নকল/পরীক্ষা)', 'C' => 'C: পুরনো, ভালো হতে পারে'];
+    public const TIERS = ['A' => 'ক: সাম্প্রতিক (২০২২–)', 'B' => 'খ: বাছাই-বাদ (ফাঁকা/নকল/পরীক্ষা)', 'C' => 'গ: পুরনো, ভালো হতে পারে'];
 
     /**
      * Pending backlog tier with reasons (PLAN.md "Real backlog"). Suggestion only.

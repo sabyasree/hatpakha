@@ -86,6 +86,8 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->middleware([\App\Http\Middleware\DeskLocale::class], isPersistent: true)
+            // Bengali calendar names + Bengali digits on screen (public/js/desk-bn.js).
+            ->renderHook(\Filament\View\PanelsRenderHook::BODY_END, fn () => new \Illuminate\Support\HtmlString('<script src="'.asset('js/desk-bn.js').'?v=3"></script>'))
             ->authMiddleware([Authenticate::class])
             ->loginRouteSlug('login')
             ->authGuard('web');

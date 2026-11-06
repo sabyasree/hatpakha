@@ -23,9 +23,9 @@ class AiSettings extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
 
-    protected static ?string $navigationLabel = 'AI সহকারী';
+    protected static ?string $navigationLabel = 'এআই সহকারী';
 
-    protected static ?string $title = 'AI সহকারী';
+    protected static ?string $title = 'এআই সহকারী';
 
     protected static ?int $navigationSort = 90;
 
@@ -44,8 +44,8 @@ class AiSettings extends Page
     public function form(Schema $schema): Schema
     {
         return $schema->statePath('data')->components([
-            Textarea::make('rubric')->label('সম্পাদকীয় মানদণ্ড (AI এটা মেনে রিপোর্ট লেখে)')->rows(22)->required()->maxLength(20000)
-                ->helperText('বদলালে পরের রিপোর্ট থেকে কার্যকর। AI শুধু পরামর্শ দেয়; সিদ্ধান্ত সম্পাদকের।'),
+            Textarea::make('rubric')->label('সম্পাদকীয় মানদণ্ড (এআই এটা মেনে রিপোর্ট লেখে)')->rows(22)->required()->maxLength(20000)
+                ->helperText('বদলালে পরের রিপোর্ট থেকে কার্যকর। এআই শুধু পরামর্শ দেয়; সিদ্ধান্ত সম্পাদকের।'),
         ]);
     }
 

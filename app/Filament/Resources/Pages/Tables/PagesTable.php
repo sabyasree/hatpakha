@@ -21,7 +21,7 @@ class PagesTable
                     ->formatStateUsing(fn ($state) => $state === 'published' ? 'প্রকাশিত' : 'খসড়া')
                     ->color(fn ($state) => $state === 'published' ? 'success' : 'gray'),
                 IconColumn::make('show_in_footer')->label('ফুটার')->boolean(),
-                IconColumn::make('noindex')->label('noindex')->boolean(),
+                IconColumn::make('noindex')->label('গুগলে লুকানো')->boolean(),
                 TextColumn::make('updated_at')->label('শেষ বদল')->since()->sortable(),
             ])
             ->recordActions([

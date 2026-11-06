@@ -46,7 +46,7 @@ class PostsTable
                     ->color(fn ($state) => match ($state) { 'published' => 'success', 'pending' => 'warning', 'archived', 'rejected' => 'gray', default => 'info' }),
                 TextColumn::make('published_at')->label('প্রকাশ')->date('j M Y')->sortable()->toggleable(),
                 TextColumn::make('submitted_at')->label('জমা')->date('j M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('latestAiReview.score')->label('AI')->badge()->placeholder('—')
+                TextColumn::make('latestAiReview.score')->label('এআই')->badge()->placeholder('—')
                     ->formatStateUsing(fn ($state) => \App\Support\Bn::num((string) $state).'/১০')
                     ->color(fn ($state) => $state >= 7 ? 'success' : ($state >= 5 ? 'warning' : 'gray'))
                     ->tooltip(fn (Post $record) => $record->latestAiReview?->report['summary'] ?? null)->toggleable(),
@@ -61,7 +61,7 @@ class PostsTable
             ->filters([
                 SelectFilter::make('status')->label('অবস্থা')->options(self::STATUS),
                 SelectFilter::make('section_id')->label('বিভাগ')->options(fn () => \App\Models\Section::orderBy('sort')->pluck('name_bn', 'id')->all()),
-                SelectFilter::make('language')->label('ভাষা')->options(['bn' => 'বাংলা', 'en' => 'English', 'hi' => 'हिन्दी/Urdu']),
+                SelectFilter::make('language')->label('ভাষা')->options(['bn' => 'বাংলা', 'en' => 'ইংরেজি', 'hi' => 'হিন্দি/উর্দু']),
                 SelectFilter::make('audit_label')->label('অডিট সুপারিশ')->options(ContentAudit::LABELS),
                 TernaryFilter::make('audit_open')->label('অডিট সিদ্ধান্ত')
                     ->trueLabel('বাকি আছে')->falseLabel('নেওয়া হয়েছে')
@@ -93,7 +93,7 @@ class PostsTable
                 BulkActionGroup::make([
                     BulkAction::make('applyAudit')->label('বেছে নেওয়া লেখায় সুপারিশ মানুন')->icon('heroicon-o-check')->color('warning')
                         ->requiresConfirmation()
-                        ->modalDescription('প্রতিটি লেখায় তার নিজের অডিট সুপারিশ কার্যকর হবে (Google থেকে লুকানো, বা আর্কাইভ করে 410/301)। সব বদল লগে থাকে এবং ফেরানো যায়।')
+                        ->modalDescription('প্রতিটি লেখায় তার নিজের অডিট সুপারিশ কার্যকর হবে (গুগল থেকে লুকানো, বা আর্কাইভ করে ৪১০/৩০১)। সব বদল লগে থাকে এবং ফেরানো যায়।')
                         ->action(function (Collection $records) {
                             $n = 0;
                             foreach ($records as $p) {
@@ -127,7 +127,7 @@ class PostsTable
                 ->schema([
                     DateTimePicker::make('at')->label('প্রকাশের সময়')->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
                         ->helperText('ভবিষ্যতের সময় দিলে সেদিন নিজে থেকেই প্রকাশিত হবে।'),
-                    TextInput::make('slug')->label('ঠিকানা (URL)')->prefix('/')->suffix('/')->maxLength(120)
+                    TextInput::make('slug')->label('ঠিকানা')->prefix('/')->suffix('/')->maxLength(120)
                         ->default(fn (Post $record) => Transliterate::slug($record->title))
                         ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।'),
                     Textarea::make('note')->label('লেখককে কিছু বলবেন? (ঐচ্ছিক)')->rows(2)->maxLength(1000),
@@ -161,18 +161,18 @@ class PostsTable
                     Notification::make()->title('লেখককে জানানো হয়েছে')->send();
                 }),
             // AI report (3d): advice for editors only; the decision stays with the buttons above.
-            Action::make('aiReport')->label('AI রিপোর্ট')->icon('heroicon-o-sparkles')->color('info')
+            Action::make('aiReport')->label('এআই রিপোর্ট')->icon('heroicon-o-sparkles')->color('info')
                 ->visible(fn (Post $record) => $record->latestAiReview !== null)
-                ->modalHeading(fn (Post $record) => 'AI রিপোর্ট: '.$record->title)
+                ->modalHeading(fn (Post $record) => 'এআই রিপোর্ট: '.$record->title)
                 ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
                 ->modalSubmitAction(false)->modalCancelActionLabel('বন্ধ'),
-            Action::make('runAi')->label('AI দিয়ে পড়ান')->icon('heroicon-o-arrow-path')->color('gray')
+            Action::make('runAi')->label('এআই দিয়ে পড়ান')->icon('heroicon-o-arrow-path')->color('gray')
                 ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
-                ->requiresConfirmation()->modalDescription('AI একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।')
+                ->requiresConfirmation()->modalDescription('এআই একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।')
                 ->action(function (Post $record) {
                     $review = app(\App\Ai\ReviewService::class)->run($record);
                     $review->status === 'done'
-                        ? Notification::make()->title('AI রিপোর্ট তৈরি: '.$review->score.'/১০')->success()->send()
+                        ? Notification::make()->title('এআই রিপোর্ট তৈরি: '.$review->score.'/১০')->success()->send()
                         : Notification::make()->title('রিপোর্ট হয়নি')->body($review->error)->warning()->send();
                 }),
         ];
@@ -181,9 +181,9 @@ class PostsTable
     public static function effect(Post $p): string
     {
         return match ($p->audit_label) {
-            'noindex' => 'লেখাটি সাইটে থাকবে, কিন্তু Google-এ দেখাবে না।',
+            'noindex' => 'লেখাটি সাইটে থাকবে, কিন্তু গুগল-এ দেখাবে না।',
             'remove' => 'লেখাটি আর্কাইভ হবে, আর তার ঠিকানা "410 — আর নেই" দেখাবে। পরে ফেরানো যায়।',
-            'merge' => 'লেখাটি আর্কাইভ হবে, আর তার ঠিকানা মূল লেখায় (#'.$p->audit_merge_into_id.') চলে যাবে (301)।',
+            'merge' => 'লেখাটি আর্কাইভ হবে, আর তার ঠিকানা মূল লেখায় (#'.$p->audit_merge_into_id.') চলে যাবে (৩০১)।',
             default => 'শুধু সিদ্ধান্ত নথিভুক্ত হবে; লেখায় কোনও বদল হবে না।',
         };
     }

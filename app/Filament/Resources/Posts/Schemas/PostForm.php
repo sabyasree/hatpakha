@@ -22,8 +22,8 @@ class PostForm
         return $schema->columns(3)->components([
             Section::make('লেখা')->columnSpan(2)->schema([
                 TextInput::make('title')->label('শিরোনাম')->required()->maxLength(400),
-                TextInput::make('slug')->label('URL (slug)')->required()->maxLength(380)
-                    ->helperText('প্রকাশিত লেখার URL বদলালে পুরনো URL থেকে নিজে থেকেই নতুনটিতে পাঠানো হবে (301)।')
+                TextInput::make('slug')->label('ঠিকানা')->required()->maxLength(380)
+                    ->helperText('প্রকাশিত লেখার ঠিকানা বদলালে পুরনো ঠিকানা থেকে পাঠক নিজে থেকেই নতুনটিতে পৌঁছবেন।')
                     ->unique(ignoreRecord: true),
                 Textarea::make('excerpt')->label('সারাংশ')->rows(2),
                 RichEditor::make('body_html')->label('লেখা')->required()
@@ -42,8 +42,8 @@ class PostForm
                         ->content(fn (Post $record) => \App\Support\Bn::num((string) ($record->submitted_at ?? $record->updated_at)?->diffForHumans()) ?: '—'),
                     Placeholder::make('original')->label('মৌলিকতার ঘোষণা')
                         ->content(fn (Post $record) => $record->originality_confirmed_at ? 'লেখক নিশ্চিত করেছেন' : 'নেই'),
-                    Placeholder::make('ai')->label('AI পরামর্শ')
-                        ->content(fn (Post $record) => $record->latestAiReview?->score !== null ? \App\Support\Bn::num($record->latestAiReview->score).'/১০ (উপরে "AI রিপোর্ট")' : 'নেই'),
+                    Placeholder::make('ai')->label('এআই পরামর্শ')
+                        ->content(fn (Post $record) => $record->latestAiReview?->score !== null ? \App\Support\Bn::num($record->latestAiReview->score).'/১০ (উপরে "এআই রিপোর্ট")' : 'নেই'),
                     Placeholder::make('last_note')->label('শেষ বার্তা লেখককে')
                         ->content(fn (Post $record) => $record->review_note ?: '—'),
                 ]),
@@ -55,13 +55,13 @@ class PostForm
                     Select::make('authors')->label('লেখক')->relationship('authors', 'display_name')->multiple()->searchable()->required(),
                     Select::make('issue_id')->label('সংখ্যা')->relationship('issue', 'title'),
                     Select::make('format')->label('পড়ার ধরন')->options(['poem' => 'কবিতা (লাইন ধরে)', 'prose' => 'গদ্য'])->required()->default('prose'),
-                    Select::make('language')->label('ভাষা')->options(['bn' => 'বাংলা', 'en' => 'English', 'hi' => 'हिन्दी'])->required()->default('bn'),
+                    Select::make('language')->label('ভাষা')->options(['bn' => 'বাংলা', 'en' => 'ইংরেজি', 'hi' => 'হিন্দি'])->required()->default('bn'),
                 ]),
             ]),
-            Section::make('SEO')->columnSpan(2)->collapsed()->schema([
-                TextInput::make('seo_title')->label('SEO শিরোনাম')->maxLength(70),
-                Textarea::make('seo_description')->label('SEO বর্ণনা')->maxLength(160)->rows(2),
-                Toggle::make('noindex')->label('Google-এ দেখাবে না (noindex)'),
+            Section::make('গুগল ও শেয়ার')->columnSpan(2)->collapsed()->schema([
+                TextInput::make('seo_title')->label('গুগলের জন্য শিরোনাম')->maxLength(70),
+                Textarea::make('seo_description')->label('গুগলের জন্য বিবরণ')->maxLength(160)->rows(2),
+                Toggle::make('noindex')->label('গুগলে দেখাবে না'),
             ]),
         ]);
     }

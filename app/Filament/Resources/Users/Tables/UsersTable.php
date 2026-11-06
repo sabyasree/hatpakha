@@ -43,7 +43,7 @@ class UsersTable
             ])
             ->filters([
                 SelectFilter::make('role')->label('ভূমিকা')->options(UserForm::roles()),
-                SelectFilter::make('desk')->label('/desk খুলতে পারেন')->options(['yes' => 'হ্যাঁ'])
+                SelectFilter::make('desk')->label('ডেস্ক খুলতে পারেন')->options(['yes' => 'হ্যাঁ'])
                     ->query(fn ($query, array $data) => ($data['value'] ?? null) === 'yes'
                         ? $query->whereIn('role', ['editor', 'chief_editor', 'admin']) : $query),
                 TernaryFilter::make('spam_reason')->label('স্প্যাম চিহ্নিত')->nullable(),

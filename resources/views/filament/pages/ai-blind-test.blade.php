@@ -12,7 +12,7 @@
                     <p><strong>{{ $p === 'anthropic' ? 'Claude' : 'OpenAI' }}</strong> ({{ $v['model'] }}): গড় স্কোর {{ $v['avg'] }} / ৫, {{ $v['n'] }}টি রিপোর্ট</p>
                 @endforeach
                 <p>জোড়ায় জয়: Claude {{ $result['wins']['anthropic'] }} · OpenAI {{ $result['wins']['openai'] }} · সমান {{ $result['wins']['tie'] }}</p>
-                <p class="text-sm text-gray-500">বিজয়ী ঠিক করে <code>AI_PROVIDER</code> ENV_FILE-এ বসান (docs/AI.md)।</p>
+                <p class="text-sm text-gray-500">বিজয়ী ঠিক করে <code>AI_PROVIDER</code> ENV_FILE-এ বসান (docs/এআই.md)।</p>
             </x-filament::section>
         @else
             <p class="text-sm text-gray-500">প্রতিটি রিপোর্টে ১–৫ দিন: ৫ = সম্পাদক হিসেবে সবচেয়ে কাজের। সব দেওয়া হলে কোনটা কে লিখেছে দেখা যাবে। দাম বা গতি নয়, শুধু কাজের মান বিচার করুন।</p>

@@ -21,9 +21,9 @@ class AiBlindTest extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
 
-    protected static ?string $navigationLabel = 'AI পরীক্ষা';
+    protected static ?string $navigationLabel = 'এআই পরীক্ষা';
 
-    protected static ?string $title = 'AI পরীক্ষা (অন্ধ তুলনা)';
+    protected static ?string $title = 'এআই পরীক্ষা (অন্ধ তুলনা)';
 
     protected static ?int $navigationSort = 91;
 

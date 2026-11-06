@@ -35,7 +35,7 @@
                 <div style="display:flex;gap:.5rem;align-items:center">
                     @if ($p->latestAiReview?->score !== null)
                         <x-filament::badge :color="$p->latestAiReview->score >= 7 ? 'success' : ($p->latestAiReview->score >= 5 ? 'warning' : 'gray')">
-                            AI {{ Bn::num($p->latestAiReview->score) }}/১০
+                            এআই {{ Bn::num($p->latestAiReview->score) }}/১০
                         </x-filament::badge>
                     @endif
                     <x-filament::button tag="a" :href="$this->editUrl($p)" icon="heroicon-o-book-open">পড়ুন ও সিদ্ধান্ত নিন</x-filament::button>
@@ -88,9 +88,9 @@
         <x-filament::section icon="heroicon-o-shield-check" collapsible collapsed>
             <x-slot name="heading">অ্যাডমিন</x-slot>
             <ul style="list-style:disc;padding-inline-start:1.25rem;line-height:1.9">
-                <li>AI: {{ $t['aiEnabled'] ? 'চালু' : 'বন্ধ' }} · এই মাসের খরচ ${{ number_format($t['aiSpent'], 2) }} / ${{ number_format((float) config('ai.monthly_budget_usd'), 0) }} · <a href="{{ \App\Filament\Pages\AiSettings::getUrl() }}" style="text-decoration:underline">AI সহকারী</a></li>
+                <li>এআই: {{ $t['aiEnabled'] ? 'চালু' : 'বন্ধ' }} · এই মাসের খরচ {{ \App\Support\Bn::num(number_format($t['aiSpent'], 2)) }} ডলার / {{ \App\Support\Bn::num(number_format((float) config('ai.monthly_budget_usd'), 0)) }} ডলার · <a href="{{ \App\Filament\Pages\AiSettings::getUrl() }}" style="text-decoration:underline">এআই সহকারী</a></li>
                 <li>অডিট সুপারিশ, সিদ্ধান্ত বাকি: {{ Bn::num($t['auditOpen']) }}টি</li>
-                <li><a href="{{ \App\Filament\Resources\Users\UserResource::getUrl('index') }}" style="text-decoration:underline">কারা /desk খুলতে পারেন</a></li>
+                <li><a href="{{ \App\Filament\Resources\Users\UserResource::getUrl('index') }}" style="text-decoration:underline">কারা ডেস্ক খুলতে পারেন</a></li>
             </ul>
         </x-filament::section>
     @endif
