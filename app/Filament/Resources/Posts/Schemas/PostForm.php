@@ -34,10 +34,6 @@ class PostForm
             Group::make()->columnSpan(1)->schema([
                 // What an editor needs to decide on a form submission, without leaving the page.
                 Section::make(__('জমার তথ্য'))->visible(fn (?Post $record) => $record?->submitted_by !== null)->schema([
-                    Placeholder::make('cover')->label(__('প্রচ্ছদের ছবি'))
-                        ->content(fn (Post $record) => $record->featured_image_path
-                            ? new \Illuminate\Support\HtmlString('<img src="'.e(asset($record->featured_image_path)).'" alt="" style="max-height:12rem;border-radius:.75rem">')
-                            : __('নেই')),
                     Placeholder::make('writer')->label(__('লেখক অ্যাকাউন্ট'))
                         ->content(fn (Post $record) => ($record->submittedBy?->name ?? '—').' · '.($record->submittedBy?->email ?? '')),
                     Placeholder::make('writer_history')->label(__('এর আগে প্রকাশিত'))
@@ -52,6 +48,26 @@ class PostForm
                         ->content(fn (Post $record) => $record->latestAiReview?->score !== null ? \App\Support\Bn::num($record->latestAiReview->score).__('/১০ (উপরে "এআই রিপোর্ট")') : __('নেই')),
                     Placeholder::make('last_note')->label(__('শেষ বার্তা লেখককে'))
                         ->content(fn (Post $record) => $record->review_note ?: '—'),
+                ]),
+                // D64: the cover, and any picture the designer has drawn for it, always visible on the edit page.
+                Section::make(__('প্রচ্ছদ'))->visible(fn (?Post $record) => $record !== null)->schema([
+                    Placeholder::make('cover_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(
+                        view('filament.post-cover', ['post' => $record])->render())),
+                ])->footerActions([
+                    \Filament\Actions\Action::make('useDrawn')->label(__('এটা বসান'))->icon('heroicon-o-check')->color('success')->size('sm')
+                        ->visible(fn (?Post $record) => (bool) $record?->proposed_image_path)
+                        ->action(function (Post $record, $livewire) {
+                            \App\Support\CoverImage::acceptProposed($record);
+                            \App\Models\AuditLog::record('post.ai_images_approved', $record, ['count' => 1]);
+                            $livewire->refreshFormData(['featured_image_path']);
+                            \Filament\Notifications\Notification::make()->title(__('ছবি বসানো হয়েছে'))->success()->send();
+                        }),
+                    \Filament\Actions\Action::make('dropDrawn')->label(__('বাদ দিন'))->icon('heroicon-o-x-mark')->color('gray')->size('sm')
+                        ->visible(fn (?Post $record) => (bool) $record?->proposed_image_path)
+                        ->action(function (Post $record) {
+                            \App\Support\CoverImage::discardProposed($record);
+                            \Filament\Notifications\Notification::make()->title(__('বাদ দেওয়া হয়েছে'))->send();
+                        }),
                 ]),
                 Section::make(__('প্রকাশ'))->schema([
                     Select::make('status')->label(__('অবস্থা'))->required()->default('draft')
