@@ -1,0 +1,49 @@
+# Runs the Claude vs OpenAI blind test (docs/AI.md) on STAGING, on demand only.
+# Costs money: the command estimates first and refuses above max_usd (owner budget ≈ ₹500).
+name: AI blind test (staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Number of backlog pieces (each reviewed by both providers)
+        default: '30'
+      max_usd:
+        description: Stop if the estimated cost is above this (USD)
+        default: '6'
+
+permissions:
+  contents: read
+
+jobs:
+  blind-test:
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 60
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Run the blind test on the server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          COUNT: ${{ inputs.count }}
+          MAX_USD: ${{ inputs.max_usd }}
+        run: |
+          case "$COUNT$MAX_USD" in *[!0-9.]*) echo "count and max_usd must be numbers"; exit 1 ;; esac
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-blind-test --count=${COUNT} --max-usd=${MAX_USD} --force --no-ansi"
+
+      - name: Remove key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
