@@ -26,6 +26,9 @@ class SecurityTest extends TestCase
         $res->assertHeader('X-Content-Type-Options', 'nosniff');
         $res->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $res->assertHeaderMissing('X-Powered-By');
+        // Fonts are self-hosted: no third-party font hosts are allowed or requested.
+        $this->assertStringNotContainsString('fonts.g', $csp);
+        $res->assertDontSee('fonts.googleapis.com', false)->assertSee('/fonts/fonts.css', false);
     }
 
     public function test_old_wordpress_attack_paths_are_gone(): void

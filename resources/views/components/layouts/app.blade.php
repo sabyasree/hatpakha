@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <x-seo :seo="$seo" />
     <link rel="icon" href="{{ asset('images/logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    {{-- TODO(Phase 4): self-host subset fonts (docs/SEO.md §5). --}}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wdth,wght@75..100,400..800&family=Noto+Serif+Bengali:wght@400;500;700&family=Galada&display=swap">
+    {{-- Fonts are self-hosted (public/fonts/fonts.css, shared with the admin panel); preload the two Bengali faces used above the fold. --}}
+    <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @if (config('services.adsense.client'))
         <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>

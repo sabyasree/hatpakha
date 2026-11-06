@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -56,7 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 'info' => Color::hex('#2DAAE2'),
                 'warning' => Color::hex('#E39A6A'),
             ])
-            ->font('Anek Bangla')
+            ->font('Anek Bangla', url: asset('fonts/fonts.css').'?v=1', provider: LocalFontProvider::class)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([Dashboard::class])
