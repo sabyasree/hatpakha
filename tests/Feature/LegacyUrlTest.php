@@ -32,6 +32,9 @@ class LegacyUrlTest extends TestCase
         $this->get('/?page_id=18209')->assertRedirect(url('/faqs').'/');
         $this->get('/?s=kobita')->assertRedirect($home);
         $this->get('/?cat=7')->assertRedirect($home);
+        $this->get('/category/literature/poetry/')->assertRedirect(url('/category/poetry').'/');
+        $this->get('/category/poetry/feed/')->assertOk();
+        $this->get('/sitemap.html')->assertRedirect($home);
     }
 
     public function test_author_query_never_reveals_user_names(): void

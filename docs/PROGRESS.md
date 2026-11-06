@@ -39,7 +39,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Pending backlog tiers on the 424 pending posts: A recent 23 · B clean-up 41 · C old 360 (+ "review together" note on the 125-post account)
 - ✅ Fixed: sanitizer blanked 5 long posts (regex limit); now impossible (fallback + regression test). **Staging needs a re-import.**
 - ✅ `[pdf-embedder]` → link to the PDF; `[pageview]` iframes dropped
-- 🟡 URL inventory + redirect audit (`php artisan hatpakha:url-audit`)
+- ✅ URL inventory + redirect audit (`php artisan hatpakha:url-audit`): 8,040 old URLs (DB + live Yoast sitemaps) checked against staging; 8,023 OK, the 17 broken (nested `/category/a/b/`, two house-account author URLs, `/sitemap.html`) fixed. ⬜ Re-run before launch with a Search Console export (`--file=`)
 - ⬜ Owner decisions on the audit (docs/AUDIT-SUMMARY.md), then apply in /desk
 - ⬜ Spam-account filter for the 1,728 users; newsletter subscribers (MailPoet) import
 

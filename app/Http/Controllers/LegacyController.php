@@ -28,6 +28,12 @@ class LegacyController extends Controller
         return $post ? redirect($post->url(), 301) : $this->fallback($request);
     }
 
+    /** WordPress child categories (/category/literature/poetry/) → the child's own URL, which then resolves or 301s. */
+    public function nestedCategory(string $parent, string $child)
+    {
+        return redirect(Url::to('/category/'.Slug::encode(Slug::normalize($child))), 301);
+    }
+
     /** /category/x/page/2/ → /category/x/?page=2 */
     public function paged(string $type, string $slug, int $n)
     {

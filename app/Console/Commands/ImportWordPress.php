@@ -148,6 +148,10 @@ class ImportWordPress extends Command
                             'bio' => isset($bios[$u->ID]) ? strip_tags($bios[$u->ID]) : null,
                         ]);
                     $this->authorByWpUser[$u->ID] = $author->id;
+                    if ($isDesk && ($nice = Slug::normalize((string) $u->user_nicename)) !== '' && $nice !== 'hatpakha-desk') {
+                        // House accounts share the desk byline; their old author URLs must still land there.
+                        Redirect::updateOrCreate(['from_path' => "/author/{$nice}/"], ['to_path' => '/author/hatpakha-desk/', 'status_code' => 301]);
+                    }
                 }
             }
         });

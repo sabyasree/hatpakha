@@ -46,6 +46,8 @@ Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]
 Route::get('/comments/feed', fn () => redirect(\App\Support\Url::to('/feed'), 301));
 Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+');
 Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
+Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
+Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 Route::get('/{y}/{m?}/{d?}', [LegacyController::class, 'dateArchive'])->where(['y' => '(19|20)\d\d', 'm' => '\d{1,2}', 'd' => '\d{1,2}']);
 Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '(?!(desk|livewire|filament|storage|build)$)[^/]+');
 
