@@ -17,9 +17,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Public pages: home (fan hero, on-this-day, poem of the day, story pages, reader letters, travel stamps), post (poem and story modes), author (full/compact/guest/desk), section, tag, issue, certificate verification
 - ✅ SEO: meta + canonical + JSON-LD (Periodical with ISSN), sitemaps, RSS, robots, URL policy with 301/410
 - ✅ Security: CSP nonce, headers, sanitiser, legacy password re-hash, rate limiters, upload script blocking, legacy WP paths 410
-- ✅ Admin `/desk`: branded, editor+ only, mandatory TOTP 2FA, admin-only user management
+- ✅ Admin `/desk`: branded, editor+ only, mandatory 2FA (authenticator app or email code, D20), admin-only user management
+- ✅ Console: `hatpakha:role`, `hatpakha:password` (hidden prompt, audited)
 - ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
-- ✅ Tests: 23 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Tests: 29 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ⬜ Self-host and subset fonts (currently Google Fonts CSS)
 - ✅ Staging: WordPress imported (same counts as local), uploads copied (6.7 GB), owner promoted to admin
@@ -30,10 +31,12 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## Next up (in order)
 1. ✅ Owner: created the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
-2. ✅ Staging live at new.hatpakha.com (app outside the web root via symlink). ⛔ Owner: Cloudflare cache rule to bypass new.hatpakha.com + purge (zone caches HTML even with `no-cache`). Then import the DB there; copy the uploads (with the scan).
-3. Finish the Phase 1 leftovers above.
-4. Before launch: Cloudflare cache rules for production (cache guest HTML; bypass `/desk*`, `/livewire*`, `/submit*`, `/account*` and requests with the session cookie).
-5. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.
+2. ✅ Staging live at new.hatpakha.com (app outside the web root via symlink; Cloudflare bypass rule for staging; DB imported; uploads copied).
+3. 🟡 Owner: first admin login + 2FA on staging; uploads clean-up; list of imported admin/editor accounts.
+4. Offer email 2FA only where real mail is configured (staging uses `log`, so authenticator only there).
+5. Finish the Phase 1 leftovers above.
+6. Before launch: Cloudflare cache rules for production (cache guest HTML; bypass `/desk*`, `/livewire*`, `/submit*`, `/account*` and requests with the session cookie).
+7. Phase 2: full redirect inventory (crawl the old site + Search Console export) and redirect tests; content audit labels.
 
 ## Later phases (from PLAN.md §8)
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
