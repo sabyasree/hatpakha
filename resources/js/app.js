@@ -150,16 +150,23 @@ document.querySelectorAll('[data-share]').forEach((a) => {
 
 // "দেখান" on password fields (mobile UX review): typing a password on a phone without seeing it is hard.
 document.querySelectorAll('input[type="password"]').forEach((input) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'relative block';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    input.classList.add('pr-24');
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = 'দেখান';
-    btn.className = 'mt-1 h-9 rounded-full px-3 text-sm font-bold text-sky-deep underline';
+    btn.className = 'absolute right-1.5 top-1/2 h-10 -translate-y-1/2 rounded-full px-3 text-sm font-bold text-sky-deep hover:bg-sky-tint';
     btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', 'পাসওয়ার্ড দেখান');
     btn.addEventListener('click', () => {
         const show = input.type === 'password';
         input.type = show ? 'text' : 'password';
         btn.textContent = show ? 'লুকান' : 'দেখান';
         btn.setAttribute('aria-pressed', String(show));
+        input.focus();
     });
-    input.insertAdjacentElement('afterend', btn);
+    wrap.appendChild(btn);
 });

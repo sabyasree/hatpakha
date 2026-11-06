@@ -1,6 +1,6 @@
 <x-layouts.app :seo="$seo">
     <section class="mx-auto max-w-[900px] px-5 pb-4 pt-8">
-        <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ url('/') }}/" class="hover:text-red">হাতপাখা</a> › <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a> ›</nav>
+        <nav aria-label="অবস্থান" class="flex items-center text-sm text-ink2"><a href="{{ url('/') }}/" class="inline-flex min-h-11 items-center hover:text-red">হাতপাখা</a><span class="px-1" aria-hidden="true">›</span><a href="{{ \App\Support\Url::to('/archive') }}" class="inline-flex min-h-11 items-center hover:text-red">আর্কাইভ</a></nav>
         <h1 class="mt-3 font-display text-5xl font-extrabold md:text-6xl" style="font-stretch: 80%">{{ \App\Support\Bn::year($year) }}</h1>
         <p class="mt-2 font-serif text-lg text-ink2">এই বছরে প্রকাশিত {{ \App\Support\Bn::num($posts->count()) }}টি লেখা</p>
 
@@ -13,16 +13,16 @@
         </nav>
 
         {{-- Month jump links --}}
-        <nav aria-label="মাস" class="mt-4 flex flex-wrap gap-2 text-sm font-bold">
+        <nav aria-label="মাস" class="sticky top-0 z-20 -mx-5 mt-4 flex gap-2 overflow-x-auto border-b border-rule bg-paper/95 px-5 py-2 text-sm font-bold backdrop-blur sm:mx-0 sm:flex-wrap sm:px-0">
             @foreach ($months as $m => $list)
-                <a href="#m{{ $m }}" class="inline-flex h-10 items-center gap-1 rounded-full border-2 border-navy bg-white px-3 hover:bg-peach-light">{{ \App\Support\Bn::MONTHS[$m - 1] }} <span class="text-ink2">{{ \App\Support\Bn::num($list->count()) }}</span></a>
+                <a href="#m{{ $m }}" class="inline-flex h-11 flex-none items-center gap-1 rounded-full border-2 border-navy bg-white px-3 hover:bg-peach-light">{{ \App\Support\Bn::MONTHS[$m - 1] }} <span class="text-ink2">{{ \App\Support\Bn::num($list->count()) }}</span></a>
             @endforeach
         </nav>
     </section>
 
     <div class="mx-auto max-w-[900px] px-5 pb-10">
         @foreach ($months as $m => $list)
-            <section id="m{{ $m }}" class="scroll-mt-4 border-t-2 border-navy pt-5 mt-6">
+            <section id="m{{ $m }}" class="scroll-mt-20 border-t-2 border-navy pt-5 mt-6">
                 <h2 class="font-display text-2xl font-extrabold text-red">{{ \App\Support\Bn::MONTHS[$m - 1] }}</h2>
                 <ol class="mt-2 divide-y divide-rule">
                     @foreach ($list as $p)

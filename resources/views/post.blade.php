@@ -91,19 +91,7 @@
                 <h2 id="next-h" class="font-display text-3xl font-extrabold">পরের লেখা</h2>
                 <ul class="mt-3 divide-y divide-rule border-y border-rule">
                     @foreach ($related as $r)
-                        <li>
-                            <a href="{{ $r->url() }}" class="flex items-center gap-4 py-3 hover:bg-peach-light/60">
-                                @if ($r->hasCardImage())
-                                    <img src="{{ asset($r->featured_image_path) }}" alt="" loading="lazy" width="88" height="88" class="h-[88px] w-[88px] flex-none rounded-xl border-2 border-navy object-cover">
-                                @else
-                                    <span class="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-xl border-2 border-navy bg-peach-light font-display text-3xl font-extrabold text-red" aria-hidden="true">{{ mb_substr($r->title, 0, 1) }}</span>
-                                @endif
-                                <span class="min-w-0">
-                                    <span class="block font-serif text-lg font-bold leading-snug">{{ $r->title }}</span>
-                                    <span class="mt-1 block text-sm text-ink2">{{ $r->authors->first()?->publicName() }}@if ($r->section) · {{ $r->section->name_bn }}@endif</span>
-                                </span>
-                            </a>
-                        </li>
+                        <li><x-post-row :post="$r" :meta="($r->authors->first()?->publicName() ?? '').($r->section ? ' · '.$r->section->name_bn : '')" /></li>
                     @endforeach
                 </ul>
             </section>

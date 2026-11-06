@@ -16,7 +16,7 @@
         <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>
     @endif
 </head>
-<body class="min-h-screen bg-paper text-navy antialiased pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+<body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-paper focus:p-2">মূল লেখায় যান</a>
 
     <header class="border-b-2 border-navy bg-paper">
@@ -48,7 +48,10 @@
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
                 </a>
                 @auth
-                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 items-center font-bold hover:text-red">আমার লেখা</a>
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 items-center font-bold hover:text-red" aria-label="আমার লেখা">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-navy bg-peach-light sm:hidden" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
+                        <span class="hidden sm:inline">আমার লেখা</span>
+                    </a>
                 @else
                     <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 items-center font-bold hover:text-red">লগ-ইন</a>
                 @endauth
@@ -93,6 +96,7 @@
             'archive' => '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
         ];
     @endphp
+    @unless (request()->is('sonkha/*/boi*'))
     <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
             @if ($ic === 'write')
@@ -108,5 +112,6 @@
             @endif
         @endforeach
     </nav>
+    @endunless
 </body>
 </html>

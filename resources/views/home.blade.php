@@ -5,7 +5,7 @@
         <div class="relative mx-auto max-w-[1320px] px-5 pb-10 pt-8 md:min-h-[640px] md:pb-0 md:pt-16">
             <div class="relative z-10 max-w-[640px]">
                 <span class="inline-block -rotate-3 rounded-full border-2 border-navy bg-paper px-4 pt-1 font-hand text-2xl shadow-[3px_3px_0_#13212C]">২০১২ থেকে</span>
-                <h1 class="mt-5 font-display text-[3.6rem] font-extrabold leading-[.85] tracking-tight sm:text-7xl md:text-[150px]" style="font-stretch: 75%">বাংলা সাহিত্যের<br><span class="text-paper [-webkit-text-stroke:3px_#13212C] [paint-order:stroke]">নতুন হাওয়া</span></h1>
+                <h1 class="mt-5 font-display text-[3.6rem] font-extrabold leading-[.85] [word-spacing:.22em] sm:text-7xl sm:tracking-tight sm:[word-spacing:normal] md:text-[150px]" style="font-stretch: 75%">বাংলা সাহিত্যের<br><span class="text-paper [-webkit-text-stroke:3px_#13212C] [paint-order:stroke]">নতুন হাওয়া</span></h1>
                 <p class="mt-6 max-w-[460px] font-serif text-lg font-medium leading-relaxed">কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। লেখা পাঠান — প্রকাশ সবসময় বিনামূল্যে।</p>
                 <div class="mt-6 flex flex-wrap gap-3">
                     <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex h-14 items-center rounded-full bg-navy px-6 text-lg font-bold text-paper shadow-[4px_4px_0_#CB1B32]">পড়া শুরু করুন</a>
@@ -143,7 +143,7 @@
             </div>
             <div class="mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ($stories as $i => $story)
-                    <a href="{{ $story->url() }}" class="lift relative flex flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
+                    <a href="{{ $story->url() }}" class="lift relative {{ $i > 0 ? 'hidden sm:flex' : 'flex' }} flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                         <span class="absolute -top-3 left-6 h-5 w-20 -rotate-6 bg-peach/90" aria-hidden="true"></span>
                         <x-title-card :post="$story" class="!rounded-none border-2 border-navy" />
                         @if ($story->hasCardImage())<span class="font-serif text-xl font-bold leading-snug">{{ $story->title }}</span>@endif
@@ -151,6 +151,14 @@
                     </a>
                 @endforeach
             </div>
+            {{-- Phones: one taped card, then compact rows (mobile UX review); wider screens: four cards. --}}
+            @if ($stories->count() > 1)
+                <ul class="mt-6 divide-y divide-rule border-y border-navy/20 sm:hidden">
+                    @foreach ($stories->slice(1) as $story)
+                        <li><x-post-row :post="$story" /></li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
     </section>
     @endif

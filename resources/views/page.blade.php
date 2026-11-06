@@ -8,6 +8,9 @@
         <h1 class="mt-4 font-display text-4xl font-extrabold leading-tight md:text-5xl" style="font-stretch: 85%">{{ $page->title }}</h1>
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer); Embeds only adds validated YouTube players. --}}
         <div class="prose-bn mt-6">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($page->body_html ?? '')) !!}</div>
+        @if ($page->slug === 'contact-us')
+            <a href="mailto:editor@hatpakha.com" class="mt-10 flex h-14 w-full items-center justify-center rounded-full bg-navy text-lg font-bold text-white shadow-[4px_4px_0_#CB1B32] sm:w-fit sm:px-10">ই-মেল লিখুন</a>
+        @endif
         @if ($page->slug === 'submissions')
             {{-- After the rules, the next step (mobile UX review) --}}
             <a href="{{ \App\Support\Url::to('/submit') }}" class="mt-10 flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[4px_4px_0_#13212C] sm:w-fit sm:px-10">লেখা পাঠান</a>

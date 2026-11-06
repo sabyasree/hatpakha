@@ -5,19 +5,7 @@
         {{-- Phones: one readable list (mobile UX review); wider screens: the card grid. --}}
         <ul class="mt-6 divide-y divide-rule border-y border-rule sm:hidden">
             @foreach ($posts as $p)
-                <li>
-                    <a href="{{ $p->url() }}" class="flex items-center gap-4 py-3">
-                        @if ($p->hasCardImage())
-                            <img src="{{ asset($p->featured_image_path) }}" alt="" loading="lazy" width="88" height="88" class="h-[88px] w-[88px] flex-none rounded-xl border-2 border-navy object-cover">
-                        @else
-                            <span class="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-xl border-2 border-navy bg-peach-light font-display text-3xl font-extrabold text-red" aria-hidden="true">{{ mb_substr($p->title, 0, 1) }}</span>
-                        @endif
-                        <span class="min-w-0">
-                            <span class="block font-serif text-[19px] font-bold leading-snug">{{ $p->title }}</span>
-                            <span class="mt-1 block text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ \App\Support\Bn::num((string) $p->published_at?->year) }}</span>
-                        </span>
-                    </a>
-                </li>
+                <li><x-post-row :post="$p" /></li>
             @endforeach
         </ul>
         <div class="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-4">

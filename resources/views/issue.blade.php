@@ -4,7 +4,7 @@
         <div class="font-hand text-2xl text-red">সংখ্যা</div>
         <h1 class="font-display text-6xl font-extrabold">{{ $issue->title }}</h1>
         @if ($posts->isNotEmpty())
-            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-red px-6 font-bold text-white">📖 বই হিসেবে পড়ুন</a>
+            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="mt-4 inline-flex h-12 items-center gap-2 rounded-full bg-red px-6 font-bold text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg> বই হিসেবে পড়ুন</a>
         @endif
         @if ($issue->editor_note)<p class="mt-4 max-w-[720px] font-serif text-lg">{{ $issue->editor_note }}</p>@endif
         <ol class="mt-8 divide-y divide-rule">

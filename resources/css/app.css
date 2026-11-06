@@ -114,7 +114,7 @@
 .book-pages.paged { height: calc(100dvh - 15rem); min-height: 22rem; column-width: 100vw; column-fill: auto; column-gap: 3rem; overflow: hidden; }
 .book-pages.paged .book-break { break-before: column; }
 /* Phones: leave room for the fixed bottom bar (4rem) and the safe area, so the page-turn buttons stay visible. */
-@media (max-width: 767px) { .book-pages.paged { height: calc(100dvh - 19rem - env(safe-area-inset-bottom)); } }
+@media (max-width: 767px) { .book-pages.paged { height: calc(100dvh - 15rem - env(safe-area-inset-bottom)); } }   /* the bottom bar is hidden in the book reader */
 .book-pages.paged .book-cover { text-align: center; }
 .book-pages.paged img { max-height: 55vh; break-inside: avoid; }
 @media (min-width: 768px) { .book { padding: 2.5rem 3rem; } }

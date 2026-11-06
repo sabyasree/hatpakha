@@ -105,7 +105,12 @@
         </div>
 
         <h2 class="mt-12 border-t-2 border-navy pt-6 font-display text-3xl font-extrabold">লেখা</h2>
-        <div class="mt-6 grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-6 lg:grid-cols-3">
+        <ul class="mt-4 divide-y divide-rule border-y border-rule sm:hidden">
+            @foreach ($posts as $p)
+                <li><x-post-row :post="$p" :meta="($p->section?->name_bn ?? '').' · '.Bn::date($p->published_at)" /></li>
+            @endforeach
+        </ul>
+        <div class="mt-6 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($posts as $p)
                 <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></a>
             @endforeach

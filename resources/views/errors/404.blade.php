@@ -22,11 +22,11 @@
     @if ($suggest->isNotEmpty())
         <section class="mx-auto max-w-[1100px] px-5 pb-6">
             <h2 class="mb-4 font-display text-2xl font-extrabold">সাম্প্রতিক কবিতা ও গল্প</h2>
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <ul class="divide-y divide-rule border-y border-rule">
                 @foreach ($suggest as $p)
-                    <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif font-bold leading-snug">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->authors->first()?->publicName() }}</span></a>
+                    <li><x-post-row :post="$p" /></li>
                 @endforeach
-            </div>
+            </ul>
         </section>
     @endif
 </x-layouts.app>
