@@ -27,7 +27,14 @@
             @if (! empty($r['genre']))<span style="opacity:.75">{{ $r['genre'] }}</span>@endif
         </div>
 
+        @if (! empty($r['decision']))
+            @php($d = ['publish' => ['প্রস্তাব: প্রকাশ করা যায়', 'success'], 'changes' => ['প্রস্তাব: লেখককে বদল চাওয়া', 'warning'], 'decline' => ['প্রস্তাব: এবার নয়', 'gray']][$r['decision']] ?? null)
+            @if ($d)<div style="margin-top:.6rem"><x-filament::badge :color="$d[1]">{{ $d[0] }}</x-filament::badge></div>@endif
+        @endif
         <p style="margin:.75rem 0 0">{{ $r['summary'] ?? '' }}</p>
+        @if (! empty($r['note_to_writer']))
+            <div style="{{ $box }}"><p style="{{ $h }}">লেখককে খসড়া বার্তা</p>{{ $r['note_to_writer'] }}</div>
+        @endif
 
         @if (! empty($r['policy_flags']))
             <div style="{{ $box }};border-color:#B0162B"><p style="{{ $h }};color:#B0162B">সাবধান</p>{{ implode(', ', $r['policy_flags']) }}</div>
@@ -43,6 +50,13 @@
                 <ol style="margin:0;padding-inline-start:1.2rem;list-style:decimal">@foreach ($r['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol></div>
         @endif
 
+        @if (! empty($r['edits']))
+            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">সংশোধন ({{ Bn::num(count($r['edits'])) }}টি)</summary>
+                <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['edits'] as $e)<li>{{ $e['original'] ?? '' }} → <strong>{{ $e['replacement'] ?? '' }}</strong> <span style="opacity:.65">· {{ \App\Ai\CopyEdit::LABELS[$e['kind'] ?? 'word'] ?? '' }}</span></li>@endforeach</ul></details>
+        @endif
+        @if (! empty($r['excerpt']))
+            <p style="margin:.75rem 0 0"><strong>এক লাইনের পরিচিতি:</strong> {{ $r['excerpt'] }}</p>
+        @endif
         @if (! empty($r['spelling']))
             <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">বানান ({{ Bn::num(count($r['spelling'])) }}টি)</summary>
                 <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['spelling'] as $sp)<li>{{ $sp['original'] ?? '' }} → <strong>{{ $sp['suggestion'] ?? '' }}</strong></li>@endforeach</ul></details>

@@ -40,7 +40,7 @@ class CommentController extends Controller
         }
 
         $status = Comment::statusFor($user);
-        Comment::create([
+        $comment = Comment::create([
             'post_id' => $post->id,
             'user_id' => $user?->id,
             'author_name' => $user ? $user->name : trim($data['name']),
@@ -48,6 +48,10 @@ class CommentController extends Controller
             'status' => $status,
             'feature_opt_out' => (bool) ($data['not_featured'] ?? false),
         ]);
+        if ($status === 'pending') {
+            // The AI editor pre-screens it after the reader's page has been sent (advice only).
+            dispatch(fn () => \App\Ai\CommentScreen::run($comment))->afterResponse();
+        }
 
         return redirect($back)->with('comment_status', $status === 'approved'
             ? 'ধন্যবাদ! আপনার মন্তব্য প্রকাশিত হয়েছে।'

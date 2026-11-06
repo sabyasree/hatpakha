@@ -28,6 +28,10 @@ class SubmissionDecision extends Notification
                 ->line($this->post->published_at?->isFuture() ? 'প্রকাশের তারিখ: '.\App\Support\Bn::date($this->post->published_at) : 'লেখাটি এখন প্রকাশিত।')
                 ->when($this->post->review_note, fn ($m) => $m->line('সম্পাদকের কথা: '.$this->post->review_note))
                 ->action('লেখাটি দেখুন', $this->post->published_at?->isFuture() ? Url::to('/account') : $this->post->url()),
+            'confirm' => $m->subject("হাতপাখা: {$title} মনোনীত — আপনার সম্মতি চাই")
+                ->line("আপনার লেখা {$title} প্রকাশের জন্য মনোনীত হয়েছে।")
+                ->line('প্রকাশের আগে সম্পাদক কয়েকটি শব্দ বদলাতে চান। বদলগুলো দেখে সম্মতি দিলেই লেখাটি প্রকাশিত হবে।')
+                ->action('বদলগুলো দেখুন', Url::to('/submit/'.$this->post->id)),
             'changes' => $m->subject("হাতপাখা: {$title} — একটু বদল চাই")
                 ->line("আপনার লেখা {$title} পড়ে সম্পাদক কয়েকটি কথা লিখেছেন:")
                 ->line($this->post->review_note)

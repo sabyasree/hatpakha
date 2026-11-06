@@ -26,11 +26,54 @@ final class CoverImage
     /** Validates, re-encodes and attaches the cover; replaces (and deletes) the old one. */
     public static function attach(Post $post, UploadedFile $file): void
     {
-        $fail = fn (string $m) => throw ValidationException::withMessages(['cover' => $m]);
         if (! $file->isValid() || $file->getSize() > self::MAX_BYTES) {
+            throw ValidationException::withMessages(['cover' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।']);
+        }
+        $saved = self::store($file->getRealPath());
+        self::remove($post);
+        $post->forceFill(['featured_image_path' => $saved['path'], 'featured_image_width' => $saved['width'], 'featured_image_height' => $saved['height'], 'image_is_ai' => false])->save();
+    }
+
+    /** AI illustration (D43): kept as a proposal until the owner approves it. */
+    public static function propose(Post $post, string $file): void
+    {
+        $saved = self::store($file);
+        self::discardProposed($post);
+        $post->forceFill(['proposed_image_path' => $saved['path'], 'proposed_image_width' => $saved['width'], 'proposed_image_height' => $saved['height'], 'proposed_image_error' => null])->save();
+    }
+
+    /** Owner approved the proposal: it becomes the cover (the old uploaded cover, if any, is deleted). */
+    public static function acceptProposed(Post $post): void
+    {
+        if (! $post->proposed_image_path) {
+            return;
+        }
+        $p = [$post->proposed_image_path, $post->proposed_image_width, $post->proposed_image_height];
+        $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null])->save();
+        self::remove($post);
+        $post->forceFill(['featured_image_path' => $p[0], 'featured_image_width' => $p[1], 'featured_image_height' => $p[2], 'image_is_ai' => true])->save();
+    }
+
+    public static function discardProposed(Post $post): void
+    {
+        if ($post->proposed_image_path) {
+            self::deleteFiles($post->proposed_image_path);
+            $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null])->save();
+        }
+    }
+
+    /**
+     * Sniff, decode, re-encode (no metadata, no payload), save under a random name with WebP sizes.
+     *
+     * @return array{path:string,width:int,height:int}
+     */
+    public static function store(string $file): array
+    {
+        $fail = fn (string $m) => throw ValidationException::withMessages(['cover' => $m]);
+        if (! is_file($file) || filesize($file) > self::MAX_BYTES) {
             $fail('ছবিটি ৮ MB-এর মধ্যে হতে হবে।');
         }
-        $info = @getimagesize($file->getRealPath());
+        $info = @getimagesize($file);
         if (! $info || ! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
             $fail('শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।');
         }
@@ -38,7 +81,7 @@ final class CoverImage
         if ($w * $h > self::MAX_PIXELS) {
             $fail('ছবিটি খুব বড়। একটু ছোট করে দিন।');
         }
-        $img = self::load($file->getRealPath(), $type);
+        $img = self::load($file, $type);
         if (! $img) {
             $fail('ছবিটি খোলা গেল না। অন্য একটি ছবি দিন।');
         }
@@ -64,7 +107,6 @@ final class CoverImage
         if (! imagejpeg($flat, $abs.'/'.$name, 85)) {
             $fail('ছবিটি রাখা গেল না। একটু পরে আবার চেষ্টা করুন।');
         }
-        $rel = 'storage/'.$dir.'/'.$name;
         foreach (Images::WIDTHS as $width) {
             $v = $width >= imagesx($flat) ? $flat : self::resize($flat, $width);
             @imagewebp($v, storage_path('app/public/'.Images::variantPath($dir.'/'.$name, $width)), 78);
@@ -73,23 +115,27 @@ final class CoverImage
             }
         }
 
-        self::remove($post);
-        $post->forceFill(['featured_image_path' => $rel, 'featured_image_width' => imagesx($flat), 'featured_image_height' => imagesy($flat)])->save();
+        return ['path' => 'storage/'.$dir.'/'.$name, 'width' => imagesx($flat), 'height' => imagesy($flat)];
     }
 
     /** Removes an uploaded cover (files too). Old WordPress images are never touched. */
     public static function remove(Post $post): void
     {
         $old = (string) $post->featured_image_path;
-        if (str_starts_with($old, 'storage/covers/') && ! str_contains($old, '..')) {
-            $base = storage_path('app/public/'.substr($old, strlen('storage/')));
+        self::deleteFiles($old);
+        if ($old !== '') {
+            $post->forceFill(['featured_image_path' => null, 'featured_image_width' => null, 'featured_image_height' => null, 'image_is_ai' => false])->save();
+        }
+    }
+
+    private static function deleteFiles(string $path): void
+    {
+        if (str_starts_with($path, 'storage/covers/') && ! str_contains($path, '..')) {
+            $base = storage_path('app/public/'.substr($path, strlen('storage/')));
             @unlink($base);
             foreach (Images::WIDTHS as $w) {
                 @unlink(preg_replace('/\.jpg$/', '.w'.$w.'.webp', $base));
             }
-        }
-        if ($old !== '') {
-            $post->forceFill(['featured_image_path' => null, 'featured_image_width' => null, 'featured_image_height' => null])->save();
         }
     }
 

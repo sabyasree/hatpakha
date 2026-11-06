@@ -16,7 +16,7 @@ class Post extends Model
 {
     use SoftDeletes;
 
-    public const STATUSES = ['draft', 'pending', 'changes', 'scheduled', 'published', 'rejected', 'archived'];
+    public const STATUSES = ['draft', 'pending', 'changes', 'confirm', 'scheduled', 'published', 'rejected', 'archived'];
 
     protected $guarded = ['id'];
 
@@ -31,6 +31,9 @@ class Post extends Model
             'edited_in_desk_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'originality_confirmed_at' => 'datetime',
+            'pending_edits' => 'array',
+            'ai_drafted_at' => 'datetime',
+            'image_is_ai' => 'boolean',
         ];
     }
 
@@ -76,6 +79,7 @@ class Post extends Model
     public function latestAiReview(): \Illuminate\Database\Eloquent\Relations\HasOne { return $this->hasOne(AiReview::class)->whereNull('blind_run')->latestOfMany(); }
 
     public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }
+    public function reviewedBy(): BelongsTo { return $this->belongsTo(User::class, 'reviewed_by'); }
 
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }
 

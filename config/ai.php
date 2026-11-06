@@ -21,6 +21,11 @@ return [
         // No default on purpose: set the exact model you want compared (see docs/AI.md).
         'review_model' => env('OPENAI_REVIEW_MODEL'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        // Cover illustrations (D43). No default model on purpose: copy the exact name from OpenAI's models page.
+        'image_model' => env('OPENAI_IMAGE_MODEL'),
+        'image_size' => env('OPENAI_IMAGE_SIZE', '1536x1024'),
+        'image_quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
+        'image_price_usd' => (float) env('OPENAI_IMAGE_PRICE', 0),   // per image, for the spend log
     ],
 
     'min_words' => (int) env('AI_MIN_WORDS', 20),

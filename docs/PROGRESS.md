@@ -70,6 +70,15 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 - ✅ Toolbar extended (D41): alignment, clear formatting, strikethrough, super/subscript; one scrollable row on phones; /desk editor gets the same options and keeps writers' alignment
 
+## AI editor (D42/D43) 🟡
+- ✅ Per piece: report + copy-edits (server-checked find → replace) + recommended decision + drafted note + teaser + tags + Google fields; approve dialog ticks safe fixes, fills metadata, suggests next slot (Mon/Wed/Fri 09:00 IST), starts from the AI's note; word changes → writer confirms on আমার লেখা
+- ✅ Cover illustrations (Claude scene → OpenAI image, house style, re-encoded); new pieces: toggle in approve dialog; old pieces: ছবি অনুমোদন grid (tick, approve in batches, redraw, drop); credit line on the page
+- ✅ Monthly issue proposal (from the 20th, automatic on the admin's dashboard; or on demand): lineup, theme from the calendar, title, cover lines; owner approves on the issue page (untick to drop pieces, release date); editorial drafted under the owner's name, published after the owner edits
+- ✅ Comment pre-screen (ঠিক আছে / স্প্যাম / দেখে নিন) + "approve all AI-ok"
+- ✅ আজকের কাজ redesigned: greeting, four numbers, "আপনার অনুমোদনের অপেক্ষায়" (issue, editorial, pictures, submissions with AI verdict, fixes, thumbnail), comments with AI verdicts, AI editor panel (status, spend, pause), next issue, two-week publishing calendar; desk shows India time
+- 🟡 Owner: set `OPENAI_IMAGE_MODEL` (+ `OPENAI_IMAGE_PRICE`) in ENV_FILE; then the batch makes pictures
+- 🟡 Backlog batch on staging (`hatpakha:ai-editor --backlog --images`, started by a `[run-ai-editor]` deploy, runs in the background, log: storage/logs/ai-editor.log)
+
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
 

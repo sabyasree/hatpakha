@@ -18,6 +18,28 @@
             <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">জমা দেওয়ার আগে ইমেল যাচাই করুন। খসড়া এখনই লিখে রাখতে পারেন।</div>
         @endif
 
+        @if ($post->status === 'confirm' && $post->pending_edits)
+            {{-- The editor's word changes, waiting for the writer's OK (D42). --}}
+            <div class="mt-6 rounded-2xl border-2 border-sky bg-sky-tint p-5">
+                <h2 class="text-xl font-extrabold">সম্পাদকের প্রস্তাবিত বদল</h2>
+                <p class="mt-1">লেখাটি মনোনীত হয়েছে। প্রকাশের আগে সম্পাদক এই শব্দগুলো বদলাতে চান:</p>
+                <ul class="mt-3 space-y-2">
+                    @foreach ((array) ($post->pending_edits['edits'] ?? []) as $e)
+                        <li class="rounded-xl bg-white p-3"><del class="text-ink2">{{ $e['original'] }}</del> → <strong>{{ $e['replacement'] }}</strong></li>
+                    @endforeach
+                </ul>
+                <form method="POST" action="{{ \App\Support\Url::to('/submit/'.$post->id.'/confirm') }}" class="mt-4">
+                    @csrf
+                    <button name="answer" value="accept" class="h-12 rounded-full bg-red px-6 font-bold text-white">ঠিক আছে, প্রকাশ করুন</button>
+                </form>
+                <form method="POST" action="{{ \App\Support\Url::to('/submit/'.$post->id.'/confirm') }}" class="mt-4">
+                    @csrf
+                    <label class="block"><span class="mb-1 block font-bold">আপত্তি থাকলে লিখুন</span>
+                        <textarea name="reason" rows="3" class="block w-full rounded-xl border-2 border-navy bg-white p-3">{{ old('reason') }}</textarea></label>
+                    <button name="answer" value="object" class="mt-2 h-11 rounded-full border-2 border-navy px-5 font-bold">আপত্তি জানান</button>
+                </form>
+            </div>
+        @endif
         @if (! $editable)
             <div class="mt-6 rounded-xl border-2 border-navy p-5">
                 <p class="font-bold">লেখাটি জমা পড়েছে; এখন আর বদলানো যায় না।</p>

@@ -15,7 +15,11 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Set;
+use App\Ai\EditorPackage;
 use App\Support\Review;
+use App\Support\Schedule;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Toggle;
 use App\Support\Transliterate;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -28,7 +32,7 @@ use Illuminate\Support\Collection;
 class PostsTable
 {
     /** One label per Post::STATUSES entry (a test checks they stay in sync). */
-    public const STATUS = ['published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়', 'changes' => 'বদল চাওয়া হয়েছে', 'draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'archived' => 'আর্কাইভ', 'rejected' => 'বাতিল'];
+    public const STATUS = ['published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়', 'changes' => 'বদল চাওয়া হয়েছে', 'confirm' => 'লেখকের সম্মতির অপেক্ষায়', 'draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'archived' => 'আর্কাইভ', 'rejected' => 'বাতিল'];
 
     public static function configure(Table $table): Table
     {
@@ -123,18 +127,37 @@ class PostsTable
             // Review decisions (3c): a person always decides; the writer gets one kind email.
             Action::make('approve')->label('মনোনীত')->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Post $record) => $record->status === 'pending')
-                ->modalHeading(fn (Post $record) => 'মনোনীত: '.$record->title)
+                ->modalHeading(fn (Post $record) => 'মনোনীত: '.$record->title)->modalSubmitActionLabel('মনোনীত করুন')
+                ->modalDescription(fn (Post $record) => EditorPackage::report($record)
+                    ? 'এআই সম্পাদক সব তৈরি করে রেখেছে। দেখে নিন, দরকার হলে বদলান, তারপর মনোনীত করুন।' : null)
                 ->schema([
-                    DateTimePicker::make('at')->label('প্রকাশের সময়')->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
-                        ->helperText('ভবিষ্যতের সময় দিলে সেদিন নিজে থেকেই প্রকাশিত হবে।'),
+                    // The AI editor's copy-edits (D42): only spelling/punctuation/spacing/typos are ticked by default.
+                    CheckboxList::make('edits')->label('এআই-এর সংশোধন (টিক দেওয়াগুলো লেখায় বসবে)')
+                        ->options(fn (Post $record) => EditorPackage::editOptions($record))
+                        ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
+                        ->bulkToggleable()->columns(1)
+                        ->helperText('"শব্দ বদল" টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ হবে।')
+                        ->visible(fn (Post $record) => EditorPackage::edits($record) !== []),
+                    Toggle::make('use_ai_image')->label('এআই-এর আঁকা প্রচ্ছদ ব্যবহার করুন')->default(true)
+                        ->helperText(fn (Post $record) => $record->proposed_image_path ? new \Illuminate\Support\HtmlString('<img src="'.e(asset($record->proposed_image_path)).'" alt="" style="margin-top:.5rem;max-height:10rem;border-radius:.75rem">') : null)
+                        ->visible(fn (Post $record) => $record->proposed_image_path && ! $record->featured_image_path),
+                    Toggle::make('metadata')->label('এআই-এর ট্যাগ, এক লাইনের পরিচিতি আর গুগলের তথ্য বসান')->default(true)
+                        ->visible(fn (Post $record) => EditorPackage::report($record) !== null),
+                    DateTimePicker::make('at')->label('প্রকাশের সময়')->default(fn () => Schedule::nextSlot())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
+                        ->helperText('পরের খালি দিন (সোম/বুধ/শুক্র সকাল ৯টা) দেওয়া আছে। এখনই চাইলে আজকের সময় দিন।'),
                     TextInput::make('slug')->label('ঠিকানা')->prefix('/')->suffix('/')->maxLength(120)
                         ->default(fn (Post $record) => Transliterate::slug($record->title))
                         ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।'),
-                    Textarea::make('note')->label('লেখককে কিছু বলবেন? (ঐচ্ছিক)')->rows(2)->maxLength(1000),
+                    Textarea::make('note')->label('লেখককে বার্তা (ঐচ্ছিক)')->rows(3)->maxLength(1500)
+                        ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'publish' ? EditorPackage::report($record)['note_to_writer'] : null),
                 ])
                 ->action(function (Post $record, array $data) {
-                    Review::approve($record, auth()->user(), \Illuminate\Support\Carbon::parse($data['at']), $data['slug'] ?? null, $data['note'] ?? null);
-                    Notification::make()->title('মনোনীত হয়েছে, লেখককে জানানো হয়েছে')->success()->send();
+                    if ($data['use_ai_image'] ?? false) {
+                        \App\Support\CoverImage::acceptProposed($record);
+                    }
+                    $result = EditorPackage::approve($record, auth()->user(), \Illuminate\Support\Carbon::parse($data['at']), $data['slug'] ?? null,
+                        $data['note'] ?? null, (array) ($data['edits'] ?? []), (bool) ($data['metadata'] ?? false));
+                    Notification::make()->title($result === 'confirm' ? 'লেখকের সম্মতি চাওয়া হয়েছে; সম্মতি দিলেই প্রকাশ হবে' : 'মনোনীত হয়েছে, লেখককে জানানো হয়েছে')->success()->send();
                 }),
             Action::make('requestChanges')->label('বদল চাই')->icon('heroicon-o-pencil-square')->color('warning')
                 ->visible(fn (Post $record) => $record->status === 'pending')
@@ -142,7 +165,8 @@ class PostsTable
                 ->schema([
                     Select::make('template')->label('তৈরি বার্তা থেকে শুরু করুন')->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_keys(Review::CHANGE_TEMPLATES)))
                         ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::CHANGE_TEMPLATES[$state] ?? '')),
-                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000)->helperText('সদয় ও নির্দিষ্ট থাকুন: কী ভালো লেগেছে, কী বদলালে ভালো হয়।'),
+                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000)->helperText('সদয় ও নির্দিষ্ট থাকুন: কী ভালো লেগেছে, কী বদলালে ভালো হয়।')
+                        ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'changes' ? EditorPackage::report($record)['note_to_writer'] : null),
                 ])
                 ->action(function (Post $record, array $data) {
                     Review::requestChanges($record, auth()->user(), $data['note']);
@@ -154,7 +178,8 @@ class PostsTable
                 ->schema([
                     Select::make('template')->label('তৈরি বার্তা')->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_keys(Review::REJECT_TEMPLATES)))
                         ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::REJECT_TEMPLATES[$state] ?? '')),
-                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000),
+                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000)
+                        ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'decline' ? EditorPackage::report($record)['note_to_writer'] : null),
                 ])
                 ->action(function (Post $record, array $data) {
                     Review::reject($record, auth()->user(), $data['note']);

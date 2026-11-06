@@ -21,8 +21,8 @@ If two of these conflict, follow the higher one and **tell the owner about the c
 - **Never break an old URL.** Old WordPress URLs (`/{slug}/`, `/category/…/`, `/author/…/`, `?p=ID`, `/amp/`) must keep working or 301. Changing a public URL needs a redirect and a test.
 - **Trailing slash on every public URL.** Use `App\Support\Url::to()` or the model `url()` methods, never bare `url()` for public links.
 - **All rich text goes through `App\Support\HtmlSanitizer`** (the Post model does this on save). Only `*_html` fields may be printed with `{!! !!}`.
-- **AI never acts on its own.** AI output is advice shown to an editor; a human clicks to publish, reject or email (until auto-approve is explicitly enabled by the owner).
-- **AI never writes articles.** It may draft metadata (tags, SEO title or description, captions) for editor approval.
+- **The AI editor prepares, the owner approves (D42).** The AI does the desk work: reports, copy-edits, a recommended decision with a drafted note to the writer, metadata, cover illustrations, comment pre-screening, the monthly issue proposal and theme, and a draft editorial. **Nothing reaches readers or writers until a person clicks** (publish, send, approve). No auto-approve unless the owner explicitly enables it.
+- **The AI never rewrites a writer's work.** Copy-edits only (spelling, punctuation, spacing, typos), applied by the server as short exact find → replace (`App\Ai\CopyEdit`); anything bigger counts as a word change, is unticked by default and needs the writer's OK. The AI may draft the monthly editorial, which is published under the owner's name only after they edit and approve it.
 - **Secrets never enter git:** `.env`, keys, DB dumps, user data, the WordPress uploads folder. Real values live in GitHub Environments. `.env.example` has placeholders only.
 - **No colours outside the logo palette** in the UI (`docs/DESIGN.md`). White text only on red or navy.
 - **Real content only** on public pages: no placeholder brackets, no invented names, quotes, statistics or descriptions of real people's work.
@@ -50,6 +50,7 @@ php artisan hatpakha:password you@example.com     # set a password at a hidden p
 php artisan hatpakha:images                       # WebP sizes for images used by posts (safe to re-run)
 php artisan hatpakha:audit                        # content-audit + backlog-tier SUGGESTIONS (changes nothing)
 php artisan hatpakha:ai-blind-test                # Claude vs OpenAI blind test (docs/AI.md; costs money, asks first)
+php artisan hatpakha:ai-editor --backlog --images --dry   # AI editor batch: estimate first; prepares work, never publishes
 php artisan hatpakha:url-audit --base=https://new.hatpakha.com --sitemap=https://hatpakha.com/sitemap.xml
 php artisan test                          # must be green
 php artisan serve

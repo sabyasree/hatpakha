@@ -71,6 +71,22 @@ class SubmissionController extends Controller
         return $this->save($request, $post);
     }
 
+    /** The writer's answer to the editor's word changes (D42): accept → published as planned; object → back to the editor. */
+    public function confirm(Request $request, Post $post)
+    {
+        $this->authorizeOwn($request, $post);
+        abort_unless($post->status === 'confirm', 403);
+        if ($request->input('answer') === 'accept') {
+            \App\Ai\EditorPackage::writerAccepts($post);
+
+            return redirect(Url::to('/account'))->with('status', 'ধন্যবাদ! "'.$post->title.'" প্রকাশের জন্য তৈরি।');
+        }
+        $data = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:1000']], ['reason.required' => 'কোন বদলে আপত্তি, একটু লিখে দিন।']);
+        \App\Ai\EditorPackage::writerObjects($post, $data['reason']);
+
+        return redirect(Url::to('/account'))->with('status', 'আপনার কথা সম্পাদককে জানানো হয়েছে।');
+    }
+
     /** Autosave (JSON). Drafts only; never submits. */
     public function autosave(Request $request, ?Post $post = null)
     {

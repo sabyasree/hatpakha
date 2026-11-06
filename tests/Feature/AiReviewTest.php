@@ -27,7 +27,7 @@ class AiReviewTest extends TestCase
     use RefreshDatabase;
 
     private const REPORT = ['quality_score' => 8, 'summary' => 'সুন্দর কবিতা।', 'genre' => 'কবিতা', 'strengths' => ['ছবি'],
-        'suggestions' => ['এক', 'দুই', 'তিন', 'চার'], 'spelling' => [], 'suggested_section' => 'poetry', 'tags' => ['বৃষ্টি'],
+        'suggestions' => ['এক', 'দুই', 'তিন', 'চার'], 'edits' => [], 'decision' => 'publish', 'note_to_writer' => 'অভিনন্দন!', 'excerpt' => 'বর্ষার দিনের কবিতা', 'suggested_section' => 'poetry', 'tags' => ['বৃষ্টি'],
         'seo_title' => 'বৃষ্টির দিন', 'seo_description' => 'বর্ষার কবিতা', 'policy_flags' => ['hate', 'not-a-flag'], 'fits_magazine' => true, 'fit_reason' => 'ভালো'];
 
     private function piece(): Post

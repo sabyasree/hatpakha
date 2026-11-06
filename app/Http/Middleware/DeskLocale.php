@@ -13,6 +13,8 @@ class DeskLocale
     {
         app()->setLocale('bn');
         \Carbon\Carbon::setLocale('bn');
+        // Dates in /desk are shown and picked in India time (stored as UTC).
+        \Filament\Support\Facades\FilamentTimezone::set('Asia/Kolkata');
 
         return $next($request);
     }

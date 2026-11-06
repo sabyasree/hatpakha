@@ -99,7 +99,7 @@ class DeskSmokeTest extends TestCase
         $comment = \App\Models\Comment::create(['post_id' => $sub->id, 'author_name' => 'পাঠক', 'body' => 'খুব ভালো লাগল', 'status' => 'pending']);
         // One inbox: the submission and the comment are on the same page, with their actions.
         Livewire::test(\App\Filament\Pages\Dashboard::class)->assertOk()
-            ->assertSee('অপেক্ষার কবিতা')->assertSee('পড়ুন ও সিদ্ধান্ত নিন')->assertSee('খুব ভালো লাগল')->assertDontSee('এই মাসের খরচ')
+            ->assertSee('অপেক্ষার কবিতা')->assertSee('দেখুন ও সিদ্ধান্ত')->assertSee('খুব ভালো লাগল')->assertDontSee('এই মাসের খরচ')
             ->call('approveComment', $comment->id);
         $this->assertSame('approved', $comment->fresh()->status);
         $this->assertDatabaseHas('audit_logs', ['action' => 'comment.approved']);

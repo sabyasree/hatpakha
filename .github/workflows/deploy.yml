@@ -126,6 +126,24 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
             "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-blind-test --count=30 --max-usd=6 --force --no-ansi"
 
+      # Staging only, when the commit message contains [run-ai-editor]: the AI editor prepares the
+      # backlog packages and cover illustrations for the owner's approval (D42/D43). Never publishes.
+      # Two pieces first in the open (so a broken setup shows here), the rest in the background on the
+      # server (hours of work must not hold the deploy). Log: storage/logs/ai-editor.log
+      - name: AI editor batch (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-editor]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-editor --backlog --images --dry --no-ansi && \
+             php artisan hatpakha:ai-editor --backlog --limit=2 --no-ansi && \
+             (nohup php artisan hatpakha:ai-editor --backlog --images --no-ansi > storage/logs/ai-editor.log 2>&1 < /dev/null &) && \
+             echo 'Batch continues in the background: storage/logs/ai-editor.log'"
+
       - name: Remove key
         if: always()
         run: rm -f ~/.ssh/deploy_key

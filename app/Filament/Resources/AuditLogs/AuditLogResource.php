@@ -32,7 +32,7 @@ class AuditLogResource extends Resource
     public const ACTIONS = [
         'submission.approved' => 'লেখা মনোনীত', 'submission.changes' => 'বদল চাওয়া হলো', 'submission.rejected' => 'লেখা বাতিল',
         'comment.approved' => 'মন্তব্য প্রকাশ', 'comment.spam' => 'মন্তব্য স্প্যাম', 'comment.pending' => 'মন্তব্য অপেক্ষায় ফেরত',
-        'post.audit_applied' => 'অডিট সুপারিশ মানা হলো', 'post.audit_dismissed' => 'অডিট সুপারিশ বাদ', 'post.cover_removed' => 'প্রচ্ছদ সরানো', 'post.slug_changed' => 'লেখার ঠিকানা বদল (৩০১)',
+        'post.audit_applied' => 'অডিট সুপারিশ মানা হলো', 'post.audit_dismissed' => 'অডিট সুপারিশ বাদ', 'post.cover_removed' => 'প্রচ্ছদ সরানো', 'issue.proposed' => 'সংখ্যার প্রস্তাব (এআই)', 'issue.approved' => 'সংখ্যা অনুমোদন', 'editorial.drafted' => 'সম্পাদকীয় খসড়া (এআই)', 'editorial.published' => 'সম্পাদকীয় প্রকাশ', 'post.ai_images_approved' => 'এআই-এর ছবি অনুমোদন', 'post.copyedits_applied' => 'সংশোধন বসানো', 'submission.confirm_requested' => 'লেখকের সম্মতি চাওয়া', 'submission.writer_objected' => 'লেখকের আপত্তি', 'submission.received' => 'নতুন জমা', 'submission.resubmitted' => 'আবার জমা', 'post.slug_changed' => 'লেখার ঠিকানা বদল (৩০১)',
         'user.role_changed' => 'ভূমিকা বদল', 'user.created' => 'নতুন অ্যাকাউন্ট', 'user.reset_link_sent' => 'পাসওয়ার্ড লিংক পাঠানো',
         'ai.rubric_changed' => 'এআই মানদণ্ড বদল', 'ai.blind_test_revealed' => 'এআই পরীক্ষার ফল খোলা', 'ai.paused' => 'এআই থামানো', 'ai.resumed' => 'এআই আবার চালু',
         'user.registered' => 'নতুন নিবন্ধন', 'user.password_reset' => 'পাসওয়ার্ড রিসেট', 'user.password_set' => 'পাসওয়ার্ড সেট (কমান্ড)',

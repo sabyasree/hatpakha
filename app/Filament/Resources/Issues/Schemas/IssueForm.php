@@ -18,16 +18,25 @@ class IssueForm
         'srabon' => 'শ্রাবণ (মাসিক)', 'hemonto' => 'হেমন্ত (মাসিক)', 'borshosera' => 'বর্ষসেরা (মাসিক)',
     ];
 
+    public const STATUS = ['proposed' => 'এআই-এর প্রস্তাব', 'planning' => 'পরিকল্পনা', 'published' => 'প্রকাশিত'];
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            // The AI editor's proposal (D42): what it chose and why. The owner approves from the top of the page.
+            \Filament\Schemas\Components\Section::make('এআই সম্পাদকের প্রস্তাব')->columnSpanFull()
+                ->visible(fn ($record) => filled($record?->ai_plan))
+                ->schema([
+                    \Filament\Forms\Components\Placeholder::make('plan')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
+                        view('filament.issue-plan', ['issue' => $record])->render())),
+                ]),
             TextInput::make('title')->label('সংখ্যার নাম')->required()->maxLength(120)->placeholder('যেমন: শারদীয়া ১৪৩৩'),
             TextInput::make('slug')->label('ঠিকানা')->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
                 ->unique(ignoreRecord: true)->helperText('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।')
                 ->disabled(fn ($record) => $record?->status === 'published'),
             Select::make('kind')->label('ধরন')->options(['festival' => 'উৎসব সংখ্যা', 'monthly' => 'মাসিক সংখ্যা'])->required()->default('monthly'),
             Select::make('theme_key')->label('প্রচ্ছদের থিম')->options(self::THEMES)->required(),
-            Select::make('status')->label('অবস্থা')->options(['planning' => 'পরিকল্পনা', 'published' => 'প্রকাশিত'])->required()->default('planning'),
+            Select::make('status')->label('অবস্থা')->options(self::STATUS)->required()->default('planning'),
             DateTimePicker::make('published_at')->label('প্রকাশের তারিখ')->seconds(false),
             Textarea::make('editor_note')->label('সম্পাদকের কথা')->rows(6)->maxLength(5000)->columnSpanFull()
                 ->helperText('সংখ্যার শুরুতে ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।'),

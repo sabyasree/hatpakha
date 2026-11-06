@@ -41,3 +41,11 @@ Then in /desk → **AI পরীক্ষা**, score each anonymous report A/B 
 - The submission is sent to the AI wrapped in `<submission>` and labelled as data; instructions inside a piece are ignored and reported.
 - Report values are clamped (score 1–10, ≤3 suggestions, ≤5 tags, known flags only) and escaped when shown.
 - Claude calls use the server-side refusal fallback; a refusal or error just leaves the piece for normal human review.
+
+## AI editor (D42/D43)
+The AI works as the desk editor under the owner. It prepares; a person approves.
+- **Per piece** (new submissions automatically; old pending via `hatpakha:ai-editor --backlog`): report, copy-edits, recommended decision, note to the writer, teaser, tags, Google title/description. Copy-edits are short exact find → replace pairs applied by `App\Ai\CopyEdit`; the server re-labels anything bigger than a few characters as a "word" change (never ticked by default; the writer confirms it).
+- **Pictures**: `App\Ai\Illustrator` (Claude small model writes a scene → OpenAI image model). Settings: `OPENAI_IMAGE_MODEL` (required, exact name from OpenAI's models page), `OPENAI_IMAGE_SIZE` (1536x1024), `OPENAI_IMAGE_QUALITY` (medium), `OPENAI_IMAGE_PRICE` (USD per image, for the spend log).
+- **Monthly issue**: `App\Ai\IssuePlanner` (calendar → theme options; picks 6–15 recent pieces) and `App\Ai\EditorialWriter` (draft under the owner's name).
+- **Comments**: `App\Ai\CommentScreen` (small model): ok / spam / check.
+- Every call is logged in `ai_usages` with its cost; the pause button stops all of it.

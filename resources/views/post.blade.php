@@ -26,6 +26,7 @@
                 @if ($set = \App\Support\Images::srcset('/'.$post->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="(max-width: 760px) 100vw, 720px">@endif
                 <img src="{{ asset($post->featured_image_path) }}" alt="" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mt-7 w-full rounded-2xl">
             </picture>
+            @if ($post->image_is_ai)<p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>@endif
         @elseif (! $post->isPoem())
             <x-title-card :post="$post" class="mt-7 !aspect-[16/7]" />
         @endif
