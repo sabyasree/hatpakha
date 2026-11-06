@@ -72,10 +72,11 @@ class ImportWordPress extends Command
         $this->importPosts();
         $this->importComments();
         $this->importPages();
+        $this->importSubscribers();
         $this->refreshCounts();
 
         $this->newLine();
-        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'pages', 'comments', 'redirects'])
+        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'pages', 'comments', 'redirects', 'newsletter_subscribers'])
             ->map(fn ($t) => [$t, DB::table($t)->count()])->all());
         $this->table(['Post status', 'Rows'], Post::query()->selectRaw('status, count(*) c')->groupBy('status')->get()->map(fn ($r) => [$r->status, $r->c])->all());
 
@@ -115,22 +116,29 @@ class ImportWordPress extends Command
         $roles = $this->wp->table('usermeta')->where('meta_key', $this->wp->getTablePrefix().'capabilities')->pluck('meta_value', 'user_id');
         $bios = $this->wp->table('usermeta')->where('meta_key', 'description')->pluck('meta_value', 'user_id');
         $postAuthors = $this->wp->table('posts')->where('post_type', 'post')->distinct()->pluck('post_author')->flip();
+        $commenters = $this->wp->table('comments')->where('user_id', '>', 0)->distinct()->pluck('user_id')->flip();
+        // Panel roles granted by a person (console or /desk) are logged; only those survive a re-import.
+        $explicitRoles = \App\Models\AuditLog::where('action', 'user.role_changed')->where('subject_type', (new User)->getMorphClass())->pluck('subject_id')->flip();
 
-        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $postAuthors) {
+        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $postAuthors, $commenters, $explicitRoles) {
             foreach ($rows as $u) {
                 $email = strtolower(trim($u->user_email)) ?: "wp-user-{$u->ID}@invalid.hatpakha.local";
                 if (User::where('email', $email)->where('legacy_wp_id', '!=', $u->ID)->exists()) {
                     $email = "wp-user-{$u->ID}+dup@invalid.hatpakha.local";
                 }
-                $role = $this->mapRole((string) ($roles[$u->ID] ?? ''), isset($postAuthors[$u->ID]));
+                $caps = (string) ($roles[$u->ID] ?? '');
+                $role = self::mapRole($caps, isset($postAuthors[$u->ID]));
                 // forceFill: legacy_wp_id / legacy_password are intentionally NOT mass-assignable.
                 $user = User::firstOrNew(['legacy_wp_id' => $u->ID]);
                 $user->forceFill([
                     'legacy_wp_id' => $u->ID,
                     'name' => html_entity_decode($u->display_name ?: $u->user_login),
                     'email' => $email,
-                    // Keep a role an admin already changed in the new system; otherwise map it.
-                    'role' => $user->exists ? $user->role : $role,
+                    // Keep a role a person explicitly granted; a panel role that only came from an earlier
+                    // import is taken back (least privilege, docs/SECURITY.md §3).
+                    'role' => $user->exists && ($explicitRoles->has($user->id) || ! ($user->role?->atLeast(Role::Editor) ?? false)) ? $user->role : $role,
+                    'legacy_role' => self::legacyRole($caps),
+                    'spam_reason' => self::spamReason($u, isset($postAuthors[$u->ID]) || isset($commenters[$u->ID])),
                     // Legacy hash is stored as-is (never through the "hashed" cast) until first login.
                     'legacy_password' => $user->password ? null : ($u->user_pass ?: null),
                     'created_at' => $u->user_registered,
@@ -342,16 +350,59 @@ class ImportWordPress extends Command
         )]);
     }
 
-    private function mapRole(string $caps, bool $hasPosts): Role
+    /**
+     * Least privilege: nobody gets admin/editor rights from WordPress. Old admins and editors arrive as
+     * writers and must be promoted explicitly (php artisan hatpakha:role). An unused old admin password
+     * would otherwise let anyone log in and enrol their OWN 2FA device (docs/SECURITY.md §3).
+     */
+    public static function mapRole(string $caps, bool $hasPosts): Role
     {
         $role = match (true) {
-            str_contains($caps, '"administrator"') => Role::Admin,
-            str_contains($caps, '"editor"') => Role::Editor,
+            str_contains($caps, '"administrator"'), str_contains($caps, '"editor"'),
             str_contains($caps, '"author"'), str_contains($caps, '"contributor"') => Role::Writer,
             default => Role::Reader,
         };
 
         return ($hasPosts && $role === Role::Reader) ? Role::Writer : $role;
+    }
+
+    public static function legacyRole(string $caps): ?string
+    {
+        foreach (['administrator', 'editor', 'author', 'contributor'] as $r) {
+            if (str_contains($caps, '"'.$r.'"')) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Flags (never deletes) accounts that look automated. Very conservative: real readers who never
+     * posted are NOT flagged; only bot-style sign-ups and Facebook test accounts.
+     */
+    public static function spamReason(object $u, bool $active): ?string
+    {
+        if (str_ends_with(strtolower((string) $u->user_email), '@tfbnw.net')) {
+            return 'Facebook test account';
+        }
+        if (preg_match('/\b(casino|betting|loan|crypto|viagra|escort|seo services?|essay|replica|cheap)\b/i', $u->display_name.' '.$u->user_login.' '.$u->user_url)) {
+            return 'spam words in name or website';
+        }
+        if ($active) {
+            return null;
+        }
+        // "terrie9929 / Delbert Mcgrath": random lowercase login + digits, unrelated English full name, recent.
+        $year = (int) substr((string) $u->user_registered, 0, 4);
+        $mainstream = (bool) preg_match('/@(gmail|googlemail|yahoo|ymail|rediffmail|hotmail|outlook|live|icloud|me|protonmail|aol)\./i', (string) $u->user_email);
+        if (! $mainstream && $year >= 2021 && preg_match('/^[a-z]+\d{3,}$/', (string) $u->user_login)
+            && preg_match('/^([A-Z][a-z]+) ([A-Z][a-z]+)$/', trim((string) $u->display_name), $m)
+            && ! str_contains(strtolower((string) $u->user_login), strtolower($m[1]))
+            && ! str_contains(strtolower((string) $u->user_login), strtolower($m[2]))) {
+            return 'bot-like sign-up (random login, unrelated name, no activity)';
+        }
+
+        return null;
     }
 
     /** Ensures uniqueness; a clash gets "-{legacyId}" appended. Re-runs keep the same slug. */
@@ -448,6 +499,46 @@ class ImportWordPress extends Command
         }
 
         return $out;
+    }
+
+    /**
+     * MailPoet list → newsletter_subscribers. Only people who signed up through a form AND confirmed count
+     * as consented; accounts MailPoet added automatically need a re-consent email first (owner approves).
+     * Unsubscribed and bounced addresses are suppressed forever. Nobody is emailed here.
+     */
+    private function importSubscribers(): void
+    {
+        if (! $this->wp->getSchemaBuilder()->hasTable('mailpoet_subscribers')) {
+            $this->warn('No MailPoet table: newsletter subscribers skipped.');
+
+            return;
+        }
+        $n = 0;
+        $this->wp->table('mailpoet_subscribers')->whereNull('deleted_at')->orderBy('id')->chunk(500, function ($rows) use (&$n) {
+            foreach ($rows as $s) {
+                $email = strtolower(trim((string) $s->email));
+                if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    continue;
+                }
+                $existing = \App\Models\NewsletterSubscriber::where('email', $email)->first();
+                $suppressed = in_array($s->status, ['unsubscribed', 'bounced'], true);
+                \App\Models\NewsletterSubscriber::updateOrCreate(['email' => $email], [
+                    'name' => trim(($s->first_name ?? '').' '.($s->last_name ?? '')) ?: null,
+                    // A later unsubscribe in the new system always wins over the old data.
+                    'status' => $existing?->suppressed ? $existing->status : $s->status,
+                    'source' => $s->source,
+                    'suppressed' => $suppressed || (bool) $existing?->suppressed,
+                    'consented_at' => $existing?->consented_at
+                        ?? ($s->source === 'form' && $s->status === 'subscribed' && $s->confirmed_at ? $s->confirmed_at : null),
+                    'user_id' => $s->wp_user_id ? ($this->userMap[$s->wp_user_id] ?? null) : null,
+                    'legacy_mailpoet_id' => $s->id,
+                    'created_at' => $s->created_at,
+                ]);
+                $n++;
+            }
+        });
+        $mailable = \App\Models\NewsletterSubscriber::mailable()->count();
+        $this->info("Newsletter: {$n} addresses imported, {$mailable} with explicit consent (nobody was emailed)");
     }
 
     /** Minimal port of WordPress wpautop(): blank lines → paragraphs, single newlines → <br>. */

@@ -59,3 +59,8 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 
 ## 9. Payments (when the gateway is enabled)
 - Gateway-hosted checkout only (no card data on our server). Webhook **signature verification**, idempotency keys, and a server-side amount check. ✅test
+
+## Imported accounts (Phase 2)
+- **Least privilege at import:** WordPress administrators/editors arrive as writers; `/desk` access only by an explicit, logged grant (`php artisan hatpakha:role`, or the Users screen). ✅test
+- Bot-like and Facebook-test accounts are flagged in `users.spam_reason` (never deleted automatically). ✅test
+- Newsletter: only explicit, confirmed consent is mailable; unsubscribed/bounced addresses are suppressed permanently. ✅test

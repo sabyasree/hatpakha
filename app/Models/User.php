@@ -37,6 +37,16 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Role changes made by a signed-in person (the /desk Users screen) are logged, like console changes.
+        static::updated(function (self $user) {
+            if ($user->wasChanged('role') && auth()->check()) {
+                AuditLog::record('user.role_changed', $user, ['from' => $user->getOriginal('role')?->value ?? $user->getOriginal('role'), 'to' => $user->role?->value, 'via' => 'desk']);
+            }
+        });
+    }
+
     public function author(): HasOne
     {
         return $this->hasOne(Author::class);
