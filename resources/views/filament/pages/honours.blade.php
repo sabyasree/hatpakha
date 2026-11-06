@@ -33,6 +33,26 @@
         </x-filament::section>
     @endif
 
+    <x-filament::section icon="heroicon-o-flag" collapsible>
+        <x-slot name="heading">{{ __('মাইলফলক') }} @if ($c = $d['milestones']->where('status', 'proposed')->count())({{ $n($c) }} {{ __('নতুন') }})@endif</x-slot>
+        <x-slot name="description">{{ __('লেখকদের প্রথম লেখা, ১০/২৫/৫০/১০০তম লেখা, হাতপাখায় ৫/১০/১৫ বছর: সত্যিকারের তথ্য থেকে রোজ খোঁজা হয়। অনুমোদন দিলে প্রথম পাতার "অভিনন্দন" সারিতে ৪৫ দিন দেখা যাবে।') }}</x-slot>
+        @forelse ($d['milestones'] as $m)
+            <div wire:key="ms-{{ $m->id }}" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;padding:.55rem 0;border-bottom:1px solid rgba(127,127,127,.15)">
+                <div style="flex:1;min-width:14rem"><strong>{{ $m->author?->publicName() }}</strong> · {{ $m->label }}
+                    <div class="hp-muted">{{ \App\Support\Bn::date($m->reached_at) }}@if ($m->post) · {{ \Illuminate\Support\Str::limit($m->post->title, 50) }}@endif</div></div>
+                @if ($m->status === 'approved')
+                    <span style="font-size:.85rem;font-weight:700;color:#1A86C2">✓ {{ __('প্রথম পাতায় আছে') }}</span>
+                    <x-filament::button size="xs" color="gray" wire:click="milestone({{ $m->id }}, false)">{{ __('সরান') }}</x-filament::button>
+                @else
+                    <x-filament::button size="xs" color="success" icon="heroicon-o-check" wire:click="milestone({{ $m->id }}, true)">{{ __('অনুমোদন') }}</x-filament::button>
+                    <x-filament::button size="xs" color="gray" wire:click="milestone({{ $m->id }}, false)">{{ __('এখন নয়') }}</x-filament::button>
+                @endif
+            </div>
+        @empty
+            <div class="hp-muted">{{ __('গত ৬০ দিনে নতুন মাইলফলক নেই।') }}</div>
+        @endforelse
+    </x-filament::section>
+
     <x-filament::section icon="heroicon-o-star">
         <x-slot name="heading">{{ __('এখন সম্মানিত') }} ({{ $n($d['honoured']->count()) }})</x-slot>
         @if ($d['honoured']->isEmpty())

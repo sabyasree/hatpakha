@@ -27,20 +27,110 @@
     @endif
 
     @if ($poemOfDay)
-    {{-- Poem poster --}}
-    <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#12304A)">
+    {{-- Poem poster (the editor's pick when there is one, D78: with the editor's reason) --}}
+    <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#12304A)" aria-labelledby="poem-h">
         <div class="absolute -right-10 -top-40 font-serif text-[520px] leading-none text-red" aria-hidden="true">“</div>
-        <div class="relative mx-auto grid max-w-[1320px] gap-10 px-5 py-16 md:grid-cols-[1fr_2fr] md:py-24">
+        <div class="relative mx-auto grid max-w-[1320px] gap-8 px-5 py-14 md:grid-cols-[1fr_2fr] md:gap-10 md:py-24">
             <div class="flex flex-col gap-3">
-                <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">আজকের কবিতা</span>
-                <a href="{{ $poemOfDay->url() }}" class="font-display text-5xl font-extrabold leading-none">{{ $poemOfDay->title }}</a>
-                <span class="font-hand text-xl text-peach">{{ $pickNote ?: 'সম্পাদকের পছন্দ — না পড়লে মিস করবেন!' }}</span>
+                <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">{{ $isPick ? 'সম্পাদকের পছন্দ' : 'আজকের কবিতা' }}</span>
+                <h2 id="poem-h" class="font-display text-5xl font-extrabold leading-none"><a href="{{ $poemOfDay->url() }}">{{ $poemOfDay->title }}</a></h2>
                 <span class="text-peach-light"><x-byline :post="$poemOfDay" /> · {{ \App\Support\Bn::num($poemOfDay->reading_minutes) }} মিনিট</span>
-                <a href="{{ $poemOfDay->url() }}" class="mt-2 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy">পুরো কবিতা পড়ুন</a>
+                @if ($isPick && $pickNote)
+                    <figure class="mt-1 border-l-4 border-peach pl-4">
+                        <figcaption class="text-base font-bold text-peach">কেন পছন্দ</figcaption>
+                        <blockquote class="mt-1 font-serif text-lg leading-relaxed text-paper">{{ $pickNote }}</blockquote>
+                    </figure>
+                @endif
+                <a href="{{ $poemOfDay->url() }}" class="mt-2 hidden h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:flex">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
             </div>
-            <div class="poem-bn text-2xl md:text-4xl [&_p]:mb-3">{!! \App\Support\Excerpt::lines($poemOfDay->body_html, 6) !!}</div>
+            <div>
+                <div class="poem-bn poem-tight max-w-[34ch] text-2xl md:text-4xl">{!! \App\Support\Excerpt::lines($poemOfDay->body_html, 6) !!}</div>
+                <a href="{{ $poemOfDay->url() }}" class="mt-6 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:hidden">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
+            </div>
         </div>
     </section>
+    @endif
+
+    @if ($spotlight)
+        {{-- D78: the writer of the month (or the latest honour). Reviewed by a UX pass: one link into the piece, praise set as a quote. --}}
+        @php
+            $sp = $spotlight;
+            $quote = $sp->honour_quote && $spotlightPost && $sp->honour_post_id === $spotlightPost->id ? $sp->honour_quote : null;
+            // A line that stops at a comma is shown as cut (…), never completed with invented words.
+            $quote = $quote && preg_match('/[,;:—–-]$/u', $quote) ? $quote.' …' : $quote;
+        @endphp
+        <section class="border-b-2 border-navy bg-peach-light" aria-labelledby="spotlight-h">
+            <div class="mx-auto grid max-w-[1320px] gap-6 px-5 py-12 md:grid-cols-[auto_1fr] md:items-center md:gap-12 md:py-16">
+                <div class="flex items-center gap-4 md:flex-col md:text-center">
+                    @if ($sp->avatar_path)
+                        <img src="{{ $sp->avatar_path }}" alt="" width="200" height="200" loading="lazy" class="h-24 w-24 flex-none rounded-full border-4 border-red object-cover shadow-[4px_4px_0_#13212C] md:h-52 md:w-52 md:shadow-[6px_6px_0_#13212C]">
+                    @else
+                        <span class="flex h-24 w-24 flex-none items-center justify-center rounded-full border-4 border-red bg-gradient-to-br from-peach to-peach-deep font-display text-5xl font-extrabold shadow-[4px_4px_0_#13212C] md:h-52 md:w-52 md:text-7xl md:shadow-[6px_6px_0_#13212C]" aria-hidden="true">{{ $sp->initial() }}</span>
+                    @endif
+                    <div class="min-w-0 md:-mt-8">
+                        <div class="font-hand text-xl text-red md:hidden">হাতপাখা সম্মান জানায়</div>
+                        <div class="font-display text-3xl font-extrabold leading-tight md:hidden">{{ $sp->publicName() }}</div>
+                        <span class="mt-1 inline-block -rotate-2 rounded-full bg-red px-3 py-1 text-sm font-extrabold text-white shadow-[3px_3px_0_#13212C] md:px-4 md:py-1.5 md:text-base"><span aria-hidden="true">★</span> {{ $sp->honour_label }}</span>
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <div class="hidden font-hand text-2xl text-red md:block">হাতপাখা সম্মান জানায়</div>
+                    <h2 id="spotlight-h" class="sr-only font-display text-6xl font-extrabold leading-none md:not-sr-only md:block" style="font-stretch: 80%">{{ $sp->publicName() }}</h2>
+                    @if ($sp->honour_note)
+                        <figure class="relative mt-2 max-w-[62ch] pl-9 md:mt-4 md:pl-11">
+                            <span class="absolute left-0 top-[-.6rem] font-serif text-6xl leading-none text-red" aria-hidden="true">“</span>
+                            <blockquote class="font-serif text-xl leading-relaxed">{{ $sp->honour_note }}</blockquote>
+                            <figcaption class="mt-2 font-hand text-xl text-red">— সম্পাদকমণ্ডলী, হাতপাখা</figcaption>
+                        </figure>
+                    @endif
+                    @if ($quote)
+                        <figure class="mt-6 max-w-[62ch] rounded-2xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
+                            <blockquote class="font-serif text-xl leading-relaxed [text-wrap:balance] md:text-2xl">“{{ $quote }}”</blockquote>
+                            <figcaption class="mt-2 text-sm font-bold text-ink2">“{{ $spotlightPost->title }}” থেকে</figcaption>
+                        </figure>
+                    @endif
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        @if ($spotlightPost)<a href="{{ $spotlightPost->url() }}" class="flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">{{ $quote ? 'পুরো লেখাটি পড়ুন' : '“'.\Illuminate\Support\Str::limit($spotlightPost->title, 40).'” পড়ুন' }}</a>@endif
+                        <a href="{{ $sp->url() }}" class="flex h-12 items-center rounded-full border-2 border-navy bg-white px-6 font-bold">{{ $sp->publicName() }}-এর সব লেখা →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    @php
+        $milestones = $milestones->reject(fn ($m) => $spotlight && $m->author_id === $spotlight->id)->values();
+    @endphp
+    @if ($milestones->isNotEmpty())
+        {{-- D78: writers' milestones, approved by the owner --}}
+        <section class="border-b-2 border-dashed border-navy" aria-labelledby="milestones-h">
+            <div class="mx-auto max-w-[1320px] px-5 py-10">
+                <div class="font-hand text-2xl text-red">হাতপাখা পরিবার</div>
+                <h2 id="milestones-h" class="font-display text-4xl font-extrabold">অভিনন্দন</h2>
+                <ul class="mt-5 flex flex-wrap gap-3">
+                    @foreach ($milestones as $m)
+                        @php
+                            [$badge, $bg] = match (true) {
+                                $m->kind === 'first' => ['১ম', 'bg-red'],
+                                str_starts_with($m->kind, 'pieces_') => [\App\Support\Bn::num(substr($m->kind, 7)), 'bg-red'],
+                                default => [\App\Support\Bn::num(substr($m->kind, 6)).'ব', 'bg-sky-deep'],
+                            };
+                            $text = match (true) {
+                                $m->kind === 'first' => 'প্রথম লেখা প্রকাশিত',
+                                str_starts_with($m->kind, 'pieces_') => $m->label.' প্রকাশিত',
+                                default => $m->label.' পূর্ণ',
+                            };
+                        @endphp
+                        <li>
+                            <a href="{{ $m->post?->isLive() ? $m->post->url() : $m->author->url() }}" class="flex min-h-12 items-center gap-3 rounded-full border-2 border-navy bg-white py-1.5 pl-1.5 pr-5 hover:bg-peach-light">
+                                <span class="flex h-11 w-11 flex-none items-center justify-center rounded-full {{ $bg }} text-sm font-extrabold text-white" aria-hidden="true">{{ $badge }}</span>
+                                <span><span class="block font-bold leading-tight">{{ $m->author->publicName() }}</span><span class="block text-sm text-ink2">{{ $text }}</span></span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
     @endif
 
     {{-- Stories: taped pages --}}
@@ -84,6 +174,9 @@
     </section>
     @endif
 
+    @php
+        $honoured = $honoured->reject(fn ($h) => $spotlight && $h->id === $spotlight->id)->take(3)->values();
+    @endphp
     @if ($honoured->isNotEmpty())
         {{-- Writers the magazine has honoured (D66, D76): photo, honour, the editor's words, two pieces to read. --}}
         <section class="mx-auto max-w-[1320px] px-5 py-10" aria-labelledby="honoured-h">
@@ -91,7 +184,9 @@
             <h2 id="honoured-h" class="font-display text-4xl font-extrabold">সম্মানিত লেখক</h2>
             <div class="mt-6 grid gap-5 {{ [1 => '', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3'][min(3, $honoured->count())] }}">
                 @foreach ($honoured as $h)
-                    @php($pieces = $h->posts()->published()->latest('published_at')->limit(2)->get(['posts.id', 'posts.slug', 'posts.title', 'posts.published_at']))
+                    @php
+                        $pieces = $h->posts()->published()->latest('published_at')->limit(2)->get(['posts.id', 'posts.slug', 'posts.title', 'posts.published_at']);
+                    @endphp
                     <article class="relative overflow-hidden rounded-3xl border-2 border-navy bg-white {{ $honoured->count() === 1 ? 'md:grid md:grid-cols-[auto_1fr]' : '' }}">
                         <div class="flex items-center gap-4 bg-peach-light p-5 {{ $honoured->count() === 1 ? 'md:flex-col md:justify-center md:px-10 md:text-center' : '' }}">
                             @if ($h->avatar_path)

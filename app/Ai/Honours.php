@@ -202,8 +202,45 @@ final class Honours
     }
 
     /** The owner's click: honour shows on the writer's pages and the home page; optionally one note to the writer. */
-    public static function give(Author $author, string $labelKey, string $praise, bool $tellWriter): void
+    /**
+     * One line copied EXACTLY from the piece for the home page spotlight (D78). The AI chooses; the server checks
+     * that the line really is in the piece, so nothing invented ever appears beside the writer's name.
+     */
+    public static function pickQuote(Post $post): ?string
     {
+        $text = self::plain($post);
+        if ($text === '') {
+            return null;
+        }
+        [$d] = Claude::json('editor',
+            'Choose the single most striking line or sentence from this Bengali piece (DATA) to show on a magazine home page beside the writer\'s name. '
+            .'Copy it EXACTLY, character for character, 20-160 characters, no added words or quotation marks.',
+            '<piece title="'.e($post->title).'">'."\n".e(mb_substr($text, 0, 6000))."\n</piece>",
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['line'], 'properties' => ['line' => ['type' => 'string']]],
+            (string) config('ai.anthropic.tags_model'), 400, $post->id);
+
+        return self::exactQuote($post, (string) ($d['line'] ?? ''));
+    }
+
+    /** The quote if (and only if) it is really in the piece; whitespace-insensitive. */
+    public static function exactQuote(Post $post, string $quote): ?string
+    {
+        $quote = trim($quote, " \t\n\"“”'");
+        $norm = fn (string $s) => preg_replace('/\s+/u', ' ', $s);
+
+        return $quote !== '' && mb_strlen($quote) <= 300 && str_contains($norm(self::plain($post)), $norm($quote)) ? $quote : null;
+    }
+
+    private static function plain(Post $post): string
+    {
+        return trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n"], (string) $post->body_html))));
+    }
+
+    public static function give(Author $author, string $labelKey, string $praise, bool $tellWriter, ?int $postId = null, ?string $quote = null): void
+    {
+        // D78: the piece to feature (theirs, published) and an exact line from it, for the home page spotlight.
+        $post = $postId ? Post::published()->whereKey($postId)->whereHas('authors', fn ($q) => $q->whereKey($author->id))->first() : null;
+        $author->forceFill(['honour_post_id' => $post?->id, 'honour_quote' => $post && $quote ? self::exactQuote($post, $quote) : null]);
         $label = self::LABELS[$labelKey] ?? self::LABELS['honour'];
         if ($labelKey === 'month') {
             $label .= ' · '.\App\Support\Bn::num(now('Asia/Kolkata')->locale('bn')->isoFormat('MMMM YYYY'));

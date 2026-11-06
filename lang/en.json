@@ -1107,5 +1107,17 @@
     "শীর্ষ লেখকদের লেখা পড়ানো": "Read the top writers' work",
     "সবার লেখা গত ৯০ দিনের মধ্যে পড়া হয়েছে। আবার পড়াতে চাইলে নিচে \"আবার পড়ুক\" চালু করুন।": "Everyone has been read in the last 90 days. To read again, switch on \"read again\" below.",
     "সম্মানিত লেখক": "Honoured writers",
-    "সম্মানের তালিকার লেখকদের লেখা পড়া": "Read the shortlisted writers' work"
+    "সম্মানের তালিকার লেখকদের লেখা পড়া": "Read the shortlisted writers' work",
+    "এআই-কে বাছতে বলুন": "Ask the AI to choose",
+    "এখন বাছা গেল না; আগে লেখাটি বাছুন, বা এআই থামানো আছে কি না দেখুন": "Could not choose now; pick the piece first, or check whether the AI is paused",
+    "গত ৬০ দিনে নতুন মাইলফলক নেই।": "No new milestones in the last 60 days.",
+    "নতুন": "new",
+    "প্রথম পাতায় আছে": "On the home page",
+    "প্রথম পাতায় কোন লেখাটি দেখাবে": "Which piece to show on the home page",
+    "প্রথম পাতায় দেখা যাবে": "It will show on the home page",
+    "মাইলফলক": "Milestones",
+    "লাইনটি লেখায় হুবহু পাওয়া যায়নি, তাই দেখানো হবে না।": "That line is not in the piece word for word, so it will not be shown.",
+    "লেখকদের প্রথম লেখা, ১০/২৫/৫০/১০০তম লেখা, হাতপাখায় ৫/১০/১৫ বছর: সত্যিকারের তথ্য থেকে রোজ খোঁজা হয়। অনুমোদন দিলে প্রথম পাতার \"অভিনন্দন\" সারিতে ৪৫ দিন দেখা যাবে।": "Writers' first piece, 10th/25th/50th/100th piece, 5/10/15 years with Hatpakha: found daily from real data. Once approved, they show in the home page \"Congratulations\" row for 45 days.",
+    "লেখা থেকে একটি লাইন (হুবহু)": "One line from the piece (word for word)",
+    "লেখায় হুবহু না থাকলে দেখানো হবে না।": "Shown only if it is in the piece word for word."
 }

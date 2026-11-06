@@ -43,7 +43,12 @@ class Honours extends Page
         return Action::make('honour')->label(__('সম্মান দিন'))->icon('heroicon-o-star')->size('sm')->color('warning')
             ->modalHeading(fn (array $arguments) => __('সম্মান দিন').': '.(Author::find($arguments['author'] ?? 0)?->publicName() ?? ''))
             ->modalDescription(__('লেখকের পাতায়, প্রতিটি লেখার নিচের লেখক-পরিচিতিতে আর প্রথম পাতার "সম্মানিত লেখক" অংশে দেখা যাবে। সঙ্গে একটি সম্মাননা শংসাপত্র তৈরি হবে।'))
-            ->fillForm(fn (array $arguments) => ['label' => 'pick', 'praise' => Author::find($arguments['author'] ?? 0)?->honour_note, 'tell' => true])
+            ->fillForm(function (array $arguments) {
+                $a = Author::find($arguments['author'] ?? 0);
+                $best = $a ? (HonourJobs::candidates(60)->firstWhere('author_id', $a->id)['best_id'] ?? $a->posts()->published()->latest('published_at')->value('posts.id')) : null;
+
+                return ['label' => 'pick', 'praise' => $a?->honour_note, 'tell' => true, 'post' => $a?->honour_post_id ?? $best, 'quote' => $a?->honour_quote];
+            })
             ->schema(fn (array $arguments) => [
                 Select::make('label')->label(__('কোন সম্মান'))->required()->options(\App\Support\Lang::t(HonourJobs::LABELS)),
                 Textarea::make('praise')->label(__('সম্পাদকের কথা (লেখক-পাতায় দেখা যাবে)'))->rows(5)->maxLength(800)
@@ -52,12 +57,25 @@ class Honours extends Page
                             $text = ($a = Author::find($arguments['author'] ?? 0)) ? HonourJobs::draftPraise($a) : null;
                             $text ? $set('praise', $text) : Notification::make()->title(__('এখন লেখা গেল না; এআই থামানো আছে কি না দেখুন'))->warning()->send();
                         })),
+                // D78: the home page spotlight shows one of their pieces and one line copied exactly from it.
+                Select::make('post')->label(__('প্রথম পাতায় কোন লেখাটি দেখাবে'))->searchable()
+                    ->options(fn () => \App\Models\Post::published()->whereHas('authors', fn ($q) => $q->whereKey($arguments['author'] ?? 0))->latest('published_at')->limit(200)->pluck('title', 'id')),
+                Textarea::make('quote')->label(__('লেখা থেকে একটি লাইন (হুবহু)'))->rows(2)->maxLength(300)
+                    ->helperText(__('লেখায় হুবহু না থাকলে দেখানো হবে না।'))
+                    ->hintAction(Action::make('pickLine')->label(__('এআই-কে বাছতে বলুন'))->icon('heroicon-o-sparkles')
+                        ->action(function ($get, $set) {
+                            $line = ($p = \App\Models\Post::published()->find($get('post'))) ? HonourJobs::pickQuote($p) : null;
+                            $line ? $set('quote', $line) : Notification::make()->title(__('এখন বাছা গেল না; আগে লেখাটি বাছুন, বা এআই থামানো আছে কি না দেখুন'))->warning()->send();
+                        })),
                 Toggle::make('tell')->label(__('লেখককে অভিনন্দনের ই-মেল পাঠান (অ্যাকাউন্ট থাকলে)')),
             ])
             ->modalSubmitActionLabel(__('সম্মান দিন'))
             ->action(function (array $data, array $arguments) {
                 $author = Author::where('is_desk', false)->findOrFail($arguments['author'] ?? 0);
-                HonourJobs::give($author, $data['label'], (string) $data['praise'], (bool) $data['tell']);
+                HonourJobs::give($author, $data['label'], (string) $data['praise'], (bool) $data['tell'], $data['post'] ? (int) $data['post'] : null, $data['quote'] ?? null);
+                if (filled($data['quote'] ?? null) && ! $author->fresh()->honour_quote) {
+                    Notification::make()->title(__('লাইনটি লেখায় হুবহু পাওয়া যায়নি, তাই দেখানো হবে না।'))->warning()->send();
+                }
                 \App\Ai\Marketer::spotlight($author);
                 Notification::make()->title(__('সম্মান দেওয়া হয়েছে'))->body(__('প্রথম পাতা আর লেখকের পাতায় দেখুন। মার্কেটিং পাতায় একটি পোস্টও তৈরি হচ্ছে।'))->success()->send();
             });
@@ -87,9 +105,16 @@ class Honours extends Page
 
     public function unhonour(int $id): void
     {
-        Author::findOrFail($id)->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null])->save();
+        Author::findOrFail($id)->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null, 'honour_post_id' => null, 'honour_quote' => null])->save();
         \App\Models\AuditLog::record('author.unhonoured', null, ['author' => $id]);
         Notification::make()->title(__('সম্মান সরানো হয়েছে'))->send();
+    }
+
+    /** D78: milestones go on the home page only after the owner approves. */
+    public function milestone(int $id, bool $approve): void
+    {
+        \App\Models\Milestone::findOrFail($id)->forceFill(['status' => $approve ? 'approved' : 'dismissed', 'approved_at' => $approve ? now() : null])->save();
+        Notification::make()->title($approve ? __('প্রথম পাতায় দেখা যাবে') : __('সরানো হয়েছে'))->success()->send();
     }
 
     public function data(): array
@@ -97,6 +122,7 @@ class Honours extends Page
         return [
             'honoured' => Author::whereNotNull('honour_label')->latest('honoured_at')->get(),
             'candidates' => HonourJobs::candidates(12),
+            'milestones' => \App\Models\Milestone::with('author', 'post')->whereIn('status', ['proposed', 'approved'])->where('reached_at', '>=', now()->subDays(60))->latest('reached_at')->get(),
             'readCount' => Author::whereNotNull('quality_at')->count(),
             'reading' => \App\Models\TeamRequest::where('job', 'read_writers')->whereIn('status', ['queued', 'running'])->exists(),
             'proposal' => \App\Models\EditorTask::open('honour')->latest()->first(),

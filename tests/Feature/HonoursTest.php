@@ -43,7 +43,7 @@ class HonoursTest extends TestCase
         $this->assertStringStartsWith('মাসের লেখক', $writer->honour_label);
         $this->assertSame('done', $task->fresh()->status);
         auth()->logout();
-        $this->get('/')->assertSee('সম্মানিত লেখক')->assertSee('রিনার কবিতায় শহরের আলো।');
+        $this->get('/')->assertSee('হাতপাখা সম্মান জানায়')->assertSee('রিনার কবিতায় শহরের আলো।');
         $this->get($writer->url())->assertSee('মাসের লেখক')->assertSee('হাতপাখার সম্পাদকমণ্ডলী');
     }
 }

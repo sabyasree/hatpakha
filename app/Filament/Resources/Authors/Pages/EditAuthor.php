@@ -29,7 +29,7 @@ class EditAuthor extends EditRecord
                 }),
             \Filament\Actions\Action::make('unhonour')->label(__('সম্মান সরান'))->icon('heroicon-o-x-mark')->color('gray')->requiresConfirmation()
                 ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) && $this->record->honour_label)
-                ->action(fn () => $this->record->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null])->save()),
+                ->action(fn () => $this->record->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null, 'honour_post_id' => null, 'honour_quote' => null])->save()),
             DeleteAction::make(),
         ];
     }

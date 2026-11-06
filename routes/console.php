@@ -37,5 +37,6 @@ Schedule::call(function () {
 Schedule::call(function () {
     \App\Support\FollowNotifier::run();
     \App\Models\Certificate::autoIssue();   // D73: certificates for newly published pieces (no AI)
+    \App\Support\Milestones::detect();      // D78: once a day, writers' milestones for the owner to approve (no AI)
 })->name('follow notices')->everyTenMinutes()->withoutOverlapping(10);
 

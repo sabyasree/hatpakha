@@ -81,7 +81,12 @@ class HomeController extends Controller
             'letters' => Comment::with('post')->whereKey($ids['letters'])->get(),
             'counts' => $ids['counts'],
             // D66: writers honoured in the last 60 days.
-            'honoured' => Author::whereNotNull('honour_label')->where('honoured_at', '>=', now()->subDays(60))->latest('honoured_at')->limit(3)->get(),
+            'honoured' => $honoured = Author::whereNotNull('honour_label')->where('honoured_at', '>=', now()->subDays(60))->latest('honoured_at')->limit(4)->get(),
+            // D78: the spotlight near the top: this month's writer (else the latest honour, 45 days), with a piece and an exact line.
+            'spotlight' => $spot = $honoured->where('honoured_at', '>=', now()->subDays(45))->sortByDesc(fn ($a) => [str_starts_with((string) $a->honour_label, 'মাসের লেখক') ? 1 : 0, $a->honoured_at])->first(),
+            'spotlightPost' => $spot ? (Post::published()->find($spot->honour_post_id) ?? $spot->posts()->published()->latest('published_at')->first()) : null,
+            'milestones' => \App\Support\Milestones::forHome(),
+            'isPick' => (bool) $pickPost,
         ];
 
         $seo = new Seo(

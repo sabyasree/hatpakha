@@ -67,6 +67,7 @@
 /* Poem mode: a paragraph is a stanza, <br> is a line. */
 .poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; text-wrap: balance; }
 .poem-bn p { margin: 0 0 1.3em; }
+.poem-bn.poem-tight p { margin: 0 0 .3em; } /* home page excerpt: lines, not stanzas (UX review D78) */
 .poem-bn h2, .poem-bn h3, .poem-bn h4 { font-family: var(--font-display); font-weight: 800; margin: 1.4em 0 .6em; }
 @media (max-width: 480px) {
     .prose-bn { font-size: 1.12rem; line-height: 1.9; }
