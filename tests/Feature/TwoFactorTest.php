@@ -27,6 +27,14 @@ class TwoFactorTest extends TestCase
         $this->assertContains(EmailAuthentication::class, $providers);
     }
 
+    public function test_email_codes_are_not_offered_when_mail_only_goes_to_the_log(): void
+    {
+        $classes = fn (string $mailer) => array_map(fn ($p) => $p::class, \App\Providers\Filament\AdminPanelProvider::twoFactorProviders($mailer));
+
+        $this->assertSame([AppAuthentication::class], $classes('log'));
+        $this->assertSame([AppAuthentication::class, EmailAuthentication::class], $classes('smtp'));
+    }
+
     public function test_email_code_is_sent_to_the_user_and_is_rate_limited(): void
     {
         Notification::fake();

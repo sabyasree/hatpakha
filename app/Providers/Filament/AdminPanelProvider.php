@@ -23,6 +23,21 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 /** "হাতপাখা ডেস্ক" — editors and admins only, 2FA mandatory (docs/SECURITY.md §2–3). */
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * 2FA methods (docs/SECURITY.md §2, D20). Email codes are offered only when the site can
+     * really send email: with MAIL_MAILER=log (staging) nobody would receive the code.
+     */
+    public static function twoFactorProviders(?string $mailer = null): array
+    {
+        $providers = [AppAuthentication::make()->recoverable()];
+
+        if (! in_array($mailer ?? config('mail.default'), ['log', null, ''], true)) {
+            $providers[] = EmailAuthentication::make()->codeExpiryMinutes(5);
+        }
+
+        return $providers;
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -31,10 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('desk')
             ->login()
             ->passwordReset()
-            ->multiFactorAuthentication([
-                AppAuthentication::make()->recoverable(),
-                EmailAuthentication::make()->codeExpiryMinutes(5),
-            ], isRequired: true)
+            ->multiFactorAuthentication(self::twoFactorProviders(), isRequired: true)
             ->brandName('হাতপাখা ডেস্ক')
             ->brandLogo(asset('images/logo-wordmark.png'))
             ->brandLogoHeight('2.25rem')
