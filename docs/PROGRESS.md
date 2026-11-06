@@ -40,7 +40,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Fixed: sanitizer blanked 5 long posts (regex limit); now impossible (fallback + regression test). **Staging needs a re-import.**
 - ✅ `[pdf-embedder]` → link to the PDF; `[pageview]` iframes dropped
 - 🟡 URL inventory + redirect audit (`php artisan hatpakha:url-audit`)
-- ⬜ Owner decisions on the audit (docs: AUDIT-SUMMARY below), then apply in /desk
+- ⬜ Owner decisions on the audit (docs/AUDIT-SUMMARY.md), then apply in /desk
 - ⬜ Spam-account filter for the 1,728 users; newsletter subscribers (MailPoet) import
 
 ## Next up (in order)
