@@ -144,6 +144,20 @@ jobs:
              (nohup php artisan hatpakha:ai-editor --backlog --images --no-ansi > storage/logs/ai-editor.log 2>&1 < /dev/null &) && \
              echo 'Batch continues in the background: storage/logs/ai-editor.log'"
 
+      # Staging only, when the commit message contains [run-ai-images]: three pictures in the open,
+      # to check the image model works (proposals only; the owner approves them).
+      - name: AI pictures test (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-images]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-images --limit=3 --retry --no-ansi && \
+             php artisan tinker --execute='echo json_encode(App\\Models\\Post::whereNotNull(\"proposed_image_error\")->latest(\"updated_at\")->limit(3)->pluck(\"proposed_image_error\"), JSON_UNESCAPED_UNICODE);'"
+
       # Staging only, when the commit message contains [diagnose-cron]: read-only look at why the
       # AI editor's clock (D44) isn't running. Changes nothing except running one normal shift.
       - name: Diagnose the AI editor's clock (on request)
