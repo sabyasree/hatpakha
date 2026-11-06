@@ -1,25 +1,32 @@
 <x-layouts.app :seo="$seo">
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
+    <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
     <article class="mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif>
-        <nav aria-label="অবস্থান" class="text-sm text-ink2">
-            @foreach ($crumbs as $c)
-                @if (! $loop->last)<a href="{{ $c[1] }}" class="hover:text-red">{{ $c[0] }}</a> › @endif
+        <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-sm text-ink2">
+            @foreach (array_slice($crumbs, 0, -1) as $c)
+                @if (! $loop->first)<span class="px-1" aria-hidden="true">›</span>@endif
+                <a href="{{ $c[1] }}" class="inline-flex min-h-11 items-center hover:text-red">{{ $c[0] }}</a>
             @endforeach
         </nav>
         <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
             @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
         </div>
-        <h1 class="mt-4 font-display text-5xl font-extrabold leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
+        <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
         <div class="mt-5 flex items-center gap-3">
             @foreach ($post->authors->take(1) as $a)
                 <a href="{{ $a->url() }}" class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gradient-to-br from-red to-red-dark text-xl font-extrabold text-white" aria-hidden="true">{{ $a->initial() }}</a>
             @endforeach
-            <div>
+            <div class="min-w-0 flex-1">
                 <div class="text-lg"><x-byline :post="$post" /></div>
                 <div class="text-sm text-ink2">{{ \App\Support\Bn::date($post->published_at) }}@if ($post->issue) · <a href="{{ $post->issue->url() }}" class="underline">{{ $post->issue->title }}</a>@endif</div>
             </div>
+            {{-- Share early: readers come from WhatsApp (mobile UX review). The phone's own share sheet when there is one. --}}
+            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}"
+                rel="noopener" target="_blank" class="flex h-11 w-11 flex-none items-center justify-center rounded-full border-2 border-navy hover:bg-peach-light" aria-label="শেয়ার করুন" title="শেয়ার করুন">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
+            </a>
         </div>
 
         @if ($post->featured_image_path && ($post->featured_image_width ?? 0) >= 1000)
@@ -29,7 +36,8 @@
             </picture>
             @if ($post->image_is_ai)<p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>@endif
         @elseif (! $post->isPoem())
-            <x-title-card :post="$post" class="mt-7 !aspect-[16/7]" />
+            {{-- The made-up title card repeats the title: shown on wider screens only (mobile UX review). --}}
+            <x-title-card :post="$post" class="mt-7 hidden !aspect-[16/7] sm:block" />
         @endif
 
         @if ($post->audio_path && $post->audio_status === 'approved')
@@ -41,7 +49,7 @@
         @endif
 
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer) — the only raw output allowed. --}}
-        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center' : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
+        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
 
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
 
@@ -76,6 +84,30 @@
         @foreach ($post->authors as $a)
             <x-author-card :author="$a" />
         @endforeach
+
+        @if ($related->isNotEmpty())
+            {{-- "পরের লেখা" right after the writer (mobile UX review): compact rows, the same writer first. --}}
+            <section class="mt-10" aria-labelledby="next-h">
+                <h2 id="next-h" class="font-display text-3xl font-extrabold">পরের লেখা</h2>
+                <ul class="mt-3 divide-y divide-rule border-y border-rule">
+                    @foreach ($related as $r)
+                        <li>
+                            <a href="{{ $r->url() }}" class="flex items-center gap-4 py-3 hover:bg-peach-light/60">
+                                @if ($r->hasCardImage())
+                                    <img src="{{ asset($r->featured_image_path) }}" alt="" loading="lazy" width="88" height="88" class="h-[88px] w-[88px] flex-none rounded-xl border-2 border-navy object-cover">
+                                @else
+                                    <span class="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-xl border-2 border-navy bg-peach-light font-display text-3xl font-extrabold text-red" aria-hidden="true">{{ mb_substr($r->title, 0, 1) }}</span>
+                                @endif
+                                <span class="min-w-0">
+                                    <span class="block font-serif text-lg font-bold leading-snug">{{ $r->title }}</span>
+                                    <span class="mt-1 block text-sm text-ink2">{{ $r->authors->first()?->publicName() }}@if ($r->section) · {{ $r->section->name_bn }}@endif</span>
+                                </span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
 
         @php
             $writerUsers = $post->authors->pluck('user_id')->filter()->all();
@@ -127,14 +159,14 @@
                             <p class="text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong> হিসেবে লিখছেন</p>
                         @else
                             <label class="block">
-                                <span class="sr-only">আপনার নাম</span>
+                                <span class="mb-1 block text-sm font-bold">আপনার নাম</span>
                                 <input name="name" type="text" value="{{ old('name') }}" required minlength="2" maxlength="80" autocomplete="name" placeholder="আপনার নাম"
                                     class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg focus:border-sky-deep">
                             </label>
                         @endauth
                         <label class="mt-2 block">
-                            <span class="sr-only">মন্তব্য</span>
-                            <textarea name="body" rows="3" required minlength="2" maxlength="3000" placeholder="লেখাটি পড়ে কেমন লাগল? দু-এক লাইন লিখুন…"
+                            <span class="mb-1 block text-sm font-bold">মতামত</span>
+                            <textarea name="body" rows="3" enterkeyhint="send" required minlength="2" maxlength="3000" placeholder="লেখাটি পড়ে কেমন লাগল? দু-এক লাইন লিখুন…"
                                 class="block w-full rounded-xl border-2 border-navy bg-paper p-4 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('body') }}</textarea>
                         </label>
                         @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
@@ -143,8 +175,8 @@
                             <x-turnstile action="comment" class="mt-2" :lazy="true" appearance="interaction-only" />
                         @endguest
                         <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-                            <label class="flex items-center gap-2 text-sm text-ink2">
-                                <input type="checkbox" name="not_featured" value="1" class="h-5 w-5" @checked(old('not_featured'))>
+                            <label class="flex min-h-11 items-center gap-2 text-sm text-ink2">
+                                <input type="checkbox" name="not_featured" value="1" class="h-6 w-6 accent-red" @checked(old('not_featured'))>
                                 প্রথম পাতার "পাঠকের চিঠি"-তে দেখাবেন না
                             </label>
                             <button class="h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
@@ -161,14 +193,4 @@
         <x-newsletter-signup variant="card" />
     </article>
 
-    @if ($related->isNotEmpty())
-        <section class="mx-auto max-w-[1100px] px-5">
-            <h2 class="font-display text-4xl font-extrabold">আরও {{ $post->section?->name_bn }}</h2>
-            <div class="mt-5 grid gap-5 sm:grid-cols-3">
-                @foreach ($related as $r)
-                    <a href="{{ $r->url() }}" class="block"><x-title-card :post="$r" />@if ($r->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $r->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $r->authors->first()?->publicName() }}</span></a>
-                @endforeach
-            </div>
-        </section>
-    @endif
 </x-layouts.app>

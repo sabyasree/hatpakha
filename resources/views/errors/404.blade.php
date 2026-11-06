@@ -8,6 +8,11 @@
         <div class="font-display text-7xl font-extrabold text-red md:text-8xl">404</div>
         <h1 class="mt-3 font-display text-3xl font-extrabold">এই পাতাটি খুঁজে পাওয়া গেল না।</h1>
         <p class="mt-3 font-serif text-lg text-ink2">ঠিকানাটা হয়তো বদলে গেছে, বা লিংকে ভুল আছে। নিচের লেখাগুলো পড়ে দেখতে পারেন।</p>
+        <form method="GET" action="{{ \App\Support\Url::to('/search') }}" role="search" class="mx-auto mt-6 flex max-w-[480px] gap-2">
+            <label for="q404" class="sr-only">কী খুঁজছেন</label>
+            <input id="q404" name="q" type="search" maxlength="80" placeholder="লেখা, লেখক বা বিষয়" class="h-12 min-w-0 flex-1 rounded-full border-2 border-navy bg-white px-5 text-lg">
+            <button class="h-12 flex-none rounded-full bg-red px-5 font-bold text-white">খুঁজুন</button>
+        </form>
         <div class="mt-7 flex flex-wrap justify-center gap-3">
             <a href="{{ url('/') }}/" class="inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-paper">প্রথম পাতায় ফিরুন</a>
             <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="inline-flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">কবিতা</a>

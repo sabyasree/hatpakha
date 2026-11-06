@@ -4,7 +4,7 @@
         <h1 class="font-display text-4xl font-extrabold">খুঁজুন</h1>
         <form method="GET" action="{{ \App\Support\Url::to('/search') }}" role="search" class="mt-4 flex gap-2">
             <label for="q" class="sr-only">কী খুঁজছেন</label>
-            <input id="q" name="q" type="search" value="{{ $q }}" maxlength="80" autofocus placeholder="লেখার নাম, লেখকের নাম বা বিষয়…"
+            <input id="q" name="q" type="search" value="{{ $q }}" maxlength="80" autofocus placeholder="লেখা, লেখক বা বিষয়"
                 class="h-12 min-w-0 flex-1 rounded-full border-2 border-navy bg-white px-5 text-lg">
             <button class="h-12 flex-none rounded-full bg-red px-6 font-bold text-white">খুঁজুন</button>
         </form>
@@ -37,9 +37,21 @@
             @empty
                 <p class="mt-4 rounded-2xl border-2 border-dashed border-navy p-6 text-center">"{{ $q }}" দিয়ে কিছু পাওয়া গেল না। অন্য বানানে বা ছোট করে খুঁজে দেখুন।</p>
             @endforelse
-            <div class="mt-8">{{ $posts->links() }}</div>
+            <div class="mt-8">{{ $posts->links('pagination.hatpakha') }}</div>
         @else
-            <p class="mt-6 text-ink2">লেখার নাম, লেখকের নাম বা বিষয় (যেমন: বর্ষা, ভ্রমণ, জীবনানন্দ) লিখে খুঁজুন।</p>
+            {{-- Not a dead end (mobile UX review): ideas to search, and every section. --}}
+            <h2 class="mt-8 text-sm font-extrabold text-ink2">খুঁজে দেখুন</h2>
+            <ul class="mt-3 flex flex-wrap gap-2">
+                @foreach (['বর্ষা', 'পুজো', 'মা', 'বৃষ্টি', 'শীত', 'ভ্রমণ', 'প্রেম', 'রবীন্দ্রনাথ'] as $idea)
+                    <li><a href="{{ \App\Support\Url::to('/search') }}?q={{ rawurlencode($idea) }}" class="flex h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">{{ $idea }}</a></li>
+                @endforeach
+            </ul>
+            <h2 class="mt-8 text-sm font-extrabold text-ink2">বিভাগ</h2>
+            <ul class="mt-3 flex flex-wrap gap-2">
+                @foreach (\App\Models\Section::allLinks() as [$name, $href])
+                    <li><a href="{{ $href }}" class="flex h-11 items-center rounded-full bg-peach-light px-4 font-bold hover:bg-peach">{{ $name }}</a></li>
+                @endforeach
+            </ul>
         @endif
     </section>
 </x-layouts.app>

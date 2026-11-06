@@ -45,6 +45,9 @@ class NewsletterSignupTest extends TestCase
     public function test_form_shows_on_post_page_and_footer(): void
     {
         $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()]);
-        $this->get('/p/')->assertOk()->assertSee('id="newsletter-card"', false)->assertSee('id="newsletter-footer"', false);
+        // One sign-up per page (mobile UX review): the card on posts, the footer form elsewhere, nothing for signed-in readers' footers.
+        $this->get('/p/')->assertOk()->assertSee('id="newsletter-card"', false)->assertDontSee('id="newsletter-footer"', false);
+        $this->get('/archive/')->assertOk()->assertSee('id="newsletter-footer"', false);
+        $this->actingAs(\App\Models\User::factory()->create(['email_verified_at' => now()]))->get('/archive/')->assertDontSee('id="newsletter-footer"', false);
     }
 }

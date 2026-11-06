@@ -127,7 +127,7 @@
                     <legend class="px-1 font-bold">প্রচ্ছদের ছবি <span class="font-normal text-ink2">(ইচ্ছে হলে)</span></legend>
                     @if ($post->featured_image_path)
                         <img src="{{ asset($post->featured_image_path) }}" alt="এখনকার প্রচ্ছদ" data-current-cover class="mb-3 max-h-56 rounded-xl">
-                        <label class="mb-3 flex items-center gap-3"><input type="checkbox" name="remove_cover" value="1" class="h-5 w-5"> ছবিটি সরিয়ে দিন</label>
+                        <label class="mb-3 flex items-center gap-3"><input type="checkbox" name="remove_cover" value="1" class="h-6 w-6"> ছবিটি সরিয়ে দিন</label>
                     @endif
                     {{-- The browser's own file button is English ("Choose File"); a Bengali label opens it instead. --}}
                     <div class="flex flex-wrap items-center gap-3">
@@ -142,7 +142,7 @@
                 </fieldset>
 
                 <label class="mb-6 flex items-start gap-3 rounded-xl bg-peach-light p-4">
-                    <input type="checkbox" name="original" value="1" class="mt-1 h-5 w-5">
+                    <input type="checkbox" name="original" value="1" class="mt-1 h-6 w-6">
                     <span>আমি ঘোষণা করছি, লেখাটি <strong>আমার নিজের</strong>। অন্য কোথাও আগে প্রকাশিত হয়ে থাকলে তা লেখার নিচে জানিয়েছি। <a href="{{ \App\Support\Url::to('/terms-conditions') }}" class="underline" target="_blank">শর্তাবলি</a> মেনে নিচ্ছি।</span>
                 </label>
 

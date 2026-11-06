@@ -32,8 +32,8 @@
             </div>
 
             <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-                <div class="min-w-0 flex-1">
-                    <h1 class="break-words font-display text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl" style="font-stretch: 80%">{{ $author->publicName() }}</h1>
+                <div class="min-w-0 basis-full sm:basis-auto sm:flex-1">
+                    <h1 class="break-normal font-display text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl" style="font-stretch: 80%">{{ $author->publicName() }}</h1>
                     @if ($author->honour_label)
                         <div class="mt-2 inline-flex items-center gap-2 rounded-full bg-peach-light px-3 py-1 font-extrabold text-red-dark">★ {{ $author->honour_label }}</div>
                     @endif
@@ -54,7 +54,7 @@
                         </ul>
                     @endif
                 </div>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex w-full flex-wrap gap-2 sm:w-auto [&>form]:flex-1 sm:[&>form]:flex-none [&>a]:flex-1 sm:[&>a]:flex-none [&>a]:justify-center [&_button]:w-full [&_button]:justify-center [&_a]:whitespace-nowrap [&_button]:whitespace-nowrap">
                     @php($following = auth()->check() && \Illuminate\Support\Facades\DB::table('follows')->where(['user_id' => auth()->id(), 'author_id' => $author->id])->exists())
                     @if (! $author->is_desk && ! $isOwner)
                         <form method="POST" action="{{ route('follow', $author) }}" data-toggle="follow">@csrf
@@ -110,6 +110,6 @@
                 <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></a>
             @endforeach
         </div>
-        <div class="mt-10">{{ $posts->links() }}</div>
+        <div class="mt-10">{{ $posts->links('pagination.hatpakha') }}</div>
     </section>
 </x-layouts.app>

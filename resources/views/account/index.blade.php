@@ -45,13 +45,14 @@
         @if (! $twoFactorOn)
             {{-- D59: 2FA is optional, but we ask everyone kindly. --}}
             <a href="#security" class="mt-6 flex items-center gap-4 rounded-2xl border-2 border-dashed border-peach-deep bg-peach-light p-4 hover:bg-peach">
-                <span class="text-3xl" aria-hidden="true">🔐</span>
+                <svg class="h-8 w-8 flex-none text-navy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>
                 <span><strong class="block">অ্যাকাউন্টটি আরও নিরাপদ করুন</strong><span class="text-sm text-ink2">দুই-ধাপের যাচাই চালু করলে কেউ পাসওয়ার্ড জেনে গেলেও আপনার ফোন ছাড়া ঢুকতে পারবে না। দুই মিনিট লাগে।</span></span>
                 <span class="ml-auto font-bold text-red" aria-hidden="true">→</span>
             </a>
         @endif
 
-        {{-- At a glance --}}
+        {{-- At a glance (hidden until there is something to count: a row of zeros helps nobody) --}}
+        @if ($published + $inReview + $certificates->count() > 0)
         <dl class="mt-6 grid grid-cols-3 gap-3">
             @foreach ([['প্রকাশিত', $published], ['পড়া হচ্ছে', $inReview], ['শংসাপত্র', $certificates->count()]] as [$k, $v])
                 <div class="rounded-2xl border-2 border-navy bg-white p-3 text-center">
@@ -60,13 +61,15 @@
                 </div>
             @endforeach
         </dl>
+        @endif
     </section>
 
     {{-- Tabs (plain anchors: work without JavaScript) --}}
     <nav aria-label="অ্যাকাউন্ট" class="sticky top-0 z-30 mt-8 border-y-2 border-navy bg-paper/95 backdrop-blur">
-        <div class="mx-auto flex max-w-[1000px] gap-1 overflow-x-auto px-3">
+        {{-- Phones: the five tabs wrap onto two short rows instead of being cut off (mobile UX review). --}}
+        <div class="mx-auto flex max-w-[1000px] flex-wrap justify-center gap-x-1 px-2 py-1 sm:flex-nowrap sm:justify-start">
             @foreach (['writing' => 'আমার লেখা', 'reading' => 'পড়ার তালিকা', 'profile' => 'প্রোফাইল', 'security' => 'নিরাপত্তা', 'letters' => 'চিঠি'] as $id => $label)
-                <a href="#{{ $id }}" class="flex h-12 flex-none items-center rounded-full px-4 font-bold hover:bg-peach-light">{{ $label }}</a>
+                <a href="#{{ $id }}" class="flex h-11 flex-none items-center rounded-full px-3 font-bold hover:bg-peach-light sm:px-4">{{ $label }}</a>
             @endforeach
         </div>
     </nav>

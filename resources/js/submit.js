@@ -122,7 +122,9 @@ if (form) {
         if (!hint) return;
         hint.textContent = isPoem()
             ? 'কবিতা: Enter চাপলে নতুন লাইন; ফাঁকা লাইনে আবার Enter চাপলে নতুন স্তবক।'
-            : 'গদ্য: Enter চাপলে নতুন অনুচ্ছেদ; Shift+Enter চাপলে একই অনুচ্ছেদে নতুন লাইন।';
+            : (window.matchMedia('(pointer: coarse)').matches
+                ? 'গদ্য: এন্টার চাপলে নতুন অনুচ্ছেদ।'   // phones have no Shift+Enter (mobile UX review)
+                : 'গদ্য: Enter চাপলে নতুন অনুচ্ছেদ; Shift+Enter চাপলে একই অনুচ্ছেদে নতুন লাইন।');
     };
 
     const bodyText = () => (editor ? editor.getText({ blockSeparator: '\n' }) : textarea.value);

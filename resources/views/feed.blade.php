@@ -6,7 +6,7 @@
 <description>হাতপাখা — বাংলা সাহিত্যের অনলাইন পত্রিকা</description>
 <language>bn</language>
 @foreach ($posts as $p)
-<item><title>{{ $p->title }}</title><link>{{ $p->url() }}</link><guid isPermaLink="true">{{ $p->url() }}</guid><pubDate>{{ $p->published_at?->toRfc2822String() }}</pubDate><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">{{ $p->authors->pluck("display_name")->join(", ") }}</dc:creator><description>{{ $p->metaDescription() }}</description></item>
+<item><title>{{ $p->title }}</title><link>{{ $p->url() }}</link><guid isPermaLink="true">{{ $p->url() }}</guid><pubDate>{{ $p->published_at?->toRfc2822String() }}</pubDate><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">{{ $p->authors->map->publicName()->join(", ") }}</dc:creator><description>{{ $p->metaDescription() }}</description></item>
 @endforeach
 </channel>
 </rss>

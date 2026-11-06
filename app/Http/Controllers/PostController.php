@@ -30,6 +30,13 @@ class PostController extends Controller
                 ->latest('published_at')->limit(3 - $related->count())->get());
         }
 
+        // "পরের লেখা" (mobile UX review): one more by the same writer first, when there is one.
+        $writerIds = $post->authors->where('is_desk', false)->pluck('id');
+        if ($writerIds->isNotEmpty() && ($same = Post::published()->with('authors')->whereKeyNot($post->id)->whereNotIn('id', $related->pluck('id'))
+            ->whereHas('authors', fn ($q) => $q->whereIn('authors.id', $writerIds))->inRandomOrder()->first())) {
+            $related = collect([$same])->concat($related)->take(4)->values();
+        }
+
         $comments = $post->comments()->with('user')->where('status', 'approved')->oldest()->limit(50)->get();
 
         $crumbs = [['হাতপাখা', url('/').'/']];

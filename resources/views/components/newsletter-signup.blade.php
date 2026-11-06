@@ -5,6 +5,7 @@
     $mine = session('newsletter_from') === $variant;
     $email = old('email', auth()->user()?->email);
 @endphp
+@php($variant !== 'footer' && request()->attributes->set('hp.newsletter.card', true))
 @if ($variant === 'footer')
     <form id="{{ $id }}" method="POST" action="{{ route('newsletter.subscribe') }}" class="w-full max-w-[420px] scroll-mt-24">
         @csrf

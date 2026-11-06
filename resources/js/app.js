@@ -122,3 +122,44 @@ document.addEventListener('submit', (e) => {
     e.stopImmediatePropagation();
     hpFreshToken().then(() => (f.requestSubmit ? f.requestSubmit() : f.submit()));
 }, true);
+
+// Reading progress on a piece (mobile UX review): a thin red bar at the very top.
+const progress = document.querySelector('[data-progress]');
+const readArticle = document.querySelector('article[data-view], article');
+if (progress && readArticle) {
+    let ticking = false;
+    const update = () => {
+        const r = readArticle.getBoundingClientRect();
+        const total = r.height - window.innerHeight;
+        const done = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
+        progress.style.transform = `scaleX(${done})`;
+        ticking = false;
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+}
+
+// Share: the phone's own share sheet when it has one; otherwise the WhatsApp link works as it is.
+document.querySelectorAll('[data-share]').forEach((a) => {
+    if (!navigator.share) return;
+    a.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigator.share({ title: a.dataset.shareTitle || document.title, url: a.dataset.share }).catch(() => {});
+    });
+});
+
+// "দেখান" on password fields (mobile UX review): typing a password on a phone without seeing it is hard.
+document.querySelectorAll('input[type="password"]').forEach((input) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'দেখান';
+    btn.className = 'mt-1 h-9 rounded-full px-3 text-sm font-bold text-sky-deep underline';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.addEventListener('click', () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.textContent = show ? 'লুকান' : 'দেখান';
+        btn.setAttribute('aria-pressed', String(show));
+    });
+    input.insertAdjacentElement('afterend', btn);
+});

@@ -29,6 +29,8 @@
 }
 
 @layer base {
+    /* Checkboxes big enough for a thumb, in our red (mobile UX review). */
+    input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; accent-color: var(--color-red); }
     html { background: var(--color-paper); color: var(--color-navy); -webkit-text-size-adjust: 100%; }
     body { font-family: var(--font-sans); }
     :focus-visible { outline: 3px solid var(--color-sky-deep); outline-offset: 2px; }
@@ -72,6 +74,8 @@
 @media (max-width: 480px) {
     .prose-bn { font-size: 1.12rem; line-height: 1.9; }
     .poem-bn { font-size: 1.18rem; }
+    /* Long centred lines that wrap read badly on a phone: poems sit left there (mobile UX review). */
+    .poem-bn.text-center { text-align: left; }
 }
 
 .tilt-a { transform: rotate(-1.6deg); }
@@ -109,6 +113,9 @@
 /* No padding on the paged box itself: one page = its width + the gap, exactly. */
 .book-pages.paged { height: calc(100dvh - 15rem); min-height: 22rem; column-width: 100vw; column-fill: auto; column-gap: 3rem; overflow: hidden; }
 .book-pages.paged .book-break { break-before: column; }
+/* Phones: leave room for the fixed bottom bar (4rem) and the safe area, so the page-turn buttons stay visible. */
+@media (max-width: 767px) { .book-pages.paged { height: calc(100dvh - 19rem - env(safe-area-inset-bottom)); } }
 .book-pages.paged .book-cover { text-align: center; }
 .book-pages.paged img { max-height: 55vh; break-inside: avoid; }
 @media (min-width: 768px) { .book { padding: 2.5rem 3rem; } }
+[data-progress] { transition: transform .1s linear; }

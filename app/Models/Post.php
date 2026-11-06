@@ -115,6 +115,19 @@ class Post extends Model
     public function url(): string { return \App\Support\Url::to('/'.Slug::encode($this->slug)); }
 
     /** Cards show the photo only for large images; otherwise the title itself is the card (title-card). */
+    /**
+     * Imported poems often have one <p> per LINE, which the poem style spaces like stanzas. When most paragraphs
+     * are single lines, the page uses tight spacing (mobile UX review).
+     */
+    public function poemLinesAreParagraphs(): bool
+    {
+        $html = (string) $this->body_html;
+        $p = substr_count(strtolower($html), '<p');
+        $br = preg_match_all('~<br\s*/?>~i', $html);
+
+        return $p >= 4 && $br < $p / 3;
+    }
+
     public function hasCardImage(): bool
     {
         return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 1000;

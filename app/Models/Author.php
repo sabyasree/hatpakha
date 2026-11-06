@@ -33,6 +33,12 @@ class Author extends Model
         }
         // Old WordPress logins ("sambuddha_chatterjee") read as names ("Sambuddha Chatterjee") until the writer sets one (D59).
         $n = (string) $this->display_name;
+        // Never show an e-mail address as a name (privacy): "bijoy_bose_82@yahoo.com" → "Bijoy Bose".
+        if (str_contains($n, '@')) {
+            $n = trim(preg_replace('/[0-9]+$/', '', preg_replace('/[_.\-]+/', ' ', strstr($n, '@', true)))) ?: 'হাতপাখার লেখক';
+
+            return ucwords($n);
+        }
 
         return preg_match('/^[a-z0-9]+([_.\-][a-z0-9]+)+$/', $n) ? ucwords(preg_replace('/[_.\-]+/', ' ', $n)) : $n;
     }
