@@ -73,8 +73,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 });
 
-// Submission form arrives in Phase 3b; until then a holding page (submissions are form-only, owner decision D29).
-Route::get('/submit', fn () => view('submit-soon', ['seo' => new \App\Seo\Seo(title: 'লেখা পাঠান', noindex: true)]))->name('submit');
+// Submissions (Phase 3b): the only way to submit (D29). Writers only see/edit their own pieces.
+Route::middleware('auth')->group(function () {
+    Route::get('/submit', [\App\Http\Controllers\SubmissionController::class, 'create'])->name('submit');
+    Route::post('/submit', [\App\Http\Controllers\SubmissionController::class, 'store']);
+    Route::post('/submit/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->middleware('throttle:60,1');
+    Route::post('/submit/preview', [\App\Http\Controllers\SubmissionController::class, 'preview'])->middleware('throttle:60,1');
+    Route::get('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'edit'])->whereNumber('post');
+    Route::post('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'update'])->whereNumber('post');
+    Route::post('/submit/{post}/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->whereNumber('post')->middleware('throttle:60,1');
+});
 
 // Posts at the root, exactly like WordPress. Reserved words are excluded.
 Route::get('/{slug}', PostController::class)

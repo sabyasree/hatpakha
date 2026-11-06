@@ -20,7 +20,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Admin `/desk`: branded, editor+ only, mandatory 2FA (authenticator app or email code, D20), admin-only user management
 - ✅ Console: `hatpakha:role`, `hatpakha:password` (hidden prompt, audited)
 - ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
-- ✅ Tests: 75 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Tests: 83 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ✅ Old WordPress pages imported at their URLs; 7 rewritten as an editor (docs/PAGES-REVIEW.md, owner to confirm); plugin pages 301; /desk → পাতা
 - ✅ Fixed: sanitizer was deleting text inside <span>/<div> (346 posts, 250 published); now unwrapped and kept, with regression tests
@@ -53,10 +53,11 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## Phase 3: Submissions + AI review 🟡
 - ✅ 3a Writer accounts: `/register/`, `/login/` (old WordPress passwords work and are upgraded), `/forgot-password/` + reset (no account enumeration), `/account/` "আমার লেখা" (status of every piece, editor's note, name change, logout). Honeypot + minimum-time check on sign-up; throttles; email verification required only where real mail is configured; old accounts count as verified; Bengali emails (the /desk panel keeps its own)
-- ⬜ 3b Submission form · ⬜ 3c Editor queue · ⬜ 3d AI review · ⬜ 3e blind provider test
+- ✅ 3b Submission form `/submit/` (sign-in required): section, title, plain-text body (paste is clean; blank line = stanza/paragraph), word/line count, autosave every few seconds (first save turns the URL into the draft's own page), server-rendered preview identical to the site, originality declaration, 3 submissions/day, email verification where mail is real, edit & resubmit when changes are requested, status tracker on আমার লেখা. Typed HTML is shown as text, never executed. ⬜ Cover image upload (later in Phase 3, with re-encoding)
+- ⬜ 3c Editor queue · ⬜ 3d AI review · ⬜ 3e blind provider test
 
 ## Launch blockers (must be done before cutover)
-- Phase 3 submission form at `/submit/` (D29: the only way to submit)
+- ~~Phase 3 submission form~~ ✅ (3b); the editor review queue (3c) is still needed before launch
 - Final URL audit with a Search Console export
 - Cloudflare cache rules for production
 

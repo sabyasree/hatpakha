@@ -31,6 +31,18 @@
                         <div class="min-w-0">
                             <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
                             <div class="text-sm text-ink2">{{ $p->section?->name_bn }} · {{ \App\Support\Bn::date($p->submitted_at ?? $p->updated_at) }}@if ($hint) · {{ $hint }}@endif</div>
+                            @php($step = ['pending' => 2, 'changes' => 2, 'scheduled' => 3, 'published' => 4][$p->status] ?? 0)
+                            @if ($step)
+                                {{-- Status tracker: জমা → পড়া হচ্ছে → মনোনীত → প্রকাশিত --}}
+                                <ol class="mt-2 flex items-center gap-1 text-xs font-bold" aria-label="অবস্থা">
+                                    @foreach (['জমা', 'পড়া হচ্ছে', 'মনোনীত', 'প্রকাশিত'] as $i => $stage)
+                                        <li class="flex items-center gap-1 {{ $i + 1 <= $step ? 'text-sky-night' : 'text-ink2 opacity-60' }}" @if ($i + 1 === $step) aria-current="step" @endif>
+                                            <span class="inline-block h-2.5 w-2.5 rounded-full {{ $i + 1 <= $step ? ($p->status === 'changes' && $i + 1 === $step ? 'bg-red' : 'bg-sky-deep') : 'bg-rule' }}"></span>{{ $stage }}
+                                            @if (! $loop->last)<span class="mx-0.5 opacity-50">—</span>@endif
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            @endif
                             @if ($p->status === 'changes' && $p->review_note)
                                 <div class="mt-2 rounded-lg bg-peach-light p-3 text-sm"><strong>সম্পাদকের মন্তব্য:</strong> {{ $p->review_note }}</div>
                             @endif

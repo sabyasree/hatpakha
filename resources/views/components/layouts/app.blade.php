@@ -36,7 +36,7 @@
                 @else
                     <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 items-center font-bold hover:text-red">লগ-ইন</a>
                 @endauth
-                <a href="{{ \App\Support\Url::to('/submissions') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
             </div>
         </div>
     </header>
@@ -63,7 +63,7 @@
     <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t-2 border-navy bg-paper text-xs font-bold md:hidden">
         <a href="{{ url('/') }}/" class="flex items-center justify-center">হোম</a>
         <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex items-center justify-center">কবিতা</a>
-        <a href="{{ \App\Support\Url::to('/submissions') }}" class="flex items-center justify-center text-red">লিখুন</a>
+        <a href="{{ \App\Support\Url::to('/submit') }}" class="flex items-center justify-center text-red">লিখুন</a>
         <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="flex items-center justify-center">গল্প</a>
         <a href="{{ \App\Support\Url::to('/archive') }}" class="flex items-center justify-center">আর্কাইভ</a>
     </nav>

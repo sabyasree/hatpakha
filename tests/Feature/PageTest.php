@@ -93,6 +93,6 @@ class PageTest extends TestCase
         $this->assertStringNotContainsString('mailto:', $guide);
         $this->assertStringContainsString('href="/submit/"', ImportWordPress::revisedPage('faqs')['body']);
 
-        $this->get('/submit/')->assertOk()->assertSee('noindex', false)->assertSee('ইমেলে নয়');
+        $this->get('/submit/')->assertRedirect(url('/login'));   // the form needs an account
     }
 }

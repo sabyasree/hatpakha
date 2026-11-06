@@ -1,0 +1,72 @@
+<x-layouts.app :seo="$seo">
+    @vite('resources/js/submit.js')
+    <section class="mx-auto max-w-[820px] px-5 pb-16 pt-8">
+        <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="hover:text-red">আমার লেখা</a> ›</nav>
+        <h1 class="mt-2 font-display text-4xl font-extrabold">{{ $post->exists ? $post->title : 'লেখা পাঠান' }}</h1>
+        <p class="mt-2 text-ink2">নিয়ম মনে আছে তো? <a href="{{ \App\Support\Url::to('/submissions') }}" class="underline" target="_blank">লেখা পাঠানোর নিয়ম</a></p>
+
+        @if (session('status'))
+            <div role="status" class="mt-5 rounded-xl border-2 border-sky bg-sky-tint p-4 font-semibold text-sky-night">{{ session('status') }}</div>
+        @endif
+        @if ($errors->any())
+            <div role="alert" class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold text-red-dark">@foreach ($errors->all() as $e)<p>{{ $e }}</p>@endforeach</div>
+        @endif
+        @if ($post->status === 'changes' && $post->review_note)
+            <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4"><strong>সম্পাদকের মন্তব্য:</strong> {{ $post->review_note }}</div>
+        @endif
+        @if ($needsVerification)
+            <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">জমা দেওয়ার আগে ইমেল যাচাই করুন। খসড়া এখনই লিখে রাখতে পারেন।</div>
+        @endif
+
+        @if (! $editable)
+            <div class="mt-6 rounded-xl border-2 border-navy p-5">
+                <p class="font-bold">লেখাটি জমা পড়েছে; এখন আর বদলানো যায় না।</p>
+                <p class="mt-1 text-ink2">অবস্থা: {{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</p>
+            </div>
+            <div class="{{ $post->format === 'poem' ? 'poem-bn text-center' : 'prose-bn' }} mt-6">{!! $post->body_html !!}</div>
+        @else
+            <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
+                action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
+                data-autosave-url="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id.'/autosave' : '/submit/autosave') }}"
+                data-preview-url="{{ \App\Support\Url::to('/submit/preview') }}" class="mt-6">
+                @csrf
+                <label class="mb-4 block">
+                    <span class="mb-1 block font-bold">বিভাগ</span>
+                    <select name="section_id" required class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg">
+                        <option value="">বেছে নিন…</option>
+                        @foreach ($sections as $s)
+                            <option value="{{ $s->id }}" @selected((int) old('section_id', $post->section_id) === $s->id)>{{ $s->name_bn }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <x-field name="title" label="শিরোনাম" :value="$post->exists ? $post->title : ''" maxlength="200" required />
+                <label class="mb-2 block">
+                    <span class="mb-1 flex items-baseline justify-between font-bold"><span>লেখা</span><span id="word-count" class="text-sm font-normal text-ink2"></span></span>
+                    <textarea name="body" rows="18" required lang="bn"
+                        class="block w-full rounded-xl border-2 border-navy bg-white p-4 font-serif text-lg leading-relaxed"
+                        placeholder="এখানে লিখুন, বা Word / Google Docs / WhatsApp থেকে পেস্ট করুন।&#10;কবিতায় প্রতিটি লাইন আলাদা লাইনে; স্তবকের মাঝে একটি ফাঁকা লাইন।">{{ old('body', $text) }}</textarea>
+                </label>
+                <p class="mb-5 text-sm text-ink2"><span id="autosave-status" aria-live="polite"></span></p>
+
+                <label class="mb-6 flex items-start gap-3 rounded-xl bg-peach-light p-4">
+                    <input type="checkbox" name="original" value="1" class="mt-1 h-5 w-5">
+                    <span>আমি ঘোষণা করছি, লেখাটি <strong>আমার নিজের</strong>। অন্য কোথাও আগে প্রকাশিত হয়ে থাকলে তা লেখার নিচে জানিয়েছি। <a href="{{ \App\Support\Url::to('/terms-conditions') }}" class="underline" target="_blank">শর্তাবলি</a> মেনে নিচ্ছি।</span>
+                </label>
+
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" name="action" value="submit" class="h-12 flex-1 rounded-full bg-red px-6 font-bold text-white">জমা দিন</button>
+                    <button type="button" id="preview-btn" class="h-12 rounded-full border-2 border-navy px-6 font-bold">কেমন দেখাবে</button>
+                    <button type="submit" name="action" value="draft" formnovalidate class="h-12 rounded-full px-4 font-bold underline">খসড়া রাখুন</button>
+                </div>
+            </form>
+
+            <dialog id="preview" class="m-auto max-h-[90vh] w-[min(760px,94vw)] overflow-auto rounded-2xl bg-paper p-6 text-navy backdrop:bg-navy/60">
+                <div class="flex items-start justify-between gap-4">
+                    <h2 data-title class="font-display text-3xl font-extrabold"></h2>
+                    <button type="button" data-close class="h-11 rounded-full border-2 border-navy px-4 font-bold">বন্ধ</button>
+                </div>
+                <div data-body></div>
+            </dialog>
+        @endif
+    </section>
+</x-layouts.app>
