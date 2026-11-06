@@ -66,7 +66,17 @@ class PostForm
                         ->visible(fn (?Post $record) => (bool) $record?->proposed_image_path)
                         ->action(function (Post $record) {
                             \App\Support\CoverImage::discardProposed($record);
-                            \Filament\Notifications\Notification::make()->title(__('বাদ দেওয়া হয়েছে'))->send();
+                            \Filament\Notifications\Notification::make()->title(__('বাদ দেওয়া হয়েছে। ভুল হলে "ফিরিয়ে আনুন" টিপুন।'))->send();
+                        }),
+                    // D70: undo a drop, or go back to the cover that was replaced.
+                    \Filament\Actions\Action::make('restoreSpare')->icon('heroicon-o-arrow-uturn-left')->color('gray')->size('sm')
+                        ->label(fn (?Post $record) => ($record ? \App\Support\CoverImage::spare($record)['kind'] ?? '' : '') === 'dropped' ? __('বাদ দেওয়া ছবি ফিরিয়ে আনুন') : __('আগের প্রচ্ছদে ফিরুন'))
+                        ->visible(fn (?Post $record) => $record && \App\Support\CoverImage::spare($record))
+                        ->action(function (Post $record, $livewire) {
+                            \App\Support\CoverImage::restoreSpare($record);
+                            \App\Models\AuditLog::record('post.cover_restored', $record);
+                            $livewire->refreshFormData(['featured_image_path']);
+                            \Filament\Notifications\Notification::make()->title(__('ফিরিয়ে আনা হয়েছে'))->success()->send();
                         }),
                 ]),
                 // D67: the writer's own reading: listen, then approve or remove.

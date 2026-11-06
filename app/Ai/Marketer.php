@@ -105,17 +105,21 @@ final class Marketer
     }
 
     /** Monday: what to post on which day this week (pieces going live, issue, festival days). */
-    public static function weekly(bool $force = false): ?SocialPost
+    /** The week's posting plan; $next = the coming week (the owner can plan ahead, D70). */
+    public static function weekly(bool $force = false, bool $next = false): ?SocialPost
     {
-        $from = now('Asia/Kolkata')->startOfWeek();
-        if (! $force && SocialPost::where('kind', 'weekly')->where('created_at', '>=', $from->copy()->utc())->exists()) {
+        $from = now('Asia/Kolkata')->startOfWeek(\Carbon\CarbonInterface::MONDAY);   // fixed, whatever the locale
+        if ($next) {
+            $from->addWeek();
+        }
+        if (! $force && SocialPost::where('kind', 'weekly')->where('title', 'like', '%'.$from->format('d/m'))->exists()) {
             return null;
         }
         $pieces = Post::whereIn('status', ['published', 'scheduled'])->whereBetween('published_at', [$from->copy()->subDays(3)->utc(), $from->copy()->addDays(7)->utc()])
             ->orderBy('published_at')->get()->map(fn (Post $p) => '- '.$p->published_at->timezone('Asia/Kolkata')->format('D d M').': '.$p->title)->implode("\n");
         $themes = implode(', ', IssuePlanner::CALENDAR[$from->month]);
         [$d] = Claude::json('marketing', self::RULES.' Make a simple posting plan for this week for the Facebook page, WhatsApp channel and Instagram: '
-            .'one line per day (day name in Bengali, what to post, which channel). Use the pieces given; on empty days suggest an archive favourite or a question to readers. '
+            .'one line per day from Monday to Sunday (day name in Bengali, what to post, which channel). Use the pieces given; on empty days suggest an archive favourite or a question to readers. '
             .'If a Bengali festival of this month falls this week, add a greeting post. Also give a Facebook post, WhatsApp line and Instagram caption for Monday.',
             "Week starting ".$from->toDateString()."\nThis month's themes: {$themes}\nPieces:\n".($pieces ?: '(none scheduled)'),
             self::schema(['plan' => ['type' => 'array', 'items' => ['type' => 'string']]]), config('ai.anthropic.tags_model'), 2000);
@@ -124,7 +128,7 @@ final class Marketer
         }
         $texts = self::clean($d) + ['plan' => array_slice(array_map(fn ($l) => mb_substr(trim((string) $l), 0, 300), (array) ($d['plan'] ?? [])), 0, 10)];
 
-        return self::store('weekly', null, __('এই সপ্তাহের পরিকল্পনা').' '.$from->format('d/m'), $texts, null);
+        return self::store('weekly', null, __('সপ্তাহের পরিকল্পনা').' '.$from->format('d/m'), $texts, null);
     }
 
     /** Monthly: a writer spotlight from real facts only (published pieces, the writer's own bio). */

@@ -42,24 +42,74 @@ final class CoverImage
         $post->forceFill(['proposed_image_path' => $saved['path'], 'proposed_image_width' => $saved['width'], 'proposed_image_height' => $saved['height'], 'proposed_image_error' => null])->save();
     }
 
-    /** Owner approved the proposal: it becomes the cover (the old uploaded cover, if any, is deleted). */
+    /**
+     * Owner approved the proposal: it becomes the cover. The old cover is kept as the "spare" (D70), so
+     * "আগের ছবিতে ফিরুন" can bring it back.
+     */
     public static function acceptProposed(Post $post): void
     {
         if (! $post->proposed_image_path) {
             return;
         }
-        $p = [$post->proposed_image_path, $post->proposed_image_width, $post->proposed_image_height];
-        $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null])->save();
-        self::remove($post);
-        $post->forceFill(['featured_image_path' => $p[0], 'featured_image_width' => $p[1], 'featured_image_height' => $p[2], 'image_is_ai' => true])->save();
+        $old = $post->featured_image_path ? ['path' => $post->featured_image_path, 'width' => $post->featured_image_width, 'height' => $post->featured_image_height, 'ai' => (bool) $post->image_is_ai, 'kind' => 'previous'] : null;
+        $post->forceFill([
+            'featured_image_path' => $post->proposed_image_path, 'featured_image_width' => $post->proposed_image_width, 'featured_image_height' => $post->proposed_image_height, 'image_is_ai' => true,
+            'proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null,
+        ])->save();
+        if ($old) {
+            self::keepSpare($post, $old);
+        }
     }
 
+    /** "বাদ দিন" on a drawn picture: it leaves the post but is kept as the spare, so it can be brought back (D70). */
     public static function discardProposed(Post $post): void
     {
         if ($post->proposed_image_path) {
-            self::deleteFiles($post->proposed_image_path);
+            $spare = ['path' => $post->proposed_image_path, 'width' => $post->proposed_image_width, 'height' => $post->proposed_image_height, 'ai' => true, 'kind' => 'dropped'];
             $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null])->save();
+            self::keepSpare($post, $spare);
         }
+    }
+
+    /** @return array{path:string,width:?int,height:?int,ai:bool,kind:string}|null The last dropped or replaced picture. */
+    public static function spare(Post $post): ?array
+    {
+        $s = json_decode((string) \App\Models\Setting::get('cover.spare.'.$post->id), true);
+
+        return is_array($s) && filled($s['path'] ?? null) ? $s : null;
+    }
+
+    /** Undo: a dropped drawing comes back as the proposal; a replaced cover goes back on the site. */
+    public static function restoreSpare(Post $post): bool
+    {
+        if (! $s = self::spare($post)) {
+            return false;
+        }
+        \App\Models\Setting::where('key', 'cover.spare.'.$post->id)->delete();
+        if ($s['kind'] === 'dropped') {
+            if ($post->proposed_image_path) {
+                self::discardProposed($post);   // the two swap places
+            }
+            $post->forceFill(['proposed_image_path' => $s['path'], 'proposed_image_width' => $s['width'], 'proposed_image_height' => $s['height'], 'proposed_image_error' => null])->save();
+        } else {
+            $now = $post->featured_image_path ? ['path' => $post->featured_image_path, 'width' => $post->featured_image_width, 'height' => $post->featured_image_height, 'ai' => (bool) $post->image_is_ai, 'kind' => 'previous'] : null;
+            $post->forceFill(['featured_image_path' => $s['path'], 'featured_image_width' => $s['width'], 'featured_image_height' => $s['height'], 'image_is_ai' => (bool) $s['ai']])->save();
+            if ($now) {
+                self::keepSpare($post, $now);
+            }
+        }
+
+        return true;
+    }
+
+    /** One spare per post: the one before it is deleted (only files we made, and never one still in use). */
+    private static function keepSpare(Post $post, array $spare): void
+    {
+        $key = 'cover.spare.'.$post->id;
+        if (($old = self::spare($post)) && $old['path'] !== $spare['path'] && ! in_array($old['path'], [$post->featured_image_path, $post->proposed_image_path], true)) {
+            self::deleteFiles($old['path']);
+        }
+        \App\Models\Setting::put($key, json_encode($spare, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     /**

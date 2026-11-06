@@ -35,12 +35,14 @@ No competitor combines editing, speed, prestige and reach.
 
 ## 3. The next 90 days (who does what)
 
+**Online only (owner, 2026-11-06):** we can't be anywhere in person for now, so every campaign runs and releases online: the site, the newsletter, the Facebook page, the WhatsApp channel, Instagram, online contests and e-books. No stalls, launches or print. The AI team's shared brief says the same.
+
 | When | Goal | Owner (human) | AI team |
 |---|---|---|---|
 | **Weeks 1–2** | **Launch-ready**: SMTP, production `ENV_FILE`, cron, Cloudflare cache rules, final URL audit, backups | Owner | Editor-in-chief watches; analyst checks traffic after cutover |
 | **Weeks 1–4** | **Clear the 424-piece backlog** in batches of 20 a day (accept / decline with a kind note) so every old writer gets an answer | Owner (+ 1–2 trusted volunteer editors with the editor role) | Editor + proofreader prepare each piece; copywriter's "we're back" letter to old writers |
 | **Week 2** | **Relaunch letter** to all accounts and the Facebook page: "Hatpakha is back, here is what's new for writers" | Owner sends | Copywriter writes, marketing makes the posts and cards |
-| **Weeks 3–8** | **Boimela 2027 campaign** (Kolkata 22 Jan – 3 Feb, its 50th year; Dhaka 7 Jan – 6 Feb): a "বইমেলা সংখ্যা", a contest ("বইমেলার গল্প"), daily posts during the fairs | Owner approves issue and contest | Editor plans issue; contest manager drafts rules; designer makes poster and cover; marketing runs the calendar; trend scout tracks fair news |
+| **Weeks 3–8** | **Boimela 2027 campaign, online** (Kolkata 22 Jan – 3 Feb, its 50th year; Dhaka 7 Jan – 6 Feb): a "বইমেলা সংখ্যা", a contest ("বইমেলার গল্প"), daily posts during the fairs; nothing at the fair grounds | Owner approves issue and contest | Editor plans issue; contest manager drafts rules; designer makes poster and cover; marketing runs the calendar; trend scout tracks fair news |
 | **Ongoing** | **Three pieces a week, one letter a week, one post a day** | Owner approves | Whole team (this is now automatic; see এআই দল → পরের কাজ) |
 | **Month 3** | **Measure and adjust**: what readers read, where they come from, which sections grow | Owner reviews | Analyst's monthly insights; editor-in-chief's team review |
 
@@ -85,3 +87,18 @@ No competitor combines editing, speed, prestige and reach.
 ## 5. How the AI team is set up for this (D62)
 
 Every writing job now starts from one shared brief (`app/Ai/Knowledge.php`): who Hatpakha is, the Bengali literary tradition, forms, the cultural calendar, what readers and writers want, and our voice. The **trend scout** searches each Monday for Bengali literary and cultural news with sources, and marketing, letters, issue planning and collections take it into account. The brief is context, not facts to quote, and the owner can edit it in one file. When this plan changes, the brief should change with it.
+
+## 6. The old English filler posts: options for the owner (2026-11-06)
+
+What is there: **365 published English pieces** (362 in the English section, 3 in শের-ও-শায়েরি), **130 of them under the desk byline**. Many are generic web filler from the last WordPress years ("Top 10 Surprising Parenting Tips", "10 Essential Python Concepts", Netflix, K-pop, Paralympics, ChatGPT citation, birthday wishes, Meta). No reads recorded since the counter started. They weaken the promise ("a careful home for Bengali writing") and Google judges a site by its weakest pages.
+
+Nothing is deleted or unpublished without the owner's say (CLAUDE.md §3). Options, best first:
+
+1. **Sort into three piles** (the archivist can propose the sorting, the owner ticks):
+   - **Keep**: real English literature and culture by named writers (poems, essays on Tagore, translations, travel). They stay in the English section, which becomes "Hatpakha in English": Bengali culture for readers who read English.
+   - **Hide from Google**: thin but harmless pieces stay reachable at their URLs but get `noindex` and leave the home page, lists and sitemap.
+   - **Retire**: off-topic filler (tech how-tos, celebrity news, wishes lists) is unpublished and its URL 301s to `/category/english/` (or gives 410 Gone if the owner prefers). Old links never break (rule 1).
+2. **Rewrite a few into Bengali** where the subject fits us (e.g. Tagore, festivals, travel): a new Bengali piece, with the old URL redirected to it.
+3. **Leave everything as is** (not recommended): costs nothing now, but keeps diluting search quality and the brand.
+
+Recommendation: option 1. If the owner agrees, the next step is a reviewable list in /desk (the content-audit tool already supports "keep / noindex / retire" labels with editor confirmation).

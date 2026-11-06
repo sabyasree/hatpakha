@@ -69,9 +69,36 @@ class MarketingTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         Filament::setCurrentPanel(Filament::getPanel('desk'));
         Claude::$fake = fn () => ['facebook' => 'দীপাবলির শুভেচ্ছা', 'whatsapp' => 'w', 'instagram' => 'i'];
+        $before = SocialPost::where('kind', 'custom')->count();   // the relaunch announcement (D69) is already there
         Livewire::test(Marketing::class)->callAction('create', ['kind' => 'custom', 'topic' => 'দীপাবলির শুভেচ্ছা'])->assertHasNoActionErrors();
-        $this->assertSame(1, SocialPost::where('kind', 'custom')->count());
+        $this->assertSame($before + 1, SocialPost::where('kind', 'custom')->count());
         \App\Models\AiUsage::create(['provider' => 'anthropic', 'model' => 'm', 'purpose' => 'marketing', 'input_tokens' => 1, 'output_tokens' => 1, 'cost_usd' => 0.001]);
         Livewire::test(\App\Filament\Pages\AiTeam::class)->assertSee('পরের কাজ')->assertSee('পোস্ট তৈরি')->mountAction('activity', ['agent' => 'marketing'])->assertMountedActionModalSee('ফল কোথায় দেখবেন');
+    }
+
+    /** D70: posted / dropped can be undone; the weekly plan stays pinned; next week can be planned now. */
+    public function test_undo_and_pinned_weekly_plan(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        $s = SocialPost::create(['kind' => 'custom', 'title' => 'শুভেচ্ছা', 'texts' => ['facebook' => 'f', 'whatsapp' => 'w', 'instagram' => 'i']]);
+        $plan = SocialPost::create(['kind' => 'weekly', 'title' => 'সপ্তাহের পরিকল্পনা ০২/১১', 'texts' => ['plan' => ['সোমবার: আর্কাইভের একটি কবিতা'], 'facebook' => 'f', 'whatsapp' => 'w', 'instagram' => 'i']]);
+
+        $page = Livewire::test(Marketing::class)->call('dismiss', $s->id);
+        $this->assertSame('dismissed', $s->fresh()->status);
+        $page->call('restore', $s->id);
+        $this->assertSame('ready', $s->fresh()->status, 'Drop undone');
+        $page->call('posted', $s->id)->dispatch('mk-restore', id: $s->id);
+        $this->assertSame('ready', $s->fresh()->status, 'Undo from the notification');
+
+        $plan->forceFill(['status' => 'dismissed'])->save();
+        Livewire::test(Marketing::class)->assertSee('সোমবার: আর্কাইভের একটি কবিতা')->set('filter', 'ready')->assertSee('সোমবার: আর্কাইভের একটি কবিতা');
+
+        Claude::$fake = fn () => ['facebook' => 'f', 'whatsapp' => 'w', 'instagram' => 'i', 'plan' => ['সোমবার: নতুন']];
+        Livewire::test(Marketing::class)->call('nextWeek');
+        $next = now('Asia/Kolkata')->startOfWeek(\Carbon\CarbonInterface::MONDAY)->addWeek()->format('d/m');
+        $this->assertTrue(SocialPost::where('kind', 'weekly')->where('title', 'like', '%'.$next)->exists());
+        $this->assertNull(Marketer::weekly(next: true), 'Not twice for the same week');
     }
 }

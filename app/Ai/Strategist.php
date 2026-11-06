@@ -42,6 +42,7 @@ final class Strategist
     {
         [$d, $err] = Claude::search('strategy',
             'You are the strategist of Hatpakha (হাতপাখা), a Bengali literary web magazine (since 2012, free to publish, edited, ISSN). '
+            .'All campaigns are ONLINE ONLY (site, newsletter, social media, online contests, e-books); never propose anything physical. '
             .'Research on the web what Bengali literary platforms and magazines (and Bengali readers and writers online) are doing now: new features, '
             .'formats that grow, campaigns, events in the next two months. Then read our own numbers (DATA) and write a short strategy memo for the owner '
             .'and the editor, in simple Bengali: what changed in the market (with source URLs), where we are strong or weak, and 3-6 concrete priorities '

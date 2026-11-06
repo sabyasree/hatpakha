@@ -1,4 +1,4 @@
-{{-- Marketing desk (D51). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
+{{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
 @php($d = $this->data())
 <x-filament-panels::page>
     <style>
@@ -11,14 +11,63 @@
         .hp-card-wrap > .hp-card { transform: scale(.25); transform-origin: top left; }
     </style>
 
-    <div style="display:flex;gap:.5rem">
-        <x-filament::button size="sm" :color="$filter === 'ready' ? 'primary' : 'gray'" wire:click="$set('filter', 'ready')">{{ __('পোস্টের জন্য তৈরি') }}</x-filament::button>
-        <x-filament::button size="sm" :color="$filter === 'done' ? 'primary' : 'gray'" wire:click="$set('filter', 'done')">{{ __('পোস্ট করা / বাদ') }}</x-filament::button>
-    </div>
-    <p class="hp-muted">{{ __('মার্কেটিং বিশেষজ্ঞ প্রতিটি নতুন লেখা আর সংখ্যার জন্য লেখা তৈরি রাখে। কপি করে নিজের পাতায় পোস্ট করুন, তারপর "পোস্ট করেছি" টিপুন। ছবি নামিয়ে পোস্টের সঙ্গে দিন।') }}</p>
+    {{-- How this page works (D70): plain steps, so the buttons are never a puzzle. --}}
+    <x-filament::section icon="heroicon-o-question-mark-circle" collapsible>
+        <x-slot name="heading">{{ __('এই পাতায় কী করবেন') }}</x-slot>
+        <ol style="margin:0;padding-left:1.2rem;line-height:1.9">
+            <li>{{ __('মার্কেটিং বিশেষজ্ঞ প্রতিটি নতুন লেখা, সংখ্যা আর উৎসবের জন্য পোস্ট লিখে রাখে। এখান থেকে কিছুই নিজে থেকে পোস্ট হয় না।') }}</li>
+            <li>{{ __('"কপি" টিপুন, নিজের ফেসবুক পাতা / হোয়াটসঅ্যাপ চ্যানেল / ইনস্টাগ্রামে গিয়ে পেস্ট করে পোস্ট করুন। ছবি থাকলে "ছবি নামান" দিয়ে নামিয়ে সঙ্গে দিন।') }}</li>
+            <li>{{ __('পোস্ট হয়ে গেলে "পোস্ট করেছি" টিপুন: কার্ডটি "পোস্ট করা / বাদ"-এ চলে যাবে, যাতে কোনটা বাকি বোঝা যায়।') }}</li>
+            <li>{{ __('কোনো পোস্ট দিতে না চাইলে "পোস্ট করব না" টিপুন। ভুল করে টিপলে সঙ্গে সঙ্গে "ফিরিয়ে আনুন" টিপুন, বা পরে "পোস্ট করা / বাদ" থেকে ফেরান।') }}</li>
+            <li>{{ __('সপ্তাহের পরিকল্পনা শুধু পথনির্দেশ: কোন দিন কী পোস্ট করবেন। এতে কিছু টিপতে হয় না; সবসময় উপরে থাকে।') }}</li>
+        </ol>
+    </x-filament::section>
 
-    {{-- Weekly newsletter (D48, D57): drafted every Saturday (or now, from the button above); sent from আজকের কাজ. --}}
-    <x-filament::section icon="heroicon-o-envelope" collapsible>
+    {{-- The weekly plan, pinned (D70). --}}
+    <x-filament::section icon="heroicon-o-calendar-days">
+        <x-slot name="heading">{{ __('সপ্তাহের পরিকল্পনা') }}</x-slot>
+        <x-slot name="afterHeader">
+            <x-filament::button size="sm" color="gray" icon="heroicon-o-forward" wire:click="nextWeek" wire:loading.attr="disabled" wire:target="nextWeek">
+                <span wire:loading.remove wire:target="nextWeek">{{ __('পরের সপ্তাহের পরিকল্পনা তৈরি করুন') }}</span>
+                <span wire:loading wire:target="nextWeek">{{ __('তৈরি হচ্ছে…') }}</span>
+            </x-filament::button>
+        </x-slot>
+        @forelse ($d['plans'] as $plan)
+            <div style="{{ $loop->first ? '' : 'margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(127,127,127,.25)' }}">
+                <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+                    <strong>{{ $plan->title }}</strong>
+                    <span class="hp-muted">{{ $plan->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
+                </div>
+                <ul style="margin:.4rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ((array) ($plan->texts['plan'] ?? []) as $line)<li>{{ $line }}</li>@endforeach</ul>
+                @if (filled($plan->texts['facebook'] ?? '') || filled($plan->texts['whatsapp'] ?? ''))
+                    <details style="margin-top:.5rem">
+                        <summary style="cursor:pointer;font-weight:600">{{ __('সোমবারের পোস্টের লেখা') }}</summary>
+                        <div class="hp-mk-cols" style="margin-top:.5rem">
+                            @foreach (['facebook' => 'ফেসবুক', 'whatsapp' => 'হোয়াটসঅ্যাপ', 'instagram' => 'ইনস্টাগ্রাম'] as $ch => $label)
+                                @if (filled($plan->texts[$ch] ?? ''))
+                                    <div x-data="{ copied: false }">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+                                            <span style="font-weight:600">{{ __($label) }}</span>
+                                            <x-filament::button size="xs" color="gray" icon="heroicon-o-clipboard"
+                                                x-on:click="navigator.clipboard.writeText($refs.t.innerText); copied = true; setTimeout(() => copied = false, 1500)">
+                                                <span x-text="copied ? '{{ __('কপি হয়েছে') }}' : '{{ __('কপি') }}'"></span>
+                                            </x-filament::button>
+                                        </div>
+                                        <div class="hp-mk-text" x-ref="t">{{ $plan->texts[$ch] }}</div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
+            </div>
+        @empty
+            <div class="hp-muted">{{ __('এখনও পরিকল্পনা নেই। প্রতি সোমবার সকালে তৈরি হয়; এখনই চাইলে উপরের বোতাম টিপুন।') }}</div>
+        @endforelse
+    </x-filament::section>
+
+    {{-- Weekly newsletter (D48, D57): drafted every Saturday (or now, from the button above); sent from চিঠি. --}}
+    <x-filament::section icon="heroicon-o-envelope" collapsible collapsed>
         <x-slot name="heading">{{ __('সাপ্তাহিক চিঠি (নিউজলেটার)') }}</x-slot>
         <p class="hp-muted" style="margin:0 0 .5rem">{{ __('যাঁরা নিজে সম্মতি দিয়েছেন, শুধু তাঁরাই পান') }}: <strong>{{ \App\Support\Bn::num((string) $d['readers']) }}</strong> {{ __('জন') }}।
             {{ __('প্রতি শনিবার পাঠকদের আর প্রতি মাসের ২১ তারিখে লেখকদের চিঠির খসড়া তৈরি হয়। সব চিঠি:') }} <a href="{{ \App\Filament\Resources\Newsletters\NewsletterResource::getUrl() }}" style="text-decoration:underline">{{ __('চিঠি') }}</a></p>
@@ -36,18 +85,20 @@
         @endif
     </x-filament::section>
 
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <x-filament::button size="sm" :color="$filter === 'ready' ? 'primary' : 'gray'" wire:click="$set('filter', 'ready')">{{ __('পোস্টের জন্য তৈরি') }}</x-filament::button>
+        <x-filament::button size="sm" :color="$filter === 'done' ? 'primary' : 'gray'" wire:click="$set('filter', 'done')">{{ __('পোস্ট করা / বাদ') }}</x-filament::button>
+        <span class="hp-muted">{{ $filter === 'done' ? __('ভুল করে সরানো কিছু থাকলে "ফিরিয়ে আনুন" টিপুন।') : __('কপি করে পোস্ট করুন, তারপর "পোস্ট করেছি" টিপুন।') }}</span>
+    </div>
+
     <div class="hp-mk">
         @forelse ($d['items'] as ['s' => $s, 'card' => $card])
             <div class="hp-mk-item" wire:key="mk-{{ $s->id }}">
                 <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center">
                     <strong>{{ $s->title }}</strong>
                     <span class="hp-muted">{{ __(['piece' => 'লেখা', 'issue' => 'সংখ্যা', 'weekly' => 'সাপ্তাহিক পরিকল্পনা', 'spotlight' => 'লেখক পরিচিতি', 'festival' => 'উৎসব', 'contest' => 'প্রতিযোগিতা', 'archive' => 'আর্কাইভ থেকে', 'custom' => 'নিজের বিষয়'][$s->kind] ?? $s->kind) }}
-                        · {{ $s->created_at->locale(app()->getLocale())->diffForHumans() }}
-                        @if ($s->status === 'posted') · ✓ {{ __('পোস্ট করা') }} @endif</span>
+                        · {{ $s->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
                 </div>
-                @if (! empty($s->texts['plan']))
-                    <ul style="margin:0;padding-left:1.2rem;line-height:1.8">@foreach ($s->texts['plan'] as $line)<li>{{ $line }}</li>@endforeach</ul>
-                @endif
                 <div class="hp-mk-cols">
                     @foreach (['facebook' => 'ফেসবুক', 'whatsapp' => 'হোয়াটসঅ্যাপ', 'instagram' => 'ইনস্টাগ্রাম'] as $ch => $label)
                         @if (filled($s->texts[$ch] ?? ''))
@@ -78,14 +129,20 @@
                     </div>
                 @endif
                 @if ($s->status === 'ready')
-                    <div style="display:flex;gap:.5rem">
+                    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
                         <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="posted({{ $s->id }})">{{ __('পোস্ট করেছি') }}</x-filament::button>
-                        <x-filament::button size="sm" color="gray" wire:click="dismiss({{ $s->id }})">{{ __('বাদ দিন') }}</x-filament::button>
+                        <x-filament::button size="sm" color="gray" icon="heroicon-o-x-mark" wire:click="dismiss({{ $s->id }})">{{ __('পোস্ট করব না') }}</x-filament::button>
+                        <span class="hp-muted">{{ __('দুটোই পরে ফেরানো যায়।') }}</span>
+                    </div>
+                @else
+                    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                        <span class="hp-muted">{{ $s->status === 'posted' ? '✓ '.__('পোস্ট করা হয়েছে') : __('বাদ দেওয়া') }}</span>
+                        <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-uturn-left" wire:click="restore({{ $s->id }})">{{ __('ফিরিয়ে আনুন') }}</x-filament::button>
                     </div>
                 @endif
             </div>
         @empty
-            <x-filament::section><div class="hp-muted">{{ __('এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে।') }}</div></x-filament::section>
+            <x-filament::section><div class="hp-muted">{{ $filter === 'done' ? __('এখনও কিছু পোস্ট করা বা বাদ দেওয়া হয়নি।') : __('এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে; উপরের "নতুন পোস্ট তৈরি করুন" দিয়ে এখনই চাইতেও পারেন।') }}</div></x-filament::section>
         @endforelse
     </div>
     <script src="{{ asset('js/hp-card.js') }}?v=1"></script>

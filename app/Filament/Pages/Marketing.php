@@ -44,6 +44,7 @@ class Marketing extends Page
                         'piece' => __('আমার বাছা একটি লেখা'),
                         'issue' => __('একটি সংখ্যা'),
                         'weekly' => __('এই সপ্তাহের পরিকল্পনা'),
+                        'next_week' => __('পরের সপ্তাহের পরিকল্পনা'),
                         'newsletter' => __('সাপ্তাহিক চিঠি (ই-মেল নিউজলেটার)'),
                         'custom' => __('নিজের বিষয় (শুভেচ্ছা, ঘোষণা, প্রশ্ন…)'),
                     ]),
@@ -64,6 +65,7 @@ class Marketing extends Page
                         'piece' => ($p = Post::published()->find($data['post_id'] ?? 0)) ? \App\Ai\Marketer::forPiece($p, force: true) : null,
                         'issue' => ($i = Issue::find($data['issue_id'] ?? 0)) ? \App\Ai\Marketer::forIssue($i, force: true) : null,
                         'weekly' => \App\Ai\Marketer::weekly(force: true),
+                        'next_week' => \App\Ai\Marketer::weekly(force: true, next: true),
                         'newsletter' => \App\Ai\EditorJobs::newsletter(force: true),
                         'custom' => \App\Ai\Marketer::custom((string) $data['topic']),
                         default => self::archivePick(),
@@ -84,7 +86,14 @@ class Marketing extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = SocialPost::where('status', 'ready')->count()) ? (string) $n : null;
+        return ($n = SocialPost::where('status', 'ready')->where('kind', '!=', 'weekly')->count()) ? (string) $n : null;
+    }
+
+    /** "পরের সপ্তাহের পরিকল্পনা" (D70): plan ahead without waiting for Monday. */
+    public function nextWeek(): void
+    {
+        $made = \App\Ai\Marketer::weekly(force: true, next: true);
+        Notification::make()->title($made ? __('পরের সপ্তাহের পরিকল্পনা তৈরি হয়েছে') : __('এখন হলো না; এআই থামানো আছে কি না দেখুন'))->{$made ? 'success' : 'warning'}()->send();
     }
 
     public function posted(int $id): void
@@ -92,22 +101,40 @@ class Marketing extends Page
         $s = SocialPost::findOrFail($id);
         $s->forceFill(['status' => 'posted', 'posted_at' => now(), 'posted_by' => auth()->id()])->save();
         AuditLog::record('marketing.posted', null, ['social_post' => $s->id]);
-        Notification::make()->title(__('পোস্ট করা হয়েছে বলে রাখা হলো'))->success()->send();
+        self::undoable($id, __('"পোস্ট করা / বাদ"-এ সরানো হলো'));
     }
 
     public function dismiss(int $id): void
     {
         SocialPost::findOrFail($id)->forceFill(['status' => 'dismissed'])->save();
+        self::undoable($id, __('বাদ দেওয়া হলো'));
+    }
+
+    /** Undo (D70): back to "পোস্টের জন্য তৈরি". From the notification, or from the "পোস্ট করা / বাদ" list. */
+    #[\Livewire\Attributes\On('mk-restore')]
+    public function restore(int $id): void
+    {
+        SocialPost::findOrFail($id)->forceFill(['status' => 'ready', 'posted_at' => null, 'posted_by' => null])->save();
+        Notification::make()->title(__('ফিরিয়ে আনা হয়েছে'))->success()->send();
+    }
+
+    private static function undoable(int $id, string $title): void
+    {
+        Notification::make()->title($title)->success()->actions([
+            \Filament\Actions\Action::make('undo')->label(__('ফিরিয়ে আনুন'))->button()->close()->dispatch('mk-restore', ['id' => $id]),
+        ])->send();
     }
 
     public function data(): array
     {
-        $items = SocialPost::with('subject')->where('status', $this->filter === 'done' ? '!=' : '=', 'ready')->latest()->limit(40)->get();
+        // The weekly plan is a guide, pinned on top whatever is ticked (D70); the list below holds the posts.
+        $plans = SocialPost::where('kind', 'weekly')->latest()->limit(2)->get();
+        $items = SocialPost::with('subject')->where('kind', '!=', 'weekly')->where('status', $this->filter === 'done' ? '!=' : '=', 'ready')->latest()->limit(40)->get();
 
         $newsletter = \App\Models\Newsletter::where('status', 'draft')->latest()->first();
         $readers = \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced'])->count();
 
-        return ['newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];
+        return ['plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];
     }
 
     /** What the designer's card shows: only real data (title, writer, exact quote, picture). */

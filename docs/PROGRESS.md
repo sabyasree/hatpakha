@@ -92,7 +92,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Follow-ups, welcome notes, weekly picks (home page), Sunday newsletter draft (consented readers only, unsubscribe), monthly report, weekly site health; all on আজকের কাজ → "সম্পাদকের অন্য কাজ"
 - ✅ Contests and the AI team (below)
 
-## AI team of eleven ✅ (D49–D56) — /desk → প্রশাসন → এআই দল (pause any member)
+## AI team ✅ (D49–D70) — /desk → প্রশাসন → এআই দল (pause any member)
 - **Editor**: package per piece, issue + editorial, comments, picks, follow-ups, publication certificates (owner ticks, writers see them on their account page)
 - **Proofreader** (D50): after each submission and hourly on old *unpublished* pieces (never published ones); house style; title typo fix in the approve dialog
 - **Plagiarism checker** (D50): web search on a few lines of each new piece; report + task when found
@@ -108,7 +108,15 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - **Accounts** (D59): verify-before-anything, no account probing, Turnstile on auth forms, breached-password check, optional 2FA (TOTP + recovery codes) with a nudge; redesigned /account/ (tabs) and author pages with the writer's own photo, cover, bio and links; all verified accounts get the newsletter unless they switch it off
 - **Turnstile** finished (D60): action + hostname checks, fail-closed; **draw/redraw a cover** from any post or in bulk (D60)
 - **Copywriter** for all letters; AI team page with the plan (D61); **shared knowledge + trend scout** for the team, and the editor's plan `docs/STRATEGY.md` (D62)
-- ⬜ Next features (STRATEGY.md §4): site search, serial fiction, reader reactions + reading list, follow a writer, audio readings, reader tips
+- ✅ **Strategist** + edit link on public pages + short AI wording in privacy/terms (D63)
+- ✅ **Reader features** (D64): site search, likes, reading list ("পরে পড়ব"), follow a writer (with new-piece notices), new writer card under each post
+- ✅ **Speed** (D65): guest pages cacheable at the edge (Cloudflare rule steps in DEPLOYMENT.md); ⬜ owner adds the Cloudflare cache rule
+- ✅ **Honoured writers** (D66): মাসের লেখক proposal, badge + editor's praise on writer pages and home
+- ✅ **Writers' audio readings** (D67): upload from the account page, owner approves; ⬜ check Hostinger's PHP upload limit is ≥ 25 MB
+- ✅ **Issues as books** (D68): page-turning reader view, EPUB, print-ready PDF (6×9 in) and store listing text; Amazon KDP doesn't take Bengali → Google Play Books
+- ✅ **Relaunch letter** draft + post, **online-only** campaigns, English filler options (D69); **undo** for covers and marketing, weekly plan pinned (D70)
+- ⬜ Owner: read and send the relaunch letter (চিঠি); decide the English filler piles (STRATEGY.md §6)
+- ⬜ Later: serial fiction, reader tips (after payments are approved), volunteer editors (the editor role with 2FA already exists; add them from ব্যবহারকারী)
 - ⬜ Later: automatic Facebook posting (owner turns on), anthology e-book file, Search Console data for the SEO expert, privacy-policy wording for the read counter (owner)
 
 ## Deploys

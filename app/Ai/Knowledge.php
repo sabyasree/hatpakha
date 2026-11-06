@@ -59,6 +59,11 @@ city and village life, ghosts and mysteries, travel, and poems that sing.
 - Writers want: to be read, a quick and kind answer, a useful reason when not accepted, visibility (author page,
   sharing, certificates), and a community. Payment is rare in Bengali web magazines; respect and speed are our gifts.
 
+### How we reach people (owner, Nov 2026)
+Every campaign is online only: our site, the newsletter, Facebook page, WhatsApp channel, Instagram, online contests,
+online issues and e-books. We cannot be anywhere in person: never propose stalls, launches, readings, meet-ups, posters
+on walls, print runs or any physical event (at a book fair we take part online: a fair issue, a contest, daily posts).
+
 ### Our voice
 Warm, precise, unpretentious Bengali (প্রমিত বানান). No empty praise ("সাহিত্যের আকাশে উজ্জ্বল নক্ষত্র"), no clickbait,
 no talking down. Kind honesty with writers. Respect both West Bengal and Bangladesh spellings and idiom when a writer uses them.

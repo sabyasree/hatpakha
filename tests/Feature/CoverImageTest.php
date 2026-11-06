@@ -97,4 +97,28 @@ class CoverImageTest extends TestCase
         $this->assertFileExists(public_path('media/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'));
         $this->assertFileDoesNotExist(storage_path('app/public/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'));
     }
+
+    /** D70: "Drop" and "Use this" can both be undone. */
+    public function test_dropped_and_replaced_covers_can_be_brought_back(): void
+    {
+        $post = $this->makePost(['slug' => 'undo-cover']);
+        $file = fn () => \App\Support\CoverImage::store($this->jpeg()->getRealPath());
+        $a = $file();
+        $post->forceFill(['featured_image_path' => $a['path'], 'featured_image_width' => $a['width'], 'featured_image_height' => $a['height']])->save();
+        $b = $file();
+        $post->forceFill(['proposed_image_path' => $b['path'], 'proposed_image_width' => $b['width'], 'proposed_image_height' => $b['height']])->save();
+
+        \App\Support\CoverImage::discardProposed($post);
+        $this->assertNull($post->fresh()->proposed_image_path);
+        $this->assertFileExists(public_path($b['path']), 'A dropped drawing is kept');
+        $this->assertTrue(\App\Support\CoverImage::restoreSpare($post->fresh()));
+        $this->assertSame($b['path'], $post->fresh()->proposed_image_path, 'Drop undone');
+
+        \App\Support\CoverImage::acceptProposed($post->fresh());
+        $this->assertSame($b['path'], $post->fresh()->featured_image_path);
+        $this->assertFileExists(public_path($a['path']), 'The replaced cover is kept');
+        \App\Support\CoverImage::restoreSpare($post->fresh());
+        $this->assertSame($a['path'], $post->fresh()->featured_image_path, 'Back to the previous cover');
+        $this->assertSame($b['path'], \App\Support\CoverImage::spare($post->fresh())['path'], 'And it can go forward again');
+    }
 }
