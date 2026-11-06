@@ -153,7 +153,8 @@ class Post extends Model
         $title = $this->metaTitle();
         $by = $this->authors->reject(fn ($a) => $a->is_desk)->map(fn ($a) => $a->publicName())->filter()->implode(', ');
 
-        return $by && ! str_contains($title, $by) ? $title.' | '.$by : $title;
+        // A search title that already names the writer ("লেখা | লেখক") is used as it is.
+        return $by && ! str_contains($title, '|') && ! str_contains($title, $by) ? $title.' | '.$by : $title;
     }
 
     /** Share/og image rule (docs/SEO.md §2): photos under 1200px are never the og:image. */

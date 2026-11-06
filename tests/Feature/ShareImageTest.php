@@ -31,6 +31,8 @@ class ShareImageTest extends TestCase
         $this->assertStringContainsString('<meta property="og:image" content="'.asset('images/og/card-poetry.jpg').'">', $html);
         $this->assertStringContainsString('<meta property="og:title" content="মেঘ | রিনা আচার্য">', $html);
         $this->assertStringContainsString('ভোর না হতেই কাজে, / সারাটা দিন কর্মক্ষেত্রে নতুন স্তবক', $html, 'Poem lines are never glued together');
+        $post->forceFill(['seo_title' => 'মেঘ | রিনা'])->save();
+        $this->assertSame('মেঘ | রিনা', $post->fresh()->shareTitle(), 'A title that already names the writer is not doubled');
         $this->assertFileExists(public_path('images/og/card-poetry.jpg'));
         $this->assertSame([1200, 630], array_slice(getimagesize(public_path('images/og/card-poetry.jpg')), 0, 2));
     }
