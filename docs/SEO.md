@@ -12,6 +12,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 | Section | `/category/{slug}/` | Same as WordPress, so no redirect is needed |
 | Author | `/author/{nicename}/` | Same as WordPress |
 | Issue | `/sonkha/{yyyy-mm}/` and `/sonkha/{yyyy-mm}/read/` (flipbook) | New |
+| Archive | `/archive/` and `/archive/{yyyy}/` | New (D31). Old date archives `/yyyy/`, `/yyyy/mm/`, `/yyyy/mm/dd/` 301 here ✅test |
 | Tag | `/tag/{slug}/` | Only the ~150 controlled tags. Merged or removed tags → 301 to the section |
 - **Trailing slash, always** (as on WordPress). A URL without the slash → 301 to the slashed version. ✅test
 - `?p=123`, `/amp/`, `/feed/`, date archives, `/wp-content/plugins/...` and other legacy paths → 301 through the `redirects` table. Removed spam → **410**. ✅test

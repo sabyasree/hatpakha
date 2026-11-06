@@ -60,6 +60,60 @@ class ArchiveController extends Controller
         return view('author', compact('author', 'posts', 'seo'));
     }
 
+    /**
+     * Reader archive (owner request): every year with its count, plus the issues.
+     * Years/counts are cached as scalars only (D18).
+     */
+    public function archiveIndex()
+    {
+        $years = self::yearCounts();
+        $issues = Issue::where('status', 'published')->orderByDesc('slug')->get();
+        $sections = \App\Models\Section::where('is_active', true)->orderBy('sort')->get();
+        $total = array_sum($years);
+        $seo = new Seo(
+            title: 'আর্কাইভ',
+            description: 'হাতপাখার '.\App\Support\Bn::num($total).'টি লেখা, ২০১২ থেকে আজ পর্যন্ত — বছর, সংখ্যা আর বিভাগ ধরে খুঁজুন।',
+            canonical: \App\Support\Url::to('/archive'),
+            jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')]])],
+        );
+
+        return view('archive-index', compact('years', 'issues', 'sections', 'total', 'seo'));
+    }
+
+    public function archiveYear(int $year)
+    {
+        $years = self::yearCounts();
+        abort_unless(isset($years[$year]), 404);
+        $posts = Post::published()->with(['authors', 'section'])
+            ->whereBetween('published_at', ["{$year}-01-01 00:00:00", "{$year}-12-31 23:59:59"])
+            ->orderBy('published_at')->get();
+        $months = $posts->groupBy(fn ($p) => (int) $p->published_at->format('n'));
+        $y = \App\Support\Bn::year($year);
+        $seo = new Seo(
+            title: "{$y} সালের লেখা — আর্কাইভ",
+            description: "{$y} সালে হাতপাখায় প্রকাশিত ".\App\Support\Bn::num($posts->count()).'টি কবিতা, গল্প ও প্রবন্ধ, মাস ধরে।',
+            canonical: \App\Support\Url::to("/archive/{$year}"),
+            jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')], [$y, \App\Support\Url::to("/archive/{$year}")]])],
+        );
+
+        return view('archive-year', compact('year', 'years', 'months', 'posts', 'seo'));
+    }
+
+    /** @return array<int,int> year → published post count, newest first */
+    public static function yearCounts(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('archive:years:v1', 3600, function () {
+            $counts = [];
+            foreach (Post::published()->pluck('published_at') as $d) {
+                $y = (int) \Illuminate\Support\Carbon::parse($d)->format('Y');
+                $counts[$y] = ($counts[$y] ?? 0) + 1;
+            }
+            krsort($counts);
+
+            return $counts;
+        });
+    }
+
     public function issue(Request $request, string $slug)
     {
         $issue = Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();

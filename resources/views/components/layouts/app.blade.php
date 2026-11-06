@@ -25,9 +25,10 @@
                 <span class="-mt-1 text-[11px] font-bold">ISSN: 2321-3035</span>
             </a>
             <nav aria-label="বিভাগ" class="hidden gap-7 text-lg font-semibold lg:flex">
-                @foreach (\App\Models\Section::where('is_active', true)->orderBy('sort')->limit(7)->get() as $s)
+                @foreach (\App\Models\Section::where('is_active', true)->orderBy('sort')->limit(6)->get() as $s)
                     <a href="{{ $s->url() }}" class="hover:text-red">{{ $s->name_bn }}</a>
                 @endforeach
+                <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
             </nav>
             <div class="flex items-center gap-2">
                 <a href="{{ \App\Support\Url::to('/submissions') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
@@ -47,17 +48,19 @@
                 @foreach (\App\Models\Page::footerLinks() as [$t, $u])
                     <a href="{{ $u }}" class="flex min-h-11 items-center hover:text-sky">{{ $t }}</a>
                 @endforeach
+                <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
                 <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
             </nav>
         </div>
     </footer>
 
     {{-- Mobile bottom tab bar --}}
-    <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-4 border-t-2 border-navy bg-paper text-xs font-bold md:hidden">
+    <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t-2 border-navy bg-paper text-xs font-bold md:hidden">
         <a href="{{ url('/') }}/" class="flex items-center justify-center">হোম</a>
         <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex items-center justify-center">কবিতা</a>
         <a href="{{ \App\Support\Url::to('/submissions') }}" class="flex items-center justify-center text-red">লিখুন</a>
         <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="flex items-center justify-center">গল্প</a>
+        <a href="{{ \App\Support\Url::to('/archive') }}" class="flex items-center justify-center">আর্কাইভ</a>
     </nav>
 </body>
 </html>

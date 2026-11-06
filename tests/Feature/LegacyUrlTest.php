@@ -25,9 +25,8 @@ class LegacyUrlTest extends TestCase
         $this->get('/comments/feed/')->assertRedirect(url('/feed').'/');
         $this->get('/page/2/')->assertRedirect($home);
         $this->get('/category/poetry/page/3/')->assertRedirect(url('/category/poetry').'/?page=3');
-        $this->get('/2016/')->assertRedirect($home);
-        $this->get('/2016/03/')->assertRedirect($home);
-        $this->get('/2016/03/15/')->assertRedirect($home);
+        $this->get('/2016/')->assertRedirect(url('/archive').'/');   // no posts that year in this test
+        $this->get('/2016/03/15/')->assertRedirect(url('/archive').'/');
         $this->get('/?p=205')->assertRedirect(url('/dabipuran').'/');
         $this->get('/?page_id=18209')->assertRedirect(url('/faqs').'/');
         $this->get('/?s=kobita')->assertRedirect($home);
@@ -61,5 +60,19 @@ class LegacyUrlTest extends TestCase
     {
         $this->makePost(['slug' => '1971']);
         $this->get('/1971/')->assertOk();
+    }
+
+    public function test_reader_archive_by_year_and_old_date_urls(): void
+    {
+        $this->makePost(['slug' => 'old-poem', 'title' => 'পুরনো কবিতা', 'published_at' => '2016-03-15 10:00:00']);
+        $this->makePost(['slug' => 'new-poem', 'title' => 'নতুন কবিতা', 'published_at' => '2022-02-09 10:00:00']);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $this->get('/archive/')->assertOk()->assertSee('২০১৬')->assertSee('২০২২')->assertSee('<link rel="canonical" href="'.url('/archive').'/">', false);
+        $this->get('/archive/2016/')->assertOk()->assertSee('পুরনো কবিতা')->assertSee('মার্চ')->assertDontSee('নতুন কবিতা');
+        $this->get('/archive/1999/')->assertNotFound();
+        $this->get('/2016/03/')->assertRedirect(url('/archive/2016').'/#m3');
+        $this->get('/2016/')->assertRedirect(url('/archive/2016').'/');
+        $this->get('/')->assertSee(url('/archive').'/', false);
     }
 }

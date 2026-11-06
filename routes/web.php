@@ -30,6 +30,8 @@ Route::get('/author/{slug}/feed', [FeedController::class, 'author']);
 Route::get('/category/{slug}', [ArchiveController::class, 'section'])->name('section');
 Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
+Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
+Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 
 // Certificate verification (public, read-only)

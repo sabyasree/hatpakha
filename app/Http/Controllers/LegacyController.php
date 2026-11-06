@@ -40,14 +40,20 @@ class LegacyController extends Controller
         return redirect(Url::to("/{$type}/".Slug::encode(Slug::normalize($slug))).($n > 1 ? '?page='.$n : ''), 301);
     }
 
-    /** Date archives (/2016/, /2016/03/, /2016/03/15/) had no lasting value → home. A real post slug wins. */
+    /** Date archives (/2016/, /2016/03/, /2016/03/15/) → the reader archive for that year. A real post slug wins. */
     public function dateArchive(Request $request, string $y)
     {
         if (! $request->route('m') && ($post = Post::published()->where('slug', $y)->first())) {
             return app(PostController::class)($y);
         }
 
-        return redirect(url('/').'/', 301);
+        // Old WordPress date archives → the year's archive page (/2016/03/ → /archive/2016/#m3).
+        $m = (int) $request->route('m');
+        if (! isset(ArchiveController::yearCounts()[(int) $y])) {
+            return redirect(Url::to('/archive'), 301);
+        }
+
+        return redirect(Url::to('/archive/'.$y).($m >= 1 && $m <= 12 ? '#m'.$m : ''), 301);
     }
 
     /** Looks the path up in the redirects table (docs/SEO.md §1); otherwise 404. */
