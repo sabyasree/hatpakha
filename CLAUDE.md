@@ -12,7 +12,7 @@ Hatpakha (হাতপাখা) is a Bengali literary web magazine (ISSN 2321-3
 1. The owner's latest explicit instruction in the conversation.
 2. `docs/DECISIONS.md`
 3. `docs/SEO.md`, `docs/SECURITY.md`, `docs/DESIGN.md` (binding specs)
-4. `PLAN.md` (strategy, roadmap) and `MONETIZATION.md`
+4. `PLAN.md` (strategy, roadmap), `docs/STRATEGY.md` (how we compete, 90-day plan) and `MONETIZATION.md`
 5. `docs/ARCHITECTURE.md` (how the code is organised)
 
 If two of these conflict, follow the higher one and **tell the owner about the conflict**.
