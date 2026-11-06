@@ -81,16 +81,7 @@ final class EditorJobs
 
     public static function issueCertificates(array $postIds): int
     {
-        $n = 0;
-        foreach (Post::published()->with('authors')->whereIn('id', $postIds)->get() as $p) {
-            foreach ($p->authors as $author) {
-                $c = \App\Models\Certificate::firstOrCreate(['author_id' => $author->id, 'post_id' => $p->id, 'kind' => 'publication'],
-                    ['title_snapshot' => $p->title, 'author_name_snapshot' => $author->publicName(), 'issue_label' => $p->issue?->title]);
-                $n += (int) $c->wasRecentlyCreated;
-            }
-        }
-
-        return $n;
+        return Post::published()->whereIn('id', $postIds)->get()->sum(fn (Post $p) => count(\App\Models\Certificate::issueFor($p)));
     }
 
     /** Monday: the week's editor's pick for the home page, and "এই দিনে" for the next 7 days. */

@@ -943,5 +943,14 @@
     "পোস্ট করা হয়েছে": "Posted",
     "বাদ দেওয়া": "Dropped",
     "এখনও কিছু পোস্ট করা বা বাদ দেওয়া হয়নি।": "Nothing posted or dropped yet.",
-    "এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে; উপরের \"নতুন পোস্ট তৈরি করুন\" দিয়ে এখনই চাইতেও পারেন।": "Nothing here now. When a new piece is published, the marketing expert puts a post here; you can also ask for one now with \"Create a new post\" above."
+    "এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে; উপরের \"নতুন পোস্ট তৈরি করুন\" দিয়ে এখনই চাইতেও পারেন।": "Nothing here now. When a new piece is published, the marketing expert puts a post here; you can also ask for one now with \"Create a new post\" above.",
+    "সনদ": "Certificate",
+    "সনদ দিন": "Issue certificate",
+    "এই লেখার জন্য প্রকাশনা সনদ দেবেন?": "Issue a publication certificate for this piece?",
+    "প্রত্যেক লেখকের জন্য একটি সনদ তৈরি হবে। যাঁদের অ্যাকাউন্ট আছে, তাঁরা লিংকসহ একটি ই-মেল পাবেন আর \"আমার লেখা\"-তে সনদটি দেখবেন। অ্যাকাউন্ট না থাকলে লিংকটি আপনি পাঠাতে পারেন।": "One certificate per writer. Writers with an account get an e-mail with the link and see it on \"My writing\". For writers without an account, you can send them the link.",
+    "সনদ দেওয়া হয়েছে": "Certificate issued",
+    "সনদ দেখুন": "Open certificate",
+    "সনদ বাতিল করুন": "Withdraw certificate",
+    "যাচাইয়ের পাতায় লেখা থাকবে \"বাতিল\"। যেমন, পরে লেখাটি নকল প্রমাণিত হলে।": "The check page will say \"withdrawn\". For example, if the piece later turns out to be copied.",
+    "সনদ বাতিল হয়েছে": "Certificate withdrawn"
 }
