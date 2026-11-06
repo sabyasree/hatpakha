@@ -71,6 +71,16 @@ class SecurityTest extends TestCase
         $this->assertSame('<p>ক</p>', $clean);
     }
 
+    public function test_sanitizer_never_blanks_long_posts(): void
+    {
+        // Regression: a regex failure on a long post returned '' and blanked 5 imported posts.
+        $long = str_repeat('<p><span style="font-weight:400">'.str_repeat('কবিতার লাইন&nbsp; ', 3000).'</span></p><p>&nbsp;</p>', 4);
+        $clean = HtmlSanitizer::clean($long);
+
+        $this->assertGreaterThan(100000, strlen($clean));
+        $this->assertStringNotContainsString('<p>&nbsp;</p>', $clean);
+    }
+
     public function test_post_body_is_sanitised_on_save_and_rendered_safely(): void
     {
         $this->makePost(['slug' => 'xss', 'body_html' => '<p>লেখা</p><script>alert("x")</script>']);

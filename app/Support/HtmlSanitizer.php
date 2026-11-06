@@ -21,7 +21,8 @@ final class HtmlSanitizer
         }
 
         // Raw-text elements: remove with their contents first, so CSS/JS never leaks out as visible text.
-        $html = preg_replace('~<(script|style|noscript|template|textarea)\b[^>]*>.*?</\1\s*>~is', '', $html) ?? '';
+        // (Byte-wise regex without /u, and never fall back to '': a regex failure must not blank a post.)
+        $html = preg_replace('~<(script|style|noscript|template|textarea)\b[^>]*>.*?</\1\s*>~is', '', $html) ?? $html;
 
         self::$instance ??= new SymfonySanitizer(
             (new HtmlSanitizerConfig())
@@ -55,6 +56,8 @@ final class HtmlSanitizer
         );
 
         // Removed elements (forms, inputs…) can leave empty paragraphs behind; parsers differ by PHP version.
-        return preg_replace('~<p>(?:\s|&nbsp;|\x{00A0})*</p>~u', '', self::$instance->sanitize($html)) ?? '';
+        $clean = self::$instance->sanitize($html);
+
+        return preg_replace('~<p>(?:\s|&nbsp;|\xC2\xA0)*+</p>~', '', $clean) ?? $clean;
     }
 }

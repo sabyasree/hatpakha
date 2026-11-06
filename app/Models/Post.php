@@ -26,6 +26,9 @@ class Post extends Model
             'published_at' => 'datetime',
             'submitted_at' => 'datetime',
             'noindex' => 'boolean',
+            'audit_reasons' => 'array',
+            'audit_decided_at' => 'datetime',
+            'edited_in_desk_at' => 'datetime',
         ];
     }
 

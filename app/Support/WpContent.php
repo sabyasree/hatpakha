@@ -57,6 +57,11 @@ class WpContent
             return "\n\n".$out."\n";
         }, $html);
 
+        // [pdf-embedder url="…pdf"] showed a PDF viewer; keep the document reachable as a link.
+        $html = preg_replace_callback('~\[pdf-embedder[^\]]*?url="([^"]+\.pdf)"[^\]]*\]~i', fn ($m) => "\n\n<p><a href=\"".e(html_entity_decode($m[1]))."\">PDF খুলুন: ".e(basename(html_entity_decode($m[1])))."</a></p>\n\n", $html);
+        // [pageview url=…] embedded third-party sites in an iframe (e.g. a sudoku widget): not carried over.
+        $html = preg_replace('~\[pageview[^\]]*\]~i', '', $html);
+
         // Remaining plugin shortcodes: drop the tags, keep any text between them.
         $html = preg_replace('~\[/?(?:'.self::DROP.')(?:\s[^\]]*)?\]~', '', $html);
 
