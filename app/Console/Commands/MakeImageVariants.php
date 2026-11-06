@@ -20,6 +20,16 @@ class MakeImageVariants extends Command
 
     private const MAX_PIXELS = 40_000_000; // skip giant scans that would exhaust memory
 
+    /** @var array<string,array{count:int,example:string}> */
+    private array $reasons = [];
+
+    private function fail(array &$stats, string $why, string $rel): void
+    {
+        $stats['failed']++;
+        $this->reasons[$why] ??= ['count' => 0, 'example' => $rel];
+        $this->reasons[$why]['count']++;
+    }
+
     public function handle(): int
     {
         if (! function_exists('imagewebp')) {
@@ -36,6 +46,10 @@ class MakeImageVariants extends Command
         $this->info(count($paths).' images used by posts and pages.');
         $bar = $this->output->createProgressBar(count($paths));
         $stats = ['made' => 0, 'skipped' => 0, 'missing' => 0, 'failed' => 0, 'saved_kb' => 0];
+        $this->reasons = [];
+        $this->line('PHP memory_limit: '.ini_get('memory_limit').' · GD: '.(gd_info()['GD Version'] ?? '?')
+            .' · JPEG '.((gd_info()['JPEG Support'] ?? false) ? 'yes' : 'NO').' · PNG '.((gd_info()['PNG Support'] ?? false) ? 'yes' : 'NO')
+            .' · WebP '.((gd_info()['WebP Support'] ?? false) ? 'yes' : 'NO'));
 
         foreach ($paths as $rel) {
             $this->process($rel, $stats);
@@ -45,6 +59,11 @@ class MakeImageVariants extends Command
         $this->newLine(2);
         $this->table(['WebP copies made', 'Already there', 'Original missing', 'Failed', 'Smaller by (MB)'],
             [[$stats['made'], $stats['skipped'], $stats['missing'], $stats['failed'], round($stats['saved_kb'] / 1024, 1)]]);
+        if ($this->reasons) {
+            $this->warn('Why images failed (count, reason, example):');
+            $this->table(['Images', 'Reason', 'Example'], collect($this->reasons)->sortByDesc('count')
+                ->map(fn ($r, $why) => [$r['count'], $why, $r['example']])->values()->all());
+        }
 
         return self::SUCCESS;
     }
@@ -83,8 +102,13 @@ class MakeImageVariants extends Command
             return;
         }
         $info = @getimagesize($file);
-        if (! $info || $info[0] * $info[1] > self::MAX_PIXELS) {
-            $stats['failed']++;
+        if (! $info) {
+            $this->fail($stats, 'not a readable image ('.filesize($file).' bytes)', $rel);
+
+            return;
+        }
+        if ($info[0] * $info[1] > self::MAX_PIXELS) {
+            $this->fail($stats, 'too large (over 40 megapixels)', $rel);
 
             return;
         }
@@ -110,26 +134,37 @@ class MakeImageVariants extends Command
             return;
         }
 
-        $src = $this->load($file, $info[2]);
+        error_clear_last();
+        try {
+            $src = $this->load($file, $info[2]);
+        } catch (\Throwable $e) {
+            $src = false;
+            $this->fail($stats, 'load error: '.mb_substr($e->getMessage(), 0, 80), $rel);
+
+            return;
+        }
         if (! $src) {
-            $stats['failed']++;
+            $this->fail($stats, 'could not decode '.image_type_to_extension($info[2], false).': '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
 
             return;
         }
         foreach ($todo as [$w, $out]) {
             $img = $w >= imagesx($src) ? $src : imagescale($src, $w, -1, IMG_BICUBIC);
             if (! $img) {
-                $stats['failed']++;
+                $this->fail($stats, 'resize failed', $rel);
 
                 continue;
             }
             imagealphablending($img, false);
             imagesavealpha($img, true);
-            if (imagewebp($img, $out, 78)) {
+            error_clear_last();
+            if (! is_writable(dirname($out))) {
+                $this->fail($stats, 'folder not writable', $rel);
+            } elseif (@imagewebp($img, $out, 78)) {
                 $stats['made']++;
                 $stats['saved_kb'] += max(0, (filesize($file) - filesize($out)) / 1024 / count($todo));
             } else {
-                $stats['failed']++;
+                $this->fail($stats, 'WebP write failed: '.mb_substr(error_get_last()['message'] ?? 'unknown', 0, 80), $rel);
             }
             if ($img !== $src) {
                 imagedestroy($img);
