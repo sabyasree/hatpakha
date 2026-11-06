@@ -10,7 +10,7 @@
         ['Anek Bangla', '/fonts/anek-bangla-bengali.woff2', '400 800'], ['Anek Bangla', '/fonts/anek-bangla-latin.woff2', '400 800'],
         ['Galada', '/fonts/galada-bengali.woff2', '400'], ['Noto Serif Bengali', '/fonts/noto-serif-bengali-bengali.woff2', '400 700'],
     ];
-    async function download(card, name) {
+    async function canvas(card) {
         const w = card.offsetWidth, h = card.offsetHeight;
         const clone = card.cloneNode(true);
         clone.style.transform = 'none';
@@ -24,11 +24,20 @@
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         await img.decode();
         await new Promise((r) => setTimeout(r, 150)); // fonts inside the SVG settle
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const a = document.createElement('a');
-        a.download = name; a.href = canvas.toDataURL('image/png'); a.click();
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        return cv;
     }
-    window.hpCard = { download };
+    async function download(card, name) {
+        const a = document.createElement('a');
+        a.download = name; a.href = (await canvas(card)).toDataURL('image/png'); a.click();
+    }
+    /** The card as a PNG file, for the phone's share sheet (D87). */
+    async function file(card, name) {
+        const c = await canvas(card);
+        const blob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
+        return new File([blob], name, { type: 'image/png' });
+    }
+    window.hpCard = { download, file };
 })();

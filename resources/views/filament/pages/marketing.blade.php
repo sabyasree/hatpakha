@@ -16,7 +16,7 @@
         <x-slot name="heading">{{ __('এই পাতায় কী করবেন') }}</x-slot>
         <ol style="margin:0;padding-left:1.2rem;line-height:1.9">
             <li>{{ __('মার্কেটিং বিশেষজ্ঞ প্রতিটি নতুন লেখা, সংখ্যা আর উৎসবের জন্য পোস্ট লিখে রাখে। এখান থেকে কিছুই নিজে থেকে পোস্ট হয় না।') }}</li>
-            <li>{{ __('"কপি" টিপুন, নিজের ফেসবুক পাতা / হোয়াটসঅ্যাপ চ্যানেল / ইনস্টাগ্রামে গিয়ে পেস্ট করে পোস্ট করুন। ছবি থাকলে "ছবি নামান" দিয়ে নামিয়ে সঙ্গে দিন।') }}</li>
+            <li>{{ __('"ফেসবুকে দিন", "হোয়াটসঅ্যাপে দিন" বা "ইনস্টাগ্রামে দিন" টিপুন: সেই সাইট বা অ্যাপ লেখা, লিংক আর ছবি সমেত খুলবে, সেখানে "পোস্ট" টিপলেই হলো। ফেসবুক বাইরের লেখা নিজে বসায় না, তাই লেখাটি কপি হয়ে থাকে: পেস্ট করে দিন। চাইলে "কপি" টিপে নিজে পেস্ট করতেও পারেন।') }}</li>
             <li>{{ __('পোস্ট হয়ে গেলে "পোস্ট করেছি" টিপুন: কার্ডটি "পোস্ট করা / বাদ"-এ চলে যাবে, যাতে কোনটা বাকি বোঝা যায়।') }}</li>
             <li>{{ __('কোনো পোস্ট দিতে না চাইলে "পোস্ট করব না" টিপুন। ভুল করে টিপলে সঙ্গে সঙ্গে "ফিরিয়ে আনুন" টিপুন, বা পরে "পোস্ট করা / বাদ" থেকে ফেরান।') }}</li>
             <li>{{ __('সপ্তাহের পরিকল্পনা শুধু পথনির্দেশ: কোন দিন কী পোস্ট করবেন। এতে কিছু টিপতে হয় না; সবসময় উপরে থাকে।') }}</li>
@@ -45,15 +45,13 @@
                         <div class="hp-mk-cols" style="margin-top:.5rem">
                             @foreach (['facebook' => 'ফেসবুক', 'whatsapp' => 'হোয়াটসঅ্যাপ', 'instagram' => 'ইনস্টাগ্রাম'] as $ch => $label)
                                 @if (filled($plan->texts[$ch] ?? ''))
-                                    <div x-data="{ copied: false }">
-                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+                                    <div x-data="{ copied: false, msg: '' }">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.3rem">
                                             <span style="font-weight:600">{{ __($label) }}</span>
-                                            <x-filament::button size="xs" color="gray" icon="heroicon-o-clipboard"
-                                                x-on:click="navigator.clipboard.writeText($refs.t.innerText); copied = true; setTimeout(() => copied = false, 1500)">
-                                                <span x-text="copied ? '{{ __('কপি হয়েছে') }}' : '{{ __('কপি') }}'"></span>
-                                            </x-filament::button>
+                                            @include('filament.partials.share-buttons', ['ch' => $ch, 'link' => \App\Support\Url::to('/')])
                                         </div>
                                         <div class="hp-mk-text" x-ref="t">{{ $plan->texts[$ch] }}</div>
+                                        <div class="hp-muted" x-show="msg" x-text="msg" role="status" style="margin-top:.3rem"></div>
                                     </div>
                                 @endif
                             @endforeach
@@ -92,7 +90,7 @@
     </div>
 
     <div class="hp-mk">
-        @forelse ($d['items'] as ['s' => $s, 'card' => $card])
+        @forelse ($d['items'] as ['s' => $s, 'card' => $card, 'link' => $link])
             <div class="hp-mk-item" wire:key="mk-{{ $s->id }}">
                 <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center">
                     <strong>{{ $s->title }}</strong>
@@ -102,15 +100,13 @@
                 <div class="hp-mk-cols">
                     @foreach (['facebook' => 'ফেসবুক', 'whatsapp' => 'হোয়াটসঅ্যাপ', 'instagram' => 'ইনস্টাগ্রাম'] as $ch => $label)
                         @if (filled($s->texts[$ch] ?? ''))
-                            <div x-data="{ copied: false }">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+                            <div x-data="{ copied: false, msg: '' }">
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.3rem">
                                     <span style="font-weight:600">{{ __($label) }}</span>
-                                    <x-filament::button size="xs" color="gray" icon="heroicon-o-clipboard"
-                                        x-on:click="navigator.clipboard.writeText($refs.t.innerText); copied = true; setTimeout(() => copied = false, 1500)">
-                                        <span x-text="copied ? '{{ __('কপি হয়েছে') }}' : '{{ __('কপি') }}'"></span>
-                                    </x-filament::button>
+                                    @include('filament.partials.share-buttons', ['ch' => $ch, 'link' => $link])
                                 </div>
                                 <div class="hp-mk-text" x-ref="t">{{ $s->texts[$ch] }}</div>
+                                <div class="hp-muted" x-show="msg" x-text="msg" role="status" style="margin-top:.3rem"></div>
                             </div>
                         @endif
                     @endforeach
@@ -119,7 +115,7 @@
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
                         @foreach (array_filter(['share' => true, 'quote' => filled($card['quote'])]) as $layout => $_)
                             <div>
-                                <div class="hp-card-wrap">@include('filament.partials.social-card', ['card' => $card, 'layout' => $layout])</div>
+                                <div class="hp-card-wrap" @if ($layout === 'share') x-data x-init="$nextTick(() => { const c = $el.querySelector('.hp-card'); if (c) { c.dataset.name = 'hatpakha-{{ $s->id }}.png'; window.hpShare?.watch($el); } })" @endif>@include('filament.partials.social-card', ['card' => $card, 'layout' => $layout])</div>
                                 <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-down-tray" style="margin-top:.4rem"
                                     x-data x-on:click="window.hpCard.download($el.parentElement.querySelector('.hp-card'), 'hatpakha-{{ $s->id }}-{{ $layout }}.png')">
                                     {{ $layout === 'quote' ? __('উদ্ধৃতির ছবি নামান') : __('শেয়ারের ছবি নামান') }}
@@ -145,5 +141,6 @@
             <x-filament::section><div class="hp-muted">{{ $filter === 'done' ? __('এখনও কিছু পোস্ট করা বা বাদ দেওয়া হয়নি।') : __('এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে; উপরের "নতুন পোস্ট তৈরি করুন" দিয়ে এখনই চাইতেও পারেন।') }}</div></x-filament::section>
         @endforelse
     </div>
-    <script src="{{ asset('js/hp-card.js') }}?v=1"></script>
+    <script src="{{ asset('js/hp-card.js') }}?v=2"></script>
+    <script src="{{ asset('js/hp-share.js') }}?v=2"></script>
 </x-filament-panels::page>

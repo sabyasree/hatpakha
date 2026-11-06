@@ -134,6 +134,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Every screen rebuilt in Bengali: comments (moderation tabs, no fake "create"), authors (type, count, fixed URL), issues (12 cover themes, post count), sections and redirects (admin-only, URL can't change, paths validated, on-site targets only), users (role, 2FA, old WordPress role, spam flag, last login; new accounts get a password link; admins can't demote or delete themselves)
 - Admin "লেখকের চোখে দেখুন" (D85): see the account and site exactly as a writer or reader does; look only, 30 minutes, logged. Replaces the test writer account.
 - Helper chat (সহায়ক) on all account tabs, with a guide to the account pages (D86).
+- Marketing: one-tap share to Facebook, WhatsApp, Instagram (D87).
 - Renaming a published post's URL now leaves a 301 automatically (logged)
 - Read-only audit log ("কাজের খাতা", admin)
 - No English left in /desk: the 194 strings missing from Filament's Bengali pack are translated in `lang/vendor/*/bn/` (a test fails if a Filament update adds untranslated ones); Bengali month/day names in the date picker and Bengali digits on screen (`public/js/desk-bn.js`, display only); own labels de-Englished (ঠিকানা, গুগল, এআই, ইংরেজি…). Left as-is: names (Claude, OpenAI), example paths, typed values in inputs, and content titles

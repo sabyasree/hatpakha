@@ -48,6 +48,9 @@ class MarketingTest extends TestCase
         $s = SocialPost::create(['kind' => 'piece', 'subject_type' => $post->getMorphClass(), 'subject_id' => $post->id, 'title' => $post->title,
             'texts' => ['facebook' => 'ফেসবুকের লেখা <b>', 'whatsapp' => 'w', 'instagram' => 'i', 'quote' => 'একটি লাইন']]);
         Livewire::test(Marketing::class)->assertOk()->assertSee('ফেসবুকের লেখা &lt;b&gt;', false)->assertSee('ISSN 2321-3035')
+            // D87: one tap opens each network's own share screen (never posts by itself)
+            ->assertSee('ফেসবুকে দিন')->assertSee('হোয়াটসঅ্যাপে দিন')->assertSee('ইনস্টাগ্রামে দিন')->assertSee('hp-share.js', false)
+            ->assertSee('data-link="'.$post->url().'"', false)
             ->call('posted', $s->id);
         $this->assertSame('posted', $s->fresh()->status);
     }

@@ -134,7 +134,15 @@ class Marketing extends Page
         $newsletter = \App\Models\Newsletter::where('status', 'draft')->latest()->first();
         $readers = \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced'])->count();
 
-        return ['plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];
+        return ['plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
+    }
+
+    /** The page a post is about (D87): the piece, the issue, else the home page. */
+    public static function link(SocialPost $s): string
+    {
+        $subject = $s->subject;
+
+        return $subject instanceof Post || $subject instanceof Issue ? $subject->url() : \App\Support\Url::to('/');
     }
 
     /** What the designer's card shows: only real data (title, writer, exact quote, picture). */
