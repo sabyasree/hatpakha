@@ -31,7 +31,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ⬜ Uploads clean-up: remove plugin leftovers (e.g. `uploads/mailpoet` PHP cache) from the copy; review WordPress admin/editor accounts imported with panel access
 - ⬜ Image pipeline: WebP/AVIF sizes for old uploads
 - ⬜ Mobile layouts polished against design boards ৩–৭
-- ⬜ Category merge redirects reviewed by the owner (23 old categories → 10 sections; see `ImportWordPress::SECTION_MAP`)
+- 🟡 Category merge: table ready for the owner in docs/CATEGORY-MAP.md (32 old categories → 10 sections; all old URLs 301)
 
 ## Next up (in order)
 1. ✅ Owner: created the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.
