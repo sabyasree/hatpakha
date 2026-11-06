@@ -50,11 +50,12 @@ document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
         const token = form.querySelector('[name="cf-turnstile-response"]');
         if (!started || (token && token.value) || form.dataset.waited) return;
         e.preventDefault();
+        const by = e.submitter && e.submitter.form === form ? e.submitter : undefined;
         form.dataset.waited = '1';
         let tries = 0;
         const wait = setInterval(() => {
             const t = form.querySelector('[name="cf-turnstile-response"]');
-            if ((t && t.value) || ++tries > 40) { clearInterval(wait); form.requestSubmit ? form.requestSubmit() : form.submit(); }
+            if ((t && t.value) || ++tries > 40) { clearInterval(wait); form.requestSubmit ? form.requestSubmit(by) : form.submit(); }
         }, 250);
     });
     form.addEventListener('focusin', () => {
@@ -120,7 +121,9 @@ document.addEventListener('submit', (e) => {
     if (hpToken || !(f instanceof HTMLFormElement) || f.method.toLowerCase() !== 'post') return;   // token in place: carry on
     e.preventDefault();
     e.stopImmediatePropagation();
-    hpFreshToken().then(() => (f.requestSubmit ? f.requestSubmit() : f.submit()));
+    // Keep the button that was pressed (e.g. "জমা দিন" vs "খসড়া রাখুন"): the form and the server both need it.
+    const by = e.submitter && e.submitter.form === f ? e.submitter : undefined;
+    hpFreshToken().then(() => (f.requestSubmit ? f.requestSubmit(by) : f.submit()));
 }, true);
 
 // Reading progress on a piece (mobile UX review): a thin red bar at the very top.

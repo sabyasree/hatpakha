@@ -12,7 +12,8 @@ if (form) {
     const title = form.querySelector('[name=title]');
     const textarea = form.querySelector('[name=body]');
     const formatInput = form.querySelector('[data-body-format]');
-    const section = form.querySelector('[name=section_id]');
+    const sections = [...form.querySelectorAll('[name=section_id]')];
+    const chosenSection = () => sections.find((r) => r.checked) || null;
     const status = document.getElementById('autosave-status');
     const count = document.getElementById('word-count');
     const hint = form.querySelector('[data-editor-hint]');
@@ -21,7 +22,7 @@ if (form) {
     let dirty = false;
     let editor = null;
 
-    const isPoem = () => section.selectedOptions[0]?.dataset.format === 'poem';
+    const isPoem = () => chosenSection()?.dataset.format === 'poem';
     const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
     // Poems: Enter = new line; Enter on an empty line = new stanza (same rule as before: blank line = stanza).
@@ -99,6 +100,13 @@ if (form) {
         const toggleAlign = (a) => (editor.isActive({ textAlign: a })
             ? editor.chain().focus().unsetTextAlign().run()
             : editor.chain().focus().setTextAlign(a).run());
+        const more = form.querySelector('[data-more]');
+        const moreBtn = form.querySelector('[data-more-toggle]');
+        moreBtn?.addEventListener('click', () => {
+            more.hidden = !more.hidden;
+            moreBtn.setAttribute('aria-expanded', String(!more.hidden));
+            moreBtn.textContent = more.hidden ? 'আরও ▾' : 'কম ▴';
+        });
         const buttons = form.querySelectorAll('[data-toolbar] [data-cmd]');
         buttons.forEach((b) => b.addEventListener('click', () => commands[b.dataset.cmd]?.()));
         const activeFor = {
@@ -112,7 +120,7 @@ if (form) {
             if (['undo', 'redo', 'horizontalRule', 'clear'].includes(cmd)) return;
             b.setAttribute('aria-pressed', (activeFor[cmd] ? activeFor[cmd]() : editor.isActive(cmd)) ? 'true' : 'false');
         });
-        editor.on('update', () => { sync(); changed(); });
+        editor.on('update', () => { sync(); changed(); showError('body', false); });
         editor.on('selectionUpdate', refreshToolbar);
         editor.on('transaction', refreshToolbar);
         sync();
@@ -146,7 +154,7 @@ if (form) {
         title: title.value,
         body: textarea.value,
         body_format: formatInput.value,
-        section_id: section.value ? Number(section.value) : null,
+        section_id: chosenSection() ? Number(chosenSection().value) : null,
     });
 
     const save = () => {
@@ -155,7 +163,7 @@ if (form) {
         status.textContent = 'রাখা হচ্ছে…';
         post(autosaveUrl, payload()).then((res) => {
             if (!res.saved) { status.textContent = ''; return; }
-            status.textContent = `খসড়া রাখা হয়েছে ${res.at}`;
+            status.textContent = `✓ খসড়া রাখা হয়েছে · ${res.at}`;
             if (res.id && form.dataset.new) {
                 // First autosave of a new piece: from now on keep editing that draft.
                 delete form.dataset.new;
@@ -167,8 +175,32 @@ if (form) {
     };
 
     function changed() { dirty = true; words(); clearTimeout(timer); timer = setTimeout(save, 4000); }
-    [title, textarea, section].forEach((el) => el.addEventListener('input', changed));
-    section.addEventListener('change', setHint);
+    [title, textarea].forEach((el) => el.addEventListener('input', changed));
+    sections.forEach((r) => r.addEventListener('change', () => { setHint(); changed(); showError('section', false); }));
+
+    // Friendly checks before sending (instead of a page full of errors): what is missing, right where it is.
+    const showError = (name, on) => { const el = form.querySelector(`[data-error="${name}"]`); if (el) el.hidden = !on; };
+    form.addEventListener('submit', (e) => {
+        if (e.submitter?.value !== 'submit') return;   // drafts can be half-written
+        const original = form.querySelector('[name=original]');
+        const missing = [
+            ['section', !chosenSection(), form.querySelector('[data-sections]')],
+            ['title', !title.value.trim(), title],
+            ['body', !bodyText().trim(), shell && !shell.hidden ? shell : textarea],
+            ['original', !original.checked, original],
+        ];
+        missing.forEach(([n, bad]) => showError(n, bad));
+        const first = missing.find(([, bad]) => bad);
+        if (first) {
+            e.preventDefault();
+            first[2].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (first[0] === 'body' && editor) editor.commands.focus(); else first[2].focus?.({ preventScroll: true });
+            return;
+        }
+        dirty = false;   // sending now; no "leave page?" warning
+    });
+    title.addEventListener('input', () => showError('title', false));
+    form.querySelector('[name=original]')?.addEventListener('change', () => showError('original', false));
     window.addEventListener('beforeunload', (e) => { if (dirty) { save(); e.preventDefault(); } });
     words();
     setHint();
@@ -176,21 +208,27 @@ if (form) {
     // Cover: show the chosen picture before saving; warn early about size (the server checks again).
     const cover = form.querySelector('[data-cover]');
     const coverPreview = form.querySelector('[data-cover-preview]');
+    const coverEmpty = form.querySelector('[data-cover-empty]');
+    const coverChange = form.querySelector('[data-cover-change]');
     cover?.addEventListener('change', () => {
         const file = cover.files?.[0];
-        coverPreview.classList.add('hidden');
-        const name = form.querySelector('[data-cover-name]');
-        if (name) name.textContent = file?.name || 'কোনো ছবি বাছা হয়নি';
         cover.setCustomValidity('');
         if (!file) return;
         if (file.size > 8 * 1024 * 1024) {
-            cover.setCustomValidity('ছবিটি ৮ MB-এর মধ্যে হতে হবে।');
-            cover.reportValidity();
+            cover.value = '';
+            alert('ছবিটি ৮ MB-এর মধ্যে হতে হবে। একটু ছোট ছবি বেছে নিন।');
             return;
         }
         const reader = new FileReader();
-        reader.onload = () => { coverPreview.src = reader.result; coverPreview.classList.remove('hidden'); };
+        reader.onload = () => {
+            coverPreview.src = reader.result;
+            coverPreview.classList.remove('hidden');
+            coverEmpty?.classList.add('hidden');
+            coverChange?.classList.remove('hidden');
+        };
         reader.readAsDataURL(file);
+        const remove = form.querySelector('[name=remove_cover]');
+        if (remove) remove.checked = false;
     });
 
     // Preview in a <dialog>: the body is rendered by the server exactly like the published page,
@@ -201,8 +239,7 @@ if (form) {
             dialog.querySelector('[data-title]').textContent = title.value || 'শিরোনামহীন';
             const img = dialog.querySelector('[data-preview-cover]');
             const removing = form.querySelector('[name=remove_cover]')?.checked;
-            const current = form.querySelector('[data-current-cover]');
-            const src = coverPreview && !coverPreview.classList.contains('hidden') ? coverPreview.src : (current && !removing ? current.src : '');
+            const src = coverPreview && !coverPreview.classList.contains('hidden') && !removing ? coverPreview.src : '';
             img.hidden = !src;
             if (src) img.src = src;
             const box = dialog.querySelector('[data-body]');

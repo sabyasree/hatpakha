@@ -96,7 +96,7 @@
             'archive' => '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
         ];
     @endphp
-    @unless (request()->is('sonkha/*/boi*'))
+    @unless (request()->is('sonkha/*/boi*') || request()->attributes->get('hp.no-bottom-nav'))
     <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
             @if ($ic === 'write')
