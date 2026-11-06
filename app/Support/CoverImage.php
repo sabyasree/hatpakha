@@ -10,8 +10,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Writer-uploaded cover images (docs/SECURITY.md §5). The upload is never kept as sent:
  * the real type is sniffed, the picture is decoded and re-encoded with GD (drops EXIF/GPS and
- * anything hidden in the file), saved under a random name in storage/app/public/covers
- * (served as /storage/covers/...), plus WebP sizes for the responsive <picture>.
+ * anything hidden in the file), saved under a random name in public/media/covers (a real folder:
+ * Hostinger does not follow a symlink inside the symlinked web root), plus WebP sizes for <picture>.
  */
 final class CoverImage
 {
@@ -93,7 +93,7 @@ final class CoverImage
         }
 
         $dir = 'covers/'.now()->format('Y/m');
-        $abs = storage_path('app/public/'.$dir);
+        $abs = public_path('media/'.$dir);
         if (! is_dir($abs)) {
             mkdir($abs, 0755, true);
         }
@@ -109,13 +109,13 @@ final class CoverImage
         }
         foreach (Images::WIDTHS as $width) {
             $v = $width >= imagesx($flat) ? $flat : self::resize($flat, $width);
-            @imagewebp($v, storage_path('app/public/'.Images::variantPath($dir.'/'.$name, $width)), 78);
+            @imagewebp($v, public_path('media/'.Images::variantPath($dir.'/'.$name, $width)), 78);
             if ($width >= imagesx($flat)) {
                 break;
             }
         }
 
-        return ['path' => 'storage/'.$dir.'/'.$name, 'width' => imagesx($flat), 'height' => imagesy($flat)];
+        return ['path' => 'media/'.$dir.'/'.$name, 'width' => imagesx($flat), 'height' => imagesy($flat)];
     }
 
     /** Removes an uploaded cover (files too). Old WordPress images are never touched. */
@@ -128,10 +128,50 @@ final class CoverImage
         }
     }
 
+    /** Covers this app made (writer uploads + AI pictures); old WordPress files are never touched. */
+    public static function isOurs(?string $path): bool
+    {
+        $path = (string) $path;
+
+        return (str_starts_with($path, 'media/covers/') || str_starts_with($path, 'storage/covers/')) && ! str_contains($path, '..');
+    }
+
+    /** One-off move of covers saved under storage/ (not reachable on Hostinger) to public/media/. */
+    public static function moveLegacy(): int
+    {
+        $moved = 0;
+        foreach (\App\Models\Post::where('featured_image_path', 'like', 'storage/covers/%')->orWhere('proposed_image_path', 'like', 'storage/covers/%')->get() as $post) {
+            foreach (['featured_image_path', 'proposed_image_path'] as $col) {
+                $old = (string) $post->{$col};
+                if (! str_starts_with($old, 'storage/covers/') || str_contains($old, '..')) {
+                    continue;
+                }
+                $rel = substr($old, strlen('storage/'));            // covers/Y/m/name.jpg
+                $from = storage_path('app/public/'.$rel);
+                $to = public_path('media/'.$rel);
+                if (! is_dir(dirname($to))) {
+                    mkdir(dirname($to), 0755, true);
+                }
+                foreach (array_merge([$from], array_map(fn ($w) => preg_replace('/\.jpg$/', '.w'.$w.'.webp', $from), Images::WIDTHS)) as $f) {
+                    if (is_file($f)) {
+                        @rename($f, public_path('media/'.substr($f, strlen(storage_path('app/public/')))));
+                    }
+                }
+                if (is_file($to)) {
+                    $post->forceFill([$col => 'media/'.$rel])->saveQuietly();
+                    $moved++;
+                }
+            }
+        }
+        self::guardFolder();
+
+        return $moved;
+    }
+
     private static function deleteFiles(string $path): void
     {
-        if (str_starts_with($path, 'storage/covers/') && ! str_contains($path, '..')) {
-            $base = storage_path('app/public/'.substr($path, strlen('storage/')));
+        if (self::isOurs($path)) {
+            $base = str_starts_with($path, 'media/') ? public_path($path) : storage_path('app/public/'.substr($path, strlen('storage/')));
             @unlink($base);
             foreach (Images::WIDTHS as $w) {
                 @unlink(preg_replace('/\.jpg$/', '.w'.$w.'.webp', $base));
@@ -142,7 +182,7 @@ final class CoverImage
     /** No script can ever run from the upload folder (LiteSpeed/Apache read this). */
     private static function guardFolder(): void
     {
-        $f = storage_path('app/public/.htaccess');
+        $f = public_path('media/.htaccess');
         if (! is_file($f)) {
             @file_put_contents($f, "# Uploads are data, never code (docs/SECURITY.md §5)\n<IfModule mod_php.c>\nphp_flag engine off\n</IfModule>\n<FilesMatch \"\\.(php[0-9]?|phtml|phar|pl|py|cgi|sh)$\">\nRequire all denied\n</FilesMatch>\nOptions -ExecCGI -Indexes\n");
         }

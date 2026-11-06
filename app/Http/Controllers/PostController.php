@@ -19,9 +19,16 @@ class PostController extends Controller
             return $this->page($slug) ?? app(LegacyController::class)->fallback(request());
         }
 
-        $related = Post::published()->with('authors')
-            ->where('section_id', $post->section_id)->whereKeyNot($post->id)
-            ->latest('published_at')->limit(3)->get();
+        // "আরও পড়ুন": the SEO expert's picks (D46), otherwise the newest in the same section.
+        $picked = array_map('intval', (array) $post->related_ids);
+        $related = $picked
+            ? Post::published()->with('authors')->whereIn('id', $picked)->get()->sortBy(fn ($p) => array_search($p->id, $picked))->values()
+            : collect();
+        if ($related->count() < 3) {
+            $related = $related->concat(Post::published()->with('authors')
+                ->where('section_id', $post->section_id)->whereKeyNot($post->id)->whereNotIn('id', $related->pluck('id'))
+                ->latest('published_at')->limit(3 - $related->count())->get());
+        }
 
         $comments = $post->comments()->where('status', 'approved')->oldest()->limit(50)->get();
 

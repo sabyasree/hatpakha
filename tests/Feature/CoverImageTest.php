@@ -42,7 +42,7 @@ class CoverImageTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (glob(storage_path('app/public/covers/*/*/*')) ?: [] as $f) {
+        foreach (glob(public_path('media/covers/*/*/*')) ?: [] as $f) {
             @unlink($f);
         }
         parent::tearDown();
@@ -53,15 +53,15 @@ class CoverImageTest extends TestCase
         $user = User::factory()->create();
         $this->submit($user, ['cover' => $this->jpeg()])->assertSessionHasNoErrors();
         $post = Post::sole();
-        $this->assertMatchesRegularExpression('#^storage/covers/\d{4}/\d{2}/[a-z0-9]{24}\.jpg$#', $post->featured_image_path);
+        $this->assertMatchesRegularExpression('#^media/covers/\d{4}/\d{2}/[a-z0-9]{24}\.jpg$#', $post->featured_image_path);
         $this->assertSame(1200, $post->featured_image_width);
-        $file = storage_path('app/public/'.substr($post->featured_image_path, 8));
+        $file = public_path($post->featured_image_path);
         $bytes = file_get_contents($file);
         $this->assertStringNotContainsString('GPSLatitude', $bytes);
         $this->assertStringNotContainsString('<?php', $bytes);
         $this->assertFileExists(preg_replace('/\.jpg$/', '.w960.webp', $file));
-        $this->assertFileExists(storage_path('app/public/.htaccess'));
-        $this->assertStringContainsString('php_flag engine off', file_get_contents(storage_path('app/public/.htaccess')));
+        $this->assertFileExists(public_path('media/.htaccess'));
+        $this->assertStringContainsString('php_flag engine off', file_get_contents(public_path('media/.htaccess')));
     }
 
     public function test_non_images_and_tiny_images_are_refused(): void
@@ -78,11 +78,23 @@ class CoverImageTest extends TestCase
         $user = User::factory()->create();
         $this->submit($user, ['cover' => $this->jpeg()]);
         $post = Post::sole();
-        $first = storage_path('app/public/'.substr($post->featured_image_path, 8));
+        $first = public_path($post->featured_image_path);
         $this->submit($user, ['cover' => $this->jpeg(1600, 900)], $post);
         $this->assertFileDoesNotExist($first);
         $this->assertSame(1600, $post->fresh()->featured_image_width);
         $this->submit($user, ['remove_cover' => '1'], $post->fresh());
         $this->assertNull($post->fresh()->featured_image_path);
+    }
+
+    public function test_covers_saved_under_storage_are_moved_to_a_real_public_folder(): void
+    {
+        $post = $this->makePost(['slug' => 'old-cover']);
+        @mkdir(storage_path('app/public/covers/2026/11'), 0755, true);
+        copy($this->jpeg()->getRealPath(), storage_path('app/public/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'));
+        $post->forceFill(['proposed_image_path' => 'storage/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'])->save();
+        $this->artisan('hatpakha:move-covers')->assertSuccessful();
+        $this->assertSame('media/covers/2026/11/abcdefabcdefabcdefabcdef.jpg', $post->fresh()->proposed_image_path);
+        $this->assertFileExists(public_path('media/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'));
+        $this->assertFileDoesNotExist(storage_path('app/public/covers/2026/11/abcdefabcdefabcdefabcdef.jpg'));
     }
 }

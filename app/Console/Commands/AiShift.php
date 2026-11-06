@@ -76,6 +76,10 @@ class AiShift extends Command
             ->orderBy('backlog_tier')->orderByDesc('submitted_at')->limit(10)->get() as $p) {
             $service->run($p, null, 'editor');
         }
+        // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
+        foreach (Post::published()->whereNull('seo_done_at')->orderByDesc('published_at')->limit(10)->get() as $p) {
+            \App\Ai\SeoExpert::run($p, onlyMissing: true);
+        }
         if (! Illustrator::blocked()) {
             foreach (Illustrator::candidates()->whereNull('proposed_image_error')->orderByDesc('published_at')->limit(10)->get() as $p) {
                 Illustrator::make($p);

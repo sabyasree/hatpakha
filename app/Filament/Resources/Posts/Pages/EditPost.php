@@ -41,6 +41,30 @@ class EditPost extends EditRecord
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
             ...$review,
+            // The AI SEO expert (D46): run now, apply a waiting proposal, or undo its last pass.
+            ActionGroup::make([
+                Action::make('seoRun')->label(__('এসইও বিশেষজ্ঞকে দিয়ে করান'))->icon('heroicon-o-magnifying-glass')
+                    ->visible(fn (Post $record) => $record->isLive() || $record->status === 'scheduled')
+                    ->action(function (Post $record) {
+                        $why = \App\Ai\SeoExpert::run($record);
+                        $why ? \Filament\Notifications\Notification::make()->title(__('হলো না'))->body($why)->warning()->send()
+                             : \Filament\Notifications\Notification::make()->title(__('এসইও তথ্য তৈরি'))->success()->send();
+                        $this->refreshFormData(\App\Ai\SeoExpert::FIELDS);
+                    }),
+                Action::make('seoApply')->label(__('এসইও প্রস্তাব বসান'))->icon('heroicon-o-check')
+                    ->visible(fn (Post $record) => filled($record->seo_proposal))
+                    ->action(function (Post $record) {
+                        $p = (array) $record->seo_proposal;
+                        \App\Ai\SeoExpert::apply($record, array_intersect_key($p, array_flip(\App\Ai\SeoExpert::FIELDS)), (array) ($p['tags'] ?? []));
+                        $this->refreshFormData(\App\Ai\SeoExpert::FIELDS);
+                    }),
+                Action::make('seoUndo')->label(__('এসইও-র শেষ বদল ফেরান'))->icon('heroicon-o-arrow-uturn-left')->requiresConfirmation()
+                    ->visible(fn (Post $record) => $record->seo_done_at !== null)
+                    ->action(function (Post $record) {
+                        \App\Ai\SeoExpert::undo($record);
+                        $this->refreshFormData(\App\Ai\SeoExpert::FIELDS);
+                    }),
+            ])->label(__('এসইও'))->icon('heroicon-o-magnifying-glass')->button()->color('gray'),
             // The AI editor's draft (e.g. the monthly editorial, D42): the owner edits above, then publishes.
             Action::make('publishDraft')->label(__('অনুমোদন ও প্রকাশ'))->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Post $record) => $record->ai_drafted_at !== null && $record->status === 'draft' && (auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false))
@@ -55,7 +79,7 @@ class EditPost extends EditRecord
                 }),
             // Editors can drop an unsuitable cover (the piece stays; the writer can upload another).
             Action::make('removeCover')->label(__('প্রচ্ছদ সরান'))->icon('heroicon-o-photo')->color('gray')
-                ->visible(fn (Post $record) => str_starts_with((string) $record->featured_image_path, 'storage/covers/'))
+                ->visible(fn (Post $record) => \App\Support\CoverImage::isOurs($record->featured_image_path))
                 ->requiresConfirmation()->modalDescription(__('লেখকের দেওয়া প্রচ্ছদের ছবিটি মুছে যাবে। লেখাটি থাকবে।'))
                 ->action(function (Post $record) {
                     \App\Support\CoverImage::remove($record);

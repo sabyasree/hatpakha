@@ -84,6 +84,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 ## Desk language ✅ (D45)
 - বাংলা / English switch in the user menu (top right), per user; every desk label, page, button, filter, date and number follows it; `lang/en.json` + coverage test
 
+## AI SEO expert ✅ (D46)
+- After approval: Google title/description, focus phrase, tags (existing ones reused), picture alt text, WhatsApp/Facebook text, "read next" picks (used on the page); hourly fill-missing for the archive; undo + "ask me first" switch
+- ✅ Fixed (D47): AI/writer pictures 404 on Hostinger → stored in public/media/covers
+
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
 

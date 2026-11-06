@@ -40,6 +40,9 @@ final class Review
         ])->save();
         $post->authors()->each(fn ($a) => $a->refreshCount());
         self::finish($post, $editor, 'approved');
+        // The SEO expert finishes the search & share details once the owner has approved (D46).
+        $id = $post->id;
+        dispatch(fn () => ($p = Post::find($id)) ? \App\Ai\SeoExpert::run($p) : null)->afterResponse();
     }
 
     public static function requestChanges(Post $post, User $editor, string $note): void

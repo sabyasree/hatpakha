@@ -64,11 +64,18 @@ class PostForm
                     Select::make('language')->label(__('ভাষা'))->options(['bn' => __('বাংলা'), 'en' => __('ইংরেজি'), 'hi' => __('হিন্দি')])->required()->default('bn'),
                 ]),
             ]),
-            Section::make(__('গুগল ও শেয়ার'))->columnSpan(2)->collapsed()->schema([
+            Section::make(__('গুগল ও শেয়ার'))->columnSpan(2)->collapsible()->schema([
                 TextInput::make('seo_title')->label(__('গুগলের জন্য শিরোনাম'))->maxLength(70),
                 Textarea::make('seo_description')->label(__('গুগলের জন্য বিবরণ'))->maxLength(160)->rows(2),
                 Toggle::make('noindex')->label(__('গুগলে দেখাবে না')),
-            ]),
+                TextInput::make('seo_keyphrase')->label(__('মূল শব্দগুচ্ছ'))->maxLength(120),
+                Textarea::make('share_text')->label(__('হোয়াটসঅ্যাপ / ফেসবুকের লেখা'))->maxLength(300)->rows(2),
+                TextInput::make('featured_image_alt')->label(__('ছবির বর্ণনা (চোখে দেখতে না পাওয়া পাঠকের জন্য)'))->maxLength(200),
+                Placeholder::make('related')->label(__('আরও পড়ুন (এসইও বিশেষজ্ঞের বাছাই)'))
+                    ->content(fn (?Post $record) => $record && $record->related_ids ? Post::whereIn('id', $record->related_ids)->pluck('title')->implode(' · ') : '—'),
+                Placeholder::make('seo_done')->label(__('এসইও বিশেষজ্ঞ'))
+                    ->content(fn (?Post $record) => $record?->seo_proposal ? __('প্রস্তাব অপেক্ষায় (উপরে "এসইও প্রস্তাব বসান")') : ($record?->seo_done_at ? __('কাজ হয়েছে').' · '.\App\Support\Bn::num((string) $record->seo_done_at->diffForHumans()) : __('এখনও হয়নি'))),
+]),
         ]);
     }
 }

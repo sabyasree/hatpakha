@@ -135,7 +135,7 @@ class AiEditorTest extends TestCase
         $this->assertTrue($post->image_is_ai);
         $this->get('/nodi-bhor/')->assertSee('ছবি: এআই-এর সাহায্যে আঁকা');
         \App\Ai\Claude::$fake = null;
-        foreach (glob(storage_path('app/public/covers/*/*/*')) ?: [] as $f) { @unlink($f); }
+        foreach (glob(public_path('media/covers/*/*/*')) ?: [] as $f) { @unlink($f); }
     }
 
     public function test_illustrator_does_nothing_when_paused_or_unconfigured(): void

@@ -34,6 +34,9 @@ class Post extends Model
             'pending_edits' => 'array',
             'ai_drafted_at' => 'datetime',
             'image_is_ai' => 'boolean',
+            'related_ids' => 'array',
+            'seo_proposal' => 'array',
+            'seo_done_at' => 'datetime',
         ];
     }
 

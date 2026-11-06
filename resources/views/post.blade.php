@@ -24,7 +24,7 @@
         @if ($post->featured_image_path && ($post->featured_image_width ?? 0) >= 1000)
             <picture>
                 @if ($set = \App\Support\Images::srcset('/'.$post->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="(max-width: 760px) 100vw, 720px">@endif
-                <img src="{{ asset($post->featured_image_path) }}" alt="" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mt-7 w-full rounded-2xl">
+                <img src="{{ asset($post->featured_image_path) }}" alt="{{ $post->featured_image_alt }}" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mt-7 w-full rounded-2xl">
             </picture>
             @if ($post->image_is_ai)<p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>@endif
         @elseif (! $post->isPoem())
@@ -37,7 +37,7 @@
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
 
         <div class="flex flex-wrap justify-center gap-3 border-y border-rule py-4">
-            <a href="https://wa.me/?text={{ rawurlencode($post->title.' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp-এ পাঠান</a>
+            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp-এ পাঠান</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
 

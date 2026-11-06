@@ -16,7 +16,7 @@ final class Images
     {
         $path = parse_url($src, PHP_URL_PATH) ?: '';
         $path = rawurldecode('/'.ltrim($path, '/'));
-        $allowed = str_starts_with($path, '/wp-content/uploads/') || str_starts_with($path, '/storage/covers/');   // old uploads + writer covers
+        $allowed = str_starts_with($path, '/wp-content/uploads/') || str_starts_with($path, '/media/covers/') || str_starts_with($path, '/storage/covers/');   // old uploads + our covers
         if (! $allowed || str_contains($path, '..') || ! preg_match('/\.(jpe?g|png)$/i', $path)) {
             return null;
         }

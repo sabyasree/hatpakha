@@ -66,6 +66,17 @@ class AiSettings extends Page
                     Notification::make()->title($ok ? __('দুটো চাবিই কাজ করছে') : __('কিছু ঠিক করতে হবে'))->body($body)
                         ->{$ok ? 'success' : 'warning'}()->persistent()->send();
                 }),
+            Action::make('seoMode')
+                ->label(fn () => \App\Ai\SeoExpert::automatic() ? __('এসইও: নিজে বসায়') : __('এসইও: আগে জিজ্ঞেস করে'))
+                ->icon('heroicon-o-magnifying-glass')->color('gray')
+                ->requiresConfirmation()
+                ->modalDescription(fn () => \App\Ai\SeoExpert::automatic()
+                    ? __('বদলে "আগে জিজ্ঞেস করে" করবেন? এসইও বিশেষজ্ঞের কাজ প্রতিটি লেখায় প্রস্তাব হয়ে অপেক্ষা করবে।')
+                    : __('বদলে "নিজে বসায়" করবেন? অনুমোদনের পরে এসইও তথ্য নিজে থেকেই বসবে (লগ ও ফেরানোর সুবিধা থাকবে)।'))
+                ->action(function () {
+                    \App\Models\Setting::put('ai.seo_auto', \App\Ai\SeoExpert::automatic() ? '0' : '1');
+                    \App\Models\AuditLog::record('seo.mode_changed', null, ['auto' => \App\Ai\SeoExpert::automatic()]);
+                }),
             Action::make('pause')->label(__('এআই থামান'))->icon('heroicon-o-pause')->color('danger')
                 ->visible(fn () => ! AiSwitch::paused())
                 ->requiresConfirmation()->modalHeading(__('এআই থামাবেন?'))

@@ -86,7 +86,7 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude='.git' --exclude='node_modules' --exclude='tests' \
-            --exclude='/.env' --exclude='/storage/' --exclude='/public/storage' \
+            --exclude='/.env' --exclude='/storage/' --exclude='/public/storage' --exclude='/public/media/' \
             --include='/public/wp-content/uploads/.htaccess' --exclude='/public/wp-content/uploads/*' \
             -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT:-22}" \
             ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
@@ -111,6 +111,7 @@ jobs:
             php artisan db:seed --force && \
             php artisan optimize:clear && php artisan optimize && \
             php artisan filament:optimize && \
+            php artisan hatpakha:move-covers --no-ansi && \
             php artisan up"
 
       # Staging only, and only when the commit message contains [run-blind-test] (owner asked to run it).
