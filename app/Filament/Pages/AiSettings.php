@@ -21,6 +21,8 @@ class AiSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+
     protected static ?string $navigationLabel = 'AI সহকারী';
 
     protected static ?string $title = 'AI সহকারী';

@@ -2,8 +2,9 @@
 
 namespace App\Filament\Resources\Issues\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\Issues\Schemas\IssueForm;
+use App\Models\Issue;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -13,41 +14,20 @@ class IssuesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->withCount('posts'))
+            ->defaultSort('slug', 'desc')
             ->columns([
-                TextColumn::make('slug')
-                    ->searchable(),
-                TextColumn::make('title')
-                    ->searchable(),
-                TextColumn::make('kind')
-                    ->searchable(),
-                TextColumn::make('theme_key')
-                    ->searchable(),
-                TextColumn::make('cover_path')
-                    ->searchable(),
-                TextColumn::make('status')
-                    ->searchable(),
-                TextColumn::make('published_at')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
+                TextColumn::make('title')->label('সংখ্যা')->weight('bold')->searchable()->description(fn (Issue $record) => '/sonkha/'.$record->slug.'/'),
+                TextColumn::make('kind')->label('ধরন')->badge()->formatStateUsing(fn ($state) => $state === 'festival' ? 'উৎসব' : 'মাসিক'),
+                TextColumn::make('theme_key')->label('থিম')->formatStateUsing(fn ($state) => IssueForm::THEMES[$state] ?? $state)->toggleable(),
+                TextColumn::make('posts_count')->label('লেখা')->numeric(),
+                TextColumn::make('status')->label('অবস্থা')->badge()->formatStateUsing(fn ($state) => $state === 'published' ? 'প্রকাশিত' : 'পরিকল্পনা')
+                    ->color(fn ($state) => $state === 'published' ? 'success' : 'warning'),
             ])
             ->recordActions([
+                Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Issue $record) => $record->url())->openUrlInNewTab()
+                    ->visible(fn (Issue $record) => $record->status === 'published'),
                 EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

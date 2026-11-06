@@ -3,34 +3,34 @@
 namespace App\Filament\Resources\Issues\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class IssueForm
 {
+    /** The 12 cover themes from the design canvas (D9): 6 festival + 6 monthly. */
+    public const THEMES = [
+        'boi' => 'বইমেলা (উৎসব)', 'basanta' => 'বসন্ত (উৎসব)', 'noboborsho' => 'নববর্ষ (উৎসব)',
+        'robindro' => 'রবীন্দ্র-নজরুল (উৎসব)', 'puja' => 'শারদীয়া (উৎসব)', 'dipaboli' => 'দীপাবলি (উৎসব)',
+        'bhasha' => 'ভাষা (মাসিক)', 'grishmo' => 'গ্রীষ্ম (মাসিক)', 'barsha' => 'বর্ষা (মাসিক)',
+        'srabon' => 'শ্রাবণ (মাসিক)', 'hemonto' => 'হেমন্ত (মাসিক)', 'borshosera' => 'বর্ষসেরা (মাসিক)',
+    ];
+
     public static function configure(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextInput::make('slug')
-                    ->required(),
-                TextInput::make('title')
-                    ->required(),
-                TextInput::make('kind')
-                    ->required()
-                    ->default('monthly'),
-                TextInput::make('theme_key')
-                    ->default(null),
-                Textarea::make('editor_note')
-                    ->default(null)
-                    ->columnSpanFull(),
-                TextInput::make('cover_path')
-                    ->default(null),
-                TextInput::make('status')
-                    ->required()
-                    ->default('planning'),
-                DateTimePicker::make('published_at'),
-            ]);
+        return $schema->components([
+            TextInput::make('title')->label('সংখ্যার নাম')->required()->maxLength(120)->placeholder('যেমন: শারদীয়া ১৪৩৩'),
+            TextInput::make('slug')->label('ঠিকানা')->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
+                ->unique(ignoreRecord: true)->helperText('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।')
+                ->disabled(fn ($record) => $record?->status === 'published'),
+            Select::make('kind')->label('ধরন')->options(['festival' => 'উৎসব সংখ্যা', 'monthly' => 'মাসিক সংখ্যা'])->required()->default('monthly'),
+            Select::make('theme_key')->label('প্রচ্ছদের থিম')->options(self::THEMES)->required(),
+            Select::make('status')->label('অবস্থা')->options(['planning' => 'পরিকল্পনা', 'published' => 'প্রকাশিত'])->required()->default('planning'),
+            DateTimePicker::make('published_at')->label('প্রকাশের তারিখ')->seconds(false),
+            Textarea::make('editor_note')->label('সম্পাদকের কথা')->rows(6)->maxLength(5000)->columnSpanFull()
+                ->helperText('সংখ্যার শুরুতে ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।'),
+        ]);
     }
 }

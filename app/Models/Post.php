@@ -47,6 +47,16 @@ class Post extends Model
                 $post->slug = Slug::normalize($post->slug);
             }
         });
+        // Never break an old URL (CLAUDE.md §2): renaming a live post leaves a 301 behind.
+        static::updated(function (self $post) {
+            if ($post->wasChanged('slug') && $post->getOriginal('status') === 'published' && filled($post->getOriginal('slug'))) {
+                $from = '/'.$post->getOriginal('slug').'/';
+                $to = '/'.$post->slug.'/';
+                Redirect::where('from_path', $to)->delete();
+                Redirect::updateOrCreate(['from_path' => $from], ['to_path' => $to, 'status_code' => 301]);
+                AuditLog::record('post.slug_changed', $post, ['from' => $from, 'to' => $to]);
+            }
+        });
     }
 
     public static function estimateMinutes(string $html): int

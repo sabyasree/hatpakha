@@ -16,9 +16,19 @@ use Filament\Tables\Table;
 
 class AuthorResource extends Resource
 {
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
     protected static ?string $model = Author::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
+
+    protected static ?string $modelLabel = 'লেখক';
+
+    protected static ?string $pluralModelLabel = 'লেখক';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

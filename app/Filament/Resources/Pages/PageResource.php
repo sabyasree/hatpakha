@@ -16,20 +16,23 @@ use Filament\Tables\Table;
 
 class PageResource extends Resource
 {
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
     protected static ?string $model = Page::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocument;
 
     protected static ?string $modelLabel = 'পাতা';
 
     protected static ?string $pluralModelLabel = 'পাতা';
 
-    protected static ?int $navigationSort = 60;
+    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
 
-    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return false;
-    }
+    protected static ?int $navigationSort = 10;
+
+
+
+
 
     public static function form(Schema $schema): Schema
     {

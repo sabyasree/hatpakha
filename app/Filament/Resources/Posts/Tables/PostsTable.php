@@ -71,61 +71,7 @@ class PostsTable
                 TrashedFilter::make()->visible($isAdmin),
             ])
             ->recordActions([
-                // Review decisions (3c): a person always decides; the writer gets one kind email.
-                Action::make('approve')->label('মনোনীত')->icon('heroicon-o-check-badge')->color('success')
-                    ->visible(fn (Post $record) => $record->status === 'pending')
-                    ->modalHeading(fn (Post $record) => 'মনোনীত: '.$record->title)
-                    ->schema([
-                        DateTimePicker::make('at')->label('প্রকাশের সময়')->default(now())->required()->seconds(false)
-                            ->helperText('ভবিষ্যতের সময় দিলে সেদিন নিজে থেকেই প্রকাশিত হবে।'),
-                        TextInput::make('slug')->label('ঠিকানা (URL)')->prefix('/')->suffix('/')->maxLength(120)
-                            ->default(fn (Post $record) => Transliterate::slug($record->title))
-                            ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।'),
-                        Textarea::make('note')->label('লেখককে কিছু বলবেন? (ঐচ্ছিক)')->rows(2)->maxLength(1000),
-                    ])
-                    ->action(function (Post $record, array $data) {
-                        Review::approve($record, auth()->user(), \Illuminate\Support\Carbon::parse($data['at']), $data['slug'] ?? null, $data['note'] ?? null);
-                        Notification::make()->title('মনোনীত হয়েছে, লেখককে জানানো হয়েছে')->success()->send();
-                    }),
-                Action::make('requestChanges')->label('বদল চাই')->icon('heroicon-o-pencil-square')->color('warning')
-                    ->visible(fn (Post $record) => $record->status === 'pending')
-                    ->modalHeading(fn (Post $record) => 'বদল চাই: '.$record->title)
-                    ->schema([
-                        Select::make('template')->label('তৈরি বার্তা থেকে শুরু করুন')->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_keys(Review::CHANGE_TEMPLATES)))
-                            ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::CHANGE_TEMPLATES[$state] ?? '')),
-                        Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000)->helperText('সদয় ও নির্দিষ্ট থাকুন: কী ভালো লেগেছে, কী বদলালে ভালো হয়।'),
-                    ])
-                    ->action(function (Post $record, array $data) {
-                        Review::requestChanges($record, auth()->user(), $data['note']);
-                        Notification::make()->title('লেখককে জানানো হয়েছে')->success()->send();
-                    }),
-                Action::make('reject')->label('বাতিল')->icon('heroicon-o-x-circle')->color('gray')
-                    ->visible(fn (Post $record) => $record->status === 'pending')
-                    ->modalHeading(fn (Post $record) => 'এবার নয়: '.$record->title)
-                    ->schema([
-                        Select::make('template')->label('তৈরি বার্তা')->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_keys(Review::REJECT_TEMPLATES)))
-                            ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::REJECT_TEMPLATES[$state] ?? '')),
-                        Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000),
-                    ])
-                    ->action(function (Post $record, array $data) {
-                        Review::reject($record, auth()->user(), $data['note']);
-                        Notification::make()->title('লেখককে জানানো হয়েছে')->send();
-                    }),
-                // AI report (3d): advice for editors only; the decision stays with the buttons above.
-                Action::make('aiReport')->label('AI রিপোর্ট')->icon('heroicon-o-sparkles')->color('info')
-                    ->visible(fn (Post $record) => $record->latestAiReview !== null)
-                    ->modalHeading(fn (Post $record) => 'AI রিপোর্ট: '.$record->title)
-                    ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
-                    ->modalSubmitAction(false)->modalCancelActionLabel('বন্ধ'),
-                Action::make('runAi')->label('AI দিয়ে পড়ান')->icon('heroicon-o-arrow-path')->color('gray')
-                    ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
-                    ->requiresConfirmation()->modalDescription('AI একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।')
-                    ->action(function (Post $record) {
-                        $review = app(\App\Ai\ReviewService::class)->run($record);
-                        $review->status === 'done'
-                            ? Notification::make()->title('AI রিপোর্ট তৈরি: '.$review->score.'/১০')->success()->send()
-                            : Notification::make()->title('রিপোর্ট হয়নি')->body($review->error)->warning()->send();
-                    }),
+                ...self::reviewActions(),
                 EditAction::make(),
                 Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Post $p) => $p->url())->openUrlInNewTab()->visible(fn (Post $p) => $p->status === 'published'),
@@ -165,6 +111,73 @@ class PostsTable
     }
 
     /** Plain-language effect of applying a suggestion, shown before the admin confirms. */
+    /**
+     * Review decisions (3c) + AI report (3d), shared by the queue table and the post edit page.
+     * A person always decides; the writer gets one kind email.
+     *
+     * @return array<Action>
+     */
+    public static function reviewActions(): array
+    {
+        return [
+            // Review decisions (3c): a person always decides; the writer gets one kind email.
+            Action::make('approve')->label('মনোনীত')->icon('heroicon-o-check-badge')->color('success')
+                ->visible(fn (Post $record) => $record->status === 'pending')
+                ->modalHeading(fn (Post $record) => 'মনোনীত: '.$record->title)
+                ->schema([
+                    DateTimePicker::make('at')->label('প্রকাশের সময়')->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
+                        ->helperText('ভবিষ্যতের সময় দিলে সেদিন নিজে থেকেই প্রকাশিত হবে।'),
+                    TextInput::make('slug')->label('ঠিকানা (URL)')->prefix('/')->suffix('/')->maxLength(120)
+                        ->default(fn (Post $record) => Transliterate::slug($record->title))
+                        ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।'),
+                    Textarea::make('note')->label('লেখককে কিছু বলবেন? (ঐচ্ছিক)')->rows(2)->maxLength(1000),
+                ])
+                ->action(function (Post $record, array $data) {
+                    Review::approve($record, auth()->user(), \Illuminate\Support\Carbon::parse($data['at']), $data['slug'] ?? null, $data['note'] ?? null);
+                    Notification::make()->title('মনোনীত হয়েছে, লেখককে জানানো হয়েছে')->success()->send();
+                }),
+            Action::make('requestChanges')->label('বদল চাই')->icon('heroicon-o-pencil-square')->color('warning')
+                ->visible(fn (Post $record) => $record->status === 'pending')
+                ->modalHeading(fn (Post $record) => 'বদল চাই: '.$record->title)
+                ->schema([
+                    Select::make('template')->label('তৈরি বার্তা থেকে শুরু করুন')->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_keys(Review::CHANGE_TEMPLATES)))
+                        ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::CHANGE_TEMPLATES[$state] ?? '')),
+                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000)->helperText('সদয় ও নির্দিষ্ট থাকুন: কী ভালো লেগেছে, কী বদলালে ভালো হয়।'),
+                ])
+                ->action(function (Post $record, array $data) {
+                    Review::requestChanges($record, auth()->user(), $data['note']);
+                    Notification::make()->title('লেখককে জানানো হয়েছে')->success()->send();
+                }),
+            Action::make('reject')->label('বাতিল')->icon('heroicon-o-x-circle')->color('gray')
+                ->visible(fn (Post $record) => $record->status === 'pending')
+                ->modalHeading(fn (Post $record) => 'এবার নয়: '.$record->title)
+                ->schema([
+                    Select::make('template')->label('তৈরি বার্তা')->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_keys(Review::REJECT_TEMPLATES)))
+                        ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::REJECT_TEMPLATES[$state] ?? '')),
+                    Textarea::make('note')->label('লেখককে বার্তা')->required()->rows(5)->maxLength(2000),
+                ])
+                ->action(function (Post $record, array $data) {
+                    Review::reject($record, auth()->user(), $data['note']);
+                    Notification::make()->title('লেখককে জানানো হয়েছে')->send();
+                }),
+            // AI report (3d): advice for editors only; the decision stays with the buttons above.
+            Action::make('aiReport')->label('AI রিপোর্ট')->icon('heroicon-o-sparkles')->color('info')
+                ->visible(fn (Post $record) => $record->latestAiReview !== null)
+                ->modalHeading(fn (Post $record) => 'AI রিপোর্ট: '.$record->title)
+                ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
+                ->modalSubmitAction(false)->modalCancelActionLabel('বন্ধ'),
+            Action::make('runAi')->label('AI দিয়ে পড়ান')->icon('heroicon-o-arrow-path')->color('gray')
+                ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
+                ->requiresConfirmation()->modalDescription('AI একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।')
+                ->action(function (Post $record) {
+                    $review = app(\App\Ai\ReviewService::class)->run($record);
+                    $review->status === 'done'
+                        ? Notification::make()->title('AI রিপোর্ট তৈরি: '.$review->score.'/১০')->success()->send()
+                        : Notification::make()->title('রিপোর্ট হয়নি')->body($review->error)->warning()->send();
+                }),
+        ];
+    }
+
     public static function effect(Post $p): string
     {
         return match ($p->audit_label) {

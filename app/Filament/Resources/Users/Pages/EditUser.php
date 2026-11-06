@@ -12,8 +12,7 @@ class EditUser extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            DeleteAction::make(),
-        ];
+        // Admins can't delete their own account from here (avoids locking the desk out).
+        return [DeleteAction::make()->hidden(fn () => $this->record->is(auth()->user()))];
     }
 }

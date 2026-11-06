@@ -19,11 +19,18 @@ class AiBlindTest extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+
     protected static ?string $navigationLabel = 'AI পরীক্ষা';
 
     protected static ?string $title = 'AI পরীক্ষা (অন্ধ তুলনা)';
 
     protected static ?int $navigationSort = 91;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
+    }
 
     /** @var array<int,int|string|null> review id → score */
     public array $scores = [];

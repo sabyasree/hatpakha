@@ -60,6 +60,17 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ 3e Blind test: `php artisan hatpakha:ai-blind-test` (estimate first, stops above $6) + /desk → AI পরীক্ষা (anonymous A/B scoring, reveal at the end). 🟡 Owner: add keys to staging ENV_FILE, run it, score, set `AI_PROVIDER`
 - ⬜ Cover image upload on the submission form (re-encode, strip metadata)
 
+## Desk UX (owner: "too many places to check") ✅
+- /desk opens on **আজকের কাজ**: one inbox with every item waiting for a person (new submissions oldest first with "পড়ুন ও সিদ্ধান্ত নিন"; reader comments with প্রকাশ / স্প্যাম right there); an info box needing no action; admin box folded
+- Side menu for editors: আজকের কাজ · লেখা · মন্তব্য, plus a folded "আরও" (সংখ্যা, লেখক, পাতা). Admins also get a folded "প্রশাসন" (বিভাগ, রিডাইরেক্ট, ব্যবহারকারী, কাজের খাতা, AI)
+- Post page: মনোনীত / বদল চাই / বাতিল / AI রিপোর্ট buttons on top, "জমার তথ্য" box (writer, words, earlier pieces, originality, AI score, last note); after a decision it goes back to the list
+- Whole desk in Bengali (Filament's own `bn` strings via `DeskLocale`), stock green/red replaced by palette colours
+- Every screen rebuilt in Bengali: comments (moderation tabs, no fake "create"), authors (type, count, fixed URL), issues (12 cover themes, post count), sections and redirects (admin-only, URL can't change, paths validated, on-site targets only), users (role, 2FA, old WordPress role, spam flag, last login; new accounts get a password link; admins can't demote or delete themselves)
+- Renaming a published post's URL now leaves a 301 automatically (logged)
+- Read-only audit log ("কাজের খাতা", admin)
+- Delete is admin-only everywhere
+- Checked in a real browser as editor and admin, including 2FA login
+
 ## Launch blockers (must be done before cutover)
 - ~~Submission form (3b) and review queue (3c)~~ ✅
 - Final URL audit with a Search Console export

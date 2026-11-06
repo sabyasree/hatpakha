@@ -16,9 +16,19 @@ use Filament\Tables\Table;
 
 class IssueResource extends Resource
 {
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
     protected static ?string $model = Issue::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
+
+    protected static ?string $modelLabel = 'সংখ্যা';
+
+    protected static ?string $pluralModelLabel = 'সংখ্যা';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+
+    protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
     {

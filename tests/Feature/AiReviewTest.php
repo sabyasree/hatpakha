@@ -154,7 +154,7 @@ class AiReviewTest extends TestCase
         foreach (['anthropic' => 'A', 'openai' => 'B'] as $p => $l) {
             AiReview::create(['post_id' => $post->id, 'provider' => $p, 'model' => $p.'-model', 'status' => 'done', 'report' => self::REPORT, 'score' => 8, 'blind_run' => 'r1', 'blind_label' => $l]);
         }
-        $this->actingAs(User::factory()->create(['role' => Role::Editor]));
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         $page = \Livewire\Livewire::test(\App\Filament\Pages\AiBlindTest::class)->assertOk()->assertSee('রিপোর্ট A')
             ->assertDontSee('anthropic-model')->assertDontSee('openai-model');
