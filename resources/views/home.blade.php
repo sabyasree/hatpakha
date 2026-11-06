@@ -84,6 +84,32 @@
     </section>
     @endif
 
+    @if ($honoured->isNotEmpty())
+        {{-- Writers the magazine has honoured (D66) --}}
+        <section class="mx-auto max-w-[1320px] px-5 py-10" aria-labelledby="honoured-h">
+            <div class="font-hand text-2xl text-red">হাতপাখার সম্মান</div>
+            <h2 id="honoured-h" class="font-display text-4xl font-extrabold">সম্মানিত লেখক</h2>
+            <div class="mt-6 grid gap-5 {{ [1 => 'md:grid-cols-1', 2 => 'md:grid-cols-2', 3 => 'md:grid-cols-3'][min(3, $honoured->count())] }}">
+                @foreach ($honoured as $h)
+                    <a href="{{ $h->url() }}" class="lift block rounded-3xl border-2 border-navy bg-white p-5 hover:bg-peach-light">
+                        <div class="flex items-center gap-3">
+                            @if ($h->avatar_path)
+                                <img src="{{ $h->avatar_path }}" alt="" loading="lazy" width="64" height="64" class="h-16 w-16 rounded-full border-2 border-navy object-cover">
+                            @else
+                                <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-navy bg-gradient-to-br from-peach to-peach-deep text-2xl font-extrabold" aria-hidden="true">{{ $h->initial() }}</span>
+                            @endif
+                            <div class="min-w-0">
+                                <div class="font-display text-xl font-extrabold leading-tight">{{ $h->publicName() }}</div>
+                                <div class="text-sm font-extrabold text-red-dark">★ {{ $h->honour_label }}</div>
+                            </div>
+                        </div>
+                        @if ($h->honour_note)<p class="mt-3 line-clamp-4 font-serif leading-relaxed">“{{ $h->honour_note }}”</p>@endif
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     <div class="mx-auto max-w-[1320px] px-5 pb-6"><x-newsletter-signup variant="home" /></div>
 
     {{-- Travel stamps --}}

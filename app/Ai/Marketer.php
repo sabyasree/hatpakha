@@ -128,12 +128,12 @@ final class Marketer
     }
 
     /** Monthly: a writer spotlight from real facts only (published pieces, the writer's own bio). */
-    public static function spotlight(): ?SocialPost
+    public static function spotlight(?Author $honoured = null): ?SocialPost
     {
-        if (SocialPost::where('kind', 'spotlight')->where('created_at', '>=', now()->startOfMonth())->exists()) {
+        if (! $honoured && SocialPost::where('kind', 'spotlight')->where('created_at', '>=', now()->startOfMonth())->exists()) {
             return null;
         }
-        $author = Author::where('is_desk', false)->whereHas('posts', fn ($q) => $q->published()->where('published_at', '>=', now()->subMonths(3)))
+        $author = $honoured ?? Author::where('is_desk', false)->whereHas('posts', fn ($q) => $q->published()->where('published_at', '>=', now()->subMonths(3)))
             ->whereNotIn('id', SocialPost::where('kind', 'spotlight')->where('created_at', '>=', now()->subYear())->pluck('subject_id'))
             ->withCount(['posts as recent' => fn ($q) => $q->published()->where('published_at', '>=', now()->subMonths(3))])
             ->orderByDesc('recent')->first();

@@ -244,6 +244,29 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** D66: the AI editor's writer of the month: edit the praise, then honour (and tell the writer). */
+    public function honourAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('honour')->label(__('দেখুন ও সম্মান দিন'))->icon('heroicon-o-star')->size('sm')
+            ->modalHeading(fn (array $arguments) => $this->task($arguments)->title)
+            ->modalDescription(fn (array $arguments) => $this->task($arguments)->payload['why'] ?? null)
+            ->fillForm(fn (array $arguments) => ['praise' => $this->task($arguments)->payload['praise'] ?? '', 'tell' => true])
+            ->schema([
+                \Filament\Forms\Components\Textarea::make('praise')->label(__('সম্পাদকের কথা (লেখক-পাতায় দেখা যাবে)'))->required()->rows(4)->maxLength(800),
+                \Filament\Forms\Components\Toggle::make('tell')->label(__('লেখককে অভিনন্দনের ই-মেল পাঠান')),
+            ])
+            ->modalSubmitActionLabel(__('সম্মান দিন'))
+            ->action(function (array $data, array $arguments) {
+                abort_unless(auth()->user()->hasRole(Role::Admin), 403);
+                $task = $this->task($arguments);
+                abort_unless($task->subject instanceof \App\Models\Author, 404);
+                \App\Ai\Honours::give($task->subject, $task->payload['label'] ?? 'month', $data['praise'], (bool) $data['tell']);
+                \App\Ai\Marketer::spotlight($task->subject);
+                $task->close();
+                Notification::make()->title(__('সম্মান দেওয়া হয়েছে; মার্কেটিং পাতায় পোস্টও তৈরি হচ্ছে'))->success()->send();
+            });
+    }
+
     /** Weekly picks: edit the note, then they go on the home page. */
     public function approvePickAction(): \Filament\Actions\Action
     {
