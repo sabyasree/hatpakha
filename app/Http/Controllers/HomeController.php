@@ -16,9 +16,19 @@ class HomeController extends Controller
     {
         // Old WordPress "?p=123" links → the post's permanent URL.
         if (ctype_digit((string) $request->query('p'))) {
-            $post = Post::published()->where('legacy_wp_id', (int) $request->query('p'))->firstOrFail();
+            // Archived posts still redirect: their own URL then answers 410/301 from the redirects table.
+            $post = Post::whereIn('status', ['published', 'archived'])->where('legacy_wp_id', (int) $request->query('p'))->firstOrFail();
 
             return redirect($post->url(), 301);
+        }
+        if (ctype_digit((string) $request->query('page_id'))) {
+            $page = \App\Models\Page::published()->where('legacy_wp_id', (int) $request->query('page_id'))->firstOrFail();
+
+            return redirect($page->url(), 301);
+        }
+        // ?author=N revealed user names on WordPress (user enumeration): never map it. Old ?cat=, ?s=, ?m= → home.
+        if ($request->hasAny(['author', 'cat', 's', 'm', 'attachment_id', 'tag'])) {
+            return redirect(url('/').'/', 301);
         }
 
         // Cache only IDs/scalars: Laravel refuses to unserialize models from the cache (a good default).

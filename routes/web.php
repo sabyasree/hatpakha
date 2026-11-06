@@ -42,10 +42,21 @@ Route::any('/{path}', [LegacyController::class, 'gone'])
 // Old AMP URLs → canonical post
 Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]+');
 
+// Other old WordPress URL shapes (Phase 2 URL audit, docs/SEO.md §1) → 301 to the closest page
+Route::get('/comments/feed', fn () => redirect(\App\Support\Url::to('/feed'), 301));
+Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+');
+Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
+Route::get('/{y}/{m?}/{d?}', [LegacyController::class, 'dateArchive'])->where(['y' => '(19|20)\d\d', 'm' => '\d{1,2}', 'd' => '\d{1,2}']);
+Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '(?!(desk|livewire|filament|storage|build)$)[^/]+');
+
 // Posts at the root, exactly like WordPress. Reserved words are excluded.
 Route::get('/{slug}', PostController::class)
     ->where('slug', '(?!(desk|livewire|filament|up|storage|build|search|submit|account|login|logout|register)$)[^/]+')
     ->name('post');
+
+// Old attachment pages /{post}/{attachment}/ → the post (registered after every fixed 2-segment route)
+Route::get('/{slug}/{child}', [LegacyController::class, 'toPost'])
+    ->where(['slug' => '(?!(desk|livewire|filament|storage|build|fonts|images|up|wp-content|wp-admin|wp-includes|wp-json|category|tag|author|sonkha|certificate)$)[^/]+', 'child' => '[^/]+']);
 
 // Anything else: check the redirects table, then 404.
 Route::fallback([LegacyController::class, 'fallback']);

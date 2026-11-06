@@ -165,44 +165,83 @@ class UrlAudit extends Command
      */
     private function checkChunk(string $base, array $paths): array
     {
-        $req = fn () => Http::timeout(30)->withUserAgent('HatpakhaMigrationCheck/1.0')->withoutRedirecting();
-        $first = Http::pool(fn (Pool $pool) => array_map(fn ($p) => $pool->as($p)->timeout(30)->withUserAgent('HatpakhaMigrationCheck/1.0')->withoutRedirecting()->get($base.$p), $paths));
-        $out = [];
-        foreach ($paths as $p) {
-            $r = $first[$p] ?? null;
-            if (! $r instanceof \Illuminate\Http\Client\Response) {
-                $out[$p] = ['status' => 0, 'location' => null, 'final' => null, 'verdict' => 'broken'];
+        $first = $this->fetchAll(array_combine($paths, array_map(fn ($p) => $base.$p, $paths)));
 
-                continue;
+        // Follow redirects (up to 3 hops), all chains of this chunk in parallel.
+        $current = [];
+        foreach ($first as $p => $r) {
+            if (in_array($r['status'], [301, 308], true) && $r['location']) {
+                $current[$p] = $this->absolute($base, $r['location']);
             }
-            $status = $r->status();
-            $loc = $r->header('Location') ?: null;
-            $final = null;
-            if (in_array($status, [301, 308], true) && $loc) {
-                // Follow up to 3 hops; the end must be a 200 page on the new site.
-                $url = str_starts_with($loc, 'http') ? $loc : $base.$loc;
-                for ($i = 0; $i < 3; $i++) {
-                    $f = $req()->get($url);
-                    $final = $f->status();
-                    if (in_array($final, [301, 308], true) && $f->header('Location')) {
-                        $l = $f->header('Location');
-                        $url = str_starts_with($l, 'http') ? $l : $base.$l;
-
-                        continue;
-                    }
-                    break;
+        }
+        $final = [];
+        for ($hop = 0; $hop < 3 && $current; $hop++) {
+            $next = [];
+            foreach ($this->fetchAll($current) as $p => $r) {
+                if (in_array($r['status'], [301, 308], true) && $r['location']) {
+                    $next[$p] = $this->absolute($base, $r['location']);
+                } else {
+                    $final[$p] = $r['status'];
                 }
             }
+            $current = $next;
+        }
+
+        $out = [];
+        foreach ($paths as $p) {
+            $status = $first[$p]['status'];
+            $loc = $first[$p]['location'];
+            $fin = $final[$p] ?? null;
             $verdict = match (true) {
                 $status === 200 => 'ok',
-                in_array($status, [301, 308], true) && $final === 200 => 'redirect',
+                in_array($status, [301, 308], true) && $fin === 200 => 'redirect',
                 // Deliberate 410s for WordPress attack paths count as correct.
-                $status === 410 && preg_match('~^/(wp-login\.php|xmlrpc\.php)~', $p) => 'ok',
+                $status === 410 && (bool) preg_match('~^/(wp-login\.php|xmlrpc\.php)~', $p) => 'ok',
                 default => 'broken',
             };
-            $out[$p] = ['status' => $status, 'location' => $loc, 'final' => $final, 'verdict' => $verdict];
+            $out[$p] = ['status' => $status, 'location' => $loc, 'final' => $fin, 'verdict' => $verdict];
         }
 
         return $out;
+    }
+
+    /**
+     * GET many URLs in parallel (no redirect following). 502/503/504 and timeouts are retried,
+     * so a deploy's few seconds of maintenance mode never show up as "broken".
+     *
+     * @param  array<string,string>  $urls  key → absolute URL
+     * @return array<string,array{status:int,location:?string}>
+     */
+    private function fetchAll(array $urls): array
+    {
+        $result = [];
+        for ($attempt = 0; $attempt < 4 && $urls; $attempt++) {
+            if ($attempt > 0) {
+                sleep(5 * $attempt);
+            }
+            $responses = Http::pool(fn (Pool $pool) => array_map(
+                fn ($key) => $pool->as((string) $key)->timeout(30)->withUserAgent('HatpakhaMigrationCheck/1.0')->withoutRedirecting()->get($urls[$key]),
+                array_keys($urls)
+            ));
+            $retry = [];
+            foreach ($urls as $key => $url) {
+                $r = $responses[$key] ?? null;
+                $status = $r instanceof \Illuminate\Http\Client\Response ? $r->status() : 0;
+                if (in_array($status, [0, 500, 502, 503, 504], true) && $attempt < 3) {
+                    $retry[$key] = $url;
+
+                    continue;
+                }
+                $result[$key] = ['status' => $status, 'location' => $r instanceof \Illuminate\Http\Client\Response ? ($r->header('Location') ?: null) : null];
+            }
+            $urls = $retry;
+        }
+
+        return $result;
+    }
+
+    private function absolute(string $base, string $loc): string
+    {
+        return str_starts_with($loc, 'http') ? $loc : $base.$loc;
     }
 }
