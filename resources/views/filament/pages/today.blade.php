@@ -11,7 +11,7 @@
     $issues = \App\Filament\Resources\Issues\IssueResource::class;
     $words = fn ($p) => count(preg_split('/\s+/u', trim(strip_tags((string) $p->body_html)), -1, PREG_SPLIT_NO_EMPTY));
     $decision = ['publish' => [__('প্রকাশযোগ্য'), 'success'], 'changes' => [__('বদল দরকার'), 'warning'], 'decline' => [__('এবার নয়'), 'gray']];
-    $approvals = $subs->count() + ($t['issue'] ? 1 : 0) + $t['editorials']->count() + ($t['images'] ? 1 : 0);
+    $approvals = $subs->count() + ($t['issue'] ? 1 : 0) + $t['editorials']->count() + ($t['images'] ? 1 : 0) + $t['tasks']->count();
     $aiState = ! $t['aiEnabled'] ? [__('বন্ধ'), 'gray'] : ($t['aiPaused'] ? [__('থামানো'), 'warning'] : [__('কাজ করছে'), 'success']);
 @endphp
 <x-filament-panels::page>
@@ -114,6 +114,30 @@
                     </div>
                 @endif
             </x-filament::section>
+
+            @if ($t['tasks']->isNotEmpty())
+                {{-- The AI editor's other jobs (D48): nothing is sent or shown until you click. --}}
+                <x-filament::section id="tasks" icon="heroicon-o-briefcase">
+                    <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
+                    <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
+                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য')])
+                    @foreach ($t['tasks'] as $task)
+                        <div class="hp-row" wire:key="task{{ $task->id }}">
+                            <div style="min-width:0;flex:1 1 16rem">
+                                <div class="hp-muted">{{ $labels[$task->type] ?? $task->type }}</div>
+                                <div style="font-weight:700">{{ $task->title }}</div>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+                                @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
+                                @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
+                                @if ($task->type === 'newsletter') {{ ($this->sendNewsletterAction)(['task' => $task->id]) }} @endif
+                                @if (in_array($task->type, ['report', 'health'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
+                                {{ ($this->dismissTaskAction)(['task' => $task->id]) }}
+                            </div>
+                        </div>
+                    @endforeach
+                </x-filament::section>
+            @endif
 
             <x-filament::section id="comments" icon="heroicon-o-chat-bubble-left-right">
                 <x-slot name="heading">{{ __('পাঠকের মন্তব্য') }}</x-slot>

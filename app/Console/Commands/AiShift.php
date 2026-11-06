@@ -25,7 +25,7 @@ use Illuminate\Console\Command;
  */
 class AiShift extends Command
 {
-    protected $signature = 'hatpakha:ai-shift {task : inbox|backlog|issue|brief}';
+    protected $signature = 'hatpakha:ai-shift {task : inbox|backlog|issue|daily|weekly|newsletter|monthly|brief}';
 
     protected $description = "The AI editor's scheduled work";
 
@@ -44,7 +44,10 @@ class AiShift extends Command
         return match ($this->argument('task')) {
             'inbox' => $this->inbox($service),
             'backlog' => $this->backlog($service),
-            'issue' => $this->issue(),
+            'issue', 'daily' => $this->issue() | $this->daily(),
+            'weekly' => $this->weekly(),
+            'newsletter' => $this->newsletterDraft(),
+            'monthly' => $this->monthly(),
             default => self::INVALID,
         };
     }
@@ -96,6 +99,37 @@ class AiShift extends Command
             [, $err] = IssuePlanner::propose($owner);
             $this->line($err ?? 'Issue proposed.');
         }
+
+        return self::SUCCESS;
+    }
+
+    /** Daily: writer follow-ups (D48). */
+    private function daily(): int
+    {
+        $this->line('Follow-ups proposed: '.\App\Ai\EditorJobs::followups());
+
+        return self::SUCCESS;
+    }
+
+    /** Monday: editor's pick + on-this-day; site health check. */
+    private function weekly(): int
+    {
+        \App\Ai\EditorJobs::picks();
+        \App\Ai\EditorJobs::health();
+
+        return self::SUCCESS;
+    }
+
+    private function newsletterDraft(): int
+    {
+        \App\Ai\EditorJobs::newsletter();
+
+        return self::SUCCESS;
+    }
+
+    private function monthly(): int
+    {
+        \App\Ai\EditorJobs::report();
 
         return self::SUCCESS;
     }

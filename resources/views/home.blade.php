@@ -34,7 +34,7 @@
             <div class="flex flex-col gap-3">
                 <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">আজকের কবিতা</span>
                 <a href="{{ $poemOfDay->url() }}" class="font-display text-5xl font-extrabold leading-none">{{ $poemOfDay->title }}</a>
-                <span class="font-hand text-xl text-peach">সম্পাদকের পছন্দ — না পড়লে মিস করবেন!</span>
+                <span class="font-hand text-xl text-peach">{{ $pickNote ?: 'সম্পাদকের পছন্দ — না পড়লে মিস করবেন!' }}</span>
                 <span class="text-peach-light"><x-byline :post="$poemOfDay" /> · {{ \App\Support\Bn::num($poemOfDay->reading_minutes) }} মিনিট</span>
                 <a href="{{ $poemOfDay->url() }}" class="mt-2 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy">পুরো কবিতা পড়ুন</a>
             </div>

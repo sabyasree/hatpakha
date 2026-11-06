@@ -93,6 +93,14 @@ Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $reques
     return redirect()->back(fallback: url('/desk'));
 })->middleware('auth')->name('desk.language');
 
+// Newsletter: one-click unsubscribe from the signed link in every issue (D48). Never emailed again.
+Route::get('/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {
+    $subscriber->forceFill(['status' => 'unsubscribed', 'suppressed' => true])->save();
+    \App\Models\AuditLog::record('newsletter.unsubscribed', $subscriber);
+
+    return response()->view('newsletter-unsubscribed', ['seo' => new \App\Seo\Seo(title: 'চিঠি বন্ধ হয়েছে', noindex: true)]);
+})->middleware('signed')->name('newsletter.unsubscribe');
+
 // Reader comments (D39): guests and signed-in readers; plain text, moderated until trusted.
 Route::post('/comment/{post}', [\App\Http\Controllers\CommentController::class, 'store'])->whereNumber('post')->middleware('throttle:comment')->name('comment.store');
 

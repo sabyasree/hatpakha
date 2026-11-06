@@ -62,7 +62,18 @@ class HomeController extends Controller
         $load = fn (array $idList) => Post::with(['authors', 'section'])->whereKey($idList)->get()
             ->sortBy(fn ($p) => array_search($p->id, $idList))->values();
 
+        // The owner-approved weekly picks (D48) take the place of the automatic ones.
+        $pick = json_decode((string) \App\Models\Setting::get('home.pick'), true) ?: [];
+        $otd = json_decode((string) \App\Models\Setting::get('home.on_this_day'), true) ?: [];
+        if (($pickPost = ! empty($pick['post_id']) ? Post::published()->with('authors')->find($pick['post_id']) : null)) {
+            $ids['poemOfDay'] = $pickPost->id;
+        }
+        if (! empty($otd[now('Asia/Kolkata')->toDateString()])) {
+            $ids['onThisDay'] = Post::published()->whereKey($otd[now('Asia/Kolkata')->toDateString()])->value('id') ?? $ids['onThisDay'];
+        }
+
         $data = [
+            'pickNote' => $pickPost ? ($pick['note'] ?? null) : null,
             'poemOfDay' => $ids['poemOfDay'] ? Post::with('authors')->find($ids['poemOfDay']) : null,
             'stories' => $load($ids['stories']),
             'travel' => $load($ids['travel']),

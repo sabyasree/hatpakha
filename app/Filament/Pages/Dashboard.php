@@ -74,6 +74,8 @@ class Dashboard extends BaseDashboard
                 ->map(fn ($d) => ['day' => $d, 'slot' => in_array($d->dayOfWeek, Schedule::DAYS, true),
                     'posts' => Post::whereIn('status', ['scheduled', 'published'])->whereBetween('published_at', [$d->copy()->utc(), $d->copy()->endOfDay()->utc()])->pluck('title')]),
             'publishedWeek' => Post::published()->where('published_at', '>=', now()->startOfWeek())->count(),
+            'tasks' => \App\Models\EditorTask::where('status', 'open')
+                ->when(! $isAdmin, fn ($q) => $q->whereIn('type', ['followup', 'welcome']))->latest()->limit(30)->get(),
             'aiEnabled' => (bool) config('ai.enabled'),
             'aiPaused' => AiSwitch::paused(),
             'aiSpent' => $isAdmin ? AiUsage::spentThisMonthUsd() : 0,
@@ -122,6 +124,114 @@ class Dashboard extends BaseDashboard
                 Cache::forget('ai:issue-planning');
             }
         })->afterResponse();
+    }
+
+    // ── The AI editor's other jobs (D48): each needs the owner's click ──────────────────────────
+
+    private function task(array $arguments): \App\Models\EditorTask
+    {
+        return \App\Models\EditorTask::where('status', 'open')->findOrFail((int) ($arguments['task'] ?? 0));
+    }
+
+    /** Follow-up / welcome: edit the note, then one e-mail to that writer. */
+    public function sendNoteAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('sendNote')->label(__('পাঠান'))->icon('heroicon-o-paper-airplane')->size('sm')
+            ->modalHeading(fn (array $arguments) => __('লেখককে বার্তা').': '.$this->task($arguments)->title)
+            ->fillForm(fn (array $arguments) => ['message' => $this->task($arguments)->payload['message'] ?? ''])
+            ->schema([\Filament\Forms\Components\Textarea::make('message')->label(__('বার্তা'))->required()->rows(6)->maxLength(2000)])
+            ->modalSubmitActionLabel(__('পাঠান'))
+            ->action(function (array $data, array $arguments) {
+                $task = $this->task($arguments);
+                $post = $task->subject;
+                $writer = $post?->submittedBy;
+                abort_unless($writer, 404);
+                $writer->notify(new \App\Notifications\WriterNote(
+                    $task->type === 'welcome' ? 'হাতপাখা: আপনার প্রথম লেখা প্রকাশিত' : 'হাতপাখা: "'.$post->title.'"',
+                    $data['message'], \App\Support\Url::to('/submit/'.$post->id)));
+                $task->close();
+                Notification::make()->title(__('পাঠানো হয়েছে'))->success()->send();
+            });
+    }
+
+    /** Weekly picks: edit the note, then they go on the home page. */
+    public function approvePickAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('approvePick')->label(__('অনুমোদন'))->icon('heroicon-o-check')->size('sm')
+            ->modalHeading(__('সম্পাদকের পছন্দ ও এই দিনে'))
+            ->fillForm(fn (array $arguments) => ['note' => $this->task($arguments)->payload['note'] ?? ''])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\Placeholder::make('pick')->label(__('এই সপ্তাহের পছন্দ'))->content($this->task($arguments)->title),
+                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160),
+                \Filament\Forms\Components\Placeholder::make('otd')->label(__('এই দিনে (সাত দিন)'))->content(fn () => collect($this->task($arguments)->payload['on_this_day'] ?? [])
+                    ->map(fn ($id, $date) => \App\Support\Bn::num($date).': '.(Post::find($id)?->title ?? '—'))->implode(' · ') ?: '—'),
+            ])
+            ->modalSubmitActionLabel(__('প্রথম পাতায় বসান'))
+            ->action(function (array $data, array $arguments) {
+                abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+                $task = $this->task($arguments);
+                \App\Models\Setting::put('home.pick', json_encode(['post_id' => $task->payload['pick_id'], 'note' => $data['note'] ?? null], JSON_UNESCAPED_UNICODE));
+                \App\Models\Setting::put('home.on_this_day', json_encode($task->payload['on_this_day'] ?? []));
+                Cache::forget('home:v2:'.now()->toDateString());
+                $task->close();
+                Notification::make()->title(__('প্রথম পাতায় বসানো হয়েছে'))->success()->send();
+            });
+    }
+
+    /** Newsletter: preview, edit the opening, send to confirmed readers only. */
+    public function sendNewsletterAction(): \Filament\Actions\Action
+    {
+        $recipients = fn () => \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced']);
+
+        return \Filament\Actions\Action::make('sendNewsletter')->label(__('দেখুন ও পাঠান'))->icon('heroicon-o-envelope')->size('sm')
+            ->modalHeading(fn (array $arguments) => $this->task($arguments)->payload['subject'] ?? '')
+            ->fillForm(fn (array $arguments) => ['subject' => $this->task($arguments)->payload['subject'] ?? '', 'intro' => $this->task($arguments)->payload['intro'] ?? ''])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\TextInput::make('subject')->label(__('বিষয়'))->required()->maxLength(90),
+                \Filament\Forms\Components\Textarea::make('intro')->label(__('শুরুর কথা'))->required()->rows(4)->maxLength(800),
+                \Filament\Forms\Components\Placeholder::make('items')->label(__('এই সপ্তাহের লেখা'))->content(new \Illuminate\Support\HtmlString(collect($this->task($arguments)->payload['items'] ?? [])
+                    ->map(fn ($it) => '<p style="margin:.3rem 0"><strong>'.e($it['title']).'</strong> — '.e($it['author']).'<br>'.e($it['line']).'</p>')->implode(''))),
+                \Filament\Forms\Components\Placeholder::make('who')->label(__('কারা পাবেন'))->content(fn () => \App\Support\Bn::num($recipients()->count()).' '.__('জন (যাঁরা নিজে সম্মতি দিয়েছেন)')
+                    .(in_array(config('mail.default'), ['log', 'array'], true) ? ' · '.__('এই সার্ভারে আসল ই-মেল চালু নেই, তাই পাঠানো যাবে না') : '')),
+            ])
+            ->modalSubmitActionLabel(__('এখন পাঠান'))
+            ->action(function (array $data, array $arguments) use ($recipients) {
+                abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+                if (in_array(config('mail.default'), ['log', 'array'], true)) {
+                    Notification::make()->title(__('আসল ই-মেল চালু হলে পাঠানো যাবে'))->warning()->send();
+
+                    return;
+                }
+                $task = $this->task($arguments);
+                $issue = ['subject' => $data['subject'], 'intro' => $data['intro'], 'items' => $task->payload['items'] ?? []];
+                $n = 0;
+                foreach ($recipients()->get() as $sub) {
+                    \Illuminate\Support\Facades\Notification::route('mail', $sub->email)->notify(new \App\Notifications\NewsletterIssue($issue,
+                        \Illuminate\Support\Facades\URL::signedRoute('newsletter.unsubscribe', ['subscriber' => $sub->id])));
+                    $sub->forceFill(['last_sent_at' => now()])->save();
+                    $n++;
+                }
+                $task->forceFill(['payload' => $issue + ['sent_to' => $n]])->save();
+                $task->close();
+                Notification::make()->title(\App\Support\Bn::num($n).' '.__('জনকে পাঠানো হয়েছে'))->success()->send();
+            });
+    }
+
+    /** Monthly report / site health: read, then mark as seen. */
+    public function readTaskAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('readTask')->label(__('পড়ুন'))->icon('heroicon-o-document-text')->size('sm')->color('gray')
+            ->modalHeading(fn (array $arguments) => $this->task($arguments)->type === 'report' ? __('মাসের হিসাব') : __('সাইটের স্বাস্থ্য'))
+            ->modalContent(fn (array $arguments) => view('filament.editor-task', ['task' => $this->task($arguments)]))
+            ->modalSubmitActionLabel(__('পড়েছি'))
+            ->action(fn (array $arguments) => $this->task($arguments)->close());
+    }
+
+    public function dismissTaskAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('dismissTask')->label(__('বাদ দিন'))->icon('heroicon-o-x-mark')->size('sm')->color('gray')
+            ->requiresConfirmation()
+            ->action(fn (array $arguments) => $this->task($arguments)->close('dismissed'));
     }
 
     /** Approve every waiting comment the AI editor marked as fine (D42). */

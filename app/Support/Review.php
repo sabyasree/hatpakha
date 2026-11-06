@@ -39,6 +39,7 @@ final class Review
             'reviewed_by' => $editor->id,
         ])->save();
         $post->authors()->each(fn ($a) => $a->refreshCount());
+        \App\Ai\EditorJobs::welcome($post);   // first published piece → a welcome note for the owner to send (D48)
         self::finish($post, $editor, 'approved');
         // The SEO expert finishes the search & share details once the owner has approved (D46).
         $id = $post->id;
