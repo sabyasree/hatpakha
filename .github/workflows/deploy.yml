@@ -144,6 +144,26 @@ jobs:
              (nohup php artisan hatpakha:ai-editor --backlog --images --no-ansi > storage/logs/ai-editor.log 2>&1 < /dev/null &) && \
              echo 'Batch continues in the background: storage/logs/ai-editor.log'"
 
+      # Staging only, when the commit message contains [diagnose-cron]: read-only look at why the
+      # AI editor's clock (D44) isn't running. Changes nothing except running one normal shift.
+      - name: Diagnose the AI editor's clock (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[diagnose-cron]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
+            echo '--- scheduled tasks (crontab -l):'; crontab -l 2>&1 | sed 's/^/    /'; \
+            echo '--- php on PATH:'; command -v php; php -v | head -1; \
+            echo '--- other PHP builds:'; ls -d /usr/bin/php* /opt/alt/php*/usr/bin/php /usr/local/bin/php* 2>/dev/null | sed 's/^/    /'; \
+            for b in /usr/bin/php /usr/local/bin/php; do [ -x \$b ] && echo \"    \$b: \$(\$b -r 'echo PHP_VERSION;')\"; done; \
+            echo '--- app folder:'; pwd; \
+            echo '--- last heartbeat:'; php artisan tinker --execute='echo App\\Models\\Setting::get(\"ai.heartbeat\") ?? \"never\";'; echo; \
+            echo '--- schedule:'; php artisan schedule:list --no-ansi; \
+            echo '--- one shift by hand:'; php artisan hatpakha:ai-shift inbox --no-ansi && echo '    inbox OK'"
+
       - name: Remove key
         if: always()
         run: rm -f ~/.ssh/deploy_key
