@@ -85,6 +85,24 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/2fa/disable', [\App\Http\Controllers\AccountController::class, 'twoFactorDisable'])->middleware('throttle:5,1');
 });
 
+// Site search (D64): results are noindex.
+Route::get('/search', \App\Http\Controllers\SearchController::class)->middleware('throttle:40,1')->name('search');
+// Reader features (D64): likes, reading list, following writers.
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class, 'throttle:60,1'])->group(function () {
+    Route::post('/like/{post}', [\App\Http\Controllers\ReaderController::class, 'like'])->whereNumber('post')->name('like');
+    Route::post('/save/{post}', [\App\Http\Controllers\ReaderController::class, 'save'])->whereNumber('post')->name('save');
+    Route::post('/follow/{author}', [\App\Http\Controllers\ReaderController::class, 'follow'])->whereNumber('author')->name('follow');
+});
+
+// One-click unfollow from the e-mail (D64), no sign-in needed.
+Route::get('/newsletter/unsubscribe/f/{author}/{user}', function (\App\Models\Author $author, \App\Models\User $user) {
+    \Illuminate\Support\Facades\DB::table('follows')->where(['author_id' => $author->id, 'user_id' => $user->id])->delete();
+    $author->forceFill(['followers_count' => \Illuminate\Support\Facades\DB::table('follows')->where('author_id', $author->id)->count()])->saveQuietly();
+
+    return response()->view('newsletter-message', ['seo' => new \App\Seo\Seo(title: 'অনুসরণ বন্ধ হয়েছে', noindex: true),
+        'title' => 'অনুসরণ বন্ধ হয়েছে', 'text' => $author->publicName().'-এর নতুন লেখার ই-মেল আর পাঠানো হবে না।']);
+})->middleware(['signed', 'throttle:20,1'])->name('unfollow');
+
 // The submission-page helper chat (D52): guests get public answers, writers their own pieces' status.
 Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'ask'])->middleware('throttle:30,1')->name('chat');
 

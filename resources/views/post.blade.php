@@ -37,19 +37,36 @@
 
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
 
-        <div class="flex flex-wrap justify-center gap-3 border-y border-rule py-4">
-            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp-এ পাঠান</a>
+        {{-- Reactions (D64): like and save (signed-in readers), share. Work without JavaScript too. --}}
+        @php
+            $me = auth()->user();
+            $liked = $me && \Illuminate\Support\Facades\DB::table('post_likes')->where(['user_id' => $me->id, 'post_id' => $post->id])->exists();
+            $saved = $me && \Illuminate\Support\Facades\DB::table('saved_posts')->where(['user_id' => $me->id, 'post_id' => $post->id])->exists();
+            $loginNext = \App\Support\Url::to('/login').'?next='.rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#reactions');
+        @endphp
+        <div id="reactions" class="scroll-mt-24 flex flex-wrap items-center justify-center gap-3 border-y border-rule py-4">
+            @auth
+                <form method="POST" action="{{ route('like', $post) }}" data-toggle="like">@csrf
+                    <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $liked ? 'bg-red text-white border-red' : '' }}" aria-pressed="{{ $liked ? 'true' : 'false' }}">
+                        <span aria-hidden="true">{{ $liked ? '♥' : '♡' }}</span> <span data-label>ভালো লেগেছে</span> <span data-count class="tabular-nums">{{ $post->likes_count ? \App\Support\Bn::num((string) $post->likes_count) : '' }}</span></button>
+                </form>
+                <form method="POST" action="{{ route('save', $post) }}" data-toggle="save">@csrf
+                    <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $saved ? 'bg-navy text-white' : '' }}" aria-pressed="{{ $saved ? 'true' : 'false' }}"
+                        data-on="✓ তালিকায় আছে" data-off="পরে পড়ব">{{ $saved ? '✓ তালিকায় আছে' : 'পরে পড়ব' }}</button>
+                </form>
+            @else
+                <a href="{{ $loginNext }}" class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold"><span aria-hidden="true">♡</span> ভালো লেগেছে
+                    @if ($post->likes_count)<span class="tabular-nums">{{ \App\Support\Bn::num((string) $post->likes_count) }}</span>@endif</a>
+                <a href="{{ $loginNext }}" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">পরে পড়ব</a>
+            @endauth
+            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
 
         <x-ad-slot :slot="config('services.adsense.slot_article')" :height="250" />
 
         @foreach ($post->authors as $a)
-            <div class="mt-8 flex items-center gap-4 rounded-3xl bg-peach-light p-5">
-                <span class="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-gradient-to-br from-red to-red-dark text-2xl font-extrabold text-white" aria-hidden="true">{{ $a->initial() }}</span>
-                <div class="min-w-0 flex-1"><div class="text-lg font-extrabold">{{ $a->publicName() }}</div>@if ($a->is_guest && ! $a->is_desk)<div class="text-sm text-ink2">অতিথি লেখক</div>@endif</div>
-                <a href="{{ $a->url() }}" class="flex h-11 items-center rounded-full border-2 border-navy px-4 font-bold">সব লেখা</a>
-            </div>
+            <x-author-card :author="$a" />
         @endforeach
 
         <x-newsletter-signup variant="card" />

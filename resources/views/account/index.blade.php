@@ -65,7 +65,7 @@
     {{-- Tabs (plain anchors: work without JavaScript) --}}
     <nav aria-label="অ্যাকাউন্ট" class="sticky top-0 z-30 mt-8 border-y-2 border-navy bg-paper/95 backdrop-blur">
         <div class="mx-auto flex max-w-[1000px] gap-1 overflow-x-auto px-3">
-            @foreach (['writing' => 'আমার লেখা', 'profile' => 'প্রোফাইল', 'security' => 'নিরাপত্তা', 'letters' => 'চিঠি'] as $id => $label)
+            @foreach (['writing' => 'আমার লেখা', 'reading' => 'পড়ার তালিকা', 'profile' => 'প্রোফাইল', 'security' => 'নিরাপত্তা', 'letters' => 'চিঠি'] as $id => $label)
                 <a href="#{{ $id }}" class="flex h-12 flex-none items-center rounded-full px-4 font-bold hover:bg-peach-light">{{ $label }}</a>
             @endforeach
         </div>
@@ -144,6 +144,33 @@
                             <span class="mt-1 block font-serif font-bold">{{ $c->title_snapshot }}</span>
                             <span class="text-sm text-ink2">{{ $c->issue_label ?: ($c->kind === 'contest' ? 'প্রতিযোগিতা' : 'প্রকাশ') }} · {{ Bn::date($c->issued_at) }}</span>
                         </a></li>
+                    @endforeach
+                </ul>
+            @endif
+        </section>
+
+        {{-- পড়ার তালিকা ও অনুসরণ (D64) --}}
+        <section id="reading" class="scroll-mt-20" aria-labelledby="reading-h">
+            <h2 id="reading-h" class="font-display text-3xl font-extrabold">পড়ার তালিকা</h2>
+            @if ($saved->isEmpty())
+                <p class="mt-3 text-ink2">যে লেখা পরে পড়তে চান, লেখার নিচে "পরে পড়ব" চাপলে এখানে জমা থাকবে।</p>
+            @else
+                <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach ($saved as $p)
+                        <li><a href="{{ $p->url() }}" class="block h-full rounded-2xl border-2 border-navy bg-white p-4 hover:bg-peach-light">
+                            <span class="block font-serif text-lg font-bold leading-snug">{{ $p->title }}</span>
+                            <span class="text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }}</span></a></li>
+                    @endforeach
+                </ul>
+            @endif
+            <h3 class="mt-8 text-sm font-extrabold uppercase tracking-wide text-ink2">যাঁদের অনুসরণ করছেন</h3>
+            @if ($following->isEmpty())
+                <p class="mt-2 text-ink2">পছন্দের লেখকের পাতায় "অনুসরণ করুন" চাপলে তাঁর নতুন লেখা প্রকাশ হলেই ই-মেলে জানাব।</p>
+            @else
+                <ul class="mt-3 flex flex-wrap gap-2">
+                    @foreach ($following as $f)
+                        <li><a href="{{ $f->url() }}" class="flex h-11 items-center gap-2 rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">
+                            @if ($f->avatar_path)<img src="{{ $f->avatar_path }}" alt="" class="h-7 w-7 rounded-full object-cover">@endif{{ $f->publicName() }}</a></li>
                     @endforeach
                 </ul>
             @endif

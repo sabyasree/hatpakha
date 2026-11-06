@@ -60,3 +60,31 @@ document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
         document.head.appendChild(s);
     });
 });
+
+// Like / save / follow without a page reload (D64). Without JavaScript the forms post normally.
+document.querySelectorAll('form[data-toggle]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        btn.disabled = true;
+        try {
+            const r = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value } });
+            if (!r.ok) { form.submit(); return; }
+            const d = await r.json();
+            btn.setAttribute('aria-pressed', d.on ? 'true' : 'false');
+            const kind = form.dataset.toggle;
+            if (kind === 'like') {
+                btn.classList.toggle('bg-red', d.on); btn.classList.toggle('text-white', d.on); btn.classList.toggle('border-red', d.on);
+                btn.querySelector('[aria-hidden]').textContent = d.on ? '♥' : '♡';
+                const c = btn.querySelector('[data-count]');
+                if (c) c.textContent = d.count ? new Intl.NumberFormat('bn-BD').format(d.count) : '';
+            } else {
+                btn.textContent = d.on ? btn.dataset.on : btn.dataset.off;
+                if (kind === 'save') { btn.classList.toggle('bg-navy', d.on); btn.classList.toggle('text-white', d.on); }
+                if (kind === 'follow') {
+                    btn.classList.toggle('bg-red', !d.on); btn.classList.toggle('text-white', !d.on); btn.classList.toggle('border-2', d.on); btn.classList.toggle('border-navy', d.on);
+                }
+            }
+        } catch (err) { form.submit(); } finally { btn.disabled = false; }
+    });
+});

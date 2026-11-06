@@ -31,6 +31,9 @@
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
             </nav>
             <div class="flex items-center gap-3">
+                <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 items-center justify-center rounded-full hover:bg-peach-light" aria-label="খুঁজুন" title="খুঁজুন">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
+                </a>
                 @auth
                     <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 items-center font-bold hover:text-red">আমার লেখা</a>
                 @else

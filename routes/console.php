@@ -29,4 +29,6 @@ Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newslette
 Schedule::call(fn () => \App\Ai\Illustrator::drawRequested())->name('draw covers')->everyMinute()->withoutOverlapping(10);
 // The strategist when the owner asks for a new plan (D63): web research takes a while, so not in the web request.
 Schedule::call(fn () => \App\Ai\Strategist::runIfRequested())->name('strategy on request')->everyMinute()->withoutOverlapping(15);
+// Followers hear about a writer's new piece (D64). Not an AI job: runs even while the AI team rests.
+Schedule::call(fn () => \App\Support\FollowNotifier::run())->name('follow notices')->everyTenMinutes()->withoutOverlapping(10);
 

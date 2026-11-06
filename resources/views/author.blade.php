@@ -34,12 +34,16 @@
             <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
                     <h1 class="break-words font-display text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl" style="font-stretch: 80%">{{ $author->publicName() }}</h1>
+                    @if ($author->honour_label)
+                        <div class="mt-2 inline-flex items-center gap-2 rounded-full bg-peach-light px-3 py-1 font-extrabold text-red-dark">★ {{ $author->honour_label }}</div>
+                    @endif
                     <p class="mt-2 text-ink2">
                         @if ($author->is_desk) পুরনো সংখ্যার যে লেখাগুলোর লেখকের নাম হারিয়ে গেছে
                         @elseif ($author->is_guest) অতিথি লেখক
                         @else হাতপাখার লেখক @endif
                         @if ($author->city) · {{ $author->city }}@endif
                         · {{ Bn::num((string) $posts->total()) }}টি লেখা
+                        @if ($author->followers_count) · {{ Bn::num((string) $author->followers_count) }} জন অনুসরণ করেন@endif
                         @if ($since) · {{ Bn::year((int) \Illuminate\Support\Carbon::parse($since)->year) }} থেকে@endif
                     </p>
                     @if ($sections->isNotEmpty())
@@ -51,12 +55,31 @@
                     @endif
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    @php($following = auth()->check() && \Illuminate\Support\Facades\DB::table('follows')->where(['user_id' => auth()->id(), 'author_id' => $author->id])->exists())
+                    @if (! $author->is_desk && ! $isOwner)
+                        <form method="POST" action="{{ route('follow', $author) }}" data-toggle="follow">@csrf
+                            @auth
+                                <button class="flex h-11 items-center rounded-full px-5 font-bold {{ $following ? 'border-2 border-navy' : 'bg-red text-white' }}" aria-pressed="{{ $following ? 'true' : 'false' }}"
+                                    data-on="✓ অনুসরণ করছেন" data-off="+ অনুসরণ করুন">{{ $following ? '✓ অনুসরণ করছেন' : '+ অনুসরণ করুন' }}</button>
+                            @else
+                                <a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($author->url(), PHP_URL_PATH)) }}" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">+ অনুসরণ করুন</a>
+                            @endauth
+                        </form>
+                    @endif
                     @if ($isOwner)
                         <a href="{{ \App\Support\Url::to('/account') }}#profile" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">প্রোফাইল সাজান</a>
                     @endif
                     <a href="https://wa.me/?text={{ rawurlencode($author->publicName().'-এর লেখা, হাতপাখায়: '.$author->url()) }}" rel="noopener" target="_blank" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">শেয়ার</a>
                 </div>
             </div>
+
+            @if ($author->honour_note)
+                {{-- The editor's words of praise (D64) --}}
+                <figure class="mt-6 max-w-[760px] rounded-3xl border-2 border-red bg-white p-5">
+                    <blockquote class="font-serif text-lg leading-relaxed">“{{ $author->honour_note }}”</blockquote>
+                    <figcaption class="mt-2 text-sm font-bold text-ink2">— হাতপাখার সম্পাদকমণ্ডলী @if ($author->honoured_at)· {{ Bn::date($author->honoured_at) }}@endif</figcaption>
+                </figure>
+            @endif
 
             @if ($author->bio || $links)
                 <div class="mt-6 grid gap-4 md:grid-cols-[1fr_auto]">

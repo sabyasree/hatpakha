@@ -37,6 +37,9 @@ class AccountController extends Controller
             'certificates' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get(),
             'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
             'author' => \App\Models\Author::where('user_id', $user->id)->first(),
+            // D64: the reading list and the writers this reader follows.
+            'saved' => Post::published()->with('authors', 'section')->whereIn('id', \Illuminate\Support\Facades\DB::table('saved_posts')->where('user_id', $user->id)->select('post_id'))->latest('published_at')->limit(60)->get(),
+            'following' => \App\Models\Author::whereIn('id', \Illuminate\Support\Facades\DB::table('follows')->where('user_id', $user->id)->select('author_id'))->orderBy('display_name')->get(),
             'twoFactorOn' => filled($user->app_authentication_secret),
             'setup' => self::twoFactorSetup($request),
         ]);
