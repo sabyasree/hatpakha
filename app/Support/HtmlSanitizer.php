@@ -14,6 +14,15 @@ final class HtmlSanitizer
 {
     private static ?SymfonySanitizer $instance = null;
 
+    /** The only classes rich text may carry: paragraph alignment chosen by a writer or editor. */
+    public const CLASSES = ['ta-left', 'ta-center', 'ta-right'];
+
+    /** For loading stored HTML into an editor: ta-* classes back to the text-align style editors read. */
+    public static function alignmentForEditor(?string $html): string
+    {
+        return preg_replace('~\sclass="ta-(left|center|right)"~', ' style="text-align: $1"', (string) $html) ?? (string) $html;
+    }
+
     public static function clean(?string $html): string
     {
         if ($html === null || trim($html) === '') {
@@ -23,6 +32,16 @@ final class HtmlSanitizer
         // Raw-text elements: remove with their contents first, so CSS/JS never leaks out as visible text.
         // (Byte-wise regex without /u, and never fall back to '': a regex failure must not blank a post.)
         $html = preg_replace('~<(script|style|noscript|template|textarea)\b[^>]*>.*?</\1\s*>~is', '', $html) ?? $html;
+
+        // Alignment from an editor (style="text-align:…") becomes a fixed class; every other style is dropped.
+        $html = preg_replace_callback('~<(p|h[2-4])\b([^>]*)>~i', function (array $m) {
+            if (! preg_match('~text-align:\s*(left|start|center|right|end)~i', $m[2], $a)) {
+                return $m[0];
+            }
+            $align = ['start' => 'left', 'end' => 'right'][strtolower($a[1])] ?? strtolower($a[1]);
+
+            return '<'.$m[1].' class="ta-'.$align.'">';
+        }, $html) ?? $html;
 
         self::$instance ??= new SymfonySanitizer(
             (new HtmlSanitizerConfig())
@@ -40,9 +59,9 @@ final class HtmlSanitizer
                 ->allowElement('small')->allowElement('pre')->allowElement('code')
                 ->allowElement('table')->allowElement('thead')->allowElement('tbody')->allowElement('tr')
                 ->allowElement('th')->allowElement('td')
-                ->allowElement('p')->allowElement('br')->allowElement('em')->allowElement('i')
+                ->allowElement('p', ['class'])->allowElement('br')->allowElement('em')->allowElement('i')
                 ->allowElement('strong')->allowElement('b')->allowElement('blockquote')
-                ->allowElement('h2')->allowElement('h3')->allowElement('h4')
+                ->allowElement('h2', ['class'])->allowElement('h3', ['class'])->allowElement('h4', ['class'])
                 ->allowElement('ul')->allowElement('ol')->allowElement('li')->allowElement('hr')
                 ->allowElement('figure')->allowElement('figcaption')
                 ->allowElement('a', ['href', 'title'])
@@ -57,6 +76,12 @@ final class HtmlSanitizer
 
         // Removed elements (forms, inputs…) can leave empty paragraphs behind; parsers differ by PHP version.
         $clean = self::$instance->sanitize($html);
+        // class survives only as one of the alignment classes (D40); anything else is removed.
+        $clean = preg_replace_callback('~\sclass="([^"]*)"~', function (array $m) {
+            $keep = array_intersect(preg_split('/\s+/', $m[1]), self::CLASSES);
+
+            return $keep ? ' class="'.implode(' ', $keep).'"' : '';
+        }, $clean) ?? $clean;
 
         return preg_replace('~<p>(?:\s|&nbsp;|\xC2\xA0)*+</p>~', '', $clean) ?? $clean;
     }

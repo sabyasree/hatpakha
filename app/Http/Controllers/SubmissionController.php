@@ -208,15 +208,21 @@ class SubmissionController extends Controller
     }
 
     /** Formatting a writer may use (D40). Everything else is unwrapped to its text; no attributes survive. */
-    public const WRITER_TAGS = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h3', 'blockquote', 'ul', 'ol', 'li', 'hr'];
+    public const WRITER_TAGS = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'del', 'sup', 'sub', 'h3', 'blockquote', 'ul', 'ol', 'li', 'hr'];
 
     public static function fromEditor(string $html): string
     {
-        $html = HtmlSanitizer::clean($html);
+        $html = HtmlSanitizer::clean($html);   // also turns editor alignment into a ta-* class
         $html = preg_replace('~<h[24]\b~i', '<h3', $html);
         $html = preg_replace('~</h[24]>~i', '</h3>', $html);
         $html = strip_tags($html, self::WRITER_TAGS);
-        $html = preg_replace('~<('.implode('|', self::WRITER_TAGS).')\b[^>]*>~i', '<$1>', $html);   // drop every attribute
+        // Drop every attribute, except the alignment class on paragraphs and sub-headings.
+        $html = preg_replace_callback('~<('.implode('|', self::WRITER_TAGS).')\b([^>]*)>~i', function (array $m) {
+            $tag = strtolower($m[1]);
+            $class = in_array($tag, ['p', 'h3'], true) && preg_match('~class="(ta-(?:left|center|right))"~', $m[2], $c) ? ' class="'.$c[1].'"' : '';
+
+            return '<'.$tag.$class.'>';
+        }, $html);
         $html = preg_replace('~<p>(\s|&nbsp;|<br>)*</p>~i', '', $html);                                 // empty paragraphs
 
         return trim($html);

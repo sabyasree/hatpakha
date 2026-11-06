@@ -2,6 +2,9 @@
 // No inline handlers (strict CSP). Without JavaScript the plain textarea still works.
 import { Editor, Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
 
 const form = document.querySelector('form[data-submit-form]');
 if (form) {
@@ -45,17 +48,23 @@ if (form) {
     if (shell && mount) {
         let initial = '';
         try { initial = JSON.parse(document.getElementById('body-initial')?.textContent || '""'); } catch { initial = ''; }
+        // Saved alignment is a class (ta-center…); the editor reads text-align.
+        initial = initial.replace(/ class="ta-(left|center|right)"/g, ' style="text-align: $1"');
         if (!initial && textarea.value.trim()) {
             initial = textarea.value.trim().split(/\n\s*\n/).map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`).join('');
         }
         editor = new Editor({
             element: mount,
             extensions: [
-                StarterKit.configure({ heading: { levels: [3] }, link: false, code: false, codeBlock: false, strike: false }),
+                StarterKit.configure({ heading: { levels: [3] }, link: false, code: false, codeBlock: false }),
+                TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center', 'right'] }),
+                Superscript,
+                Subscript,
                 PoemLines,
             ],
             content: initial,
-            editorProps: { attributes: { class: 'ed-area', 'aria-labelledby': 'body-label', 'aria-multiline': 'true', role: 'textbox' } },
+            // Keep the line being typed clear of the sticky toolbar.
+            editorProps: { scrollMargin: { top: 80, bottom: 40, left: 0, right: 0 }, scrollThreshold: { top: 80, bottom: 40, left: 0, right: 0 }, attributes: { class: 'ed-area', 'aria-labelledby': 'body-label', 'aria-multiline': 'true', role: 'textbox' } },
         });
         shell.hidden = false;
         textarea.hidden = true;
@@ -71,6 +80,13 @@ if (form) {
             bold: () => editor.chain().focus().toggleBold().run(),
             italic: () => editor.chain().focus().toggleItalic().run(),
             underline: () => editor.chain().focus().toggleUnderline().run(),
+            strike: () => editor.chain().focus().toggleStrike().run(),
+            superscript: () => editor.chain().focus().unsetSubscript().toggleSuperscript().run(),
+            subscript: () => editor.chain().focus().unsetSuperscript().toggleSubscript().run(),
+            alignLeft: () => toggleAlign('left'),
+            alignCenter: () => toggleAlign('center'),
+            alignRight: () => toggleAlign('right'),
+            clear: () => editor.chain().focus().unsetAllMarks().clearNodes().unsetTextAlign().run(),
             heading: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
             blockquote: () => editor.chain().focus().toggleBlockquote().run(),
             bulletList: () => editor.chain().focus().toggleBulletList().run(),
@@ -79,11 +95,22 @@ if (form) {
             undo: () => editor.chain().focus().undo().run(),
             redo: () => editor.chain().focus().redo().run(),
         };
+        // Clicking the active alignment again returns to the site's default (poems centred, prose left).
+        const toggleAlign = (a) => (editor.isActive({ textAlign: a })
+            ? editor.chain().focus().unsetTextAlign().run()
+            : editor.chain().focus().setTextAlign(a).run());
         const buttons = form.querySelectorAll('[data-toolbar] [data-cmd]');
         buttons.forEach((b) => b.addEventListener('click', () => commands[b.dataset.cmd]?.()));
+        const activeFor = {
+            heading: () => editor.isActive('heading', { level: 3 }),
+            alignLeft: () => editor.isActive({ textAlign: 'left' }),
+            alignCenter: () => editor.isActive({ textAlign: 'center' }),
+            alignRight: () => editor.isActive({ textAlign: 'right' }),
+        };
         const refreshToolbar = () => buttons.forEach((b) => {
-            const name = b.dataset.cmd === 'heading' ? ['heading', { level: 3 }] : [b.dataset.cmd];
-            if (!['undo', 'redo', 'horizontalRule'].includes(b.dataset.cmd)) b.setAttribute('aria-pressed', editor.isActive(...name) ? 'true' : 'false');
+            const cmd = b.dataset.cmd;
+            if (['undo', 'redo', 'horizontalRule', 'clear'].includes(cmd)) return;
+            b.setAttribute('aria-pressed', (activeFor[cmd] ? activeFor[cmd]() : editor.isActive(cmd)) ? 'true' : 'false');
         });
         editor.on('update', () => { sync(); changed(); });
         editor.on('selectionUpdate', refreshToolbar);

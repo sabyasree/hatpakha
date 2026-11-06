@@ -142,4 +142,31 @@ class SubmissionTest extends TestCase
         $this->actingAs($this->writer)->post('/submit/', $this->poem(['body' => str_repeat('<p><strong></strong></p>', 20), 'body_format' => 'html']))
             ->assertSessionHasErrors('body');
     }
+
+    public function test_alignment_strike_and_super_subscript_are_kept_safely(): void
+    {
+        $html = '<p style="text-align: center; color: red">মাঝখানে <s>কাটা</s> ১<sup>ম</sup> H<sub>2</sub>O</p>'
+            .'<h3 style="text-align: right">ডানে</h3><p style="text-align: left">বাঁয়ে আর আরও কিছু লেখা যাতে দৈর্ঘ্য পূর্ণ হয়</p><p class="hidden fixed inset-0">লুকোনো নয়</p>';
+        $this->actingAs($this->writer)->post('/submit/', $this->poem(['body' => $html, 'body_format' => 'html']))->assertSessionHasNoErrors();
+        $post = Post::where('title', 'বৃষ্টির দিন')->firstOrFail();
+        $body = $post->body_html;
+        foreach (['class="ta-center"', 'class="ta-right"', 'class="ta-left"', '<s>কাটা</s>', '<sup>ম</sup>', '<sub>2</sub>', 'লুকোনো নয়'] as $kept) {
+            $this->assertStringContainsString($kept, $body);
+        }
+        foreach (['style=', 'color', 'hidden', 'fixed'] as $gone) {
+            $this->assertStringNotContainsString($gone, $body);
+        }
+        // Published page shows the alignment.
+        $post->forceFill(['status' => 'published', 'published_at' => now()->subMinute(), 'slug' => 'brishtir-din'])->save();
+        $this->get('/brishtir-din/')->assertSee('class="ta-center"', false);
+    }
+
+    public function test_alignment_from_the_desk_editor_survives_a_save(): void
+    {
+        $post = $this->makePost(['slug' => 'desk-align']);
+        $post->update(['body_html' => '<p style="text-align: center">মাঝখানে</p><p style="text-align: end">শেষে</p>']);
+        $this->assertStringContainsString('<p class="ta-center">মাঝখানে</p>', $post->fresh()->body_html);
+        $this->assertStringContainsString('<p class="ta-right">শেষে</p>', $post->fresh()->body_html);
+        $this->assertSame('<p style="text-align: center">x</p>', \App\Support\HtmlSanitizer::alignmentForEditor('<p class="ta-center">x</p>'));
+    }
 }

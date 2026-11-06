@@ -47,16 +47,24 @@
                 <div class="mb-2">
                     <span class="mb-1 flex items-baseline justify-between font-bold"><span id="body-label">লেখা</span><span id="word-count" class="text-sm font-normal text-ink2"></span></span>
                     <div data-editor-shell hidden class="rounded-xl border-2 border-navy bg-white focus-within:border-sky-deep">
-                        <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="sticky top-0 z-10 flex flex-wrap gap-1 rounded-t-xl border-b-2 border-rule bg-paper p-2">
+                        <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="ed-toolbar sticky top-0 z-10 flex gap-1 overflow-x-auto rounded-t-xl border-b-2 border-rule bg-paper p-2 sm:flex-wrap">
                             <button type="button" data-cmd="bold" title="গাঢ় (Ctrl+B)" aria-label="গাঢ়" class="ed-btn font-extrabold">ক</button>
                             <button type="button" data-cmd="italic" title="বাঁকা (Ctrl+I)" aria-label="বাঁকা" class="ed-btn italic">ক</button>
                             <button type="button" data-cmd="underline" title="নিচে দাগ (Ctrl+U)" aria-label="নিচে দাগ" class="ed-btn underline">ক</button>
+                            <button type="button" data-cmd="strike" title="কেটে দেওয়া" aria-label="কেটে দেওয়া" class="ed-btn line-through">ক</button>
+                            <button type="button" data-cmd="superscript" title="উপরে ছোট লেখা (যেমন ১ম, পাদটীকা¹)" aria-label="উপরে ছোট লেখা" class="ed-btn">ক<sup>২</sup></button>
+                            <button type="button" data-cmd="subscript" title="নিচে ছোট লেখা" aria-label="নিচে ছোট লেখা" class="ed-btn">ক<sub>২</sub></button>
                             <span class="mx-1 w-px self-stretch bg-rule" aria-hidden="true"></span>
                             <button type="button" data-cmd="heading" title="উপশিরোনাম" aria-label="উপশিরোনাম" class="ed-btn px-3 text-sm font-bold">উপশিরোনাম</button>
                             <button type="button" data-cmd="blockquote" title="উদ্ধৃতি" aria-label="উদ্ধৃতি" class="ed-btn text-2xl leading-none">“</button>
                             <button type="button" data-cmd="bulletList" title="তালিকা" aria-label="তালিকা" class="ed-btn">•</button>
                             <button type="button" data-cmd="orderedList" title="ক্রমিক তালিকা" aria-label="ক্রমিক তালিকা" class="ed-btn">১.</button>
                             <button type="button" data-cmd="horizontalRule" title="ভাগ (অংশের মাঝে দাগ)" aria-label="ভাগ" class="ed-btn">—</button>
+                            <span class="mx-1 w-px self-stretch bg-rule" aria-hidden="true"></span>
+                            <button type="button" data-cmd="alignLeft" title="বাঁ দিকে" aria-label="বাঁ দিকে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="2" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="2" y="15" width="10" height="2" rx="1"/></svg></button>
+                            <button type="button" data-cmd="alignCenter" title="মাঝখানে" aria-label="মাঝখানে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="5" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="5" y="15" width="10" height="2" rx="1"/></svg></button>
+                            <button type="button" data-cmd="alignRight" title="ডান দিকে" aria-label="ডান দিকে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="8" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="8" y="15" width="10" height="2" rx="1"/></svg></button>
+                            <button type="button" data-cmd="clear" title="বাছাই করা অংশের সব সাজ মুছুন" aria-label="সাজ মুছুন" class="ed-btn px-3 text-sm font-bold">সাজ মুছুন</button>
                             <span class="mx-1 w-px self-stretch bg-rule" aria-hidden="true"></span>
                             <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন (Ctrl+Z)" aria-label="ফিরিয়ে আনুন" class="ed-btn">↶</button>
                             <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn">↷</button>

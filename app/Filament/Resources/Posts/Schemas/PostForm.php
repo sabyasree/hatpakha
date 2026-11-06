@@ -27,7 +27,9 @@ class PostForm
                     ->unique(ignoreRecord: true),
                 Textarea::make('excerpt')->label('সারাংশ')->rows(2),
                 RichEditor::make('body_html')->label('লেখা')->required()
-                    ->toolbarButtons(['bold', 'italic', 'blockquote', 'h2', 'h3', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
+                    ->toolbarButtons([['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'], ['h3', 'blockquote', 'bulletList', 'orderedList', 'horizontalRule'], ['alignStart', 'alignCenter', 'alignEnd'], ['link', 'clearFormatting', 'undo', 'redo']])
+                    // Stored alignment is a ta-* class (D40); the editor reads it as text-align.
+                    ->formatStateUsing(fn (?string $state) => \App\Support\HtmlSanitizer::alignmentForEditor($state)),
             ]),
             Group::make()->columnSpan(1)->schema([
                 // What an editor needs to decide on a form submission, without leaving the page.

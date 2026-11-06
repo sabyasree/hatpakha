@@ -68,6 +68,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 - ✅ Formatting editor on /submit/ (D40): toolbar in Bengali; poems keep line/stanza rules; paste from Word/Docs keeps bold/italic; server allows only the safe set. Preview (কেমন দেখাবে) now shows the cover and byline; submitted pieces show their cover
 
+- ✅ Toolbar extended (D41): alignment, clear formatting, strikethrough, super/subscript; one scrollable row on phones; /desk editor gets the same options and keeps writers' alignment
+
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
 

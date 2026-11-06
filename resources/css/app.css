@@ -83,6 +83,8 @@
 .lined { background-image: repeating-linear-gradient(transparent 0 31px, rgba(19,33,44,.08) 31px 32px); }
 
 /* Submission editor (D40) */
+.ed-toolbar { scrollbar-width: thin; }
+.ed-toolbar > * { flex: none; }
 .ed-btn { min-width: 2.75rem; height: 2.75rem; border-radius: .6rem; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; }
 .ed-btn:hover { background: var(--color-peach-light); }
 .ed-btn[aria-pressed="true"] { background: var(--color-navy); color: #fff; }
@@ -94,3 +96,8 @@
 .ed-area hr { border: 0; border-top: 2px dashed var(--color-rule); margin: 1.5rem 0; }
 .ed-wrap { position: relative; }
 .ed-placeholder { position: absolute; inset: 1rem 1.1rem auto; color: var(--color-ink2); pointer-events: none; white-space: pre-line; }
+
+/* Paragraph alignment chosen by the writer/editor (D40). Overrides the poem's default centring. */
+.ta-left { text-align: left; }
+.ta-center { text-align: center; }
+.ta-right { text-align: right; }
