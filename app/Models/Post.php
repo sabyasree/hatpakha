@@ -87,6 +87,12 @@ class Post extends Model
 
     public function comments(): HasMany { return $this->hasMany(Comment::class); }
 
+    /** Same rule as scopePublished, for one loaded post. */
+    public function isLive(): bool
+    {
+        return in_array($this->status, ['published', 'scheduled'], true) && $this->published_at !== null && $this->published_at->lte(now());
+    }
+
     /** Live for readers: published, or scheduled whose time has come (no cron needed; 3c). */
     public function scopePublished(Builder $q): Builder
     {

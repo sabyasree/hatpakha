@@ -32,7 +32,7 @@ class CommentsTable
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('body')->label('মন্তব্য')->limit(160)->wrap()->searchable()
-                    ->description(fn (Comment $record) => $record->author_name.' · '.($record->post?->title ?? '')),
+                    ->description(fn (Comment $record) => $record->author_name.($record->user_id ? '' : ' (অতিথি)').' · '.($record->post?->title ?? '')),
                 TextColumn::make('status')->label('অবস্থা')->badge()->formatStateUsing(fn ($state) => self::STATUS[$state] ?? $state)
                     ->color(fn ($state) => ['pending' => 'warning', 'approved' => 'success', 'spam' => 'gray'][$state] ?? 'gray'),
                 IconColumn::make('feature_opt_out')->label('চিঠিতে নয়')->boolean()->toggleable(),

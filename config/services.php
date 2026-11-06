@@ -3,6 +3,12 @@
 return [
 
     // Google AdSense publisher ID (ca-pub-…). Ads render only when set. docs/SEO.md §5.
+    // Free captcha for guest comments; off until both keys are set (App\Support\Turnstile).
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET'),
+    ],
+
     'adsense' => [
         'client' => env('ADSENSE_CLIENT'),
         'slot_article' => env('ADSENSE_SLOT_ARTICLE'),

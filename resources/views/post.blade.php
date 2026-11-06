@@ -50,14 +50,53 @@
             </div>
         @endforeach
 
-        @if ($comments->isNotEmpty())
-            <section class="mt-10" aria-label="পাঠকের মতামত">
-                <h2 class="font-display text-3xl font-extrabold">পাঠকের মতামত</h2>
-                @foreach ($comments as $c)
-                    <div class="border-b border-rule py-4"><div class="font-bold">{{ $c->author_name }}</div><p class="mt-1 whitespace-pre-line">{{ $c->body }}</p></div>
-                @endforeach
-            </section>
-        @endif
+        <section id="comments" class="mt-10 scroll-mt-24" aria-label="পাঠকের মতামত">
+            <h2 class="font-display text-3xl font-extrabold">পাঠকের মতামত</h2>
+            @foreach ($comments as $c)
+                <div class="border-b border-rule py-4"><div class="font-bold">{{ $c->author_name }}</div><p class="mt-1 whitespace-pre-line">{{ $c->body }}</p></div>
+            @endforeach
+
+            @if (session('comment_status'))
+                <p class="mt-5 rounded-2xl bg-sky-tint p-4 font-semibold" role="status">{{ session('comment_status') }}</p>
+            @endif
+
+            {{-- Comment form (D39). Plain text; guests are always checked by an editor. --}}
+            <form method="POST" action="{{ route('comment.store', $post) }}" class="mt-6 rounded-3xl bg-peach-light p-5">
+                @csrf
+                <input type="hidden" name="started" value="{{ \App\Http\Controllers\CommentController::startedToken() }}">
+                <div aria-hidden="true" class="absolute -left-[9999px] h-px w-px overflow-hidden"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+                <h3 class="text-xl font-extrabold">আপনার কথা লিখুন</h3>
+                @auth
+                    <p class="mt-1 text-sm text-ink2"><strong>{{ auth()->user()->name }}</strong> হিসেবে লিখছেন।</p>
+                @else
+                    <p class="mt-1 text-sm text-ink2">অ্যাকাউন্ট থাকলে <a class="font-bold text-sky-deep underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখুন</a>: আপনার মন্তব্য তাড়াতাড়ি প্রকাশ পাবে।</p>
+                    <label class="mt-4 block">
+                        <span class="mb-1 block font-bold">আপনার নাম</span>
+                        <input name="name" type="text" value="{{ old('name') }}" required minlength="2" maxlength="80" autocomplete="name"
+                            class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg focus:border-sky-deep">
+                    </label>
+                @endauth
+                <label class="mt-4 block">
+                    <span class="mb-1 block font-bold">মন্তব্য</span>
+                    <textarea name="body" rows="4" required minlength="2" maxlength="3000"
+                        class="block w-full rounded-xl border-2 border-navy bg-white p-4 text-lg leading-relaxed focus:border-sky-deep">{{ old('body') }}</textarea>
+                </label>
+                @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+                @error('name')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+                <label class="mt-3 flex items-start gap-3 text-sm">
+                    <input type="checkbox" name="not_featured" value="1" class="mt-1 h-5 w-5" @checked(old('not_featured'))>
+                    <span>প্রথম পাতার "পাঠকের চিঠি"-তে আমার মন্তব্য দেখাবেন না</span>
+                </label>
+                @guest
+                    @if (\App\Support\Turnstile::enabled())
+                        <div class="cf-turnstile mt-4" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="bn"></div>
+                        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
+                    @endif
+                @endguest
+                <button class="mt-4 h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
+                <p class="mt-3 text-sm text-ink2">ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়। বিজ্ঞাপন বা কটু কথা প্রকাশ হয় না।</p>
+            </form>
+        </section>
     </article>
 
     @if ($related->isNotEmpty())

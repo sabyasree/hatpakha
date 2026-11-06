@@ -29,8 +29,15 @@ class AuthController extends Controller
         return new Seo(title: $title, noindex: true);
     }
 
-    public function showLogin()
+    public function showLogin(Request $request)
     {
+        // "Log in to comment" brings the reader back to the post. On-site paths only (no open redirect).
+        $next = (string) $request->query('next', '');
+        if (str_starts_with($next, '/') && ! str_starts_with($next, '//') && ! preg_match('/[\s\\\\]/', $next)) {
+            [$path, $hash] = array_pad(explode('#', $next, 2), 2, null);
+            $request->session()->put('url.intended', Url::to(rtrim($path, '/')).($hash ? '#'.$hash : ''));
+        }
+
         return view('auth.login', ['seo' => self::seo('লগ-ইন')]);
     }
 

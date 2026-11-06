@@ -84,6 +84,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/submit/{post}/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->whereNumber('post')->middleware('throttle:60,1');
 });
 
+// Reader comments (D39): guests and signed-in readers; plain text, moderated until trusted.
+Route::post('/comment/{post}', [\App\Http\Controllers\CommentController::class, 'store'])->whereNumber('post')->middleware('throttle:comment')->name('comment.store');
+
 // Posts at the root, exactly like WordPress. Reserved words are excluded.
 Route::get('/{slug}', PostController::class)
     ->where('slug', '(?!(desk|livewire|filament|up|storage|build|search|submit|account|login|logout|register)$)[^/]+')

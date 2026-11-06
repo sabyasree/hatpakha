@@ -53,7 +53,7 @@
         @forelse ($t['comments'] as $c)
             <div wire:key="c{{ $c->id }}" style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;justify-content:space-between;padding:.75rem 0;{{ $loop->last ? '' : 'border-bottom:1px solid rgba(127,127,127,.2)' }}">
                 <div style="min-width:0;flex:1 1 18rem">
-                    <div style="font-size:.875rem;opacity:.75">{{ $c->author_name }} · "{{ $c->post?->title }}"</div>
+                    <div style="font-size:.875rem;opacity:.75">{{ $c->author_name }} ({{ $c->user_id ? 'অ্যাকাউন্ট' : 'অতিথি' }}) · "{{ $c->post?->title }}"</div>
                     <div style="white-space:pre-line">{{ \Illuminate\Support\Str::limit($c->body, 400) }}</div>
                 </div>
                 <div style="display:flex;gap:.5rem">
