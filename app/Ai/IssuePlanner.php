@@ -107,6 +107,7 @@ final class IssuePlanner
         $issue->save();
         \App\Models\AuditLog::record('issue.proposed', $issue, ['posts' => count($ids)]);
         EditorialWriter::draft($issue, $owner);
+        Illustrator::forIssue($issue);   // D51: the designer proposes the cover artwork
 
         return [$issue, null];
     }
@@ -120,6 +121,9 @@ final class IssuePlanner
             Post::whereKey($issue->editorial_post_id)->update(['issue_id' => $issue->id]);
         }
         $issue->forceFill(['status' => 'published', 'published_at' => $at])->save();
+        if (! $issue->cover_path && $issue->proposed_cover_path) {
+            $issue->forceFill(['cover_path' => $issue->proposed_cover_path, 'proposed_cover_path' => null])->save();
+        }
         \App\Models\AuditLog::record('issue.approved', $issue, ['by' => $owner->id, 'posts' => count($ids)]);
     }
 }

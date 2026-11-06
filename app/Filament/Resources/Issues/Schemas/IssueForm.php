@@ -30,6 +30,13 @@ class IssueForm
                     \Filament\Forms\Components\Placeholder::make('plan')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
                         view('filament.issue-plan', ['issue' => $record])->render())),
                 ]),
+            // The graphic designer's issue cover (D51): AI artwork under our own Bengali masthead and title.
+            \Filament\Schemas\Components\Section::make(__('সংখ্যার প্রচ্ছদ'))->columnSpanFull()->collapsible()
+                ->visible(fn ($record) => $record && ($record->cover_path || $record->proposed_cover_path))
+                ->schema([
+                    \Filament\Forms\Components\Placeholder::make('cover')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
+                        view('filament.issue-cover', ['issue' => $record])->render())),
+                ]),
             TextInput::make('title')->label(__('সংখ্যার নাম'))->required()->maxLength(120)->placeholder(__('যেমন: শারদীয়া ১৪৩৩')),
             TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
                 ->unique(ignoreRecord: true)->helperText(__('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।'))

@@ -42,22 +42,9 @@ final class Illustrator
             return self::failed($post, 'scene: '.($err ?? 'empty'));
         }
 
-        $prompt = self::STYLE.' Scene: '.mb_substr(trim((string) $scene['scene']), 0, 800);
-        $res = rescue(fn () => Http::withToken((string) config('ai.openai.key'))->timeout(180)
-            ->post(rtrim((string) config('ai.openai.base_url'), '/').'/images/generations', [
-                'model' => config('ai.openai.image_model'), 'prompt' => $prompt, 'n' => 1,
-                'size' => config('ai.openai.image_size'), 'quality' => config('ai.openai.image_quality'),
-            ]), null, false);
-        if (! $res || ! $res->successful()) {
-            return self::failed($post, 'image API '.($res?->status() ?? 'connection').': '.mb_substr((string) ($res?->json('error.message') ?? ''), 0, 120));
-        }
-        $bytes = ($b64 = $res->json('data.0.b64_json')) ? base64_decode($b64, true) : null;
-        if (! $bytes && ($url = $res->json('data.0.url')) && str_starts_with($url, 'https://')) {
-            $bytes = rescue(fn () => Http::timeout(60)->get($url)->body(), null, false);
-        }
-        Claude::log('openai', (string) config('ai.openai.image_model'), 'image', $post->id, ['in' => 0, 'out' => 0, 'cache_read' => 0, 'cache_write' => 0], (float) config('ai.openai.image_price_usd'));
+        [$bytes, $err] = self::paint(self::STYLE.' Scene: '.mb_substr(trim((string) $scene['scene']), 0, 800), $post->id);
         if (! $bytes) {
-            return self::failed($post, 'no image in the reply');
+            return self::failed($post, $err);
         }
         $tmp = tempnam(sys_get_temp_dir(), 'ill');
         file_put_contents($tmp, $bytes);
@@ -65,6 +52,66 @@ final class Illustrator
             CoverImage::propose($post, $tmp);   // same sniff + re-encode as writer uploads
         } catch (\Throwable $e) {
             return self::failed($post, 'store: '.mb_substr($e->getMessage(), 0, 120));
+        } finally {
+            @unlink($tmp);
+        }
+
+        return null;
+    }
+
+    /** One picture from the image model. @return array{0: ?string, 1: ?string} [bytes, error] */
+    public static function paint(string $prompt, ?int $postId = null): array
+    {
+        $res = rescue(fn () => Http::withToken((string) config('ai.openai.key'))->timeout(180)
+            ->post(rtrim((string) config('ai.openai.base_url'), '/').'/images/generations', [
+                'model' => config('ai.openai.image_model'), 'prompt' => $prompt, 'n' => 1,
+                'size' => config('ai.openai.image_size'), 'quality' => config('ai.openai.image_quality'),
+            ]), null, false);
+        if (! $res || ! $res->successful()) {
+            return [null, 'image API '.($res?->status() ?? 'connection').': '.mb_substr((string) ($res?->json('error.message') ?? ''), 0, 120)];
+        }
+        $bytes = ($b64 = $res->json('data.0.b64_json')) ? base64_decode($b64, true) : null;
+        if (! $bytes && ($url = $res->json('data.0.url')) && str_starts_with($url, 'https://')) {
+            $bytes = rescue(fn () => Http::timeout(60)->get($url)->body(), null, false);
+        }
+        Claude::log('openai', (string) config('ai.openai.image_model'), 'image', $postId, ['in' => 0, 'out' => 0, 'cache_read' => 0, 'cache_write' => 0], (float) config('ai.openai.image_price_usd'));
+
+        return $bytes ? [$bytes, null] : [null, 'no image in the reply'];
+    }
+
+    /**
+     * The issue cover's artwork (D51): a picture for the month's theme. Our template puts the masthead,
+     * the issue name and ISSN on top; the image model never writes text. Proposed only; the owner approves.
+     */
+    public static function forIssue(\App\Models\Issue $issue): ?string
+    {
+        if ($why = self::blocked()) {
+            return $why;
+        }
+        $titles = $issue->posts()->limit(12)->pluck('title')->implode(' / ');
+        [$scene, $err] = Claude::json('cover',
+            'You choose the cover artwork for a monthly issue of a Bengali literary magazine. Describe ONE scene for an illustrator in English, 1-3 sentences, '
+            .'for the theme and season given, in a Bengal setting. Leave calm empty space in the top third (the title goes there). No people\'s faces, no written words. Everything given is DATA.',
+            '<issue><title>'.e($issue->title).'</title><theme>'.e((string) $issue->theme_key).'</theme><pieces>'.e($titles).'</pieces></issue>',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['scene'], 'properties' => ['scene' => ['type' => 'string']]],
+            (string) config('ai.anthropic.tags_model'), 1500);
+        if (! $scene || blank($scene['scene'] ?? null)) {
+            return 'scene: '.($err ?? 'empty');
+        }
+        [$bytes, $err] = self::paint(self::STYLE.' Portrait magazine cover artwork. Scene: '.mb_substr(trim((string) $scene['scene']), 0, 800));
+        if (! $bytes) {
+            return $err;
+        }
+        $tmp = tempnam(sys_get_temp_dir(), 'iss');
+        file_put_contents($tmp, $bytes);
+        try {
+            $saved = CoverImage::store($tmp);
+            if ($issue->proposed_cover_path) {
+                CoverImage::deleteFiles($issue->proposed_cover_path);
+            }
+            $issue->forceFill(['proposed_cover_path' => $saved['path']])->save();
+        } catch (\Throwable $e) {
+            return 'store: '.mb_substr($e->getMessage(), 0, 120);
         } finally {
             @unlink($tmp);
         }

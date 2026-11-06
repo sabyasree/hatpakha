@@ -168,7 +168,7 @@ final class CoverImage
         return $moved;
     }
 
-    private static function deleteFiles(string $path): void
+    public static function deleteFiles(string $path): void
     {
         if (self::isOurs($path)) {
             $base = str_starts_with($path, 'media/') ? public_path($path) : storage_path('app/public/'.substr($path, strlen('storage/')));

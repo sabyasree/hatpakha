@@ -67,6 +67,21 @@ class AiShift extends Command
         foreach (Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNotIn('id', $done)->oldest('submitted_at')->limit(5)->get() as $p) {
             $service->run($p, null, 'editor');
         }
+        // Proofreader and plagiarism checker on new submissions they missed (D50).
+        foreach (Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNull('proof_at')->oldest('submitted_at')->limit(5)->get() as $p) {
+            \App\Ai\Proofreader::run($p);
+        }
+        foreach (Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNull('plagiarism_at')->oldest('submitted_at')->limit(3)->get() as $p) {
+            \App\Ai\PlagiarismCheck::run($p);
+        }
+        // Marketing expert (D51): ready-to-post text for pieces and issues that just went live.
+        $marketed = \App\Models\SocialPost::where('kind', 'piece')->select('subject_id');
+        foreach (Post::published()->with('authors', 'section')->where('published_at', '>=', now()->subDays(3))->whereNotIn('id', $marketed)->limit(3)->get() as $p) {
+            \App\Ai\Marketer::forPiece($p);
+        }
+        foreach (\App\Models\Issue::where('status', 'published')->where('published_at', '>=', now()->subDays(7))->get() as $issue) {
+            \App\Ai\Marketer::forIssue($issue);
+        }
         foreach (Comment::with('post')->where('status', 'pending')->whereNull('ai_verdict')->oldest()->limit(20)->get() as $c) {
             CommentScreen::run($c);
         }
@@ -129,6 +144,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::picks();
         \App\Ai\EditorJobs::health();
         \App\Ai\Chief::qualityReview();
+        \App\Ai\Marketer::weekly();
 
         return self::SUCCESS;
     }
@@ -143,6 +159,7 @@ class AiShift extends Command
     private function monthly(): int
     {
         \App\Ai\EditorJobs::report();
+        \App\Ai\Marketer::spotlight();
 
         return self::SUCCESS;
     }
