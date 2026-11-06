@@ -49,6 +49,7 @@ php artisan hatpakha:role you@example.com admin   # give an existing user a role
 php artisan hatpakha:password you@example.com     # set a password at a hidden prompt (--reset-2fa to redo 2FA)
 php artisan hatpakha:images                       # WebP sizes for images used by posts (safe to re-run)
 php artisan hatpakha:audit                        # content-audit + backlog-tier SUGGESTIONS (changes nothing)
+php artisan hatpakha:ai-blind-test                # Claude vs OpenAI blind test (docs/AI.md; costs money, asks first)
 php artisan hatpakha:url-audit --base=https://new.hatpakha.com --sitemap=https://hatpakha.com/sitemap.xml
 php artisan test                          # must be green
 php artisan serve
@@ -61,6 +62,7 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - `app/Seo`: `Seo` (head meta) and `JsonLd` (the only place structured data is built)
 - `app/Http/Middleware`: `SecurityHeaders` (CSP with nonce), `EnforceTrailingSlash`
 - `app/Console/Commands/ImportWordPress.php`: idempotent WordPress import
+- `app/Ai`: provider-neutral AI review (`Reviewer`, `ReviewService` with cost guards); docs/AI.md
 - `app/Filament`: admin panel resources
 - `resources/views`: Blade pages; `components/` (layout, seo, fan motif, title card, ad slot)
 - `tests/Feature/SeoUrlTest.php`, `tests/Feature/SecurityTest.php`: guardrail tests

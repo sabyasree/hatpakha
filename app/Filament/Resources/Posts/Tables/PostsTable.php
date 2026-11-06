@@ -36,7 +36,7 @@ class PostsTable
         $actionable = fn (Post $p) => $p->audit_label && $p->audit_label !== 'keep' && ! $p->audit_decision;
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section', 'latestAiReview']))
             ->defaultSort('published_at', 'desc')
             ->columns([
                 TextColumn::make('title')->label('শিরোনাম')->searchable()->wrap()->limit(80)
@@ -46,6 +46,10 @@ class PostsTable
                     ->color(fn ($state) => match ($state) { 'published' => 'success', 'pending' => 'warning', 'archived', 'rejected' => 'gray', default => 'info' }),
                 TextColumn::make('published_at')->label('প্রকাশ')->date('j M Y')->sortable()->toggleable(),
                 TextColumn::make('submitted_at')->label('জমা')->date('j M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('latestAiReview.score')->label('AI')->badge()->placeholder('—')
+                    ->formatStateUsing(fn ($state) => \App\Support\Bn::num((string) $state).'/১০')
+                    ->color(fn ($state) => $state >= 7 ? 'success' : ($state >= 5 ? 'warning' : 'gray'))
+                    ->tooltip(fn (Post $record) => $record->latestAiReview?->report['summary'] ?? null)->toggleable(),
                 TextColumn::make('audit_label')->label('অডিট')->badge()
                     ->formatStateUsing(fn ($state, Post $p) => (ContentAudit::LABELS[$state] ?? $state).($p->audit_decision ? ' ✓' : ''))
                     ->color(fn ($state) => match ($state) { 'remove' => 'danger', 'noindex' => 'warning', 'merge' => 'info', 'improve' => 'gray', default => 'success' })
@@ -106,6 +110,21 @@ class PostsTable
                     ->action(function (Post $record, array $data) {
                         Review::reject($record, auth()->user(), $data['note']);
                         Notification::make()->title('লেখককে জানানো হয়েছে')->send();
+                    }),
+                // AI report (3d): advice for editors only; the decision stays with the buttons above.
+                Action::make('aiReport')->label('AI রিপোর্ট')->icon('heroicon-o-sparkles')->color('info')
+                    ->visible(fn (Post $record) => $record->latestAiReview !== null)
+                    ->modalHeading(fn (Post $record) => 'AI রিপোর্ট: '.$record->title)
+                    ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
+                    ->modalSubmitAction(false)->modalCancelActionLabel('বন্ধ'),
+                Action::make('runAi')->label('AI দিয়ে পড়ান')->icon('heroicon-o-arrow-path')->color('gray')
+                    ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
+                    ->requiresConfirmation()->modalDescription('AI একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।')
+                    ->action(function (Post $record) {
+                        $review = app(\App\Ai\ReviewService::class)->run($record);
+                        $review->status === 'done'
+                            ? Notification::make()->title('AI রিপোর্ট তৈরি: '.$review->score.'/১০')->success()->send()
+                            : Notification::make()->title('রিপোর্ট হয়নি')->body($review->error)->warning()->send();
                     }),
                 EditAction::make(),
                 Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')

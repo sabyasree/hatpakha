@@ -61,6 +61,10 @@ class Post extends Model
         return $this->belongsToMany(Author::class)->withPivot('position')->orderByPivot('position');
     }
 
+    public function aiReviews(): HasMany { return $this->hasMany(AiReview::class)->latest(); }
+
+    public function latestAiReview(): \Illuminate\Database\Eloquent\Relations\HasOne { return $this->hasOne(AiReview::class)->whereNull('blind_run')->latestOfMany(); }
+
     public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }
 
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }

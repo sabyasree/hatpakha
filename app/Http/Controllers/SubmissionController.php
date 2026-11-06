@@ -135,6 +135,8 @@ class SubmissionController extends Controller
             $request->user()->forceFill(['role' => Role::Writer])->save();
         }
         AuditLog::record($wasChanges ? 'submission.resubmitted' : 'submission.received', $post);
+        // AI report for the editor (advice only), written after the writer's page has been sent.
+        \App\Jobs\ReviewSubmission::dispatch($post->id)->afterResponse();
 
         return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। ধন্যবাদ!');
     }
