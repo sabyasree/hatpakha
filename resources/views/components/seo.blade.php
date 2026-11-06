@@ -6,12 +6,13 @@
 <meta name="robots" content="{{ $seo->robots() }}">
 <meta property="og:site_name" content="{{ $seo->siteName }}">
 <meta property="og:type" content="{{ $seo->type }}">
-<meta property="og:title" content="{{ $seo->title }}">
+<meta property="og:title" content="{{ $seo->shareTitle ?? $seo->title }}">
 <meta property="og:description" content="{{ $seo->description }}">
 <meta property="og:url" content="{{ $seo->canonical }}">
 <meta property="og:image" content="{{ $seo->ogImage() }}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ $seo->imageAlt ?? ($seo->shareTitle ?? $seo->title) }}">
 <meta property="og:locale" content="{{ $seo->lang === 'en' ? 'en_IN' : 'bn_IN' }}">
 @if ($seo->publishedAt)<meta property="article:published_time" content="{{ $seo->publishedAt }}">@endif
 <meta name="twitter:card" content="summary_large_image">

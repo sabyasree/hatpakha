@@ -137,9 +137,23 @@ class Post extends Model
 
     public function metaDescription(): string
     {
-        return $this->seo_description
-            ?: $this->excerpt
-            ?: mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($this->body_html))), 0, 155);
+        if ($this->seo_description ?: $this->excerpt) {
+            return $this->seo_description ?: $this->excerpt;
+        }
+        // Lines of a poem stay apart ("… কাজে / সারাটা দিন …"), never glued together (D88).
+        $html = preg_replace(['~<br\s*/?>~i', '~</(p|div|li|h[1-6]|blockquote)>~i'], [' / ', ' '], (string) $this->body_html);
+        $text = trim(preg_replace(['/\s+/u', '~(\s*/\s*)+~u'], [' ', ' / '], html_entity_decode(strip_tags($html))), " /\t\n");
+
+        return mb_strlen($text) > 155 ? rtrim(mb_substr($text, 0, 154), " /,।").'…' : $text;
+    }
+
+    /** Title for social previews: the piece and its writer, as on the page (D88). */
+    public function shareTitle(): string
+    {
+        $title = $this->metaTitle();
+        $by = $this->authors->reject(fn ($a) => $a->is_desk)->map(fn ($a) => $a->publicName())->filter()->implode(', ');
+
+        return $by && ! str_contains($title, $by) ? $title.' | '.$by : $title;
     }
 
     /** Share/og image rule (docs/SEO.md §2): photos under 1200px are never the og:image. */

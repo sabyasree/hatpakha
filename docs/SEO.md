@@ -23,7 +23,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 - A unique `<title>` (≤ 60 chars where possible) and `<meta name="description">` (≤ 155 chars). Taken from Yoast data for old posts; AI-drafted and editor-approved for new posts. ✅test
 - `<link rel="canonical">` (absolute, https, trailing slash). ✅test
 - `<html lang="bn">` or `lang="en"` per article; `hreflang` pairs where a translation exists.
-- Open Graph + Twitter cards. `og:image` is the auto-generated 1200×630 share card (photos below 1200px are never used as og:image).
+- Open Graph + Twitter cards. `og:image` is the auto-generated 1200×630 share card under 300 KB (`App\Support\ShareImage`, D88): a cover at least 1200px wide, cropped, with the logo + section badge; otherwise the section's card. Photos below 1200px are never used as og:image. og:title for a piece is "title | writer". Staging's robots.txt lets link-preview bots (Facebook, WhatsApp, X, Telegram…) in so shared links show a picture; pages stay noindex.
 - `<meta name="robots" content="max-image-preview:large">` on articles (eligible for Google Discover).
 - Breadcrumbs (visible + `BreadcrumbList`).
 

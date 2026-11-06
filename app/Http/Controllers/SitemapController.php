@@ -17,7 +17,12 @@ class SitemapController extends Controller
     public function robots()
     {
         if (! config('seo.indexable')) {
-            return response("User-agent: *\nDisallow: /\n")->header('Content-Type', 'text/plain; charset=UTF-8');
+            // Staging: no search engine, but link previews (Facebook, WhatsApp, X, Telegram…) may read pages and
+            // pictures, or shared links show no picture (D88). Pages still say noindex, so nothing is listed.
+            $preview = ['facebookexternalhit', 'Facebot', 'WhatsApp', 'Twitterbot', 'TelegramBot', 'LinkedInBot', 'Slackbot', 'Discordbot'];
+            $lines = collect($preview)->map(fn ($bot) => "User-agent: {$bot}\nAllow: /\nDisallow: /desk\nDisallow: /account\nDisallow: /submit\n")->implode("\n");
+
+            return response($lines."\nUser-agent: *\nDisallow: /\n")->header('Content-Type', 'text/plain; charset=UTF-8');
         }
 
         $lines = [

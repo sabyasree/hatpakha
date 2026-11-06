@@ -50,11 +50,12 @@ class PostController extends Controller
             description: $post->metaDescription(),
             canonical: $post->url(),
             noindex: $post->noindex,
-            image: $post->hasLargeImage() ? asset($post->featured_image_path) : null,
+            image: \App\Support\ShareImage::forPost($post),
             type: 'article',
             lang: $post->language,
             jsonLd: [JsonLd::post($post), JsonLd::breadcrumbs($crumbs)],
             publishedAt: $post->published_at?->toAtomString(),
+            shareTitle: $post->shareTitle(),
         );
 
         return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));
