@@ -133,7 +133,18 @@
         <div class="mt-6 flex snap-x gap-6 overflow-x-auto pb-4 pt-4">
             @foreach ($travel as $i => $t)
                 <a href="{{ $t->url() }}" class="lift flex h-[300px] w-[240px] flex-none snap-start flex-col bg-white p-3 outline-4 outline-dotted outline-navy {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
-                    <span class="flex flex-1 flex-col justify-end border-2 border-navy p-4 {{ ['bg-navy text-paper', 'bg-sky', 'bg-red text-white', 'bg-peach'][$i % 4] }}"><span class="font-display text-2xl font-extrabold leading-tight">{{ $t->title }}</span></span>
+                    @if ($t->hasCardImage())
+                        {{-- The cover as the stamp's picture, the title on a coloured strip (white text only on red/navy). --}}
+                        <span class="flex flex-1 flex-col overflow-hidden border-2 border-navy">
+                            <picture class="relative block min-h-0 flex-1">
+                                @if ($set = \App\Support\Images::srcset('/'.$t->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="240px">@endif
+                                <img src="{{ asset($t->featured_image_path) }}" alt="" loading="lazy" decoding="async" width="{{ $t->featured_image_width }}" height="{{ $t->featured_image_height }}" class="absolute inset-0 h-full w-full object-cover">
+                            </picture>
+                            <span class="block p-3 {{ ['bg-navy text-paper', 'bg-red text-white'][$i % 2] }}"><span class="line-clamp-2 font-display text-lg font-extrabold leading-tight">{{ $t->title }}</span></span>
+                        </span>
+                    @else
+                        <span class="flex flex-1 flex-col justify-end border-2 border-navy p-4 {{ ['bg-navy text-paper', 'bg-sky', 'bg-red text-white', 'bg-peach'][$i % 4] }}"><span class="font-display text-2xl font-extrabold leading-tight">{{ $t->title }}</span></span>
+                    @endif
                     <span class="flex justify-between pt-2 text-xs font-bold"><span>হাতপাখা ডাক</span><span>{{ $t->authors->first()?->publicName() }}</span></span>
                 </a>
             @endforeach
