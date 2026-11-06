@@ -105,7 +105,7 @@ if (form) {
         moreBtn?.addEventListener('click', () => {
             more.hidden = !more.hidden;
             moreBtn.setAttribute('aria-expanded', String(!more.hidden));
-            moreBtn.textContent = more.hidden ? 'আরও ▾' : 'কম ▴';
+            moreBtn.textContent = more.hidden ? 'আরও ▾' : 'বন্ধ ▴';
         });
         const buttons = form.querySelectorAll('[data-toolbar] [data-cmd]');
         buttons.forEach((b) => b.addEventListener('click', () => commands[b.dataset.cmd]?.()));
@@ -136,12 +136,19 @@ if (form) {
     };
 
     const bodyText = () => (editor ? editor.getText({ blockSeparator: '\n' }) : textarea.value);
+    // Phones (composer review): the bottom bar shows the live count and the autosave state, not a "save" link.
+    const barStatus = form.querySelector('[data-bar-status]');
+    const draftBtn = form.querySelector('[data-draft-btn]');
+    if (barStatus && window.matchMedia('(max-width: 639px)').matches) { barStatus.hidden = false; draftBtn?.classList.add('hidden'); }
+    let saved = '';
     const words = () => {
         const t = bodyText();
         const n = t.trim() ? t.trim().split(/\s+/u).length : 0;
         const lines = t.split('\n').filter((l) => l.trim()).length;
         count.textContent = `${n.toLocaleString('bn-IN')} শব্দ · ${lines.toLocaleString('bn-IN')} লাইন`;
+        if (barStatus) barStatus.textContent = `${n.toLocaleString('bn-IN')} শব্দ${saved ? ' · ' + saved : ''}`;
     };
+    const setSaved = (txt) => { status.textContent = txt; saved = txt.replace(/^✓ খসড়া রাখা হয়েছে · /, '✓ রাখা হয়েছে '); words(); };
 
     const post = (url, payload) => fetch(url, {
         method: 'POST',
@@ -163,7 +170,7 @@ if (form) {
         status.textContent = 'রাখা হচ্ছে…';
         post(autosaveUrl, payload()).then((res) => {
             if (!res.saved) { status.textContent = ''; return; }
-            status.textContent = `✓ খসড়া রাখা হয়েছে · ${res.at}`;
+            setSaved(`✓ খসড়া রাখা হয়েছে · ${res.at}`);
             if (res.id && form.dataset.new) {
                 // First autosave of a new piece: from now on keep editing that draft.
                 delete form.dataset.new;
@@ -177,6 +184,16 @@ if (form) {
     function changed() { dirty = true; words(); clearTimeout(timer); timer = setTimeout(save, 4000); }
     [title, textarea].forEach((el) => el.addEventListener('input', changed));
     sections.forEach((r) => r.addEventListener('change', () => { setHint(); changed(); showError('section', false); }));
+
+    // While typing on a phone the keyboard needs the space: the action bar steps aside (composer review).
+    const bar = form.querySelector('[data-action-bar]');
+    if (bar && window.matchMedia('(max-width: 639px)').matches) {
+        form.addEventListener('focusin', (e) => { if (e.target.matches('input[name=title], textarea, [contenteditable]')) bar.classList.add('hidden'); });
+        form.addEventListener('focusout', () => setTimeout(() => {
+            if (!form.contains(document.activeElement) || !document.activeElement.matches('input[name=title], textarea, [contenteditable]')) bar.classList.remove('hidden');
+        }, 120));
+    }
+    form.querySelector('[data-pick-photo]')?.addEventListener('click', () => form.querySelector('[data-cover]')?.click());
 
     // Friendly checks before sending (instead of a page full of errors): what is missing, right where it is.
     const showError = (name, on) => { const el = form.querySelector(`[data-error="${name}"]`); if (el) el.hidden = !on; };

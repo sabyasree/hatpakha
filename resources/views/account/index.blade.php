@@ -36,7 +36,18 @@
             </div>
         </div>
 
-        @if (session('status'))
+        @if (session('submitted'))
+            {{-- Just sent (composer review): a proper "done" moment, and the next step --}}
+            <div role="status" class="mt-6 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
+                <div class="font-hand text-2xl text-red">জমা পড়েছে!</div>
+                <div class="mt-1 font-serif text-xl font-bold">“{{ session('submitted') }}”</div>
+                <p class="mt-2 text-ink2">সম্পাদকমণ্ডলী পড়ে দেখে ই-মেলে জানাবেন। লেখাটি কোথায় আছে, নিচে "আমার লেখা"-য় দেখতে পাবেন। ধন্যবাদ!</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <a href="#writing" class="flex h-11 items-center rounded-full bg-navy px-5 font-bold text-white">আমার লেখা দেখুন</a>
+                    <a href="{{ Url::to('/submit') }}" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">আরেকটা লিখুন</a>
+                </div>
+            </div>
+        @elseif (session('status'))
             <div role="status" class="mt-6 rounded-xl border-2 border-sky bg-sky-tint p-4 font-semibold text-sky-night">{{ session('status') }}</div>
         @endif
         @if ($errors->any())

@@ -182,7 +182,7 @@ class SubmissionController extends Controller
         // AI report for the editor (advice only), written after the writer's page has been sent.
         \App\Jobs\ReviewSubmission::dispatch($post->id)->afterResponse();
 
-        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। ধন্যবাদ!');
+        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। ধন্যবাদ!')->with('submitted', $post->title);
     }
 
     private function fill(Request $request, Post $post, string $title, string $body, ?int $sectionId): void

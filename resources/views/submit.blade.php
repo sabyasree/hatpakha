@@ -1,8 +1,8 @@
 <x-layouts.app :seo="$seo">
     @vite('resources/js/submit.js')
     @include('partials.chat')
-    <section class="mx-auto max-w-[820px] px-5 pb-16 pt-8">
-        <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="hover:text-red">আমার লেখা</a> ›</nav>
+    <section class="mx-auto max-w-[820px] px-5 pb-28 pt-8 sm:pb-16">
+        <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="inline-flex min-h-11 items-center hover:text-red">← আমার লেখা</a></nav>
         <div class="mt-2 flex flex-wrap items-end justify-between gap-2">
             <h1 class="font-display text-4xl font-extrabold">{{ $post->exists ? 'লেখাটি সাজান' : 'নতুন লেখা' }}</h1>
             <span id="autosave-status" aria-live="polite" class="text-sm font-semibold text-sky-night"></span>
@@ -64,7 +64,7 @@
                 {{-- 1. What kind of writing: pills, one tap --}}
                 <fieldset class="mb-5 min-w-0">
                     <legend class="mb-2 font-bold">কী লিখছেন?</legend>
-                    <div class="relative -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" data-sections>
+                    <div class="relative flex flex-wrap gap-2" data-sections>
                         @foreach ($sections as $s)
                             <label class="relative flex-none">
                                 <input type="radio" name="section_id" value="{{ $s->id }}" data-format="{{ $s->format }}" class="peer sr-only" @checked((int) old('section_id', $post->section_id) === $s->id) @if ($loop->first) required @endif>
@@ -108,30 +108,31 @@
                     <script type="application/json" id="body-initial">@json(old('body_format') === 'html' ? (string) old('body') : $html)</script>
                     <span id="body-label" class="sr-only">লেখা</span>
                     <div data-editor-shell hidden>
-                        <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="ed-toolbar sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b-2 border-rule bg-paper/95 p-1.5 backdrop-blur">
-                            <button type="button" data-cmd="bold" title="গাঢ় (Ctrl+B)" class="ed-btn px-2 text-base font-extrabold">গাঢ়</button>
-                            <button type="button" data-cmd="italic" title="বাঁকা (Ctrl+I)" class="ed-btn px-2 text-base italic">বাঁকা</button>
-                            <button type="button" data-cmd="heading" title="উপশিরোনাম" class="ed-btn px-2 text-base font-bold">উপশিরোনাম</button>
-                            <button type="button" data-cmd="blockquote" title="উদ্ধৃতি" class="ed-btn px-2 text-base">“উদ্ধৃতি”</button>
-                            <button type="button" data-more-toggle aria-expanded="false" aria-controls="ed-more" class="ed-btn px-2 text-base font-bold">আরও ▾</button>
-                            <span class="ml-auto hidden sm:flex">
-                                <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন (Ctrl+Z)" aria-label="ফিরিয়ে আনুন" class="ed-btn">↶</button>
-                                <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn">↷</button>
-                            </span>
-                            <div id="ed-more" data-more hidden class="flex w-full flex-wrap gap-1 border-t border-rule pt-1">
-                                <button type="button" data-cmd="underline" title="নিচে দাগ (Ctrl+U)" aria-label="নিচে দাগ" class="ed-btn underline">ক</button>
-                                <button type="button" data-cmd="strike" title="কেটে দেওয়া" aria-label="কেটে দেওয়া" class="ed-btn line-through">ক</button>
-                                <button type="button" data-cmd="superscript" title="উপরে ছোট লেখা (যেমন ১ম, পাদটীকা¹)" aria-label="উপরে ছোট লেখা" class="ed-btn">ক<sup>২</sup></button>
-                                <button type="button" data-cmd="subscript" title="নিচে ছোট লেখা" aria-label="নিচে ছোট লেখা" class="ed-btn">ক<sub>২</sub></button>
-                                <button type="button" data-cmd="bulletList" title="তালিকা" aria-label="তালিকা" class="ed-btn">•</button>
-                                <button type="button" data-cmd="orderedList" title="ক্রমিক তালিকা" aria-label="ক্রমিক তালিকা" class="ed-btn">১.</button>
-                                <button type="button" data-cmd="horizontalRule" title="ভাগ (অংশের মাঝে দাগ)" aria-label="ভাগ" class="ed-btn">—</button>
-                                <button type="button" data-cmd="alignLeft" title="বাঁ দিকে" aria-label="বাঁ দিকে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="2" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="2" y="15" width="10" height="2" rx="1"/></svg></button>
-                                <button type="button" data-cmd="alignCenter" title="মাঝখানে" aria-label="মাঝখানে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="5" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="5" y="15" width="10" height="2" rx="1"/></svg></button>
-                                <button type="button" data-cmd="alignRight" title="ডান দিকে" aria-label="ডান দিকে" class="ed-btn"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="16" height="2" rx="1"/><rect x="8" y="7" width="10" height="2" rx="1"/><rect x="2" y="11" width="16" height="2" rx="1"/><rect x="8" y="15" width="10" height="2" rx="1"/></svg></button>
-                                <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন" aria-label="ফিরিয়ে আনুন" class="ed-btn sm:hidden">↶</button>
-                                <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn sm:hidden">↷</button>
-                                <button type="button" data-cmd="clear" title="বাছাই করা অংশের সব সাজ মুছুন" class="ed-btn px-2.5 text-sm font-bold">সাজ মুছুন</button>
+                        <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="ed-toolbar sticky top-0 z-10 border-b-2 border-rule bg-paper/95 backdrop-blur">
+                            <div class="flex items-center gap-1 overflow-x-auto whitespace-nowrap p-1.5 [&>*]:flex-none">
+                                <button type="button" data-cmd="bold" title="গাঢ় (Ctrl+B)" class="ed-btn px-2 text-base font-extrabold">গাঢ়</button>
+                                <button type="button" data-cmd="italic" title="বাঁকা (Ctrl+I)" class="ed-btn px-2 text-base italic">বাঁকা</button>
+                                <button type="button" data-cmd="heading" title="উপশিরোনাম" class="ed-btn px-2 text-base font-bold">উপশিরোনাম</button>
+                                <button type="button" data-cmd="blockquote" title="উদ্ধৃতি" class="ed-btn px-2 text-base">“উদ্ধৃতি”</button>
+                                <button type="button" data-pick-photo title="ছবি যোগ করুন" aria-label="ছবি যোগ করুন" class="ed-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></button>
+                                <button type="button" data-more-toggle aria-expanded="false" aria-controls="ed-more" class="ed-btn px-2 text-base font-bold">আরও ▾</button>
+                                <span class="ml-auto flex">
+                                    <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন (Ctrl+Z)" aria-label="ফিরিয়ে আনুন" class="ed-btn">↶</button>
+                                    <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn">↷</button>
+                                </span>
+                            </div>
+                            <div id="ed-more" data-more hidden class="flex flex-wrap gap-1 border-t border-rule p-1.5 text-sm font-bold">
+                                <button type="button" data-cmd="underline" class="ed-btn px-2 underline">নিচে দাগ</button>
+                                <button type="button" data-cmd="strike" class="ed-btn px-2 line-through">কাটা</button>
+                                <button type="button" data-cmd="superscript" title="উপরে ছোট লেখা (যেমন ১ম, পাদটীকা¹)" class="ed-btn px-2">উপরে ছোট<sup>২</sup></button>
+                                <button type="button" data-cmd="subscript" class="ed-btn px-2">নিচে ছোট<sub>২</sub></button>
+                                <button type="button" data-cmd="bulletList" class="ed-btn px-2">• তালিকা</button>
+                                <button type="button" data-cmd="orderedList" class="ed-btn px-2">১. ক্রমিক</button>
+                                <button type="button" data-cmd="horizontalRule" class="ed-btn px-2">— ভাগ</button>
+                                <button type="button" data-cmd="alignLeft" class="ed-btn px-2">বাঁ দিকে</button>
+                                <button type="button" data-cmd="alignCenter" class="ed-btn px-2">মাঝখানে</button>
+                                <button type="button" data-cmd="alignRight" class="ed-btn px-2">ডান দিকে</button>
+                                <button type="button" data-cmd="clear" title="বাছাই করা অংশের সব সাজ মুছুন" class="ed-btn px-2">সাজ মুছুন</button>
                             </div>
                         </div>
                         <div class="ed-wrap font-serif text-lg leading-relaxed">
@@ -176,9 +177,10 @@
                 <p data-error="original" hidden class="mt-2 text-sm font-bold text-red" role="alert">জমা দেওয়ার আগে এই ঘরে টিক দিন।</p>
 
                 {{-- 5. Actions: fixed at the bottom on phones (like a social app), at the end on wider screens --}}
-                <div class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-navy bg-paper/95 px-4 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+                <div data-action-bar class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-navy bg-paper/95 px-4 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
                     <div class="mx-auto flex max-w-[820px] items-center gap-2">
                         <button type="submit" name="action" value="draft" formnovalidate class="flex h-12 flex-none items-center rounded-full px-3 text-sm font-bold text-ink2 underline sm:px-4 sm:text-base" data-draft-btn>খসড়া রাখুন</button>
+                        <span data-bar-status hidden class="min-w-0 flex-1 truncate text-xs font-semibold text-sky-night sm:hidden"></span>
                         <button type="button" id="preview-btn" class="h-12 flex-none rounded-full border-2 border-navy bg-white px-4 font-bold sm:px-6">কেমন দেখাবে</button>
                         <button type="submit" name="action" value="submit" class="h-12 flex-1 rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">জমা দিন</button>
                     </div>
