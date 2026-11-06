@@ -247,15 +247,17 @@ class ImportWordPress extends Command
         $bar->finish();
         $this->newLine();
         if ($this->skippedEdited) {
-            $this->warn("{$this->skippedEdited} posts edited in /desk were kept as they are (use --overwrite-edited to replace them).");
+            $this->warn("{$this->skippedEdited} posts edited in /desk or decided in the audit were kept as they are (use --overwrite-edited to replace them).");
         }
     }
 
     private int $skippedEdited = 0;
 
+    /** Edited in /desk, or an applied audit decision (removed/merged/hidden): a re-import must not undo either. */
     public static function editedInDesk(int $legacyId): bool
     {
-        return Post::withTrashed()->where('legacy_wp_id', $legacyId)->whereNotNull('edited_in_desk_at')->exists();
+        return Post::withTrashed()->where('legacy_wp_id', $legacyId)
+            ->where(fn ($q) => $q->whereNotNull('edited_in_desk_at')->orWhere('audit_decision', 'applied'))->exists();
     }
 
     private function importPost(object $p, $meta, $rels, $thumbs): void

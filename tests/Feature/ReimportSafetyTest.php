@@ -24,4 +24,13 @@ class ReimportSafetyTest extends TestCase
         $post->forceFill($data)->save();
         $this->assertTrue(ImportWordPress::editedInDesk(555));
     }
+
+    public function test_applied_audit_decisions_survive_a_reimport(): void
+    {
+        $post = $this->makePost(['slug' => 'removed', 'legacy_wp_id' => 777]);
+        $this->assertFalse(ImportWordPress::editedInDesk(777));
+        $post->forceFill(['status' => 'archived', 'audit_decision' => 'applied'])->saveQuietly();
+
+        $this->assertTrue(ImportWordPress::editedInDesk(777));
+    }
 }

@@ -37,6 +37,14 @@ class LegacyUrlTest extends TestCase
         $this->get('/sitemap.html')->assertRedirect($home);
     }
 
+    public function test_unknown_author_and_tag_urls_use_the_redirects_table(): void
+    {
+        \App\Models\Redirect::create(['from_path' => '/author/hatpakha/', 'to_path' => '/author/hatpakha-desk/', 'status_code' => 301]);
+        $this->get('/author/hatpakha/')->assertRedirect(url('/author/hatpakha-desk').'/');
+        $this->get('/author/nobody/')->assertNotFound();
+        $this->get('/tag/nothing/')->assertNotFound();
+    }
+
     public function test_author_query_never_reveals_user_names(): void
     {
         $this->get('/?author=1')->assertRedirect(url('/').'/');

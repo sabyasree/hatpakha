@@ -29,7 +29,10 @@ class ArchiveController extends Controller
 
     public function tag(Request $request, string $slug)
     {
-        $tag = Tag::where('slug', Slug::normalize($slug))->firstOrFail();
+        $tag = Tag::where('slug', Slug::normalize($slug))->first();
+        if (! $tag) {
+            return app(LegacyController::class)->fallback($request);
+        }
         $posts = $tag->posts()->published()->with('authors')->latest('published_at')->paginate(24);
 
         // Only curated tags with enough posts are indexed (docs/SEO.md §4).
@@ -39,7 +42,10 @@ class ArchiveController extends Controller
 
     public function author(Request $request, string $slug)
     {
-        $author = Author::where('slug', Slug::normalize($slug))->firstOrFail();
+        $author = Author::where('slug', Slug::normalize($slug))->first();
+        if (! $author) {
+            return app(LegacyController::class)->fallback($request);  // e.g. old house-account author URLs → 301
+        }
         $posts = $author->posts()->published()->with(['authors', 'section'])->latest('published_at')->paginate(24);
 
         $seo = new Seo(
