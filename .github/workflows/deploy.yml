@@ -112,6 +112,19 @@ jobs:
             php artisan filament:optimize && \
             php artisan up"
 
+      # Staging only, and only when the commit message contains [run-blind-test] (owner asked to run it).
+      # The command estimates first and stops above $6 (≈ ₹500); see docs/AI.md.
+      - name: AI blind test (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-blind-test]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-blind-test --count=30 --max-usd=6 --force --no-ansi"
+
       - name: Remove key
         if: always()
         run: rm -f ~/.ssh/deploy_key
