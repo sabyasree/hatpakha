@@ -70,6 +70,10 @@ TXT;
             return '';
         }
         $out = "\n\n".self::BRIEF;
+        if (in_array($purpose, self::TRENDS_FOR, true) && ($m = Strategist::current())) {
+            $out .= "\n\n### This month's priorities from the strategist (".$m['at'].'; let your work serve them where it fits)'."\n"
+                .collect($m['priorities'])->map(fn ($p) => '- '.$p['what'].' ('.$p['who'].')')->implode("\n");
+        }
         if (in_array($purpose, self::TRENDS_FOR, true) && ($t = self::trends())) {
             $out .= "\n\n### This week's news in Bengali literature and culture (from the trend scout, ".$t['at'].'; awareness only, '
                 ."mention only if it truly fits, never as a quote or with numbers)\n"

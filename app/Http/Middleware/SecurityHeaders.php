@@ -48,6 +48,10 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        // D63: pages seen by editors carry the "edit in desk" button: never let any cache keep them.
+        if (! $isAdmin && $request->user()?->hasRole(\App\Enums\Role::Editor)) {
+            $response->headers->set('Cache-Control', 'private, no-store');
+        }
         if (! config('seo.indexable')) {
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         }

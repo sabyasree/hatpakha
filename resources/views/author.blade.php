@@ -7,6 +7,7 @@
     $linkNames = ['website' => 'ওয়েবসাইট', 'facebook' => 'ফেসবুক', 'instagram' => 'ইনস্টাগ্রাম'];
 @endphp
 <x-layouts.app :seo="$seo">
+    <x-desk-edit :url="\App\Filament\Resources\Authors\AuthorResource::getUrl('edit', ['record' => $author], panel: 'desk')" label="লেখক সম্পাদনা" />
     <section class="mx-auto max-w-[1100px] px-5 pt-6">
         {{-- Cover: the writer's own picture, or our fan pattern --}}
         <div class="relative h-32 overflow-hidden rounded-3xl border-2 border-navy bg-sky sm:h-44 md:h-60">

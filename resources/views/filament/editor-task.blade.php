@@ -30,6 +30,15 @@
         <ol style="margin:0 0 .6rem;padding-inline-start:1.4rem;list-style:decimal">@foreach ((array) ($p['top'] ?? []) as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ol>
         @if (! empty($p['old']))<p style="margin:0;font-weight:700">{{ __('পুরনো লেখা, এখনও পড়া হচ্ছে') }}</p>
             <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['old'] as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ul>@endif
+    @elseif ($task->type === 'strategy')
+        <p style="margin:0 0 .6rem">{{ $p['summary'] ?? '' }}</p>
+        @if (! empty($p['priorities']))<p style="margin:0;font-weight:700">{{ __('অগ্রাধিকার') }}</p>
+            <ol style="margin:0 0 .6rem;padding-inline-start:1.4rem;list-style:decimal">@foreach ($p['priorities'] as $pr)<li>{{ $pr['what'] }} <span style="opacity:.75">({{ $pr['who'] }}@if ($pr['check']) · {{ $pr['check'] }}@endif)</span></li>@endforeach</ol>@endif
+        @foreach (['strengths' => 'আমাদের শক্তি', 'weaknesses' => 'দুর্বলতা'] as $k => $label)
+            @if (! empty($p[$k]))<p style="margin:0;font-weight:700">{{ __($label) }}</p><ul style="margin:0 0 .6rem;padding-inline-start:1.2rem;list-style:disc">@foreach ($p[$k] as $x)<li>{{ $x }}</li>@endforeach</ul>@endif
+        @endforeach
+        @if (! empty($p['market']))<p style="margin:0;font-weight:700">{{ __('বাজারে যা দেখা গেল') }}</p>
+            <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['market'] as $mk)<li>{{ $mk['point'] }} <a href="{{ $mk['url'] }}" target="_blank" rel="noopener noreferrer nofollow" style="text-decoration:underline">↗</a></li>@endforeach</ul>@endif
     @elseif ($task->type === 'team_review')
         <ul style="margin:0 0 .6rem;padding-inline-start:1.2rem;list-style:disc">
             @foreach ((array) ($p['agents'] ?? []) as $key => $a)

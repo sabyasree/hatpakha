@@ -73,6 +73,13 @@ class AiTeam extends Page
                 'post' => $r->post_id ? \App\Models\Post::find($r->post_id, ['id', 'title']) : null]);
     }
 
+    public function newStrategy(): void
+    {
+        abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+        \App\Ai\Strategist::request();
+        Notification::make()->title(__('কৌশলবিদ কাজ শুরু করছে; কয়েক মিনিট পরে এই পাতা আবার খুলুন।'))->success()->send();
+    }
+
     public function toggle(string $agent): void
     {
         abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
@@ -87,7 +94,7 @@ class AiTeam extends Page
         'ai-shift daily' => ['দৈনিক কাজ', 'লেখককে মনে করানো, দিনের পোস্ট; ২০ তারিখ থেকে পরের সংখ্যার প্রস্তাব, ২১ থেকে লেখকদের চিঠি', ['editor', 'marketing', 'copywriter']],
         'ai-shift weekly' => ['সাপ্তাহিক কাজ (সোমবার)', 'সপ্তাহের খবর খোঁজা, সম্পাদকের পছন্দ, সাইটের স্বাস্থ্য, কাজের মান যাচাই, সপ্তাহের পোস্ট-পরিকল্পনা, শংসাপত্রের তালিকা', ['scout', 'editor', 'chief', 'marketing']],
         'ai-shift newsletter' => ['পাঠকদের চিঠি (শনিবার)', 'সাপ্তাহিক চিঠির খসড়া; আপনি দেখে পাঠাবেন', ['copywriter']],
-        'ai-shift monthly' => ['মাসিক কাজ (১ তারিখ)', 'মাসের হিসাব, পাঠকের হিসাব, সংকলন, দল-পর্যালোচনা, এসইও ঘষামাজা, লেখক পরিচিতি', ['editor', 'analyst', 'archivist', 'chief', 'seo', 'marketing']],
+        'ai-shift monthly' => ['মাসিক কাজ (১ তারিখ)', 'মাসের হিসাব, পাঠকের হিসাব, কৌশলবিদের পরিকল্পনা, সংকলন, দল-পর্যালোচনা, এসইও ঘষামাজা, লেখক পরিচিতি', ['editor', 'analyst', 'strategist', 'archivist', 'chief', 'seo', 'marketing']],
         'ai-shift chief' => ['প্রধান সম্পাদকের পরীক্ষা', 'কেউ আটকে আছে কি না, খরচ, খালি প্রকাশের দিন, প্রতিযোগিতার সময়', ['chief']],
         'ai-shift brief' => ['সকালের সারাংশ', 'আপনার জন্য আজকের এক নজর', ['chief']],
     ];
@@ -154,6 +161,8 @@ class AiTeam extends Page
             'forecast' => $week / 7 * now()->daysInMonth,
             'plan' => self::plan(),
             'trends' => \App\Ai\Knowledge::trends(),
+            'strategy' => \App\Ai\Strategist::current(),
+            'strategyPending' => Setting::get('strategy.requested') !== null,
             'feed' => self::feed(),
             'alerts' => EditorTask::where('type', 'alert')->where('status', 'open')->latest()->get(),
             'enabled' => (bool) config('ai.enabled'),

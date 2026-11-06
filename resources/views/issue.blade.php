@@ -1,4 +1,5 @@
 <x-layouts.app :seo="$seo">
+    <x-desk-edit :url="\App\Filament\Resources\Issues\IssueResource::getUrl('edit', ['record' => $issue], panel: 'desk')" label="সংখ্যা সম্পাদনা" />
     <section class="mx-auto max-w-[1100px] px-5 py-12">
         <div class="font-hand text-2xl text-red">সংখ্যা</div>
         <h1 class="font-display text-6xl font-extrabold">{{ $issue->title }}</h1>

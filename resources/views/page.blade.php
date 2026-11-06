@@ -1,5 +1,6 @@
 <x-layouts.app :seo="$seo">
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
+    <x-desk-edit :url="\App\Filament\Resources\Pages\PageResource::getUrl('edit', ['record' => $page], panel: 'desk')" />
     <article class="mx-auto max-w-[760px] px-5 pb-14 pt-8">
         <nav aria-label="অবস্থান" class="text-sm text-ink2">
             <a href="{{ $crumbs[0][1] }}" class="hover:text-red">{{ $crumbs[0][0] }}</a> ›

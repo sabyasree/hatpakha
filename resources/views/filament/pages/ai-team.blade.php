@@ -95,6 +95,32 @@
         </x-filament::section>
     </div>
 
+    {{-- The strategist's plan for the month (D63) --}}
+    <x-filament::section icon="heroicon-o-light-bulb">
+        <x-slot name="heading">{{ __('এই মাসের কৌশল') }}</x-slot>
+        <x-slot name="description">{{ $d['strategy'] ? __('কৌশলবিদের পরিকল্পনা').', '.$n($d['strategy']['at']).'। '.__('সম্পাদক, মার্কেটিং, কপিরাইটার আর প্রধান সম্পাদক এই অগ্রাধিকার মেনে কাজ করে।') : __('প্রতি মাসের ১ তারিখে কৌশলবিদ বাজার ও অন্য পত্রিকার খোঁজ নিয়ে পরিকল্পনা দেবে।') }}</x-slot>
+        <x-slot name="headerEnd">
+            @if (auth()->user()->hasRole(\App\Enums\Role::Admin))
+                <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-path" wire:click="newStrategy" :disabled="$d['strategyPending']">
+                    {{ $d['strategyPending'] ? __('তৈরি হচ্ছে…') : __('এখনই নতুন পরিকল্পনা') }}</x-filament::button>
+            @endif
+        </x-slot>
+        @if ($m = $d['strategy'])
+            <p style="margin:0 0 .75rem">{{ $m['summary'] }}</p>
+            <div class="hp-list">
+                @foreach ($m['priorities'] as $i => $p)
+                    <div class="hp-row">
+                        <strong class="hp-num" style="min-width:1.5rem">{{ $n($i + 1) }}.</strong>
+                        <div style="flex:1;min-width:0">{{ $p['what'] }}
+                            <div><span class="hp-chip">{{ __($agents[$p['who']][0] ?? ($p['who'] === 'owner' ? 'আপনি' : $p['who'])) }}</span>
+                                @if ($p['check'])<span class="hp-muted"> {{ __('মাপকাঠি:') }} {{ $p['check'] }}</span>@endif</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </x-filament::section>
+
     {{-- The trend scout's news: what the team keeps in mind this week (D62) --}}
     <x-filament::section icon="heroicon-o-sparkles" collapsible>
         <x-slot name="heading">{{ __('এই সপ্তাহের খবর') }}</x-slot>

@@ -173,6 +173,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::report();
         \App\Ai\Marketer::spotlight();
         \App\Ai\Analyst::monthly();
+        \App\Ai\Strategist::monthly();   // D63: after the analyst, so the memo sees last month's numbers
         \App\Ai\Chief::teamReview();
         \App\Ai\Archivist::collection();
         \App\Ai\Archivist::tags();
