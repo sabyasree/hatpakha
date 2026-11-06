@@ -85,6 +85,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
     Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');
     Route::post('/account/audio/{post}', [\App\Http\Controllers\AccountController::class, 'audio'])->whereNumber('post')->middleware('throttle:10,1');
+    Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/newsletter', [\App\Http\Controllers\AccountController::class, 'updateNewsletter']);
     Route::post('/account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->middleware('throttle:5,1');
     Route::post('/account/2fa/start', [\App\Http\Controllers\AccountController::class, 'twoFactorStart'])->middleware('throttle:10,1');

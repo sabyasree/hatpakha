@@ -99,7 +99,7 @@
     <x-filament::section icon="heroicon-o-light-bulb">
         <x-slot name="heading">{{ __('এই মাসের কৌশল') }}</x-slot>
         <x-slot name="description">{{ $d['strategy'] ? __('কৌশলবিদের পরিকল্পনা').', '.$n($d['strategy']['at']).'। '.__('সম্পাদক, মার্কেটিং, কপিরাইটার আর প্রধান সম্পাদক এই অগ্রাধিকার মেনে কাজ করে।') : __('প্রতি মাসের ১ তারিখে কৌশলবিদ বাজার ও অন্য পত্রিকার খোঁজ নিয়ে পরিকল্পনা দেবে।') }}</x-slot>
-        <x-slot name="headerEnd">
+        <x-slot name="afterHeader">
             @if (auth()->user()->hasRole(\App\Enums\Role::Admin))
                 <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-path" wire:click="newStrategy" :disabled="$d['strategyPending']">
                     {{ $d['strategyPending'] ? __('তৈরি হচ্ছে…') : __('এখনই নতুন পরিকল্পনা') }}</x-filament::button>
@@ -124,6 +124,9 @@
     {{-- The trend scout's news: what the team keeps in mind this week (D62) --}}
     <x-filament::section icon="heroicon-o-sparkles" collapsible>
         <x-slot name="heading">{{ __('এই সপ্তাহের খবর') }}</x-slot>
+        <x-slot name="afterHeader">
+            <x-filament::button size="sm" color="gray" icon="heroicon-o-magnifying-glass" wire:click="findTrends">{{ __('এখনই খুঁজুন') }}</x-filament::button>
+        </x-slot>
         <x-slot name="description">{{ $d['trends'] ? __('ট্রেন্ড-সন্ধানী খুঁজেছে').' '.$n($d['trends']['at']).'। '.__('মার্কেটিং, চিঠি, সংখ্যা আর সংকলনের কাজে দল এগুলো মাথায় রাখে।') : __('প্রতি সোমবার ট্রেন্ড-সন্ধানী বাংলা সাহিত্য ও সংস্কৃতির খবর খুঁজে এখানে রাখবে।') }}</x-slot>
         @if ($d['trends'])
             <div class="hp-list">
@@ -138,6 +141,55 @@
             </div>
         @endif
     </x-filament::section>
+
+    {{-- Work the owner gave the team by hand (D72) --}}
+    @php($busy = $d['requests']->whereIn('status', ['queued', 'running'])->isNotEmpty())
+    <div @if ($busy) wire:poll.15s @endif>
+    <x-filament::section icon="heroicon-o-clipboard-document-check">
+        <x-slot name="heading">{{ __('আপনার দেওয়া কাজ') }}</x-slot>
+        <x-slot name="description">{{ __('উপরের "দলকে কাজ দিন" বা কোনো সদস্যের "কাজ দিন" থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়।') }}</x-slot>
+        <div class="hp-list">
+            @forelse ($d['requests'] as $r)
+                @php($color = ['queued' => '#EFC08D', 'running' => '#2DAAE2', 'done' => '#1A86C2', 'failed' => '#CB1B32'][$r->status] ?? '#13212C')
+                <div class="hp-row" wire:key="req-{{ $r->id }}">
+                    <span class="hp-dot" style="background:{{ $color }}"></span>
+                    <div style="flex:1;min-width:0">
+                        <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+                            <strong>{{ $r->agent ? __($agents[$r->agent][0] ?? $r->agent) : __('প্রধান সম্পাদক ঠিক করছে') }} · {{ __(\App\Ai\TeamJobs::label($r->agent, $r->job)) }}@if ($r->redo) · {{ __('আবার') }}@endif</strong>
+                            <span class="hp-muted hp-num">{{ __(['queued' => 'অপেক্ষায়', 'running' => 'কাজ চলছে…', 'done' => 'হয়ে গেছে', 'failed' => 'হয়নি'][$r->status] ?? $r->status) }} · {{ $ago($r->finished_at ?? $r->created_at) }}</span>
+                        </div>
+                        @if ($r->instruction && ! str_starts_with((string) $r->link, 'post:') && ! ctype_digit((string) $r->instruction))
+                            <div class="hp-muted">“{{ \Illuminate\Support\Str::limit($r->instruction, 200) }}”</div>
+                        @endif
+                        @if ($r->result)
+                            @if (mb_strlen($r->result) > 300)
+                                <details style="margin-top:.3rem"><summary style="cursor:pointer;font-weight:600">{{ __('দলের লেখা উত্তর দেখুন') }}</summary>
+                                    <div x-data="{ copied: false }">
+                                        <div x-ref="t" style="white-space:pre-wrap;line-height:1.7;margin-top:.4rem;padding:.7rem;border-radius:.6rem;background:rgba(127,127,127,.08)">{{ $r->result }}</div>
+                                        <x-filament::button size="xs" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem"
+                                            x-on:click="navigator.clipboard.writeText($refs.t.innerText); copied = true; setTimeout(() => copied = false, 1500)"><span x-text="copied ? '{{ __('কপি হয়েছে') }}' : '{{ __('কপি') }}'"></span></x-filament::button>
+                                    </div>
+                                </details>
+                            @else
+                                <div style="margin-top:.2rem">{{ $r->result }}</div>
+                            @endif
+                        @endif
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem">
+                            @if ($r->status === 'done' && ($l = \App\Filament\Pages\AiTeam::resultLink($r)))
+                                <x-filament::button size="xs" tag="a" :href="$l[1]" icon="heroicon-o-arrow-top-right-on-square">{{ $l[0] }}</x-filament::button>
+                            @endif
+                            @if (in_array($r->status, ['done', 'failed'], true))
+                                <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-path" wire:click="again({{ $r->id }})">{{ __('আবার করুন') }}</x-filament::button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="hp-muted">{{ __('এখনও হাতে দেওয়া কোনো কাজ নেই। উপরের "দলকে কাজ দিন" বোতাম বা নিচে কোনো সদস্যের "কাজ দিন" টিপুন।') }}</div>
+            @endforelse
+        </div>
+    </x-filament::section>
+    </div>
 
     {{-- 3. The team --}}
     <x-filament::section icon="heroicon-o-user-group">
@@ -160,6 +212,9 @@
                         <div class="hp-muted">{{ __('শেষ কাজ:') }} {{ $ago($s['last']) }}</div>
                     </div>
                     <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+                        @if (isset(\App\Ai\TeamJobs::JOBS[$key]))
+                            {{ ($this->giveAction)(['agent' => $key]) }}
+                        @endif
                         {{ ($this->activityAction)(['agent' => $key]) }}
                         <x-filament::button size="sm" :color="$paused ? 'success' : 'gray'" :icon="$paused ? 'heroicon-o-play' : 'heroicon-o-pause'" wire:click="toggle('{{ $key }}')">
                             {{ $paused ? __('চালু করুন') : __('থামান') }}

@@ -85,9 +85,9 @@ final class EditorJobs
     }
 
     /** Monday: the week's editor's pick for the home page, and "এই দিনে" for the next 7 days. */
-    public static function picks(): ?EditorTask
+    public static function picks(bool $force = false): ?EditorTask
     {
-        if (EditorTask::open('pick')->exists()) {
+        if (! $force && EditorTask::open('pick')->exists()) {
             return null;
         }
         $recent = Post::published()->with('authors', 'latestAiReview')->where('published_at', '>=', now()->subDays(45))->latest('published_at')->limit(30)->get();

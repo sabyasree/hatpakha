@@ -47,9 +47,9 @@ final class Marketer
      * Something to post every day (D57): a piece that just went live, otherwise a favourite from the
      * archive (what readers still read, with a picture, not shared in the last six months).
      */
-    public static function daily(): ?SocialPost
+    public static function daily(bool $force = false): ?SocialPost
     {
-        if (SocialPost::where('created_at', '>=', now('Asia/Kolkata')->startOfDay()->utc())->whereIn('kind', ['piece', 'archive'])->exists()) {
+        if (! $force && SocialPost::where('created_at', '>=', now('Asia/Kolkata')->startOfDay()->utc())->whereIn('kind', ['piece', 'archive'])->exists()) {
             return null;
         }
         $marketed = SocialPost::whereIn('kind', ['piece', 'archive'])->where('created_at', '>=', now()->subMonths(6))->select('subject_id');
@@ -132,9 +132,9 @@ final class Marketer
     }
 
     /** Monthly: a writer spotlight from real facts only (published pieces, the writer's own bio). */
-    public static function spotlight(?Author $honoured = null): ?SocialPost
+    public static function spotlight(?Author $honoured = null, bool $force = false): ?SocialPost
     {
-        if (! $honoured && SocialPost::where('kind', 'spotlight')->where('created_at', '>=', now()->startOfMonth())->exists()) {
+        if (! $force && ! $honoured && SocialPost::where('kind', 'spotlight')->where('created_at', '>=', now()->startOfMonth())->exists()) {
             return null;
         }
         $author = $honoured ?? Author::where('is_desk', false)->whereHas('posts', fn ($q) => $q->published()->where('published_at', '>=', now()->subMonths(3)))

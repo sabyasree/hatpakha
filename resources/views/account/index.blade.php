@@ -128,7 +128,17 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="rounded-full px-3 py-1 text-sm font-bold {{ in_array($p->status, ['published', 'scheduled']) ? 'bg-sky-tint text-sky-night' : 'bg-peach-light' }}">{{ $label }}</span>
-                                @if ($p->status === 'published')<a href="{{ $p->url() }}" class="font-bold text-sky-deep underline">দেখুন</a>@endif
+                                @if ($p->status === 'published')<a href="{{ $p->url() }}" class="font-bold text-sky-deep underline">দেখুন</a>
+                                    {{-- D73: this piece's certificate, or ask for it --}}
+                                    @if ($cert = $certificates->first(fn ($c) => $c->post_id === $p->id && $c->kind === 'publication'))
+                                        <a href="{{ $cert->verifyUrl() }}" class="inline-flex h-9 items-center rounded-full bg-peach-light px-3 text-sm font-bold">🏅 সনদ</a>
+                                    @elseif (in_array($p->id, $certRequested, true))
+                                        <span class="text-sm text-ink2">সনদ চাওয়া হয়েছে</span>
+                                    @else
+                                        <form method="POST" action="{{ Url::to('/account/certificate/'.$p->id) }}">@csrf
+                                            <button class="inline-flex h-9 items-center rounded-full border-2 border-navy px-3 text-sm font-bold">সনদ চাই</button></form>
+                                    @endif
+                                @endif
                             </div>
                             @if (in_array($p->status, ['published', 'scheduled']))
                                 {{-- D67: the writer's own reading --}}
@@ -160,7 +170,8 @@
                         <li><a href="{{ $c->verifyUrl() }}" class="block rounded-2xl border-2 border-navy bg-white p-4 hover:bg-peach-light">
                             <span class="block text-2xl" aria-hidden="true">🏅</span>
                             <span class="mt-1 block font-serif font-bold">{{ $c->title_snapshot }}</span>
-                            <span class="text-sm text-ink2">{{ $c->issue_label ?: ($c->kind === 'contest' ? 'প্রতিযোগিতা' : 'প্রকাশ') }} · {{ Bn::date($c->issued_at) }}</span>
+                            <span class="text-sm text-ink2">{{ \App\Models\Certificate::THEMES[$c->theme()][0] }} · {{ Bn::date($c->issued_at) }}</span>
+                            <span class="mt-1 block text-sm font-bold text-sky-deep">দেখুন · ছবি বা PDF নামান · প্রিন্ট →</span>
                         </a></li>
                     @endforeach
                 </ul>

@@ -34,11 +34,11 @@ final class Analyst
         ];
     }
 
-    public static function monthly(?\Carbon\CarbonInterface $month = null): ?EditorTask
+    public static function monthly(?\Carbon\CarbonInterface $month = null, bool $force = false): ?EditorTask
     {
         $month ??= now('Asia/Kolkata')->subMonthNoOverflow()->startOfMonth();
         $key = 'insights:'.$month->format('Y-m');
-        if (EditorTask::where('type', 'insights')->where('key', $key)->exists()) {
+        if (! $force && EditorTask::where('type', 'insights')->where('key', $key)->exists()) {
             return null;
         }
         $s = self::stats($month, $month->copy()->endOfMonth());

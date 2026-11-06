@@ -27,8 +27,15 @@ Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timez
 Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newsletter batch')->everyMinute()->withoutOverlapping(10);
 // Covers the owner asked for from /desk (D60): two a minute, inside this process.
 Schedule::call(fn () => \App\Ai\Illustrator::drawRequested())->name('draw covers')->everyMinute()->withoutOverlapping(10);
-// The strategist when the owner asks for a new plan (D63): web research takes a while, so not in the web request.
-Schedule::call(fn () => \App\Ai\Strategist::runIfRequested())->name('strategy on request')->everyMinute()->withoutOverlapping(15);
+// Work the owner gives the team by hand (D72), and the strategist's "new plan now" (D63): AI work takes longer
+// than a web request may, so it is done here, a couple of requests a minute.
+Schedule::call(function () {
+    \App\Ai\Strategist::runIfRequested();
+    \App\Ai\TeamJobs::runQueued();
+})->name('team requests')->everyMinute()->withoutOverlapping(30);
 // Followers hear about a writer's new piece (D64). Not an AI job: runs even while the AI team rests.
-Schedule::call(fn () => \App\Support\FollowNotifier::run())->name('follow notices')->everyTenMinutes()->withoutOverlapping(10);
+Schedule::call(function () {
+    \App\Support\FollowNotifier::run();
+    \App\Models\Certificate::autoIssue();   // D73: certificates for newly published pieces (no AI)
+})->name('follow notices')->everyTenMinutes()->withoutOverlapping(10);
 

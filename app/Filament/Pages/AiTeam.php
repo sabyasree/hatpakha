@@ -73,6 +73,92 @@ class AiTeam extends Page
                 'post' => $r->post_id ? \App\Models\Post::find($r->post_id, ['id', 'title']) : null]);
     }
 
+    /** "দলকে কাজ দিন" (D72): the owner's own words; the editor-in-chief (or the chosen member) does it. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('ask')->label(__('দলকে কাজ দিন'))->icon('heroicon-o-chat-bubble-left-ellipsis')
+                ->modalHeading(__('দলকে কী করতে বলবেন?'))
+                ->modalDescription(__('নিজের ভাষায় লিখুন। প্রধান সম্পাদক ঠিক করবে কে করবে; চেনা কাজ হলে সেটাই করবে, নইলে খসড়া, তালিকা বা পরিকল্পনা লিখে দেবে। প্রকাশ, পাঠানো বা মুছে ফেলা সবসময় আপনার হাতে।'))
+                ->schema([
+                    \Filament\Forms\Components\Select::make('agent')->label(__('কে করবে'))->placeholder(__('প্রধান সম্পাদক ঠিক করুক'))
+                        ->options(fn () => collect(\App\Ai\Team::AGENTS)->except('relations')->map(fn ($a) => __($a[0]))->all()),
+                    \Filament\Forms\Components\Textarea::make('instruction')->label(__('কাজটি'))->required()->rows(5)->maxLength(3000)
+                        ->placeholder(__('যেমন: ভাইফোঁটা নিয়ে একটা ফেসবুক পোস্ট; শীতের সংখ্যার জন্য ১০টি বিষয়ের তালিকা; "শ্রাবণের মেঘ" লেখাটির ছবি আবার আঁকো')),
+                ])
+                ->modalSubmitActionLabel(__('কাজ দিন'))
+                ->action(function (array $data) {
+                    \App\Ai\TeamJobs::queue($data['agent'] ?: null, null, (string) $data['instruction']);
+                    Notification::make()->title(__('কাজ দেওয়া হয়েছে; এক-দুই মিনিটের মধ্যে শুরু হবে। নিচে "আপনার দেওয়া কাজ"-এ ফল দেখবেন।'))->success()->send();
+                }),
+        ];
+    }
+
+    /** Per member: run one of its jobs now, or again, or anything in words (D72). */
+    public function giveAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('give')->label(__('কাজ দিন'))->icon('heroicon-o-play-circle')->size('sm')
+            ->modalHeading(fn (array $arguments) => __(Team::AGENTS[$arguments['agent'] ?? '']['0'] ?? '').': '.__('কাজ দিন'))
+            ->fillForm(fn (array $arguments) => ['job' => array_key_first(\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''] ?? []) ?? 'words', 'redo' => false])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\Radio::make('job')->label(__('কী করবে'))->required()->live()
+                    ->options(collect(\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''] ?? [])->map(fn ($j) => __($j[0]))->put('words', __('অন্য কিছু (নিজের ভাষায় লিখুন)'))->all()),
+                \Filament\Forms\Components\Select::make('post')->label(__('লেখা'))->searchable()
+                    ->getSearchResultsUsing(fn (string $search) => \App\Models\Post::where('title', 'like', '%'.$search.'%')->latest('id')->limit(30)->pluck('title', 'id'))
+                    ->getOptionLabelUsing(fn ($value) => \App\Models\Post::find($value)?->title)
+                    ->visible(fn ($get) => (\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''][$get('job')][1] ?? null) === 'post')
+                    ->required(fn ($get) => (\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''][$get('job')][1] ?? null) === 'post'),
+                \Filament\Forms\Components\Textarea::make('text')->rows(4)->maxLength(3000)
+                    ->label(fn ($get) => $get('job') === 'words' ? __('কাজটি') : __('বিষয়'))
+                    ->visible(fn ($get) => $get('job') === 'words' || (\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''][$get('job')][1] ?? null) === 'topic')
+                    ->required(fn ($get) => $get('job') === 'words' || (\App\Ai\TeamJobs::JOBS[$arguments['agent'] ?? ''][$get('job')][1] ?? null) === 'topic'),
+                \Filament\Forms\Components\Toggle::make('redo')->label(__('আগে করা থাকলেও আবার নতুন করে করুক'))
+                    ->helperText(__('আগের প্রস্তাবটি সরিয়ে নতুনটি রাখবে।'))->visible(fn ($get) => $get('job') !== 'words'),
+            ])
+            ->modalSubmitActionLabel(__('এখনই করুক'))
+            ->action(function (array $data, array $arguments) {
+                $agent = (string) ($arguments['agent'] ?? '');
+                abort_unless(isset(Team::AGENTS[$agent]), 404);
+                $job = $data['job'] === 'words' ? null : $data['job'];
+                \App\Ai\TeamJobs::queue($agent, $job, $job && (\App\Ai\TeamJobs::JOBS[$agent][$job][1] ?? null) === 'post' ? (string) $data['post'] : ($data['text'] ?? null), (bool) ($data['redo'] ?? false));
+                Notification::make()->title(__('কাজ দেওয়া হয়েছে; এক-দুই মিনিটের মধ্যে শুরু হবে। নিচে "আপনার দেওয়া কাজ"-এ ফল দেখবেন।'))->success()->send();
+            });
+    }
+
+    /** Do a request again (same work, as a redo). */
+    public function again(int $id): void
+    {
+        $r = \App\Models\TeamRequest::findOrFail($id);
+        \App\Ai\TeamJobs::queue($r->agent, $r->job, $r->instruction, true);
+        Notification::make()->title(__('আবার কাজ দেওয়া হয়েছে'))->success()->send();
+    }
+
+    public function findTrends(): void
+    {
+        \App\Ai\TeamJobs::queue('scout', 'trends');
+        Notification::make()->title(__('ট্রেন্ড-সন্ধানী খুঁজতে শুরু করছে; কয়েক মিনিট পরে দেখুন।'))->success()->send();
+    }
+
+    /** Where a request's result is waiting in /desk. */
+    public static function resultLink(\App\Models\TeamRequest $r): ?array
+    {
+        if (str_starts_with((string) $r->link, 'post:')) {
+            return [__('লেখাটি খুলুন'), \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => (int) substr($r->link, 5)])];
+        }
+        $where = \App\Ai\TeamJobs::JOBS[$r->agent][$r->job][2] ?? null;
+
+        return match ($where) {
+            'posts' => [__('লেখা'), \App\Filament\Resources\Posts\PostResource::getUrl()],
+            'issues' => [__('সংখ্যা'), \App\Filament\Resources\Issues\IssueResource::getUrl()],
+            'today' => [__('আজকের কাজ'), Dashboard::getUrl()],
+            'images' => [__('ছবি অনুমোদন'), AiImages::getUrl()],
+            'marketing' => [__('মার্কেটিং'), Marketing::getUrl()],
+            'letters' => [__('চিঠি'), \App\Filament\Resources\Newsletters\NewsletterResource::getUrl()],
+            'contests' => [__('প্রতিযোগিতা'), \App\Filament\Resources\Contests\ContestResource::getUrl()],
+            default => null,
+        };
+    }
+
     public function newStrategy(): void
     {
         abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
@@ -92,7 +178,7 @@ class AiTeam extends Page
         'ai-shift inbox' => ['নতুন জমা ও মন্তব্য', 'নতুন লেখার রিপোর্ট, প্রুফ, মৌলিকতা যাচাই, মন্তব্য পড়া, নতুন লেখার ছবি, দিনের মার্কেটিং পোস্ট', ['editor', 'proofreader', 'plagiarism', 'designer', 'marketing']],
         'ai-shift backlog' => ['পুরনো কাজ এগোনো', 'পুরনো জমার রিপোর্ট ও প্রুফ, পুরনো লেখার এসইও আর ছবি (প্রতিবার ১০টি করে)', ['editor', 'proofreader', 'seo', 'designer']],
         'ai-shift daily' => ['দৈনিক কাজ', 'লেখককে মনে করানো, দিনের পোস্ট; ২০ তারিখ থেকে পরের সংখ্যার প্রস্তাব, ২১ থেকে লেখকদের চিঠি', ['editor', 'marketing', 'copywriter']],
-        'ai-shift weekly' => ['সাপ্তাহিক কাজ (সোমবার)', 'সপ্তাহের খবর খোঁজা, সম্পাদকের পছন্দ, সাইটের স্বাস্থ্য, কাজের মান যাচাই, সপ্তাহের পোস্ট-পরিকল্পনা, শংসাপত্রের তালিকা', ['scout', 'editor', 'chief', 'marketing']],
+        'ai-shift weekly' => ['সাপ্তাহিক কাজ (সোমবার)', 'সপ্তাহের খবর খোঁজা, সম্পাদকের পছন্দ, সাইটের স্বাস্থ্য, কাজের মান যাচাই, সপ্তাহের পোস্ট-পরিকল্পনা', ['scout', 'editor', 'chief', 'marketing']],
         'ai-shift newsletter' => ['পাঠকদের চিঠি (শনিবার)', 'সাপ্তাহিক চিঠির খসড়া; আপনি দেখে পাঠাবেন', ['copywriter']],
         'ai-shift monthly' => ['মাসিক কাজ (১ তারিখ)', 'মাসের হিসাব, পাঠকের হিসাব, কৌশলবিদের পরিকল্পনা, সংকলন, দল-পর্যালোচনা, এসইও ঘষামাজা, লেখক পরিচিতি', ['editor', 'analyst', 'strategist', 'archivist', 'chief', 'seo', 'marketing']],
         'ai-shift chief' => ['প্রধান সম্পাদকের পরীক্ষা', 'কেউ আটকে আছে কি না, খরচ, খালি প্রকাশের দিন, প্রতিযোগিতার সময়', ['chief']],
@@ -164,6 +250,7 @@ class AiTeam extends Page
             'strategy' => \App\Ai\Strategist::current(),
             'strategyPending' => Setting::get('strategy.requested') !== null,
             'feed' => self::feed(),
+            'requests' => \App\Models\TeamRequest::latest('id')->limit(15)->get(),
             'alerts' => EditorTask::where('type', 'alert')->where('status', 'open')->latest()->get(),
             'enabled' => (bool) config('ai.enabled'),
             'teamPaused' => AiSwitch::paused(),

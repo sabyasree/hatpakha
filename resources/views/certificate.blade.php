@@ -1,7 +1,8 @@
 {{-- Certificate check + the certificate itself (D12, D71): anyone with the code sees it; the writer downloads it here. --}}
 @php
     $c = $certificate;
-    $file = 'hatpakha-'.($c->kind === 'contest' ? 'protijogita' : 'prokashona').'-sonod-'.$c->code;
+    $file = 'hatpakha-sonod-'.$c->theme().'-'.$c->code;
+    $share = 'হাতপাখার '.\App\Models\Certificate::THEMES[$c->theme()][0].': '.$c->verifyUrl();
 @endphp
 <x-layouts.app :seo="$seo">
     <style>
@@ -26,7 +27,7 @@
             <div class="mt-6 flex flex-wrap justify-center gap-3">
                 <button type="button" data-cert-png="{{ $file }}.png" class="flex h-12 items-center rounded-full bg-red px-6 font-bold text-white">ছবি নামান (PNG)</button>
                 <button type="button" data-cert-print class="flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">PDF / প্রিন্ট</button>
-                <a href="https://wa.me/?text={{ rawurlencode('হাতপাখায় প্রকাশিত আমার লেখার সনদ: '.$c->verifyUrl()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">WhatsApp</a>
+                <a href="https://wa.me/?text={{ rawurlencode($share) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">WhatsApp</a>
                 <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($c->verifyUrl()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">Facebook</a>
             </div>
             <p class="mt-3 text-center text-sm text-ink2">PDF-এর জন্য "PDF / প্রিন্ট" টিপে "Save as PDF" বাছুন (A4, আড়াআড়ি)।</p>

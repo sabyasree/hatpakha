@@ -79,16 +79,13 @@ class EditPost extends EditRecord
                 }),
             // D71: the writer's certificate for this piece: issue (one per writer, e-mail with the link), open, withdraw.
             ActionGroup::make([
-                Action::make('issueCertificate')->label(__('সনদ দিন'))->icon('heroicon-o-academic-cap')->color('success')
-                    ->visible(fn (Post $record) => $record->isLive() && $record->authors()->where('is_desk', false)
-                        ->whereNotIn('authors.id', \App\Models\Certificate::where('post_id', $record->id)->where('kind', 'publication')->select('author_id'))->exists())
-                    ->requiresConfirmation()->modalHeading(__('এই লেখার জন্য প্রকাশনা সনদ দেবেন?'))
-                    ->modalDescription(__('প্রত্যেক লেখকের জন্য একটি সনদ তৈরি হবে। যাঁদের অ্যাকাউন্ট আছে, তাঁরা লিংকসহ একটি ই-মেল পাবেন আর "আমার লেখা"-তে সনদটি দেখবেন। অ্যাকাউন্ট না থাকলে লিংকটি আপনি পাঠাতে পারেন।'))
-                    ->action(function (Post $record) {
-                        $new = \App\Models\Certificate::issueFor($record);
-                        \App\Models\AuditLog::record('certificate.issued', $record, ['count' => count($new)]);
-                        \Filament\Notifications\Notification::make()->title(__('সনদ দেওয়া হয়েছে'))->success()->send();
-                    }),
+                Action::make('issueCertificate')->label(__('সনদ দিন / পাঠান'))->icon('heroicon-o-academic-cap')->color('success')
+                    ->visible(fn (Post $record) => $record->isLive() && $record->authors()->where('is_desk', false)->exists())
+                    ->modalHeading(__('এই লেখার প্রকাশনা সনদ'))
+                    ->modalDescription(__('প্রত্যেক লেখকের জন্য একটি সনদ (আগে দেওয়া থাকলে সেটাই)। অ্যাকাউন্ট থাকলে লেখক ই-মেল পান আর "আমার লেখা"-তে দেখেন। অ্যাকাউন্ট না থাকলে নিচে ই-মেল দিন।'))
+                    ->schema([\Filament\Forms\Components\TextInput::make('email')->label(__('ই-মেলেও পাঠান (ঐচ্ছিক)'))->email()->maxLength(190)])
+                    ->modalSubmitActionLabel(__('সনদ দিন'))
+                    ->action(fn (Post $record, array $data) => \App\Filament\Pages\Certificates::give($record, $data['email'] ?? null)),
                 ...collect([0, 1, 2])->map(fn ($i) => Action::make('openCertificate'.$i)->icon('heroicon-o-document-text')
                     ->label(fn (Post $record) => __('সনদ দেখুন').': '.(self::certs($record)[$i]->author_name_snapshot ?? ''))
                     ->visible(fn (Post $record) => isset(self::certs($record)[$i]))

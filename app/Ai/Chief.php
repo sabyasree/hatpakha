@@ -85,11 +85,11 @@ final class Chief
      * Monthly team review (D56): what each member did last month and what it cost, the open tasks,
      * and this month's cost forecast from the last 7 days. Code only (no AI cost).
      */
-    public static function teamReview(): ?EditorTask
+    public static function teamReview(bool $force = false): ?EditorTask
     {
         $from = now()->subMonthNoOverflow()->startOfMonth();
         $key = 'team:'.$from->format('Y-m');
-        if (EditorTask::where('type', 'team_review')->where('key', $key)->exists()) {
+        if (! $force && EditorTask::where('type', 'team_review')->where('key', $key)->exists()) {
             return null;
         }
         $stats = Team::stats($from, $from->copy()->addMonthNoOverflow());

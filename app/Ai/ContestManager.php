@@ -79,7 +79,7 @@ final class ContestManager
             if ($author = $p->authors->first()) {
                 Certificate::firstOrCreate(['author_id' => $author->id, 'post_id' => $p->id, 'kind' => 'contest'], [
                     'title_snapshot' => $p->title, 'author_name_snapshot' => $author->publicName(),
-                    'issue_label' => $contest->title.' · '.($places[$w['place']] ?? 'বিশেষ উল্লেখ'),
+                    'issue_label' => $contest->title, 'place' => isset($places[$w['place']]) ? (int) $w['place'] : 9,   // D73: own design
                 ]);
             }
         }

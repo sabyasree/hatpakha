@@ -116,7 +116,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ **Issues as books** (D68): page-turning reader view, EPUB, print-ready PDF (6×9 in) and store listing text; Amazon KDP doesn't take Bengali → Google Play Books
 - ✅ **Relaunch letter** draft + post, **online-only** campaigns, English filler options (D69); **undo** for covers and marketing, weekly plan pinned (D70)
 - ✅ **Certificate template** (D71): design on the check page, PNG + PDF download, share; issue/open/withdraw from the post's সনদ menu; e-mail to the writer
-- ⬜ Owner: QR code on certificates (needs a package) and the editor's name/signature for the certificate
+- ✅ **Certificates finished** (D73): automatic issue, manual/bulk for old pieces, writer requests, four designs, QR code, signature settings, desk page with previews
+- ✅ **Give the AI team work by hand** (D72): run now / redo per member, requests in your own words, results with links
+- ⬜ Owner: set the signer's name and signature picture on /desk → আরও → শংসাপত্র
 - ⬜ Owner: read and send the relaunch letter (চিঠি); decide the English filler piles (STRATEGY.md §6)
 - ⬜ Later: serial fiction, reader tips (after payments are approved), volunteer editors (the editor role with 2FA already exists; add them from ব্যবহারকারী)
 - ⬜ Later: automatic Facebook posting (owner turns on), anthology e-book file, Search Console data for the SEO expert, privacy-policy wording for the read counter (owner)

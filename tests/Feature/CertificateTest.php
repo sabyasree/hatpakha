@@ -51,4 +51,78 @@ class CertificateTest extends TestCase
         $this->assertSame([], Certificate::issueFor($this->makePost(['status' => 'published', 'slug' => 'd', 'published_at' => now()->subDay()], $desk)));
         $this->assertSame([], Certificate::issueFor($this->makePost(['status' => 'draft', 'slug' => 'e'])));
     }
+
+    /** D73: automatic for new pieces, a writer's own request, four designs, QR code, signature. */
+    public function test_automatic_issue_only_for_new_pieces_and_writer_can_ask_for_an_old_one(): void
+    {
+        $writer = User::factory()->create(['email_verified_at' => now()]);
+        $author = Author::create(['user_id' => $writer->id, 'display_name' => 'রবি সেন', 'slug' => 'robi']);
+        $old = $this->makePost(['status' => 'published', 'slug' => 'old', 'title' => 'পুরনো লেখা', 'published_at' => now()->subYears(3)], $author);
+        $new = $this->makePost(['status' => 'published', 'slug' => 'new', 'title' => 'নতুন লেখা', 'published_at' => now()->addMinute()], $author);
+        $this->travel(2)->minutes();
+
+        $this->assertSame(1, Certificate::autoIssue(), 'Only the piece published after the switch');
+        $this->assertSame($new->id, Certificate::sole()->post_id);
+
+        $this->actingAs($writer)->get('/account/')->assertOk()->assertSee('সনদ চাই');
+        $this->actingAs($writer)->post('/account/certificate/'.$old->id.'/')->assertRedirect();
+        $this->assertTrue(Certificate::where('post_id', $old->id)->exists(), 'Automatic on: given at once');
+
+        \App\Models\Setting::put('certificates.auto', '0');
+        $other = User::factory()->create(['email_verified_at' => now()]);
+        $p3 = $this->makePost(['status' => 'published', 'slug' => 'p3', 'published_at' => now()->subYear()],
+            Author::create(['user_id' => $other->id, 'display_name' => 'মিতা', 'slug' => 'mita']));
+        $this->actingAs($other)->post('/account/certificate/'.$p3->id.'/')->assertRedirect();
+        $this->assertFalse(Certificate::where('post_id', $p3->id)->exists(), 'Automatic off: a request for the owner');
+        $this->assertSame(1, \App\Models\EditorTask::open('certificate_request')->count());
+        $this->actingAs($writer)->post('/account/certificate/'.$p3->id.'/')->assertForbidden();
+
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(\App\Filament\Pages\Certificates::class)->assertSee('লেখকদের অনুরোধ')
+            ->call('approveRequest', \App\Models\EditorTask::open('certificate_request')->value('id'));
+        $this->assertTrue(Certificate::where('post_id', $p3->id)->exists());
+    }
+
+    public function test_four_designs_with_qr_and_signature(): void
+    {
+        $author = Author::create(['display_name' => 'অতিথি লেখক', 'slug' => 'guest', 'is_guest' => true]);
+        $issue = \App\Models\Issue::create(['title' => 'শারদীয়া ১৪৩৩', 'slug' => 'sharodiya-1433', 'status' => 'published', 'published_at' => now()->subDay()]);
+        $inIssue = $this->makePost(['status' => 'published', 'slug' => 'i', 'published_at' => now()->subDay(), 'issue_id' => $issue->id], $author);
+        $plain = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()->subDay()], $author);
+        $a = Certificate::issueFor($inIssue)[0];
+        $b = Certificate::issueFor($plain)[0];
+        $c = Certificate::create(['author_id' => $author->id, 'post_id' => $plain->id, 'kind' => 'contest', 'place' => 2, 'title_snapshot' => 't', 'author_name_snapshot' => 'অতিথি লেখক', 'issue_label' => 'বর্ষার গল্প']);
+        $h = Certificate::create(['author_id' => $author->id, 'kind' => 'honour', 'title_snapshot' => 'মাসের লেখক', 'author_name_snapshot' => 'অতিথি লেখক']);
+        $this->assertSame(['issue', 'publication', 'contest', 'honour'], [$a->theme(), $b->theme(), $c->theme(), $h->theme()]);
+
+        $this->get($a->verifyUrl())->assertOk()->assertSee('সংখ্যায় প্রকাশের সনদ')->assertSee('শারদীয়া ১৪৩৩')->assertSee('<svg', false);
+        $this->get($c->verifyUrl())->assertOk()->assertSee('প্রতিযোগিতার সনদ')->assertSee('দ্বিতীয়')->assertSee('বর্ষার গল্প');
+        $this->get($h->verifyUrl())->assertOk()->assertSee('সম্মাননা সনদ')->assertSee('মাসের লেখক');
+        $this->get($b->verifyUrl())->assertOk()->assertSee('প্রকাশনা সনদ')->assertSee('সম্পাদক, হাতপাখা');
+
+        // Signature: re-encoded PNG, white made transparent, shown with the signer's name.
+        $img = imagecreatetruecolor(300, 100);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        imageline($img, 10, 50, 290, 60, imagecolorallocate($img, 0, 0, 0));
+        $tmp = tempnam(sys_get_temp_dir(), 'sig');
+        imagejpeg($img, $tmp);
+        $path = \App\Support\Signature::store($tmp);
+        $this->assertFileExists(public_path($path));
+        $png = imagecreatefrompng(public_path($path));
+        $this->assertSame(127, imagecolorsforindex($png, imagecolorat($png, 5, 5))['alpha'], 'Paper is transparent');
+        \App\Models\Setting::put('certificates.signature', $path);
+        \App\Models\Setting::put('certificates.signer_name', 'সম্পাদকের নাম');
+        $this->get($b->verifyUrl())->assertSee('সম্পাদকের নাম')->assertSee($path);
+        @unlink(public_path($path));
+
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(\App\Filament\Pages\Certificates::class)->assertOk()->assertSee('সনদের ধরন')->assertSee('সম্মাননা সনদ')
+            ->call('withdraw', $b->id);
+        $this->assertNotNull($b->fresh()->revoked_at);
+        Livewire::test(\App\Filament\Pages\Certificates::class)->call('restore', $b->id);
+        $this->assertNull($b->fresh()->revoked_at);
+        Livewire::test(EditPost::class, ['record' => $plain->getRouteKey()])->assertSee('সনদের পাতা খুলুন');
+    }
 }

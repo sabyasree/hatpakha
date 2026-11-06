@@ -35,6 +35,8 @@ class AccountController extends Controller
             'posts' => $posts,
             // The writer's own certificates (D12, D56), each with its public verification page.
             'certificates' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get(),
+            // D73: pieces whose certificate the writer has asked for (when certificates need the owner's OK).
+            'certRequested' => \App\Models\EditorTask::open('certificate_request')->where('subject_type', (new Post)->getMorphClass())->whereIn('subject_id', $posts->pluck('id'))->pluck('subject_id')->all(),
             'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
             'author' => \App\Models\Author::where('user_id', $user->id)->first(),
             // D64: the reading list and the writers this reader follows.
@@ -125,6 +127,29 @@ class AccountController extends Controller
         \App\Support\AudioReading::attach($post, $request->file('audio'));
 
         return redirect(Url::to('/account').'#writing')->with('status', 'পাঠটি জমা পড়েছে। সম্পাদক শুনে অনুমোদন করলেই লেখার পাতায় যোগ হবে।');
+    }
+
+    /**
+     * "সনদ চাই" (D73): a writer asks for the certificate of an older published piece. With automatic
+     * certificates on, it is made at once; otherwise the owner gets a request on আজকের কাজ.
+     */
+    public function requestCertificate(Request $request, Post $post)
+    {
+        abort_unless($post->isLive() && $post->authors()->where('user_id', $request->user()->id)->exists(), 403);
+        $mine = \App\Models\Certificate::where('post_id', $post->id)->where('kind', 'publication')->whereNull('revoked_at')
+            ->whereIn('author_id', \App\Models\Author::where('user_id', $request->user()->id)->select('id'))->first();
+        if ($mine) {
+            return redirect($mine->verifyUrl());
+        }
+        if (\App\Models\Setting::get('certificates.auto') === '1') {
+            \App\Models\Certificate::issueFor($post, tell: false);
+            \App\Models\AuditLog::record('certificate.requested_issued', $post, ['by' => $request->user()->id]);
+
+            return redirect(Url::to('/account').'#writing')->with('status', 'আপনার সনদ তৈরি হয়েছে। নিচে "আমার শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
+        }
+        \App\Models\EditorTask::propose('certificate_request', 'লেখক সনদ চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
+
+        return redirect(Url::to('/account').'#writing')->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে সনদ দিলে আপনাকে জানানো হবে।');
     }
 
     public function updateNewsletter(Request $request)

@@ -15,9 +15,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class Archivist
 {
-    public static function collection(?string $theme = null): ?Collection
+    public static function collection(?string $theme = null, bool $force = false): ?Collection
     {
-        if (Collection::where('kind', 'theme')->where('created_at', '>=', now()->startOfMonth())->exists()) {
+        if (! $force && Collection::where('kind', 'theme')->where('created_at', '>=', now()->startOfMonth())->exists()) {
             return null;
         }
         $theme ??= collect(IssuePlanner::CALENDAR[now('Asia/Kolkata')->month])
@@ -77,9 +77,9 @@ final class Archivist
     }
 
     /** Near-duplicate tags (same name apart from spaces/punctuation/one letter). Code only, no AI cost. */
-    public static function tags(): ?EditorTask
+    public static function tags(bool $force = false): ?EditorTask
     {
-        if (EditorTask::where('type', 'tags')->where('created_at', '>=', now()->subDays(90))->exists()) {
+        if (! $force && EditorTask::where('type', 'tags')->where('created_at', '>=', now()->subDays(90))->exists()) {
             return null;
         }
         $tags = Tag::withCount('posts')->get();
