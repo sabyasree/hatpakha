@@ -66,6 +66,9 @@ class PageTest extends TestCase
         $out = \App\Support\Embeds::render($html);
 
         $this->assertSame(1, substr_count($out, '<iframe'));
+        // Sanitised links escape "=" as &#61;, and old posts use http:// and the Jetpack shortcode.
+        $legacy = \App\Support\HtmlSanitizer::clean(\App\Support\WpContent::convert('[youtube=http://www.youtube.com/watch?v=wsxGrikfm2g&amp;rel=0]'));
+        $this->assertStringContainsString('youtube-nocookie.com/embed/wsxGrikfm2g', \App\Support\Embeds::render($legacy));
         $this->assertStringContainsString('https://www.youtube-nocookie.com/embed/87O20nT45QM', $out);
     }
 

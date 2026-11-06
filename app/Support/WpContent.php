@@ -35,6 +35,14 @@ class WpContent
         // [embed]https://youtube…[/embed] → a plain YouTube link on its own line (rendered as a player by Embeds).
         $html = preg_replace_callback('~\[embed[^\]]*\]\s*(\S+?)\s*\[/embed\]~', fn ($m) => "\n\n<p><a href=\"".e($m[1]).'">'.e($m[1])."</a></p>\n\n", $html);
 
+        // Jetpack [youtube=URL] / [youtube URL] → the same link-paragraph.
+        $html = preg_replace_callback('~\[youtube[=\s]\s*([^\]\s]+)\s*\]~i', fn ($m) => "\n\n<p><a href=\"".e(html_entity_decode($m[1]))."\">".e(html_entity_decode($m[1]))."</a></p>\n\n", $html);
+
+        // A bare URL alone on its line was auto-embedded by WordPress (oEmbed). Keep it as a link
+        // paragraph: YouTube ones are shown as a player by Embeds, others stay a clickable link.
+        $html = preg_replace_callback('~(^|\n|<p>)[ \t]*(https?://[^\s<>"\[\]]+)[ \t]*(?=\n|</p>|$)~',
+            fn ($m) => $m[1].($m[1] === '<p>' ? '' : "\n<p>").'<a href="'.e(html_entity_decode($m[2])).'">'.e(html_entity_decode($m[2])).'</a>'.($m[1] === '<p>' ? '' : "</p>\n"), $html);
+
         // [gallery ids="1,2,3"] → one figure per image.
         $html = preg_replace_callback('~\[gallery[^\]]*?ids="([\d,\s]+)"[^\]]*\]~', function ($m) use ($attachments) {
             $ids = array_values(array_filter(array_map('intval', explode(',', $m[1]))));

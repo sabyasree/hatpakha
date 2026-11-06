@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BodyFormatter;
 use App\Support\HtmlSanitizer;
 use App\Support\Slug;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,7 +34,8 @@ class Post extends Model
         static::saving(function (self $post) {
             // Security: body is sanitised on every save, whatever the source (docs/SECURITY.md §4).
             if ($post->isDirty('body_html')) {
-                $post->body_html = HtmlSanitizer::clean($post->body_html);
+                // Then tidy structure only (never words): docs/DECISIONS.md D23.
+                $post->body_html = BodyFormatter::format(HtmlSanitizer::clean($post->body_html), $post->format ?: 'prose', $post->title);
                 $post->reading_minutes = self::estimateMinutes($post->body_html);
             }
             if ($post->isDirty('slug')) {

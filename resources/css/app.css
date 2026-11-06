@@ -35,18 +35,43 @@
     a { text-underline-offset: 3px; }
 }
 
-/* Reading text (stories, essays). */
-.prose-bn { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.95; }
-.prose-bn p { margin: 1.1em 0; }
-.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; }
-.prose-bn blockquote { margin: 1.4em 0; padding-left: 1em; border-left: 4px solid var(--color-red); font-family: var(--font-display); font-weight: 700; font-size: 1.25em; color: var(--color-red); }
-.prose-bn img { max-width: 100%; height: auto; border-radius: 4px; }
-.prose-bn figcaption { font-family: var(--font-sans); font-size: .85rem; color: var(--color-ink2); }
+/* Reading text (stories, essays). Structure comes from App\Support\BodyFormatter. */
+.prose-bn { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.95; text-wrap: pretty; overflow-wrap: anywhere; }
+.prose-bn p { margin: 0 0 1.05em; }
+.prose-bn h2, .prose-bn h3, .prose-bn h4 { font-family: var(--font-display); font-weight: 800; line-height: 1.3; margin: 1.6em 0 .6em; }
+.prose-bn h2 { font-size: 1.5em; }
+.prose-bn h3 { font-size: 1.25em; }
+.prose-bn h4 { font-size: 1.1em; color: var(--color-red-dark); }
+.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; text-underline-offset: 3px; }
+.prose-bn strong, .prose-bn b { font-weight: 700; }
+.prose-bn ul, .prose-bn ol { margin: 0 0 1.05em; padding-left: 1.4em; }
+.prose-bn ul { list-style: disc; }
+.prose-bn ol { list-style: decimal; }
+.prose-bn li { margin: .25em 0; }
+.prose-bn blockquote { margin: 1.5em 0; padding: .2em 0 .2em 1.1em; border-left: 4px solid var(--color-sky); color: var(--color-sky-night); }
+.prose-bn blockquote p:last-child { margin-bottom: 0; }
+.prose-bn hr { border: 0; margin: 2em auto; width: 5rem; height: 1rem; background: radial-gradient(circle, var(--color-red) 2.5px, transparent 3px) center / 1.6rem 1rem repeat-x; }
+.prose-bn pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 1.05em; }
+.prose-bn table { display: block; overflow-x: auto; border-collapse: collapse; margin: 1.5em 0; font-size: .9em; }
+.prose-bn th, .prose-bn td { border: 1px solid var(--color-rule); padding: .4em .7em; vertical-align: top; }
+.prose-bn th { background: var(--color-peach-light); }
 
-/* Poem mode: tight lines, stanza = paragraph. */
-.poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; }
-.poem-bn p { margin: 0 0 .45em; }
-.poem-bn img { max-width: 100%; height: auto; margin: 0 auto 1em; border-radius: 4px; }
+/* Images: never stretched beyond their real size, centred, with room around them. */
+.prose-bn figure, .poem-bn figure { margin: 1.8em auto; text-align: center; }
+.prose-bn img, .poem-bn img { display: inline-block; max-width: 100%; height: auto; border-radius: 6px; }
+.prose-bn figure + figure, .poem-bn figure + figure { margin-top: -0.6em; }
+.prose-bn figcaption, .poem-bn figcaption { margin-top: .5em; font-family: var(--font-sans); font-size: .85rem; line-height: 1.5; color: var(--color-ink2); }
+.prose-bn figure.video, .poem-bn figure.video { position: relative; aspect-ratio: 16 / 9; width: 100%; }
+.prose-bn figure.video iframe, .poem-bn figure.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 8px; }
+
+/* Poem mode: a paragraph is a stanza, <br> is a line. */
+.poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; text-wrap: balance; }
+.poem-bn p { margin: 0 0 1.3em; }
+.poem-bn h2, .poem-bn h3, .poem-bn h4 { font-family: var(--font-display); font-weight: 800; margin: 1.4em 0 .6em; }
+@media (max-width: 480px) {
+    .prose-bn { font-size: 1.12rem; line-height: 1.9; }
+    .poem-bn { font-size: 1.18rem; }
+}
 
 .tilt-a { transform: rotate(-1.6deg); }
 .tilt-b { transform: rotate(1.4deg); }
