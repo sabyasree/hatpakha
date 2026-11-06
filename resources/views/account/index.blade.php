@@ -60,6 +60,16 @@
             </ul>
         @endif
 
+        @if ($certificates->isNotEmpty())
+            <h2 class="mt-10 font-display text-2xl font-extrabold">আমার শংসাপত্র</h2>
+            <ul class="mt-3 space-y-2">
+                @foreach ($certificates as $c)
+                    <li><a href="{{ $c->verifyUrl() }}" class="font-bold text-sky-deep underline">{{ $c->title_snapshot }}</a>
+                        <span class="text-sm text-ink2">· {{ $c->issue_label ?: ($c->kind === 'contest' ? 'প্রতিযোগিতা' : 'প্রকাশ') }}</span></li>
+                @endforeach
+            </ul>
+        @endif
+
         <details class="mt-10 rounded-xl border-2 border-rule p-4">
             <summary class="cursor-pointer font-bold">অ্যাকাউন্ট</summary>
             <form method="POST" action="{{ \App\Support\Url::to('/account/name') }}" class="mt-4 max-w-[420px]">

@@ -148,6 +148,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::health();
         \App\Ai\Chief::qualityReview();
         \App\Ai\Marketer::weekly();
+        \App\Ai\EditorJobs::certificates();
 
         return self::SUCCESS;
     }
@@ -164,6 +165,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::report();
         \App\Ai\Marketer::spotlight();
         \App\Ai\Analyst::monthly();
+        \App\Ai\Chief::teamReview();
         \App\Ai\Archivist::collection();
         \App\Ai\Archivist::tags();
         if (now('Asia/Kolkata')->month === 1) {

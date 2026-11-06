@@ -30,6 +30,14 @@
         <ol style="margin:0 0 .6rem;padding-inline-start:1.4rem;list-style:decimal">@foreach ((array) ($p['top'] ?? []) as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ol>
         @if (! empty($p['old']))<p style="margin:0;font-weight:700">{{ __('পুরনো লেখা, এখনও পড়া হচ্ছে') }}</p>
             <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['old'] as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ul>@endif
+    @elseif ($task->type === 'team_review')
+        <ul style="margin:0 0 .6rem;padding-inline-start:1.2rem;list-style:disc">
+            @foreach ((array) ($p['agents'] ?? []) as $key => $a)
+                <li>{{ __(\App\Ai\Team::AGENTS[$key][0] ?? $key) }}: {{ $n($a['calls']) }} {{ __('কাজ') }} · {{ $n(number_format((float) $a['cost'], 2)) }} {{ __('ডলার') }}</li>
+            @endforeach
+        </ul>
+        <p style="margin:0">{{ __('গত মাসের মোট খরচ') }}: <strong>{{ $n(number_format((float) ($p['total'] ?? 0), 2)) }} {{ __('ডলার') }}</strong> · {{ __('এই মাসের আনুমানিক খরচ') }}: <strong>{{ $n(number_format((float) ($p['forecast'] ?? 0), 2)) }} {{ __('ডলার') }}</strong></p>
+        @if (! empty($p['open']))<p style="margin:.4rem 0 0;opacity:.8">{{ __('খোলা কাজ') }}: {{ $n(array_sum($p['open'])) }}</p>@endif
     @elseif ($task->type === 'seo_refresh')
         <p style="margin:0 0 .4rem">{{ __('এই পুরনো লেখাগুলো গুগল থেকে এখনও পাঠক পাচ্ছে। এসইও বিশেষজ্ঞ নতুন তথ্য প্রস্তাব করেছে; প্রতিটি খুলে "এসইও" থেকে দেখে নিন।') }}</p>
         <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">

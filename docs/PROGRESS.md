@@ -90,7 +90,21 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## More editor jobs ✅ (D48)
 - Follow-ups, welcome notes, weekly picks (home page), Sunday newsletter draft (consented readers only, unsubscribe), monthly report, weekly site health; all on আজকের কাজ → "সম্পাদকের অন্য কাজ"
-- ⬜ Contests (owner asked), AI team roster: graphic designer, marketing, proofreader, relationship manager (chatbot), editor-in-chief
+- ✅ Contests and the AI team (below)
+
+## AI team of eleven ✅ (D49–D56) — /desk → প্রশাসন → এআই দল (pause any member)
+- **Editor**: package per piece, issue + editorial, comments, picks, follow-ups, publication certificates (owner ticks, writers see them on their account page)
+- **Proofreader** (D50): after each submission and hourly on old *unpublished* pieces (never published ones); house style; title typo fix in the approve dialog
+- **Plagiarism checker** (D50): web search on a few lines of each new piece; report + task when found
+- **SEO expert**: after approval; monthly refresh proposals for old pieces still found through search (D54)
+- **Graphic designer** (D51): AI pictures, issue cover art + our Bengali masthead, share/quote cards → PNG
+- **Marketing** (D51): ready-to-post Facebook/WhatsApp/Instagram text per piece, issue, contest; weekly plan; monthly writer spotlight; newsletter (/desk → মার্কেটিং; owner posts by hand)
+- **Relationship manager** (D52): chat on /submissions/ and /submit/ only; guests get public answers, writers their own pieces' status; no tools
+- **Contest manager** (D53): rules draft, shortlist, results draft + certificates on the owner's click; contest choice in the submit form
+- **Archivist** (D55): monthly collection on /archive/ (after approval), yearly anthology list, tag tidy-up with 301s
+- **Analyst** (D54): own privacy-friendly read counter; monthly reader insights
+- **Editor-in-chief** (D49, D56): hourly checks + deadline watch (empty publishing days, next issue not approved by the 25th, ended contests), weekly quality review, monthly team review and cost forecast
+- ⬜ Later: automatic Facebook posting (owner turns on), anthology e-book file, Search Console data for the SEO expert, privacy-policy wording for the read counter (owner)
 
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy

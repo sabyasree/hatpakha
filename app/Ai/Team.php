@@ -58,9 +58,9 @@ final class Team
     }
 
     /** @return array<string, array{calls:int, cost:float, last:?string}> work this month per agent */
-    public static function stats(): array
+    public static function stats(?\Carbon\CarbonInterface $from = null, ?\Carbon\CarbonInterface $to = null): array
     {
-        $rows = AiUsage::where('created_at', '>=', now()->startOfMonth())->selectRaw('purpose, count(*) as n, sum(cost_usd) as c, max(created_at) as last')
+        $rows = AiUsage::where('created_at', '>=', $from ?? now()->startOfMonth())->when($to, fn ($q) => $q->where('created_at', '<', $to))->selectRaw('purpose, count(*) as n, sum(cost_usd) as c, max(created_at) as last')
             ->groupBy('purpose')->get();
         $out = [];
         foreach (array_keys(self::AGENTS) as $k) {

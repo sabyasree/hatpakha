@@ -223,6 +223,27 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** Publication certificates (D56): the owner ticks which to issue. */
+    public function issueCertificatesAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('issueCertificates')->label(__('শংসাপত্র দিন'))->icon('heroicon-o-academic-cap')->size('sm')
+            ->modalHeading(__('প্রকাশের শংসাপত্র'))
+            ->fillForm(fn (array $arguments) => ['posts' => array_keys((array) ($this->task($arguments)->payload['posts'] ?? []))])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\CheckboxList::make('posts')->label(__('লেখা'))->columns(1)->bulkToggleable()
+                    ->options((array) ($this->task($arguments)->payload['posts'] ?? []))
+                    ->helperText(__('প্রতিটি শংসাপত্রের যাচাইয়ের পাতা থাকবে; লেখক নিজের পাতা থেকে দেখতে পাবেন।')),
+            ])
+            ->modalSubmitActionLabel(__('শংসাপত্র দিন'))
+            ->action(function (array $data, array $arguments) {
+                abort_unless(auth()->user()->hasRole(\App\Enums\Role::Admin), 403);
+                $task = $this->task($arguments);
+                $n = \App\Ai\EditorJobs::issueCertificates(array_map('intval', array_intersect((array) ($data['posts'] ?? []), array_keys((array) ($task->payload['posts'] ?? [])))));
+                $task->close();
+                Notification::make()->title(\App\Support\Bn::num((string) $n).' '.__('টি শংসাপত্র তৈরি হয়েছে'))->success()->send();
+            });
+    }
+
     /** Weekly picks: edit the note, then they go on the home page. */
     public function approvePickAction(): \Filament\Actions\Action
     {

@@ -60,6 +60,38 @@ final class EditorJobs
         EditorTask::propose('welcome', $post->title, ['message' => $message], $post);
     }
 
+    /**
+     * Publication certificates (D12, D56): pieces by registered writers published in the last 30 days
+     * without one. The owner issues them with one click; nothing is created before that.
+     */
+    public static function certificates(): ?EditorTask
+    {
+        if (EditorTask::open('certificates')->exists()) {
+            return null;
+        }
+        $have = \App\Models\Certificate::where('kind', 'publication')->select('post_id');
+        $posts = Post::published()->whereNotNull('submitted_by')->where('published_at', '>=', now()->subDays(30))->whereNotIn('id', $have)->pluck('title', 'id');
+        if ($posts->isEmpty()) {
+            return null;
+        }
+
+        return EditorTask::create(['type' => 'certificates', 'status' => 'open', 'title' => __('শংসাপত্র দেওয়ার মতো লেখা: ').$posts->count(), 'payload' => ['posts' => $posts->all()]]);
+    }
+
+    public static function issueCertificates(array $postIds): int
+    {
+        $n = 0;
+        foreach (Post::published()->with('authors')->whereIn('id', $postIds)->get() as $p) {
+            foreach ($p->authors as $author) {
+                $c = \App\Models\Certificate::firstOrCreate(['author_id' => $author->id, 'post_id' => $p->id, 'kind' => 'publication'],
+                    ['title_snapshot' => $p->title, 'author_name_snapshot' => $author->publicName(), 'issue_label' => $p->issue?->title]);
+                $n += (int) $c->wasRecentlyCreated;
+            }
+        }
+
+        return $n;
+    }
+
     /** Monday: the week's editor's pick for the home page, and "এই দিনে" for the next 7 days. */
     public static function picks(): ?EditorTask
     {

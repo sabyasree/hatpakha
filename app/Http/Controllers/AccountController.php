@@ -33,6 +33,8 @@ class AccountController extends Controller
             'seo' => AuthController::seo('আমার লেখা'),
             'user' => $user,
             'posts' => $posts,
+            // The writer's own certificates (D12, D56), each with its public verification page.
+            'certificates' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get(),
             'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
         ]);
     }

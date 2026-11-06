@@ -52,12 +52,58 @@ final class Chief
             ? $alert('waiting', Bn::num($waiting).'টি লেখা ৫ দিনের বেশি আপনার সিদ্ধান্তের অপেক্ষায়; লেখকরা অপেক্ষা করছেন')
             : $clear('waiting');
 
+        // Deadline watch (D56): empty publishing days next week while pieces wait.
+        $empty = collect(range(1, 7))->map(fn ($i) => now('Asia/Kolkata')->startOfDay()->addDays($i))
+            ->filter(fn ($d) => in_array($d->dayOfWeek, \App\Support\Schedule::DAYS, true))
+            ->reject(fn ($d) => Post::whereIn('status', ['scheduled', 'published'])->whereBetween('published_at', [$d->copy()->utc(), $d->copy()->endOfDay()->utc()])->exists())
+            ->count();
+        $ready = Post::where('status', 'pending')->count();
+        ($empty && $ready)
+            ? $alert('slots', 'পরের সাত দিনে '.Bn::num($empty).'টি প্রকাশের দিন খালি; '.Bn::num($ready).'টি লেখা অপেক্ষায় আছে')
+            : $clear('slots');
+
+        $next = now('Asia/Kolkata')->addMonthNoOverflow();
+        $issue = \App\Models\Issue::where('slug', $next->format('Y-m'))->first();
+        (now('Asia/Kolkata')->day >= 25 && (! $issue || $issue->status === 'proposed'))
+            ? $alert('issue', $issue ? 'আগামী মাসের সংখ্যা ("'.$issue->title.'") আপনার অনুমোদনের অপেক্ষায়' : 'আগামী মাসের সংখ্যার প্রস্তাব এখনও তৈরি হয়নি')
+            : $clear('issue');
+
+        $ended = \App\Models\Contest::where('status', 'open')->whereNotNull('ends_at')->where('ends_at', '<', now())->whereHas('entries')->first();
+        $ended
+            ? $alert('contest', '"'.$ended->title.'" প্রতিযোগিতা শেষ হয়েছে; বিজয়ী ঠিক করার সময়')
+            : $clear('contest');
+
         $heartbeat = \App\Models\Setting::get('ai.heartbeat');
         (! $heartbeat || \Illuminate\Support\Carbon::parse($heartbeat)->lt(now()->subHour()))
             ? $alert('clock', 'এআই দলের ঘড়ি (cron) এক ঘণ্টার বেশি চলেনি')
             : $clear('clock');
 
         return $raised;
+    }
+
+    /**
+     * Monthly team review (D56): what each member did last month and what it cost, the open tasks,
+     * and this month's cost forecast from the last 7 days. Code only (no AI cost).
+     */
+    public static function teamReview(): ?EditorTask
+    {
+        $from = now()->subMonthNoOverflow()->startOfMonth();
+        $key = 'team:'.$from->format('Y-m');
+        if (EditorTask::where('type', 'team_review')->where('key', $key)->exists()) {
+            return null;
+        }
+        $stats = Team::stats($from, $from->copy()->addMonthNoOverflow());
+        $week = (float) AiUsage::where('created_at', '>=', now()->subDays(7))->sum('cost_usd');
+        $open = EditorTask::where('status', 'open')->selectRaw('type, count(*) n')->groupBy('type')->pluck('n', 'type');
+
+        return EditorTask::create(['type' => 'team_review', 'key' => $key, 'status' => 'open',
+            'title' => 'এআই দলের মাসিক পর্যালোচনা: '.Bn::num($from->format('m/Y')),
+            'payload' => [
+                'agents' => $stats,
+                'total' => round(array_sum(array_column($stats, 'cost')), 2),
+                'forecast' => round($week / 7 * now()->daysInMonth, 2),
+                'open' => $open->all(),
+            ]]);
     }
 
     /** Weekly: a second look at a sample of the AI editor's recent judgements (advice for the owner). */
