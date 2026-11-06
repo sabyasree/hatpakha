@@ -47,10 +47,13 @@ class NewsletterSendTest extends TestCase
         User::factory()->create(['email' => 'quiet@example.test', 'role' => Role::Writer, 'email_verified_at' => now(), 'mail_opt_out' => true]);
         NewsletterSubscriber::create(['email' => 'writer@example.test', 'status' => 'subscribed', 'consented_at' => now()]);   // both lists
 
-        Claude::$fake = fn () => ['subject' => 'হাতপাখার চিঠি', 'intro' => 'এই সপ্তাহে…', 'closing' => 'ভালো থাকবেন', 'items' => [['id' => $post->id, 'line' => 'পড়ুন']]];
+        Claude::$fake = fn () => ['subject' => 'হাতপাখার চিঠি', 'preheader' => 'এই সপ্তাহের লেখা', 'paragraphs' => ['প্রিয় পাঠক,', 'এই সপ্তাহে… দেখুন https://evil.example'],
+            'closing' => 'ভালো থাকবেন', 'cta_label' => 'পড়ুন', 'cta_target' => 'home', 'pieces' => [['id' => $post->id, 'line' => 'পড়ুন']]];
         $n = EditorJobs::newsletter();
         $this->assertSame('draft', $n->status);
         $this->assertSame('সপ্তাহের লেখা', $n->items[0]['title']);
+        $this->assertStringNotContainsString('evil.example', $n->intro, 'The copywriter never puts links in the text');
+        $this->assertSame('এই সপ্তাহের লেখা', $n->preheader);
         Mail::assertNothingSent();
 
         $n->update(['audience' => 'both']);
@@ -84,10 +87,14 @@ class NewsletterSendTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => Role::Admin, 'mail_opt_out' => true]));
         Filament::setCurrentPanel(Filament::getPanel('desk'));
         NewsletterSubscriber::create(['email' => 'reader@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
-        Claude::$fake = fn () => ['subject' => 'লেখকদের চিঠি', 'intro' => 'নতুন লেখা পাঠান।', 'closing' => 'শুভেচ্ছা'];
+        Claude::$fake = fn () => ['subject' => 'লেখকদের চিঠি', 'preheader' => '', 'paragraphs' => ['প্রিয় লেখক বন্ধু,', 'নতুন লেখা পাঠান।'], 'closing' => 'শুভেচ্ছা',
+            'cta_label' => 'লেখা পাঠান', 'cta_target' => 'submit', 'pieces' => []];
         Livewire::test(ListNewsletters::class)->assertOk()->callAction('aiDraft', ['kind' => 'writers'])->assertHasNoActionErrors();
         $n = Newsletter::firstWhere('source', 'ai_writers');
         $this->assertSame('writers', $n->audience);
+        $this->assertStringContainsString('/submit/', \App\Ai\Copywriter::ctaUrl($n));
+        $html = view('emails.newsletter', ['newsletter' => $n, 'unsubscribeUrl' => '#'])->render();
+        $this->assertStringContainsString('লেখা পাঠান', $html);
 
         $n->update(['audience' => 'readers']);
         Livewire::test(EditNewsletter::class, ['record' => $n->id])->assertOk()->callAction('send');

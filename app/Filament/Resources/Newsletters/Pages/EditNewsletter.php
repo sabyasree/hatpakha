@@ -44,6 +44,19 @@ class EditNewsletter extends EditRecord
                 ->modalHeading(fn (Newsletter $record) => $record->subject)->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ'))->modalWidth('3xl')
                 ->modalContent(fn (Newsletter $record) => new \Illuminate\Support\HtmlString('<iframe sandbox="" style="width:100%;height:70vh;border:0;border-radius:.75rem;background:#fff" srcdoc="'
                     .e(view('emails.newsletter', ['newsletter' => $record, 'unsubscribeUrl' => '#'])->render()).'"></iframe>')),
+            // D61: the copywriter rewrites the draft (same facts), optionally with the owner's note.
+            Action::make('rewrite')->label(__('কপিরাইটারকে দিয়ে আবার লেখান'))->icon('heroicon-o-sparkles')->color('gray')
+                ->visible(fn (Newsletter $record) => $record->editable())
+                ->schema([\Filament\Forms\Components\Textarea::make('note')->label(__('কী চান? (ঐচ্ছিক)'))->rows(3)->maxLength(500)
+                    ->placeholder(__('যেমন: আরও ছোট করুন; শীতের কথা দিয়ে শুরু করুন; প্রতিযোগিতার কথা আগে বলুন'))])
+                ->modalSubmitActionLabel(__('আবার লিখুন'))
+                ->action(function (Newsletter $record, array $data) {
+                    $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
+                    $ok = \App\Ai\Copywriter::improve($record->fresh(), (string) ($data['note'] ?? ''));
+                    $this->record->refresh();
+                    $this->fillForm();
+                    Notification::make()->title($ok ? __('নতুন করে লেখা হয়েছে; দেখে নিন') : __('এখন হলো না; এআই থামানো আছে কি না দেখুন'))->{$ok ? 'success' : 'warning'}()->send();
+                }),
             Action::make('test')->label(__('আমাকে একটা পাঠান'))->icon('heroicon-o-beaker')->color('gray')
                 ->action(function (Newsletter $record) {
                     $this->save(shouldRedirect: false, shouldSendSavedNotification: false);

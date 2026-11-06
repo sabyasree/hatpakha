@@ -55,6 +55,7 @@ class NewsletterResource extends Resource
                 ->helperText(__('পাঠক = যাঁরা চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন, আর ই-মেল যাচাই করা সব অ্যাকাউন্ট (যাঁরা বন্ধ করেননি)। লেখক = যাচাই করা লেখক-অ্যাকাউন্ট। একজন দু\'বার পাবেন না।'))
                 ->columnSpanFull(),
             TextInput::make('subject')->label(__('বিষয় (ই-মেলের শিরোনাম)'))->required()->maxLength(120)->columnSpanFull(),
+            TextInput::make('preheader')->label(__('ইনবক্সে বিষয়ের পাশে যে লাইন দেখা যায় (ঐচ্ছিক)'))->maxLength(160)->columnSpanFull(),
             Textarea::make('intro')->label(__('শুরুর কথা'))->rows(5)->maxLength(3000)->columnSpanFull()
                 ->helperText(__('অনুচ্ছেদের মাঝে একটি ফাঁকা লাইন দিন।')),
             Repeater::make('items')->label(__('লেখা (ঐচ্ছিক)'))->columnSpanFull()->reorderable()->collapsible()->defaultItems(0)->maxItems(12)
@@ -67,6 +68,10 @@ class NewsletterResource extends Resource
                     TextInput::make('line')->label(__('এক লাইনে কেন পড়বেন'))->maxLength(240),
                 ])->columns(2),
             Textarea::make('closing')->label(__('শেষের কথা (ঐচ্ছিক)'))->rows(3)->maxLength(2000)->columnSpanFull(),
+            TextInput::make('cta_label')->label(__('বোতামের লেখা'))->maxLength(40)->placeholder(__('যেমন: লেখা পাঠান')),
+            Select::make('cta_target')->label(__('বোতাম কোথায় নিয়ে যাবে'))->default('home')->selectablePlaceholder(false)->options(fn () => \App\Support\Lang::t([
+                'home' => 'হাতপাখার প্রথম পাতা', 'submit' => 'লেখা পাঠানোর ফর্ম', 'submissions' => 'লেখা পাঠানোর নিয়ম', 'archive' => 'আর্কাইভ', 'issue' => 'সাম্প্রতিক সংখ্যা',
+            ])),
         ])->disabled(fn (?Newsletter $record) => $record && ! $record->editable());
     }
 

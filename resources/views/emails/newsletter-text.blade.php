@@ -10,6 +10,6 @@
 @endforeach
 {{ $newsletter->closing }}
 
-— হাতপাখা ({{ url('/') }}/)
+{{ $newsletter->cta_label ?: 'হাতপাখা খুলুন' }}: {{ \App\Ai\Copywriter::ctaUrl($newsletter) }}
 
 আর চিঠি চান না? {{ $unsubscribeUrl }}

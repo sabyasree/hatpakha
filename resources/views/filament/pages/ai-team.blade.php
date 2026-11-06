@@ -1,64 +1,145 @@
-{{-- The AI team (D49). Inline styles: /desk has no utility CSS. --}}
+{{-- The AI team (D49, D61): status → plan (what's next, what's waiting) → the team → latest work.
+     Inline styles: /desk has no utility CSS. --}}
 @php
     use App\Support\Bn;
     $d = $this->data();
     $n = fn ($v) => Bn::num((string) $v);
+    $ago = fn ($t) => $t ? $n(\Illuminate\Support\Carbon::parse($t)->locale(app()->getLocale())->diffForHumans()) : __('কখনও না');
+    $when = fn ($t) => $n($t->copy()->timezone('Asia/Kolkata')->locale(app()->getLocale())->isoFormat('ddd, D MMM · h:mm A'));
+    $ok = $d['enabled'] && ! $d['teamPaused'] && $d['clock'] && $d['clock']->gt(now()->subMinutes(20));
+    $agents = \App\Ai\Team::AGENTS;
 @endphp
 <x-filament-panels::page>
     <style>
-        .hp-team { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
-        .hp-agent { border: 1px solid rgba(127,127,127,.25); border-radius: .9rem; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
-        .hp-muted { font-size: .875rem; opacity: .72; }
+        .hp-kpis { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+        .hp-kpi { border: 1px solid rgba(127,127,127,.22); border-radius: .9rem; padding: .9rem 1rem; background: rgba(127,127,127,.04); }
+        .hp-kpi b { display: block; font-size: 1.6rem; line-height: 1.2; }
+        .hp-muted { font-size: .875rem; opacity: .7; }
+        .hp-grid2 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+        .hp-list { display: grid; gap: 0; }
+        .hp-row { display: flex; gap: .75rem; align-items: flex-start; padding: .7rem 0; border-bottom: 1px solid rgba(127,127,127,.15); }
+        .hp-row:last-child { border-bottom: 0; }
+        .hp-dot { width: .6rem; height: .6rem; border-radius: 999px; margin-top: .45rem; flex: none; }
+        .hp-chip { display: inline-block; font-size: .72rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid rgba(127,127,127,.3); margin: .15rem .2rem 0 0; }
+        .hp-team { display: grid; gap: 0; }
+        .hp-member { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) auto; gap: 1rem; align-items: center; padding: .85rem 0; border-bottom: 1px solid rgba(127,127,127,.15); }
+        .hp-member:last-child { border-bottom: 0; }
+        .hp-num { font-variant-numeric: tabular-nums; }
+        .hp-bar { height: .4rem; border-radius: 999px; background: rgba(127,127,127,.15); overflow: hidden; margin-top: .35rem; }
+        .hp-bar span { display: block; height: 100%; background: #2DAAE2; }
+        @media (max-width: 720px) { .hp-member { grid-template-columns: 1fr; gap: .4rem; } }
     </style>
 
-    <x-filament::section icon="heroicon-o-shield-check">
-        <x-slot name="heading">{{ __('প্রধান সম্পাদকের রিপোর্ট') }}</x-slot>
-        <div style="line-height:1.9">
-            <div>{{ __('পুরো দল') }}: <x-filament::badge :color="! $d['enabled'] ? 'gray' : ($d['teamPaused'] ? 'warning' : 'success')">{{ ! $d['enabled'] ? __('বন্ধ') : ($d['teamPaused'] ? __('থামানো') : __('কাজ করছে')) }}</x-filament::badge>
-                · {{ __('ঘড়ি') }}: {{ $d['clock'] ? $n($d['clock']->locale(app()->getLocale())->diffForHumans()) : __('কখনও না') }}</div>
-            @forelse ($d['alerts'] as $a)
-                <div style="margin-top:.4rem;padding:.55rem .8rem;border-radius:.6rem;border:1px solid #E39A6A">⚠ {{ $a->title }}</div>
+    {{-- 1. Status at a glance --}}
+    <div class="hp-kpis">
+        <div class="hp-kpi">
+            <span class="hp-muted">{{ __('পুরো দল') }}</span>
+            <b style="color:{{ $ok ? '#1A86C2' : '#CB1B32' }}">{{ ! $d['enabled'] ? __('বন্ধ') : ($d['teamPaused'] ? __('থামানো') : ($ok ? __('কাজ করছে') : __('ঘড়ি থেমে আছে'))) }}</b>
+            <span class="hp-muted">{{ __('শেষ কাজ') }}: {{ $ago($d['clock']) }}</span>
+        </div>
+        <div class="hp-kpi"><span class="hp-muted">{{ __('এই মাসে কাজ') }}</span><b class="hp-num">{{ $n(number_format($d['monthJobs'])) }}</b></div>
+        <div class="hp-kpi"><span class="hp-muted">{{ __('এই মাসের খরচ') }}</span><b class="hp-num">${{ $n(number_format($d['monthCost'], 2)) }}</b>
+            <span class="hp-muted">{{ __('মাস শেষে আনুমানিক') }} ${{ $n(number_format($d['forecast'], 2)) }}</span></div>
+        <div class="hp-kpi"><span class="hp-muted">{{ __('সতর্কতা') }}</span><b class="hp-num" style="color:{{ $d['alerts']->isEmpty() ? 'inherit' : '#CB1B32' }}">{{ $n($d['alerts']->count()) }}</b>
+            <span class="hp-muted">{{ $d['alerts']->isEmpty() ? __('সব ঠিক চলছে') : __('নিচে দেখুন') }}</span></div>
+    </div>
+
+    @foreach ($d['alerts'] as $a)
+        <div style="padding:.7rem 1rem;border-radius:.75rem;border:1px solid #E39A6A;background:rgba(239,192,141,.15)">⚠ {{ $a->title }}</div>
+    @endforeach
+
+    {{-- 2. The plan --}}
+    <div class="hp-grid2">
+        <x-filament::section icon="heroicon-o-calendar-days">
+            <x-slot name="heading">{{ __('পরের কাজ') }}</x-slot>
+            <x-slot name="description">{{ __('দল নিজে থেকে কখন কী করবে') }}</x-slot>
+            <div class="hp-list">
+                @foreach ($d['plan']['events'] as $e)
+                    <div class="hp-row">
+                        <span class="hp-dot" style="background:#2DAAE2"></span>
+                        <div style="min-width:0;flex:1">
+                            <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+                                <strong>{{ __($e['title']) }}</strong>
+                                <span class="hp-muted hp-num">{{ $when($e['next']) }}</span>
+                            </div>
+                            <div class="hp-muted">{{ __($e['what']) }}</div>
+                            <div>@foreach ($e['who'] as $w)<span class="hp-chip">{{ __($agents[$w][0] ?? $w) }}</span>@endforeach</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div style="margin-top:.75rem">
+                <strong>{{ __('সামনের তারিখ') }}</strong>
+                @foreach ($d['plan']['milestones'] as [$date, $what, $who])
+                    <div class="hp-row">
+                        <span class="hp-dot" style="background:#CB1B32"></span>
+                        <div style="flex:1"><div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+                            <span>{{ __($what) }}</span><span class="hp-muted hp-num">{{ $n($date->locale(app()->getLocale())->isoFormat('D MMM')) }}</span></div>
+                            <span class="hp-chip">{{ __($agents[$who][0] ?? $who) }}</span></div>
+                    </div>
+                @endforeach
+            </div>
+        </x-filament::section>
+
+        <x-filament::section icon="heroicon-o-inbox-stack">
+            <x-slot name="heading">{{ __('যে কাজ বাকি') }}</x-slot>
+            <x-slot name="description">{{ __('দল এগুলো ধীরে ধীরে শেষ করছে; আপনাকে কিছু করতে হবে না') }}</x-slot>
+            @php($max = max(1, ...array_column($d['plan']['queues'], 1)))
+            @foreach ($d['plan']['queues'] as [$label, $count, $who])
+                <div style="padding:.55rem 0">
+                    <div style="display:flex;justify-content:space-between;gap:.5rem"><span>{{ __($label) }}</span><strong class="hp-num">{{ $n(number_format($count)) }}</strong></div>
+                    <div class="hp-bar"><span style="width:{{ $count ? max(3, round($count / $max * 100)) : 0 }}%"></span></div>
+                    <span class="hp-muted">{{ __($agents[$who][0] ?? $who) }}</span>
+                </div>
+            @endforeach
+        </x-filament::section>
+    </div>
+
+    {{-- 3. The team --}}
+    <x-filament::section icon="heroicon-o-user-group">
+        <x-slot name="heading">{{ __('দল') }} ({{ $n(count($agents)) }})</x-slot>
+        <x-slot name="description">{{ __('কে কী করে, এই মাসে কত কাজ ও খরচ। থামালে শুধু সেই সদস্য বিশ্রাম নেবে।') }}</x-slot>
+        <div class="hp-team">
+            @foreach ($agents as $key => [$name, $job])
+                @php($s = $d['stats'][$key])
+                @php($paused = \App\Ai\Team::paused($key))
+                <div class="hp-member" wire:key="agent-{{ $key }}">
+                    <div style="min-width:0">
+                        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                            <strong style="font-size:1.02rem">{{ __($name) }}</strong>
+                            <x-filament::badge :color="$paused ? 'warning' : 'success'" size="sm">{{ $paused ? __('থামানো') : __('চালু') }}</x-filament::badge>
+                        </div>
+                        <div class="hp-muted">{{ __($job) }}</div>
+                    </div>
+                    <div class="hp-num">
+                        <div>{{ $n($s['calls']) }} {{ __('কাজ') }} · ${{ $n(number_format($s['cost'], 2)) }}</div>
+                        <div class="hp-muted">{{ __('শেষ কাজ:') }} {{ $ago($s['last']) }}</div>
+                    </div>
+                    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+                        {{ ($this->activityAction)(['agent' => $key]) }}
+                        <x-filament::button size="sm" :color="$paused ? 'success' : 'gray'" :icon="$paused ? 'heroicon-o-play' : 'heroicon-o-pause'" wire:click="toggle('{{ $key }}')">
+                            {{ $paused ? __('চালু করুন') : __('থামান') }}
+                        </x-filament::button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </x-filament::section>
+
+    {{-- 4. Latest work, whole team --}}
+    <x-filament::section icon="heroicon-o-clock" collapsible>
+        <x-slot name="heading">{{ __('সাম্প্রতিক কাজ') }}</x-slot>
+        <div class="hp-list">
+            @forelse ($d['feed'] as $f)
+                <div class="hp-row" style="padding:.45rem 0">
+                    <span class="hp-muted hp-num" style="min-width:8.5rem">{{ $ago($f['at']) }}</span>
+                    <span style="flex:1;min-width:0"><strong>{{ __($agents[$f['agent']][0] ?? '') }}</strong> · {{ __(\App\Ai\Team::PURPOSES[$f['purpose']] ?? $f['purpose']) }}
+                        @if ($f['title']) · <a href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $f['post']]) }}" style="text-decoration:underline">{{ \Illuminate\Support\Str::limit($f['title'], 50) }}</a>@endif</span>
+                </div>
             @empty
-                <div class="hp-muted">{{ __('সব ঠিক চলছে। কোনো সমস্যা হলে এখানে আর আজকের কাজে জানাবে।') }}</div>
+                <div class="hp-muted">{{ __('এখনও কোনো কাজ হয়নি।') }}</div>
             @endforelse
         </div>
     </x-filament::section>
 
-    <div class="hp-team">
-        @foreach (\App\Ai\Team::AGENTS as $key => [$name, $job])
-            @php($s = $d['stats'][$key])
-            @php($paused = \App\Ai\Team::paused($key))
-            <div class="hp-agent" wire:key="agent-{{ $key }}">
-                <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center">
-                    <strong style="font-size:1.05rem">{{ __($name) }}</strong>
-                    <x-filament::badge :color="$paused ? 'warning' : 'success'">{{ $paused ? __('থামানো') : __('চালু') }}</x-filament::badge>
-                </div>
-                <div class="hp-muted">{{ __($job) }}</div>
-                <div>{{ __('এই মাসে') }}: {{ $n($s['calls']) }} {{ __('কাজ') }} · {{ $n(number_format($s['cost'], 2)) }} {{ __('ডলার') }}</div>
-                <div class="hp-muted">{{ __('শেষ কাজ:') }} {{ $s['last'] ? $n(\Illuminate\Support\Carbon::parse($s['last'])->locale(app()->getLocale())->diffForHumans()) : __('কখনও না') }}</div>
-                <div>
-                    <x-filament::button size="sm" :color="$open === $key ? 'primary' : 'gray'" icon="heroicon-o-queue-list" wire:click="show('{{ $key }}')">{{ __('কী করেছে') }}</x-filament::button>
-                    <x-filament::button size="sm" :color="$paused ? 'success' : 'gray'" :icon="$paused ? 'heroicon-o-play' : 'heroicon-o-pause'" wire:click="toggle('{{ $key }}')">
-                        {{ $paused ? __('আবার চালু করুন') : __('থামান') }}
-                    </x-filament::button>
-                </div>
-                @if ($open === $key)
-                    @php([$where, $whereUrl] = \App\Filament\Pages\AiTeam::whereToSee($key))
-                    <div style="border-top:1px solid rgba(127,127,127,.2);padding-top:.5rem">
-                        <div class="hp-muted">{{ __('ফল কোথায় দেখবেন:') }} <a href="{{ $whereUrl }}" style="text-decoration:underline">{{ $where }}</a></div>
-                        @php($jobs = $this->recent($key))
-                        @forelse ($jobs as $j)
-                            <div style="font-size:.85rem;padding:.2rem 0;border-bottom:1px dashed rgba(127,127,127,.15)">
-                                <span class="hp-muted">{{ $n($j['at']->locale(app()->getLocale())->diffForHumans()) }}</span> ·
-                                {{ __(\App\Ai\Team::PURPOSES[$j['purpose']] ?? $j['purpose']) }}
-                                @if ($j['post']) · <a href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $j['post']->id]) }}" style="text-decoration:underline">{{ \Illuminate\Support\Str::limit($j['post']->title, 40) }}</a>@endif
-                            </div>
-                        @empty
-                            <div class="hp-muted">{{ __('এখনও কোনো কাজ করেনি।') }}</div>
-                        @endforelse
-                    </div>
-                @endif
-            </div>
-        @endforeach
-    </div>
 </x-filament-panels::page>

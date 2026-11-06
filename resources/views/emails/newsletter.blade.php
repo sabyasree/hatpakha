@@ -3,6 +3,7 @@
 <!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{{ $n->subject }}</title></head>
 <body style="margin:0;background:#FFFBF4;font-family:'Noto Sans Bengali','Anek Bangla',Arial,sans-serif;color:#13212C">
+@if ($n->preheader)<div style="display:none;max-height:0;overflow:hidden;opacity:0">{{ $n->preheader }}&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>@endif
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF4"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E8DCCB;border-radius:14px">
     <tr><td style="background:#13212C;border-radius:14px 14px 0 0;padding:22px 28px">
@@ -28,8 +29,7 @@
         @foreach (preg_split('/\n{2,}/', trim((string) $n->closing)) as $para)
             @if (trim($para) !== '')<p style="margin:0 0 14px">{!! nl2br(e(trim($para))) !!}</p>@endif
         @endforeach
-        <p style="margin:6px 0 20px"><a href="{{ url('/') }}/" style="display:inline-block;background:#CB1B32;color:#FFFFFF;text-decoration:none;border-radius:999px;padding:10px 22px;font-weight:700">হাতপাখা খুলুন</a></p>
-        <p style="margin:0 0 18px">— হাতপাখা</p>
+        <p style="margin:6px 0 20px"><a href="{{ \App\Ai\Copywriter::ctaUrl($n) }}" style="display:inline-block;background:#CB1B32;color:#FFFFFF;text-decoration:none;border-radius:999px;padding:12px 26px;font-weight:700;font-size:17px">{{ $n->cta_label ?: 'হাতপাখা খুলুন' }}</a></p>
     </td></tr>
     <tr><td style="border-top:1px solid #E8DCCB;padding:14px 28px;font-size:13px;color:#4D5A63;line-height:1.6">
         এই চিঠি আপনি পাচ্ছেন কারণ আপনি হাতপাখার চিঠি চেয়েছিলেন বা হাতপাখায় লেখেন।

@@ -72,6 +72,6 @@ class MarketingTest extends TestCase
         Livewire::test(Marketing::class)->callAction('create', ['kind' => 'custom', 'topic' => 'দীপাবলির শুভেচ্ছা'])->assertHasNoActionErrors();
         $this->assertSame(1, SocialPost::where('kind', 'custom')->count());
         \App\Models\AiUsage::create(['provider' => 'anthropic', 'model' => 'm', 'purpose' => 'marketing', 'input_tokens' => 1, 'output_tokens' => 1, 'cost_usd' => 0.001]);
-        Livewire::test(\App\Filament\Pages\AiTeam::class)->call('show', 'marketing')->assertSee('পোস্ট তৈরি')->assertSee('ফল কোথায় দেখবেন');
+        Livewire::test(\App\Filament\Pages\AiTeam::class)->assertSee('পরের কাজ')->assertSee('পোস্ট তৈরি')->mountAction('activity', ['agent' => 'marketing'])->assertMountedActionModalSee('ফল কোথায় দেখবেন');
     }
 }
