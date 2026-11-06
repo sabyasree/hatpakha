@@ -58,6 +58,7 @@
     </div>
 </nav>
 
-<div class="mx-auto max-w-[1000px] px-5 pb-20 pt-6">
+<div class="mx-auto max-w-[1000px] px-5 pb-36 pt-6 md:pb-20">
     {{ $slot }}
 </div>
+@include('partials.chat')

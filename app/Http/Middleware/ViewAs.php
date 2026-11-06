@@ -69,7 +69,7 @@ class ViewAs
         }
         if (! $request->isMethodSafe()) {
             return $request->expectsJson()
-                ? response()->json(['message' => 'দেখার সময়ে কিছু বদলানো যায় না।'], 403)
+                ? response()->json(['message' => 'দেখার সময়ে কিছু বদলানো যায় না।', 'answer' => 'আপনি এখন শুধু দেখছেন, তাই সহায়ককে প্রশ্ন পাঠানো যায় না।'], 403)
                 : back()->with('status', 'আপনি এখন শুধু দেখছেন, তাই কিছু বদলানো বা পাঠানো যায় না।');
         }
         Auth::setUser($target);   // this request only; the session stays the admin's

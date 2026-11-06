@@ -74,4 +74,21 @@ class ChatBotTest extends TestCase
         Page::create(['slug' => 'about-hatpakha', 'title' => 'হাতপাখার কথা', 'body_html' => '<p>x</p>', 'status' => 'published']);
         $this->get('/about-hatpakha/')->assertOk()->assertDontSee('hp-chat', false);
     }
+
+    /** D86: the helper is on every account tab, knows the account pages, and knows an imported writer's own pieces. */
+    public function test_helper_on_account_pages_knows_the_account_and_my_bylined_pieces(): void
+    {
+        $me = User::factory()->create(['role' => \App\Enums\Role::Writer]);
+        $author = \App\Models\Author::create(['display_name' => 'Imported Writer', 'slug' => 'imported-writer', 'user_id' => $me->id]);
+        $post = $this->makePost(['status' => 'published', 'title' => 'পুরনো প্রকাশিত লেখা']);
+        $post->authors()->attach($author->id, ['position' => 0]);
+        $this->actingAs($me);
+        foreach (['/account/', '/account/writings/', '/account/profile/', '/account/reading/', '/account/settings/'] as $u) {
+            $this->get($u)->assertOk()->assertSee('hp-chat', false);
+        }
+        $this->postJson('/chat', ['question' => 'শংসাপত্র কোথায় পাব?'])->assertOk();
+        $this->assertStringContainsString('<account_guide>', $this->seen);
+        $this->assertStringContainsString('শংসাপত্র চাই', $this->seen);
+        $this->assertStringContainsString('পুরনো প্রকাশিত লেখা', $this->seen);
+    }
 }
