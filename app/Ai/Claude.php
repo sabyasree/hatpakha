@@ -37,11 +37,16 @@ final class Claude
             return [(self::$fake)($purpose, $user, $schema), null];
         }
         $model ??= (string) config('ai.anthropic.review_model');
+        // D62: the team's shared knowledge first (the same for every job, so it is cached), then the task.
+        $blocks = in_array($purpose, Knowledge::FOR, true)
+            ? [['type' => 'text', 'text' => trim(Knowledge::BRIEF), 'cacheControl' => ['type' => 'ephemeral']],
+                ['type' => 'text', 'text' => $system.(in_array($purpose, Knowledge::TRENDS_FOR, true) ? substr(Knowledge::forPurpose($purpose), strlen("\n\n".Knowledge::BRIEF)) : '')]]
+            : [['type' => 'text', 'text' => $system, 'cacheControl' => ['type' => 'ephemeral']]];
         try {
             $message = (new Client(apiKey: (string) config('ai.anthropic.key')))->beta->messages->create(
                 model: $model,
                 maxTokens: $maxTokens,
-                system: [['type' => 'text', 'text' => $system, 'cacheControl' => ['type' => 'ephemeral']]],
+                system: $blocks,
                 messages: [['role' => 'user', 'content' => $user]],
                 outputConfig: ['format' => ['type' => 'json_schema', 'schema' => $schema]],
                 fallbacks: 'default',

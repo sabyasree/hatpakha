@@ -107,6 +107,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - **Newsletters** (D58): public sign-up with double opt-in; /desk → চিঠি to readers, writers or both (AI drafts weekly + monthly, owner tests and sends, batched); needs real SMTP in the server .env to actually send
 - **Accounts** (D59): verify-before-anything, no account probing, Turnstile on auth forms, breached-password check, optional 2FA (TOTP + recovery codes) with a nudge; redesigned /account/ (tabs) and author pages with the writer's own photo, cover, bio and links; all verified accounts get the newsletter unless they switch it off
 - **Turnstile** finished (D60): action + hostname checks, fail-closed; **draw/redraw a cover** from any post or in bulk (D60)
+- **Copywriter** for all letters; AI team page with the plan (D61); **shared knowledge + trend scout** for the team, and the editor's plan `docs/STRATEGY.md` (D62)
+- ⬜ Next features (STRATEGY.md §4): site search, serial fiction, reader reactions + reading list, follow a writer, audio readings, reader tips
 - ⬜ Later: automatic Facebook posting (owner turns on), anthology e-book file, Search Console data for the SEO expert, privacy-policy wording for the read counter (owner)
 
 ## Deploys

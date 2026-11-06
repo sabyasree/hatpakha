@@ -31,7 +31,7 @@ final class AnthropicReviewer implements Reviewer
                 model: $this->model(),
                 maxTokens: 16000,
                 // The rubric is the same on every call: cache it (cheaper, faster). Per-piece text goes in messages.
-                system: [['type' => 'text', 'text' => Prompt::system(), 'cacheControl' => ['type' => 'ephemeral']]],
+                system: [['type' => 'text', 'text' => trim(Knowledge::BRIEF)], ['type' => 'text', 'text' => Prompt::system(), 'cacheControl' => ['type' => 'ephemeral']]],   // D62: shared knowledge first
                 messages: [['role' => 'user', 'content' => Prompt::user($post)]],
                 outputConfig: [
                     'effort' => (string) config('ai.anthropic.effort'),

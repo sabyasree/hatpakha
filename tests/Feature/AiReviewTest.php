@@ -67,7 +67,8 @@ class AiReviewTest extends TestCase
         $body = json_decode((string) $http->request->getBody(), true);
         $this->assertSame('claude-sonnet-5-5', $body['model']);
         $this->assertSame('json_schema', $body['output_config']['format']['type']);
-        $this->assertSame('ephemeral', $body['system'][0]['cache_control']['type']);
+        $this->assertStringContainsString('Shared knowledge for the Hatpakha', $body['system'][0]['text'], 'D62: shared knowledge first');
+        $this->assertSame('ephemeral', $body['system'][1]['cache_control']['type'], 'Knowledge + rubric cached as one prefix');
         $this->assertStringContainsString('<submission>', $body['messages'][0]['content']);
         $this->assertStringContainsString('server-side-fallback-2026-07-01', $http->request->getHeaderLine('anthropic-beta'));
         $this->assertSame('default', $body['fallbacks']);

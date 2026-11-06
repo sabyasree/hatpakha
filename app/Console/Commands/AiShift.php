@@ -154,6 +154,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::picks();
         \App\Ai\EditorJobs::health();
         \App\Ai\Chief::qualityReview();
+        \App\Ai\Knowledge::refreshTrends();   // D62: the trend scout, first, so the week's plan can use it
         \App\Ai\Marketer::weekly();
         \App\Ai\EditorJobs::certificates();
 

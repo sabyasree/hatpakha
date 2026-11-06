@@ -95,6 +95,24 @@
         </x-filament::section>
     </div>
 
+    {{-- The trend scout's news: what the team keeps in mind this week (D62) --}}
+    <x-filament::section icon="heroicon-o-sparkles" collapsible>
+        <x-slot name="heading">{{ __('এই সপ্তাহের খবর') }}</x-slot>
+        <x-slot name="description">{{ $d['trends'] ? __('ট্রেন্ড-সন্ধানী খুঁজেছে').' '.$n($d['trends']['at']).'। '.__('মার্কেটিং, চিঠি, সংখ্যা আর সংকলনের কাজে দল এগুলো মাথায় রাখে।') : __('প্রতি সোমবার ট্রেন্ড-সন্ধানী বাংলা সাহিত্য ও সংস্কৃতির খবর খুঁজে এখানে রাখবে।') }}</x-slot>
+        @if ($d['trends'])
+            <div class="hp-list">
+                @foreach ($d['trends']['items'] as $t)
+                    <div class="hp-row" style="padding:.5rem 0">
+                        <span class="hp-dot" style="background:#EFC08D"></span>
+                        <div style="flex:1;min-width:0"><a href="{{ $t['url'] }}" target="_blank" rel="noopener noreferrer nofollow" style="font-weight:600;text-decoration:underline">{{ $t['title'] }}</a>
+                            @if ($t['when'])<span class="hp-muted"> · {{ $t['when'] }}</span>@endif
+                            <div class="hp-muted">{{ $t['why'] }}</div></div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </x-filament::section>
+
     {{-- 3. The team --}}
     <x-filament::section icon="heroicon-o-user-group">
         <x-slot name="heading">{{ __('দল') }} ({{ $n(count($agents)) }})</x-slot>
