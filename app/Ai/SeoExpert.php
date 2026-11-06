@@ -25,7 +25,7 @@ final class SeoExpert
     }
 
     /** @return string|null null when done, otherwise why not */
-    public static function run(Post $post, bool $onlyMissing = false): ?string
+    public static function run(Post $post, bool $onlyMissing = false, bool $proposeOnly = false): ?string
     {
         if (! $post->isLive() && $post->status !== 'scheduled') {
             return 'not approved';
@@ -68,7 +68,7 @@ final class SeoExpert
         ];
         $tagNames = array_slice(array_filter(array_map(fn ($t) => trim(strip_tags((string) $t)), (array) $d['tags']), fn ($t) => $t !== '' && mb_strlen($t) <= 40), 0, 5);
 
-        if (! self::automatic()) {
+        if ($proposeOnly || ! self::automatic()) {
             $post->forceFill(['seo_proposal' => $new + ['tags' => $tagNames]])->saveQuietly();
 
             return null;
@@ -79,6 +79,28 @@ final class SeoExpert
     }
 
     /** Writes the details (only empty fields when $onlyMissing) and logs what was there before. */
+    /**
+     * Monthly refresh (D54): old pieces that readers still find through search, whose details are
+     * older than six months, get NEW suggestions for the owner to accept (never changed automatically).
+     */
+    public static function refresh(int $limit = 8): array
+    {
+        $ids = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(30)->toDateString())
+            ->groupBy('post_id')->orderByRaw('SUM(search) DESC')->havingRaw('SUM(search) > 0')->limit(40)->pluck('post_id');
+        $done = [];
+        foreach (Post::published()->whereIn('id', $ids)->where('published_at', '<', now()->subYear())->whereNull('seo_proposal')
+            ->where(fn ($q) => $q->whereNull('seo_done_at')->orWhere('seo_done_at', '<', now()->subMonths(6)))->limit($limit)->get() as $p) {
+            if (self::run($p, proposeOnly: true) === null) {
+                $done[] = ['post' => $p->id, 'title' => $p->title];
+            }
+        }
+        if ($done) {
+            \App\Models\EditorTask::propose('seo_refresh', __('পুরনো লেখার এসইও ঘষামাজা: ').count($done), ['posts' => $done]);
+        }
+
+        return $done;
+    }
+
     public static function apply(Post $post, array $new, array $tagNames, bool $onlyMissing = false): void
     {
         $before = $post->only(self::FIELDS);

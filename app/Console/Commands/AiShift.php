@@ -163,6 +163,8 @@ class AiShift extends Command
     {
         \App\Ai\EditorJobs::report();
         \App\Ai\Marketer::spotlight();
+        \App\Ai\Analyst::monthly();
+        \App\Ai\SeoExpert::refresh();
 
         return self::SUCCESS;
     }

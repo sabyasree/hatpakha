@@ -1,6 +1,6 @@
 <x-layouts.app :seo="$seo">
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
-    <article class="mx-auto max-w-[760px] px-5 pb-10 pt-8">
+    <article class="mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif>
         <nav aria-label="অবস্থান" class="text-sm text-ink2">
             @foreach ($crumbs as $c)
                 @if (! $loop->last)<a href="{{ $c[1] }}" class="hover:text-red">{{ $c[0] }}</a> › @endif

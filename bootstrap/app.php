@@ -10,6 +10,9 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Read counter beacon (D54): outside the web group, so no session, cookie or CSRF token is involved.
+        then: fn () => \Illuminate\Support\Facades\Route::post('/v/{post}', \App\Http\Controllers\ViewController::class)
+            ->whereNumber('post')->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind Cloudflare/LiteSpeed: trust forwarded proto/host so HTTPS is detected.

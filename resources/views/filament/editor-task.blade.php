@@ -23,6 +23,18 @@
             <p style="margin:0;font-weight:700">{{ __('মানদণ্ডে যা যোগ করা যায়') }}</p>
             <ol style="margin:0;padding-inline-start:1.4rem;list-style:decimal">@foreach ($p['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol>
         @endif
+    @elseif ($task->type === 'insights')
+        <p style="margin:0 0 .4rem">{{ __('মোট পড়া') }}: <strong>{{ $n($p['views'] ?? 0) }}</strong> · {{ __('খোঁজ থেকে') }} {{ $n($p['search'] ?? 0) }} · {{ __('সামাজিক মাধ্যম থেকে') }} {{ $n($p['social'] ?? 0) }} · {{ __('সাইটের ভেতর থেকে') }} {{ $n($p['internal'] ?? 0) }}</p>
+        @if (! empty($p['points']))<ul style="margin:0 0 .6rem;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['points'] as $pt)<li>{{ $pt }}</li>@endforeach</ul>@endif
+        <p style="margin:0;font-weight:700">{{ __('সবচেয়ে বেশি পড়া') }}</p>
+        <ol style="margin:0 0 .6rem;padding-inline-start:1.4rem;list-style:decimal">@foreach ((array) ($p['top'] ?? []) as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ol>
+        @if (! empty($p['old']))<p style="margin:0;font-weight:700">{{ __('পুরনো লেখা, এখনও পড়া হচ্ছে') }}</p>
+            <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['old'] as $t)<li>{{ $t['title'] }} · {{ $n($t['views']) }}</li>@endforeach</ul>@endif
+    @elseif ($task->type === 'seo_refresh')
+        <p style="margin:0 0 .4rem">{{ __('এই পুরনো লেখাগুলো গুগল থেকে এখনও পাঠক পাচ্ছে। এসইও বিশেষজ্ঞ নতুন তথ্য প্রস্তাব করেছে; প্রতিটি খুলে "এসইও" থেকে দেখে নিন।') }}</p>
+        <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">
+            @foreach ((array) ($p['posts'] ?? []) as $pp)<li><a href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $pp['post']]) }}" style="text-decoration:underline">{{ $pp['title'] }}</a></li>@endforeach
+        </ul>
     @elseif ($task->type === 'plagiarism')
         <p style="margin:0">{{ $task->subject?->title }}</p>
         <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">
