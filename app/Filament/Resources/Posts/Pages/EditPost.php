@@ -41,6 +41,16 @@ class EditPost extends EditRecord
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
             ...$review,
+            // Editors can drop an unsuitable cover (the piece stays; the writer can upload another).
+            Action::make('removeCover')->label('প্রচ্ছদ সরান')->icon('heroicon-o-photo')->color('gray')
+                ->visible(fn (Post $record) => str_starts_with((string) $record->featured_image_path, 'storage/covers/'))
+                ->requiresConfirmation()->modalDescription('লেখকের দেওয়া প্রচ্ছদের ছবিটি মুছে যাবে। লেখাটি থাকবে।')
+                ->action(function (Post $record) {
+                    \App\Support\CoverImage::remove($record);
+                    \App\Models\AuditLog::record('post.cover_removed', $record);
+                    $this->refreshFormData(['featured_image_path']);
+                    \Filament\Notifications\Notification::make()->title('প্রচ্ছদ সরানো হয়েছে')->success()->send();
+                }),
             ActionGroup::make([
                 DeleteAction::make()->visible($isAdmin),
                 ForceDeleteAction::make()->visible($isAdmin),

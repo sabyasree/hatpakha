@@ -60,4 +60,24 @@ if (form) {
         });
     });
     dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+    // Cover: show the chosen picture before saving; warn early about size (the server checks again).
+    const cover = form.querySelector('[data-cover]');
+    const coverPreview = form.querySelector('[data-cover-preview]');
+    cover?.addEventListener('change', () => {
+        const file = cover.files?.[0];
+        coverPreview.classList.add('hidden');
+        const name = form.querySelector('[data-cover-name]');
+        if (name) name.textContent = cover.files?.[0]?.name || 'কোনো ছবি বাছা হয়নি';
+        cover.setCustomValidity('');
+        if (!file) return;
+        if (file.size > 8 * 1024 * 1024) {
+            cover.setCustomValidity('ছবিটি ৮ MB-এর মধ্যে হতে হবে।');
+            cover.reportValidity();
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => { coverPreview.src = reader.result; coverPreview.classList.remove('hidden'); };
+        reader.readAsDataURL(file);
+    });
 }

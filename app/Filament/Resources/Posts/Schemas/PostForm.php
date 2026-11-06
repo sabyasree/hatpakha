@@ -32,6 +32,10 @@ class PostForm
             Group::make()->columnSpan(1)->schema([
                 // What an editor needs to decide on a form submission, without leaving the page.
                 Section::make('জমার তথ্য')->visible(fn (?Post $record) => $record?->submitted_by !== null)->schema([
+                    Placeholder::make('cover')->label('প্রচ্ছদের ছবি')
+                        ->content(fn (Post $record) => $record->featured_image_path
+                            ? new \Illuminate\Support\HtmlString('<img src="'.e(asset($record->featured_image_path)).'" alt="" style="max-height:12rem;border-radius:.75rem">')
+                            : 'নেই'),
                     Placeholder::make('writer')->label('লেখক অ্যাকাউন্ট')
                         ->content(fn (Post $record) => ($record->submittedBy?->name ?? '—').' · '.($record->submittedBy?->email ?? '')),
                     Placeholder::make('writer_history')->label('এর আগে প্রকাশিত')

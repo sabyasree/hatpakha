@@ -104,7 +104,12 @@ class SubmissionController extends Controller
             'body' => ['required', 'string', 'min:30', 'max:200000'],
             'section_id' => ['required', 'integer', 'in:'.self::sections()->pluck('id')->implode(',')],
             'original' => [$submitting ? 'accepted' : 'nullable'],
+            // Checked again for real (sniffed + re-encoded) in CoverImage; this is the quick first gate.
+            'cover' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
+            'remove_cover' => ['nullable', 'boolean'],
         ], [
+            'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
+            'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
             'title.required' => 'শিরোনাম দিন।',
             'body.required' => 'লেখাটি দিন।',
             'body.min' => 'লেখাটি খুব ছোট।',
@@ -123,6 +128,11 @@ class SubmissionController extends Controller
         }
 
         $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
+        if ($request->hasFile('cover')) {
+            \App\Support\CoverImage::attach($post, $request->file('cover'));
+        } elseif ($request->boolean('remove_cover')) {
+            \App\Support\CoverImage::remove($post);
+        }
 
         if (! $submitting) {
             return redirect(Url::to('/submit/'.$post->id))->with('status', 'খসড়া রাখা হয়েছে।');

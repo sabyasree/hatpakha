@@ -104,6 +104,7 @@ jobs:
             php -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);' || { echo 'Server CLI PHP is older than 8.3:'; php -v; exit 1; } && \
             { [ -L public/storage ] || rm -rf public/storage; } && \
             mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/app/public storage/app/private && \
+            { [ -L public/storage ] || php artisan storage:link; } && \
             { php artisan db:show --json >/dev/null || { echo 'Cannot connect to the database: check DB_HOST/DB_DATABASE/DB_USERNAME/DB_PASSWORD in ENV_FILE. The "back soon" page stays up until this is fixed and redeployed.'; exit 1; }; } && \
             php artisan down --render=errors::503 --retry=30 --refresh=30 || true; \
             php artisan migrate --force && \

@@ -28,7 +28,7 @@
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
                 action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
                 data-autosave-url="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id.'/autosave' : '/submit/autosave') }}"
-                data-preview-url="{{ \App\Support\Url::to('/submit/preview') }}" class="mt-6">
+                data-preview-url="{{ \App\Support\Url::to('/submit/preview') }}" enctype="multipart/form-data" class="mt-6">
                 @csrf
                 <label class="mb-4 block">
                     <span class="mb-1 block font-bold">বিভাগ</span>
@@ -47,6 +47,25 @@
                         placeholder="এখানে লিখুন, বা Word / Google Docs / WhatsApp থেকে পেস্ট করুন।&#10;কবিতায় প্রতিটি লাইন আলাদা লাইনে; স্তবকের মাঝে একটি ফাঁকা লাইন।">{{ old('body', $text) }}</textarea>
                 </label>
                 <p class="mb-5 text-sm text-ink2"><span id="autosave-status" aria-live="polite"></span></p>
+
+                {{-- Optional cover (3f). Re-encoded on the server: location and camera data are removed. --}}
+                <fieldset class="mb-6 rounded-xl border-2 border-rule p-4">
+                    <legend class="px-1 font-bold">প্রচ্ছদের ছবি <span class="font-normal text-ink2">(ইচ্ছে হলে)</span></legend>
+                    @if ($post->featured_image_path)
+                        <img src="{{ asset($post->featured_image_path) }}" alt="এখনকার প্রচ্ছদ" class="mb-3 max-h-56 rounded-xl">
+                        <label class="mb-3 flex items-center gap-3"><input type="checkbox" name="remove_cover" value="1" class="h-5 w-5"> ছবিটি সরিয়ে দিন</label>
+                    @endif
+                    {{-- The browser's own file button is English ("Choose File"); a Bengali label opens it instead. --}}
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="relative inline-flex h-11 cursor-pointer items-center rounded-full border-2 border-navy bg-white px-5 font-bold focus-within:ring-2 focus-within:ring-sky-deep">
+                            {{ $post->featured_image_path ? 'অন্য ছবি বেছে নিন' : 'ছবি বেছে নিন' }}
+                            <input type="file" name="cover" accept="image/jpeg,image/png,image/webp" data-cover class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+                        </label>
+                        <span data-cover-name class="text-ink2">কোনো ছবি বাছা হয়নি</span>
+                    </div>
+                    <img data-cover-preview alt="" class="mt-3 hidden max-h-56 rounded-xl">
+                    <p class="mt-2 text-sm text-ink2">নিজের তোলা বা আঁকা ছবি, অথবা যে ছবি ব্যবহারের অনুমতি আছে। JPG, PNG বা WebP; ৮ MB পর্যন্ত; অন্তত ৮০০ পিক্সেল চওড়া, আড়াআড়ি হলে ভালো। ছবির ভেতরের অবস্থান ও ক্যামেরার তথ্য মুছে রাখা হয়।</p>
+                </fieldset>
 
                 <label class="mb-6 flex items-start gap-3 rounded-xl bg-peach-light p-4">
                     <input type="checkbox" name="original" value="1" class="mt-1 h-5 w-5">

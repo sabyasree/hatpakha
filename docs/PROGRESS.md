@@ -62,7 +62,6 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Blind test run on staging (30 pieces, est. $1.36). Scoring page redesigned: one piece at a time, reports A/B side by side, one question (A better / same / B better), progress bar, auto-next, reveal at the end. AI report view rebuilt with inline styles (utility classes don't exist in /desk)
 - ✅ "চাবি যাচাই" button on এআই সহকারী: checks both keys and model names via the free model-lookup endpoints (no tokens)
 - ✅ Owner added AI keys to the staging ENV_FILE
-- ⬜ Cover image upload on the submission form (re-encode, strip metadata)
 
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
