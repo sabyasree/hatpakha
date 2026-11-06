@@ -130,6 +130,24 @@
                                 <span class="rounded-full px-3 py-1 text-sm font-bold {{ in_array($p->status, ['published', 'scheduled']) ? 'bg-sky-tint text-sky-night' : 'bg-peach-light' }}">{{ $label }}</span>
                                 @if ($p->status === 'published')<a href="{{ $p->url() }}" class="font-bold text-sky-deep underline">দেখুন</a>@endif
                             </div>
+                            @if (in_array($p->status, ['published', 'scheduled']))
+                                {{-- D67: the writer's own reading --}}
+                                <details class="w-full rounded-xl bg-paper p-3 text-sm" @if ($p->audio_path) open @endif>
+                                    <summary class="cursor-pointer font-bold">🎙 নিজের কণ্ঠে পাঠ
+                                        @if ($p->audio_status === 'approved') <span class="text-sky-night">· লেখায় যোগ হয়েছে</span>
+                                        @elseif ($p->audio_status === 'pending') <span class="text-ink2">· সম্পাদকের অনুমোদনের অপেক্ষায়</span>@endif</summary>
+                                    @if ($p->audio_path)
+                                        <audio controls preload="none" src="{{ $p->audio_path }}" class="mt-2 w-full"></audio>
+                                        <form method="POST" action="{{ Url::to('/account/audio/'.$p->id) }}" class="mt-2">@csrf<input type="hidden" name="remove" value="1">
+                                            <button class="font-bold text-red underline">পাঠ সরান</button></form>
+                                    @endif
+                                    <form method="POST" action="{{ Url::to('/account/audio/'.$p->id) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">@csrf
+                                        <input type="file" name="audio" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,.mp3,.m4a,.ogg" required class="max-w-full text-sm">
+                                        <button class="h-10 rounded-full border-2 border-navy px-4 font-bold">{{ $p->audio_path ? 'নতুন পাঠ দিন' : 'পাঠ যোগ করুন' }}</button>
+                                    </form>
+                                    <p class="mt-1 text-xs text-ink2">ফোনে রেকর্ড করা MP3/M4A চলবে, ২৫ MB পর্যন্ত। শান্ত ঘরে, ফোন মুখ থেকে এক হাত দূরে রেখে পড়ুন।</p>
+                                </details>
+                            @endif
                         </li>
                     @endforeach
                 </ul>

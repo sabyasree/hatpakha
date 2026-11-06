@@ -120,7 +120,7 @@
                 <x-filament::section id="tasks" icon="heroicon-o-briefcase">
                     <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
                     <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
-                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক')])
+                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক'), 'audio' => __('লেখকের পাঠ (অডিও)')])
                     @foreach ($t['tasks'] as $task)
                         <div class="hp-row" wire:key="task{{ $task->id }}">
                             <div style="min-width:0;flex:1 1 16rem">
@@ -131,6 +131,7 @@
                                 @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'newsletter' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-envelope" :href="\App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $task->subject])">{{ __('দেখুন ও পাঠান') }}</x-filament::button> @endif
+                                @if ($task->type === 'audio' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-speaker-wave" :href="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject])">{{ __('শুনুন ও অনুমোদন দিন') }}</x-filament::button> @endif
                                 @if ($task->type === 'honour') {{ ($this->honourAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'certificates') {{ ($this->issueCertificatesAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }} @endif

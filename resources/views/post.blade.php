@@ -32,6 +32,14 @@
             <x-title-card :post="$post" class="mt-7 !aspect-[16/7]" />
         @endif
 
+        @if ($post->audio_path && $post->audio_status === 'approved')
+            {{-- D67: the writer reads their own piece --}}
+            <div class="mt-6 rounded-2xl border-2 border-navy bg-sky-tint p-4">
+                <div class="mb-2 font-bold text-sky-night">🎙 লেখকের কণ্ঠে শুনুন</div>
+                <audio controls preload="none" src="{{ $post->audio_path }}" class="w-full"></audio>
+            </div>
+        @endif
+
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer) — the only raw output allowed. --}}
         <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center' : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
 

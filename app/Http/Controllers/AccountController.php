@@ -111,6 +111,22 @@ class AccountController extends Controller
         return redirect(Url::to('/account').'#profile')->with('status', 'প্রোফাইল সাজানো হয়েছে।');
     }
 
+    /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
+    public function audio(Request $request, Post $post)
+    {
+        abort_unless($post->authors()->where('user_id', $request->user()->id)->exists() && $post->status !== 'rejected', 403);
+        if ($request->boolean('remove')) {
+            \App\Support\AudioReading::remove($post);
+
+            return redirect(Url::to('/account').'#writing')->with('status', 'পাঠটি সরানো হয়েছে।');
+        }
+        $request->validate(['audio' => ['required', 'file', 'max:'.(\App\Support\AudioReading::MAX_MB * 1024)]],
+            ['audio.required' => 'একটি অডিও ফাইল বেছে নিন।', 'audio.max' => 'ফাইলটি '.\App\Support\Bn::num((string) \App\Support\AudioReading::MAX_MB).' MB-এর মধ্যে হতে হবে।']);
+        \App\Support\AudioReading::attach($post, $request->file('audio'));
+
+        return redirect(Url::to('/account').'#writing')->with('status', 'পাঠটি জমা পড়েছে। সম্পাদক শুনে অনুমোদন করলেই লেখার পাতায় যোগ হবে।');
+    }
+
     public function updateNewsletter(Request $request)
     {
         $request->user()->forceFill(['mail_opt_out' => ! $request->boolean('newsletter')])->save();

@@ -69,6 +69,18 @@ class PostForm
                             \Filament\Notifications\Notification::make()->title(__('বাদ দেওয়া হয়েছে'))->send();
                         }),
                 ]),
+                // D67: the writer's own reading: listen, then approve or remove.
+                Section::make(__('লেখকের পাঠ'))->visible(fn (?Post $record) => (bool) $record?->audio_path)->schema([
+                    Placeholder::make('audio_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(
+                        '<audio controls preload="none" src="'.e($record->audio_path).'" style="width:100%"></audio><div style="font-size:.85rem;opacity:.75;margin-top:.35rem">'
+                        .e($record->audio_status === 'approved' ? __('লেখার পাতায় চলছে।') : __('অনুমোদনের অপেক্ষায়। শুনে ঠিক থাকলে অনুমোদন দিন।')).'</div>')),
+                ])->footerActions([
+                    \Filament\Actions\Action::make('approveAudio')->label(__('অনুমোদন দিন'))->icon('heroicon-o-check')->color('success')->size('sm')
+                        ->visible(fn (?Post $record) => $record?->audio_status === 'pending')
+                        ->action(fn (Post $record) => \App\Support\AudioReading::approve($record)),
+                    \Filament\Actions\Action::make('removeAudio')->label(__('পাঠ সরান'))->icon('heroicon-o-trash')->color('gray')->size('sm')->requiresConfirmation()
+                        ->action(fn (Post $record) => \App\Support\AudioReading::remove($record)),
+                ]),
                 Section::make(__('প্রকাশ'))->schema([
                     Select::make('status')->label(__('অবস্থা'))->required()->default('draft')
                         ->options(\App\Support\Lang::t(\App\Filament\Resources\Posts\Tables\PostsTable::STATUS)),
