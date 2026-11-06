@@ -19,7 +19,7 @@ Route::get('/', HomeController::class)->name('home');
 // Crawlers
 Route::get('/robots.txt', [SitemapController::class, 'robots']);
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
-Route::get('/sitemap-{type}.xml', [SitemapController::class, 'show'])->where('type', 'posts-\d+|sections|authors|issues');
+Route::get('/sitemap-{type}.xml', [SitemapController::class, 'show'])->where('type', 'posts-\d+|sections|authors|issues|pages');
 
 // Feeds (trailing slash is enforced by middleware; Laravel matches with or without it)
 Route::get('/feed', [FeedController::class, 'site']);

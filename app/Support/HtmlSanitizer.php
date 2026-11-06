@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer as SymfonySanitizer;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerAction;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 /**
@@ -19,8 +20,25 @@ final class HtmlSanitizer
             return '';
         }
 
+        // Raw-text elements: remove with their contents first, so CSS/JS never leaks out as visible text.
+        $html = preg_replace('~<(script|style|noscript|template|textarea)\b[^>]*>.*?</\1\s*>~is', '', $html) ?? '';
+
         self::$instance ??= new SymfonySanitizer(
             (new HtmlSanitizerConfig())
+                // Unknown wrappers (span, div, font, o:p from Word/Mac pastes…) are unwrapped and their
+                // TEXT IS KEPT. Dropping them would silently delete poems (346 imported posts were affected).
+                ->defaultAction(HtmlSanitizerAction::Block)
+                // …but active or invisible content is removed together with everything inside it.
+                ->dropElement('script')->dropElement('style')->dropElement('noscript')->dropElement('template')
+                ->dropElement('iframe')->dropElement('object')->dropElement('embed')->dropElement('applet')
+                ->dropElement('svg')->dropElement('math')->dropElement('form')->dropElement('input')
+                ->dropElement('button')->dropElement('select')->dropElement('textarea')->dropElement('option')
+                ->dropElement('head')->dropElement('title')->dropElement('meta')->dropElement('link')
+                ->dropElement('base')->dropElement('frame')->dropElement('frameset')
+                ->allowElement('u')->allowElement('s')->allowElement('del')->allowElement('sup')->allowElement('sub')
+                ->allowElement('small')->allowElement('pre')->allowElement('code')
+                ->allowElement('table')->allowElement('thead')->allowElement('tbody')->allowElement('tr')
+                ->allowElement('th')->allowElement('td')
                 ->allowElement('p')->allowElement('br')->allowElement('em')->allowElement('i')
                 ->allowElement('strong')->allowElement('b')->allowElement('blockquote')
                 ->allowElement('h2')->allowElement('h3')->allowElement('h4')

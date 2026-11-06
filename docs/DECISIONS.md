@@ -25,3 +25,5 @@ Format: **date · decision · reason · decided by**.
 | D18 | 2026-11-05 | Home page caches **IDs, not models** | Laravel 13 refuses to unserialize models from the cache (security default kept) | Claude |
 | D19 | 2026-11-05 | Two GitHub Environments, `staging` (new.hatpakha.com) and `production`; the site is **noindex unless `SEO_INDEXABLE=true`** (production only, from cutover) | Test safely; staging must never compete with the live site in Google | Owner (environments) + Claude (noindex flag) |
 | D20 | 2026-11-05 | 2FA can use **email codes** as well as an authenticator app; 2FA stays mandatory for the panel | Owner asked for an easier option; app remains recommended for admins | Owner |
+| D21 | 2026-11-06 | Old WordPress pages keep their URLs; key pages rewritten by the editor (not copied); unreviewed old pages are noindex; plugin pages 301 to home | Owner: "don't blindly copy, work as a magazine editor" | Owner + Claude |
+| D22 | 2026-11-06 | Sanitizer **unwraps** unknown tags (keeps text) and **drops** script/style/form/iframe with contents | Dropping unknown tags deleted text from 346 imported posts | Claude |

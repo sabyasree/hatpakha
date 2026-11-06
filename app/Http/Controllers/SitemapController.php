@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Author;
 use App\Models\Issue;
+use App\Models\Page;
 use App\Models\Post;
 use App\Models\Section;
 use App\Support\Url;
@@ -38,7 +39,7 @@ class SitemapController extends Controller
     {
         $pages = max(1, (int) ceil(Post::published()->count() / self::PER_FILE));
         $files = collect(range(1, $pages))->map(fn ($n) => "sitemap-posts-{$n}.xml")
-            ->merge(['sitemap-sections.xml', 'sitemap-authors.xml', 'sitemap-issues.xml']);
+            ->merge(['sitemap-sections.xml', 'sitemap-authors.xml', 'sitemap-issues.xml', 'sitemap-pages.xml']);
 
         return response()->view('sitemap.index', ['files' => $files])->header('Content-Type', 'application/xml; charset=UTF-8');
     }
@@ -53,6 +54,7 @@ class SitemapController extends Controller
                 ->map(fn (Post $p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => $p->featured_image_path && $p->featured_image_width >= 400 ? asset($p->featured_image_path) : null]),
             $type === 'sections' => Section::where('is_active', true)->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->updated_at, 'image' => null]),
             $type === 'authors' => Author::where('published_count', '>=', 3)->get()->map(fn ($a) => ['loc' => $a->url(), 'lastmod' => $a->updated_at, 'image' => null]),
+            $type === 'pages' => Page::published()->where('noindex', false)->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => null]),
             $type === 'issues' => Issue::where('status', 'published')->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Author;
 use App\Models\Comment;
+use App\Models\Page;
 use App\Models\Post;
 use App\Models\Redirect;
 use App\Models\Section;
@@ -11,6 +12,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Enums\Role;
 use App\Support\Slug;
+use App\Support\WpContent;
 use Illuminate\Console\Command;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportWordPress extends Command
 {
-    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)}';
+    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages}';
 
     protected $description = 'Import users, authors, sections, tags, posts (all statuses) and comments from the old WordPress database';
 
@@ -57,16 +59,23 @@ class ImportWordPress extends Command
         $this->call('db:seed', ['--force' => true]);
         $this->sectionId = Section::pluck('id', 'slug')->all();
 
+        if ($this->option('pages')) {
+            $this->importPages();
+
+            return self::SUCCESS;
+        }
+
         $this->importSections();
         $this->importTags();
         $this->importUsers();
         $this->importCoAuthors();
         $this->importPosts();
         $this->importComments();
+        $this->importPages();
         $this->refreshCounts();
 
         $this->newLine();
-        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'comments', 'redirects'])
+        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'pages', 'comments', 'redirects'])
             ->map(fn ($t) => [$t, DB::table($t)->count()])->all());
         $this->table(['Post status', 'Rows'], Post::query()->selectRaw('status, count(*) c')->groupBy('status')->get()->map(fn ($r) => [$r->status, $r->c])->all());
 
@@ -240,7 +249,7 @@ class ImportWordPress extends Command
             'slug' => $slug,
             'title' => $title !== '' ? $title : '(শিরোনামহীন)',
             'excerpt' => $p->post_excerpt ? strip_tags(html_entity_decode($p->post_excerpt)) : null,
-            'body_html' => self::autop((string) $p->post_content),
+            'body_html' => self::autop(WpContent::convert((string) $p->post_content, $this->attachmentImages(...))),
             'format' => $format,
             'language' => $language,
             'status' => $status,
@@ -332,6 +341,92 @@ class ImportWordPress extends Command
             ->where('slug', $slug)->where(fn ($q) => $q->whereNull($legacyCol)->orWhere($legacyCol, '!=', $legacyId))->exists();
 
         return $clash ? "{$slug}-{$legacyId}" : $slug;
+    }
+
+    /**
+     * Old WordPress pages that hold plugin screens (login, cart, …): their URLs 301 to the home page.
+     * Everything else published is imported as a Page at the same URL.
+     */
+    private const SYSTEM_PAGES = ['connections', 'edit-post', 'authors', 'user', 'login', 'register', 'members', 'logout',
+        'account', 'password-reset', 'home-4', 'tds-checkout', 'tds-my-account', 'tds-login-register'];
+
+    /**
+     * Pages the editor rewrote for the new magazine live in database/content/pages/{slug}.html
+     * (front matter: title, seo_description, noindex, footer, sort). See docs/PAGES-REVIEW.md.
+     * An existing page is never overwritten, so edits made in /desk survive a re-import.
+     */
+    private function importPages(): void
+    {
+        $count = 0;
+        foreach (self::SYSTEM_PAGES as $slug) {
+            Redirect::updateOrCreate(['from_path' => "/{$slug}/"], ['to_path' => '/', 'status_code' => 301]);
+        }
+
+        $rows = $this->wp->table('posts')->where('post_type', 'page')->where('post_status', 'publish')
+            ->whereNotIn('post_name', self::SYSTEM_PAGES)->get(['ID', 'post_name', 'post_title', 'post_content', 'post_date', 'post_modified']);
+
+        foreach ($rows as $p) {
+            $slug = Slug::normalize((string) $p->post_name);
+            if ($slug === '' || Page::where('legacy_wp_id', $p->ID)->orWhere('slug', $slug)->exists()) {
+                continue;
+            }
+            $revised = self::revisedPage($slug);
+            Page::create([
+                'slug' => $slug,
+                'legacy_wp_id' => $p->ID,
+                'title' => $revised['title'] ?? trim(html_entity_decode($p->post_title, ENT_QUOTES | ENT_HTML5)),
+                'body_html' => $revised['body'] ?? self::autop(WpContent::convert((string) $p->post_content)),
+                'seo_description' => $revised['seo_description'] ?? null,
+                'noindex' => (bool) ($revised['noindex'] ?? true), // un-reviewed old pages stay out of Google
+                'show_in_footer' => (bool) ($revised['footer'] ?? false),
+                'sort' => (int) ($revised['sort'] ?? 100),
+            ]);
+            $count++;
+        }
+        $this->info("Pages: {$count} new");
+    }
+
+    /** @return array<string,string>|null front matter + 'body' from database/content/pages/{slug}.html */
+    public static function revisedPage(string $slug): ?array
+    {
+        $file = database_path('content/pages/'.basename($slug).'.html');
+        if (! is_file($file)) {
+            return null;
+        }
+        $raw = (string) file_get_contents($file);
+        $meta = [];
+        if (preg_match('/\A---\n(.*?)\n---\n/s', $raw, $m)) {
+            foreach (explode("\n", $m[1]) as $line) {
+                if (str_contains($line, ':')) {
+                    [$k, $v] = array_map('trim', explode(':', $line, 2));
+                    $meta[$k] = $v === 'true' ? '1' : ($v === 'false' ? '0' : $v);
+                }
+            }
+            $raw = substr($raw, strlen($m[0]));
+        }
+
+        return $meta + ['body' => trim($raw)];
+    }
+
+    /**
+     * Gallery attachment IDs → image paths (for [gallery ids="…"]).
+     *
+     * @param  array<int,int>  $ids
+     * @return array<int,array{src:string,alt:string}>
+     */
+    private function attachmentImages(array $ids): array
+    {
+        $files = $this->wp->table('postmeta')->whereIn('post_id', $ids)->where('meta_key', '_wp_attached_file')->pluck('meta_value', 'post_id');
+        $alts = $this->wp->table('postmeta')->whereIn('post_id', $ids)->where('meta_key', '_wp_attachment_image_alt')->pluck('meta_value', 'post_id');
+        $out = [];
+        foreach ($ids as $id) {
+            $file = $files[$id] ?? null;
+            if ($file && ! str_contains($file, '..') && preg_match('/\.(jpe?g|png|gif|webp)$/i', $file)) {
+                $out[] = ['src' => '/wp-content/uploads/'.ltrim($file, '/'), 'alt' => (string) ($alts[$id] ?? '')];
+            }
+        }
+
+        return $out;
     }
 
     /** Minimal port of WordPress wpautop(): blank lines → paragraphs, single newlines → <br>. */

@@ -28,7 +28,7 @@
         @endif
 
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer) — the only raw output allowed. --}}
-        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center' : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! $post->body_html !!}</div>
+        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center' : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Embeds::render($post->body_html) !!}</div>
 
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
 

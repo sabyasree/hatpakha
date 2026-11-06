@@ -9,7 +9,7 @@
                 <p class="mt-6 max-w-[460px] font-serif text-lg font-medium leading-relaxed">কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। লেখা পাঠান — প্রকাশ সবসময় বিনামূল্যে।</p>
                 <div class="mt-6 flex flex-wrap gap-3">
                     <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex h-14 items-center rounded-full bg-navy px-6 text-lg font-bold text-paper shadow-[4px_4px_0_#CB1B32]">পড়া শুরু করুন</a>
-                    <a href="{{ url('/submit/') }}" class="flex h-14 items-center rounded-full border-2 border-navy bg-paper px-6 text-lg font-bold">লেখা পাঠান</a>
+                    <a href="{{ \App\Support\Url::to('/submissions') }}" class="flex h-14 items-center rounded-full border-2 border-navy bg-paper px-6 text-lg font-bold">লেখা পাঠান</a>
                 </div>
                 <p class="mt-6 text-base font-semibold">{{ \App\Support\Bn::num($counts['years']) }} বছর ধরে <b>{{ \App\Support\Bn::num($counts['writers']) }} জন লেখক</b>, <b>{{ \App\Support\Bn::num($counts['pieces']) }}টি লেখা</b> — সবাই আপনার মতোই পাঠক ছিলেন একদিন।</p>
             </div>

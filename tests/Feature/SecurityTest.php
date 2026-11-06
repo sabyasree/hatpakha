@@ -47,6 +47,27 @@ class SecurityTest extends TestCase
         }
     }
 
+    public function test_sanitizer_keeps_text_inside_unknown_wrappers(): void
+    {
+        // Real case: poems pasted from a Mac/Word editor wrap every word in <span>; the text must survive.
+        $html = '<p class="p1"><span class="s1">দক্ষিণের</span> <span class="s2">ছড়া</span></p><div><font color="red">লাল</font> <o:p>শেষ</o:p></div><table><tr><td>ঘর</td></tr></table>';
+        $clean = HtmlSanitizer::clean($html);
+
+        foreach (['দক্ষিণের', 'ছড়া', 'লাল', 'শেষ', '<td>ঘর</td>'] as $kept) {
+            $this->assertStringContainsString($kept, $clean);
+        }
+        foreach (['<span', '<font', 'class=', 'color='] as $gone) {
+            $this->assertStringNotContainsString($gone, $clean);
+        }
+    }
+
+    public function test_sanitizer_drops_style_and_script_contents_entirely(): void
+    {
+        $clean = HtmlSanitizer::clean('<p>ক<STYLE type="text/css">p{color:red}</STYLE><script>steal()</script><noscript>x</noscript><form><input value="pw"></form></p>');
+
+        $this->assertSame('<p>ক</p>', $clean);
+    }
+
     public function test_post_body_is_sanitised_on_save_and_rendered_safely(): void
     {
         $this->makePost(['slug' => 'xss', 'body_html' => '<p>লেখা</p><script>alert("x")</script>']);

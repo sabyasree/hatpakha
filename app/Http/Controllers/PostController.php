@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Page;
 use App\Models\Post;
 use App\Seo\JsonLd;
 use App\Seo\Seo;
@@ -15,7 +16,7 @@ class PostController extends Controller
             ->where('slug', Slug::normalize($slug))->first();
 
         if (! $post) {
-            return app(LegacyController::class)->fallback(request());
+            return $this->page($slug) ?? app(LegacyController::class)->fallback(request());
         }
 
         $related = Post::published()->with('authors')
@@ -43,5 +44,25 @@ class PostController extends Controller
         );
 
         return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));
+    }
+
+    /** Static pages share the /{slug}/ namespace with posts, exactly as on WordPress. */
+    private function page(string $slug)
+    {
+        $page = Page::published()->where('slug', Slug::normalize($slug))->first();
+        if (! $page) {
+            return null;
+        }
+
+        $crumbs = [['হাতপাখা', url('/').'/'], [$page->title, $page->url()]];
+        $seo = new Seo(
+            title: $page->metaTitle(),
+            description: $page->metaDescription(),
+            canonical: $page->url(),
+            noindex: $page->noindex,
+            jsonLd: [JsonLd::breadcrumbs($crumbs)],
+        );
+
+        return view('page', compact('page', 'seo', 'crumbs'));
     }
 }
