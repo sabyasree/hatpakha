@@ -62,11 +62,14 @@
 
 ## The AI editor's clock (cron), one line per environment (D44)
 The AI editor works on a schedule (every 10 minutes, hourly, daily; see `routes/console.php`). Add ONE cron job
-in hPanel → Advanced → Cron Jobs → "Custom", every minute (`* * * * *`):
+in hPanel → Advanced → Cron Jobs: type **Custom**, every minute (`* * * * *`), with full paths (hPanel crons
+don't start in your folder and don't expand `~`). Use the same folder as the `DEPLOY_PATH` secret:
 
 ```
-cd /home/<user>/apps/hatpakha-staging && php artisan schedule:run >> /dev/null 2>&1
+/usr/bin/php /home/<user>/apps/hatpakha-staging/artisan schedule:run >> /home/<user>/apps/hatpakha-staging/storage/logs/cron.log 2>&1
 ```
+
+The log file shows any error. A `[diagnose-cron]` staging deploy prints the heartbeat and the end of that log.
 
 (Production: the same with the production folder.) /desk → আজকের কাজ shows "শেষ কাজ: … আগে"; if it says the
 clock is not running, this line is missing. The schedule only prepares work and respects the pause button.

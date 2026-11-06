@@ -162,6 +162,7 @@ jobs:
             echo '--- app folder:'; pwd; \
             echo '--- last heartbeat:'; php artisan tinker --execute='echo App\\Models\\Setting::get(\"ai.heartbeat\") ?? \"never\";'; echo; \
             echo '--- schedule:'; php artisan schedule:list --no-ansi; \
+            echo '--- cron log (storage/logs/cron.log, last lines):'; tail -n 15 storage/logs/cron.log 2>/dev/null | sed 's/^/    /' || echo '    (no log yet: the cron line has not run with the logging form)'; \
             echo '--- one shift by hand:'; php artisan hatpakha:ai-shift inbox --no-ansi && echo '    inbox OK'"
 
       - name: Remove key
