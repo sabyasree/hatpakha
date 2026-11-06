@@ -21,30 +21,87 @@ class AccountController extends Controller
         'archived' => ['আর্কাইভ', ''],
     ];
 
-    public function index(Request $request)
+    /**
+     * The account is four short pages instead of one long one (owner + UX review): home (what needs you now),
+     * writings (all pieces, filtered, 20 at a time), reading (saved pieces, followed writers), settings.
+     */
+    private const PER_PAGE = 20;
+
+    private static function mine(Request $request)
+    {
+        return Post::query()->whereHas('authors', fn ($a) => $a->where('user_id', $request->user()->id));
+    }
+
+    /** What every account page shows at the top. */
+    private static function shell(Request $request, string $tab, string $title): array
     {
         $user = $request->user();
-        $posts = Post::query()->with('section')
-            ->whereHas('authors', fn ($a) => $a->where('user_id', $user->id))
-            ->orderByRaw("case status when 'changes' then 0 when 'draft' then 1 when 'pending' then 2 when 'scheduled' then 3 else 4 end")
-            ->latest('updated_at')->get();
+        $author = \App\Models\Author::where('user_id', $user->id)->first();
+        $counts = self::mine($request)->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status');
 
-        return view('account.index', [
-            'seo' => AuthController::seo('আমার লেখা'),
-            'user' => $user,
-            'posts' => $posts,
-            // The writer's own certificates (D12, D56), each with its public verification page.
-            'certificates' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get(),
-            // D73: pieces whose certificate the writer has asked for (when certificates need the owner's OK).
-            'certRequested' => \App\Models\EditorTask::open('certificate_request')->where('subject_type', (new Post)->getMorphClass())->whereIn('subject_id', $posts->pluck('id'))->pluck('subject_id')->all(),
-            'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
-            'author' => \App\Models\Author::where('user_id', $user->id)->first(),
-            // D64: the reading list and the writers this reader follows.
-            'saved' => Post::published()->with('authors', 'section')->whereIn('id', \Illuminate\Support\Facades\DB::table('saved_posts')->where('user_id', $user->id)->select('post_id'))->latest('published_at')->limit(60)->get(),
-            'following' => \App\Models\Author::whereIn('id', \Illuminate\Support\Facades\DB::table('follows')->where('user_id', $user->id)->select('author_id'))->orderBy('display_name')->get(),
+        return [
+            'seo' => AuthController::seo($title), 'tab' => $tab, 'user' => $user, 'author' => $author, 'counts' => $counts,
             'twoFactorOn' => filled($user->app_authentication_secret),
-            'setup' => self::twoFactorSetup($request),
+            'needsVerification' => self::verificationRequired() && ! $user->hasVerifiedEmail(),
+            'certCount' => \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->count(),
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $act = self::mine($request)->with('section')->whereIn('status', ['changes', 'confirm'])->latest('updated_at')->get();
+        $drafts = self::mine($request)->with('section')->where('status', 'draft');
+
+        return view('account.index', self::shell($request, 'home', 'আমার হাতপাখা') + [
+            'act' => $act,
+            'drafts' => (clone $drafts)->latest('updated_at')->limit(3)->get(),
+            'draftCount' => $drafts->count(),
+            'review' => self::mine($request)->with('section')->whereIn('status', ['pending', 'scheduled'])->latest('updated_at')->limit(5)->get(),
+            'recent' => self::mine($request)->with('section')->where('status', 'published')->latest('published_at')->limit(3)->get(),
         ]);
+    }
+
+    /** All writings: filter chips with counts, title search, 20 a page ("আরও দেখুন"). */
+    public function writings(Request $request)
+    {
+        $filter = (string) $request->query('status', 'all');
+        $groups = ['action' => ['changes', 'confirm'], 'draft' => ['draft'], 'review' => ['pending', 'scheduled'], 'published' => ['published'], 'other' => ['rejected', 'archived']];
+        $q = trim((string) $request->query('q', ''));
+        $query = self::mine($request)->with('section');
+        if (isset($groups[$filter])) {
+            $query->whereIn('status', $groups[$filter]);
+        }
+        if ($q !== '') {
+            $query->where('title', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], mb_substr($q, 0, 80)).'%');
+        }
+        $posts = $query->orderByRaw("case status when 'changes' then 0 when 'confirm' then 1 when 'draft' then 2 when 'pending' then 3 when 'scheduled' then 4 else 5 end")
+            ->orderByRaw('coalesce(published_at, updated_at) desc')->paginate(self::PER_PAGE)->withPath(Url::to('/account/writings'))->withQueryString();
+        $user = $request->user();
+
+        return view('account.writings', self::shell($request, 'writings', 'আমার লেখা') + [
+            'posts' => $posts, 'filter' => $filter, 'q' => $q, 'groups' => $groups,
+            'certificates' => $filter === 'certificates'
+                ? \App\Models\Certificate::whereNull('revoked_at')->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->latest('issued_at')->get()
+                : \App\Models\Certificate::whereNull('revoked_at')->whereIn('post_id', $posts->pluck('id'))->whereIn('author_id', \App\Models\Author::where('user_id', $user->id)->select('id'))->get(),
+            'certRequested' => \App\Models\EditorTask::open('certificate_request')->where('subject_type', (new Post)->getMorphClass())->whereIn('subject_id', $posts->pluck('id'))->pluck('subject_id')->all(),
+        ]);
+    }
+
+    /** Saved pieces (20 a page) and followed writers. */
+    public function reading(Request $request)
+    {
+        $user = $request->user();
+        $savedIds = \Illuminate\Support\Facades\DB::table('saved_posts')->where('user_id', $user->id)->select('post_id');
+
+        return view('account.reading', self::shell($request, 'reading', 'পড়ার তালিকা') + [
+            'saved' => Post::published()->with('authors', 'section')->whereIn('id', $savedIds)->latest('published_at')->paginate(self::PER_PAGE)->withPath(Url::to('/account/reading')),
+            'following' => \App\Models\Author::whereIn('id', \Illuminate\Support\Facades\DB::table('follows')->where('user_id', $user->id)->select('author_id'))->orderBy('display_name')->get(),
+        ]);
+    }
+
+    public function settings(Request $request)
+    {
+        return view('account.settings', self::shell($request, 'settings', 'সেটিংস') + ['setup' => self::twoFactorSetup($request)]);
     }
 
     /** While 2FA is being set up: the QR code and the key to type by hand. */
@@ -110,7 +167,7 @@ class AccountController extends Controller
         }
         $author->forceFill($changes)->save();
 
-        return redirect(Url::to('/account').'#profile')->with('status', 'প্রোফাইল সাজানো হয়েছে।');
+        return redirect(Url::to('/account/settings').'#profile')->with('status', 'প্রোফাইল সাজানো হয়েছে।');
     }
 
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
@@ -120,13 +177,13 @@ class AccountController extends Controller
         if ($request->boolean('remove')) {
             \App\Support\AudioReading::remove($post);
 
-            return redirect(Url::to('/account').'#writing')->with('status', 'পাঠটি সরানো হয়েছে।');
+            return redirect(Url::to('/account/writings'))->with('status', 'পাঠটি সরানো হয়েছে।');
         }
         $request->validate(['audio' => ['required', 'file', 'max:'.(\App\Support\AudioReading::MAX_MB * 1024)]],
             ['audio.required' => 'একটি অডিও ফাইল বেছে নিন।', 'audio.max' => 'ফাইলটি '.\App\Support\Bn::num((string) \App\Support\AudioReading::MAX_MB).' MB-এর মধ্যে হতে হবে।']);
         \App\Support\AudioReading::attach($post, $request->file('audio'));
 
-        return redirect(Url::to('/account').'#writing')->with('status', 'পাঠটি জমা পড়েছে। সম্পাদক শুনে অনুমোদন করলেই লেখার পাতায় যোগ হবে।');
+        return redirect(Url::to('/account/writings'))->with('status', 'পাঠটি জমা পড়েছে। সম্পাদক শুনে অনুমোদন করলেই লেখার পাতায় যোগ হবে।');
     }
 
     /**
@@ -145,18 +202,18 @@ class AccountController extends Controller
             \App\Models\Certificate::issueFor($post, tell: false);
             \App\Models\AuditLog::record('certificate.requested_issued', $post, ['by' => $request->user()->id]);
 
-            return redirect(Url::to('/account').'#writing')->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে। নিচে "আমার শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
+            return redirect(Url::to('/account/writings'))->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে। লেখার পাশের ⋯ থেকে, বা "শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
         }
         \App\Models\EditorTask::propose('certificate_request', 'লেখক শংসাপত্র চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
 
-        return redirect(Url::to('/account').'#writing')->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
+        return redirect(Url::to('/account/writings'))->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
     }
 
     public function updateNewsletter(Request $request)
     {
         $request->user()->forceFill(['mail_opt_out' => ! $request->boolean('newsletter')])->save();
 
-        return redirect(Url::to('/account').'#letters')->with('status', $request->boolean('newsletter') ? 'চিঠি চালু থাকল।' : 'চিঠি বন্ধ হয়েছে। নিজের লেখার খবর আগের মতোই পাবেন।');
+        return redirect(Url::to('/account/settings').'#letters')->with('status', $request->boolean('newsletter') ? 'চিঠি চালু থাকল।' : 'চিঠি বন্ধ হয়েছে। নিজের লেখার খবর আগের মতোই পাবেন।');
     }
 
     public function updatePassword(Request $request)
@@ -170,7 +227,7 @@ class AccountController extends Controller
         \Illuminate\Support\Facades\Auth::logoutOtherDevices($request->input('password'));
         \App\Models\AuditLog::record('user.password_changed', $request->user());
 
-        return redirect(Url::to('/account').'#security')->with('status', 'পাসওয়ার্ড বদলেছে। অন্য সব জায়গা থেকে লগ-আউট করা হয়েছে।');
+        return redirect(Url::to('/account/settings').'#security')->with('status', 'পাসওয়ার্ড বদলেছে। অন্য সব জায়গা থেকে লগ-আউট করা হয়েছে।');
     }
 
     /** 2FA, step 1 (D59): a new secret, kept in the session until the first code proves the app has it. */
@@ -178,7 +235,7 @@ class AccountController extends Controller
     {
         $request->session()->put('2fa_setup', \Filament\Auth\MultiFactor\App\AppAuthentication::make()->generateSecret());
 
-        return redirect(Url::to('/account').'#security');
+        return redirect(Url::to('/account/settings').'#security');
     }
 
     public function twoFactorConfirm(Request $request)
@@ -187,7 +244,7 @@ class AccountController extends Controller
         $request->validate(['code' => ['required', 'digits:6']], ['code.digits' => 'অ্যাপের ৬ অঙ্কের কোডটি দিন।']);
         $mfa = \Filament\Auth\MultiFactor\App\AppAuthentication::make();
         if ($secret === '' || ! $mfa->verifyCode((string) $request->input('code'), $secret)) {
-            return redirect(Url::to('/account').'#security')->withErrors(['code' => 'কোডটি মিলছে না। অ্যাপে দেখানো এখনকার কোডটি দিন।']);
+            return redirect(Url::to('/account/settings').'#security')->withErrors(['code' => 'কোডটি মিলছে না। অ্যাপে দেখানো এখনকার কোডটি দিন।']);
         }
         $codes = $mfa->generateRecoveryCodes();
         $user = $request->user();
@@ -195,7 +252,7 @@ class AccountController extends Controller
         $request->session()->forget('2fa_setup');
         \App\Models\AuditLog::record('user.2fa_enabled', $user);
 
-        return redirect(Url::to('/account').'#security')->with(['status' => 'দুই-ধাপের যাচাই চালু হয়েছে।', 'recovery_codes' => $codes]);
+        return redirect(Url::to('/account/settings').'#security')->with(['status' => 'দুই-ধাপের যাচাই চালু হয়েছে।', 'recovery_codes' => $codes]);
     }
 
     public function twoFactorDisable(Request $request)
@@ -205,7 +262,7 @@ class AccountController extends Controller
         $request->user()->forceFill(['app_authentication_secret' => null, 'app_authentication_recovery_codes' => null])->save();
         \App\Models\AuditLog::record('user.2fa_disabled', $request->user());
 
-        return redirect(Url::to('/account').'#security')->with('status', 'দুই-ধাপের যাচাই বন্ধ হয়েছে।');
+        return redirect(Url::to('/account/settings').'#security')->with('status', 'দুই-ধাপের যাচাই বন্ধ হয়েছে।');
     }
 
     public function updateName(Request $request)

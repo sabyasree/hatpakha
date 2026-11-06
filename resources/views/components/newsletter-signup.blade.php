@@ -32,7 +32,7 @@
             @else<strong class="text-navy">হাতপাখার চিঠি বন্ধ আছে।</strong> সপ্তাহে একবার নতুন লেখার খবর পেতে চালু করুন।@endif
         </p>
         @if ($on)
-            <a href="{{ \App\Support\Url::to('/account') }}#letters" class="text-sm font-bold underline">বদলান</a>
+            <a href="{{ \App\Support\Url::to('/account/settings') }}#letters" class="text-sm font-bold underline">বদলান</a>
         @else
             <form method="POST" action="{{ \App\Support\Url::to('/account/newsletter') }}">@csrf<input type="hidden" name="newsletter" value="1">
                 <button class="h-10 rounded-full bg-red px-5 font-bold text-white">চালু করুন</button></form>

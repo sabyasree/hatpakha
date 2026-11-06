@@ -90,7 +90,7 @@ class AccountSecurityTest extends TestCase
         $this->actingAs($user)->get('/account/')->assertOk()->assertSee('অ্যাকাউন্টটি আরও নিরাপদ করুন');
         $this->post('/account/2fa/start/')->assertRedirect();
         $secret = session('2fa_setup');
-        $this->get('/account/')->assertSee('QR');
+        $this->get('/account/settings/')->assertSee('QR');
         $this->post('/account/2fa/confirm/', ['code' => '123456'])->assertSessionHasErrors('code');
         $this->post('/account/2fa/confirm/', ['code' => AppAuthentication::make()->getCurrentCode($user, $secret)])->assertSessionHas('recovery_codes');
         $this->assertSame($secret, $user->fresh()->app_authentication_secret);

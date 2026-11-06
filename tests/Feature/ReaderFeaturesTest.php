@@ -38,11 +38,11 @@ class ReaderFeaturesTest extends TestCase
         $this->actingAs($reader)->postJson('/like/'.$post->id)->assertJson(['on' => true, 'count' => 1]);
         $this->postJson('/like/'.$post->id)->assertJson(['on' => false, 'count' => 0]);
         $this->postJson('/save/'.$post->id)->assertJson(['on' => true]);
-        $this->get('/account/')->assertSee('পড়ার তালিকা')->assertSee($post->title);
+        $this->get('/account/reading/')->assertSee('পরে পড়ব')->assertSee($post->title);
 
         $author = $post->authors->first();
         $this->postJson('/follow/'.$author->id)->assertJson(['on' => true, 'count' => 1]);
-        $this->get('/account/')->assertSee($author->publicName());
+        $this->get('/account/reading/')->assertSee($author->publicName());
     }
 
     public function test_followers_hear_once_when_a_new_piece_goes_live(): void

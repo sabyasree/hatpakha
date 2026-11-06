@@ -173,3 +173,38 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
     });
     wrap.appendChild(btn);
 });
+
+// Account pages (owner + UX review).
+// Settings: open the card the link names (#profile / #security / #letters), one card open at a time.
+const cards = [...document.querySelectorAll('[data-settings-card]')];
+if (cards.length) {
+    const openFromHash = () => {
+        const c = cards.find((x) => '#' + x.id === location.hash);
+        if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); }
+    };
+    cards.forEach((c) => c.addEventListener('toggle', () => { if (c.open) cards.forEach((o) => { if (o !== c) o.open = false; }); }));
+    if (location.hash) openFromHash(); else if (document.querySelector('[role="alert"]')) cards[0].open = true;
+    window.addEventListener('hashchange', openFromHash);
+}
+// ⋯ menus: one at a time; tapping elsewhere closes them.
+document.addEventListener('click', (e) => {
+    document.querySelectorAll('details[data-row-menu][open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+});
+// Picking an audio file sends it straight away (no second button to find).
+document.querySelectorAll('input[data-auto-submit]').forEach((i) => i.addEventListener('change', () => { if (i.files?.length) i.form.requestSubmit ? i.form.requestSubmit() : i.form.submit(); }));
+// "আরও দেখুন": add the next 20 rows in place; without JavaScript it is a normal link to the next page.
+document.querySelectorAll('a[data-more-rows]').forEach((more) => {
+    more.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const list = document.querySelector('[data-list]');
+        more.setAttribute('aria-busy', 'true');
+        try {
+            const html = await (await fetch(more.href, { credentials: 'same-origin' })).text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            doc.querySelectorAll('[data-list] > [data-row]').forEach((row) => list.appendChild(document.importNode(row, true)));
+            const next = doc.querySelector('a[data-more-rows]');
+            if (next) { more.href = next.href; more.textContent = next.textContent; } else more.remove();
+        } catch { location.href = more.href; }
+        more.removeAttribute('aria-busy');
+    });
+});

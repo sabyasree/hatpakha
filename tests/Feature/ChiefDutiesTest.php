@@ -51,6 +51,6 @@ class ChiefDutiesTest extends TestCase
         $this->assertSame(1, EditorJobs::issueCertificates([$post->id]));
         $this->assertSame(0, EditorJobs::issueCertificates([$post->id]), 'Never twice');
         $this->assertSame(1, EditorTask::where('type', 'certificates')->count());
-        $this->actingAs($writer)->get('/account/')->assertOk()->assertSee('আমার শংসাপত্র')->assertSee($post->title);
+        $this->actingAs($writer)->get('/account/writings/?status=certificates')->assertOk()->assertSee('শংসাপত্র')->assertSee($post->title);
     }
 }
