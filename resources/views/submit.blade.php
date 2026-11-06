@@ -52,7 +52,7 @@
             @if ($post->featured_image_path)<img src="{{ asset($post->featured_image_path) }}" alt="" class="mt-6 w-full rounded-2xl">@endif
             <div class="{{ $post->format === 'poem' ? 'poem-bn text-center' : 'prose-bn' }} mt-6">{!! $post->body_html !!}</div>
         @else
-            @php(request()->attributes->set('hp.no-bottom-nav', true))
+            @php request()->attributes->set('hp.no-bottom-nav', true); @endphp
             {{-- The composer (owner: "as easy as Facebook or Instagram", on phone and web). Field names are unchanged;
                  without JavaScript every part still works as a plain form. --}}
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
@@ -75,7 +75,7 @@
                     <p data-error="section" hidden class="mt-2 text-sm font-bold text-red" role="alert">কোন ধরনের লেখা, একটি বেছে নিন।</p>
                 </fieldset>
 
-                @php($contests = \App\Models\Contest::openNow()->orderBy('ends_at')->get())
+                @php $contests = \App\Models\Contest::openNow()->orderBy('ends_at')->get(); @endphp
                 @if ($contests->isNotEmpty() || $post->contest_id)
                     {{-- Writing contests (D53): optional; entries go through this same form. --}}
                     <details class="mb-5 rounded-2xl border-2 border-peach-deep bg-peach-light p-4" @if (old('contest_id', $post->contest_id)) open @endif>
@@ -108,34 +108,48 @@
                     <script type="application/json" id="body-initial">@json(old('body_format') === 'html' ? (string) old('body') : $html)</script>
                     <span id="body-label" class="sr-only">লেখা</span>
                     <div data-editor-shell hidden>
+                        {{-- Toolbar: familiar icons, one short everyday word under each (owner: "use common icon and word"). --}}
+                        @php
+                            $svg = fn ($d, $fill = false) => '<svg width="20" height="20" viewBox="0 0 24 24" '.($fill ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"').' aria-hidden="true">'.$d.'</svg>';
+                            $txt = fn ($t, $cls = '') => '<span class="text-[19px] leading-none '.$cls.'" aria-hidden="true">'.$t.'</span>';
+                            $main = [
+                                ['bold', $txt('B', 'font-sans font-black'), 'মোটা', 'মোটা অক্ষর (Bold)'],
+                                ['italic', $txt('I', 'font-serif italic'), 'হেলানো', 'হেলানো অক্ষর (Italic)'],
+                                ['heading', $txt('H', 'font-sans font-black'), 'শিরোনাম', 'ছোট শিরোনাম'],
+                                ['blockquote', $svg('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>', true), 'উক্তি', 'উক্তি / কোটেশন'],
+                                ['bulletList', $svg('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>'), 'তালিকা', 'তালিকা'],
+                                ['photo', $svg('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/>'), 'ছবি', 'ছবি যোগ করুন'],
+                            ];
+                            $more = [
+                                ['underline', $txt('U', 'font-sans font-bold underline'), 'দাগ', 'নিচে দাগ (Underline)'],
+                                ['strike', $txt('S', 'font-sans font-bold line-through'), 'কাটা', 'কেটে দেওয়া'],
+                                ['orderedList', $svg('<path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 4.5h1.5V8M4 8h3M4 11.5c.5-.7 2.5-.7 2.5.5S4 14 4 14.5h3"/>'), 'নম্বর', 'নম্বর দিয়ে তালিকা'],
+                                ['superscript', $txt('x<sup class="text-[11px]">২</sup>', 'font-sans'), 'উপরে', 'উপরে ছোট লেখা (যেমন ১ম, পাদটীকা)'],
+                                ['subscript', $txt('x<sub class="text-[11px]">২</sub>', 'font-sans'), 'নিচে', 'নিচে ছোট লেখা'],
+                                ['horizontalRule', $svg('<path d="M3 12h18"/>'), 'রেখা', 'দাগ টেনে ভাগ'],
+                                ['alignLeft', $svg('<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>'), 'বাঁয়ে', 'বাঁয়ে সাজান'],
+                                ['alignCenter', $svg('<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>'), 'মাঝে', 'মাঝে সাজান'],
+                                ['alignRight', $svg('<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>'), 'ডানে', 'ডানে সাজান'],
+                                ['undo', $svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'), 'আগের', 'আগের অবস্থায় ফিরুন (Undo)'],
+                                ['redo', $svg('<path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>'), 'পরের', 'আবার করুন (Redo)'],
+                                ['clear', $svg('<path d="M4 7V5h12v2M10 5l-3 14M14 19H6"/><path d="m16 14 5 5m0-5-5 5"/>'), 'সাজ মুছুন', 'বাছাই করা অংশের সব সাজ মুছুন'],
+                            ];
+                            $tile = 'ed-tile flex h-14 min-w-11 flex-col items-center justify-center gap-0.5 rounded-xl px-1 hover:bg-peach-light';
+                        @endphp
                         <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="ed-toolbar sticky top-0 z-10 border-b-2 border-rule bg-paper/95 backdrop-blur">
-                            <div class="flex items-center gap-0.5 overflow-x-auto whitespace-nowrap p-1 sm:gap-1 sm:p-1.5 [&>*]:flex-none [&>.ed-btn]:min-w-10 sm:[&>.ed-btn]:min-w-11">
-                                {{-- Symbols everyone knows from WhatsApp, Facebook and Word (owner: the Bengali terms were hard); the name shows on long-press/hover and is read aloud. --}}
-                                <button type="button" data-cmd="bold" title="মোটা অক্ষর (Bold)" aria-label="মোটা অক্ষর" class="ed-btn font-sans text-xl font-black">B</button>
-                                <button type="button" data-cmd="italic" title="হেলানো অক্ষর (Italic)" aria-label="হেলানো অক্ষর" class="ed-btn font-serif text-xl italic">I</button>
-                                <button type="button" data-cmd="heading" title="ছোট শিরোনাম" aria-label="ছোট শিরোনাম" class="ed-btn font-sans text-xl font-black">H</button>
-                                <button type="button" data-cmd="blockquote" title="উক্তি / কোটেশন" aria-label="উক্তি" class="ed-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg></button>
-                                <button type="button" data-cmd="bulletList" title="তালিকা" aria-label="তালিকা" class="ed-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></button>
-                                <button type="button" data-pick-photo title="ছবি যোগ করুন" aria-label="ছবি যোগ করুন" class="ed-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></button>
-                                <button type="button" data-more-toggle aria-expanded="false" aria-controls="ed-more" class="ed-btn px-2 text-base font-bold">আরও ▾</button>
-                                <span class="ml-auto hidden sm:flex">
-                                    <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন (Ctrl+Z)" aria-label="ফিরিয়ে আনুন" class="ed-btn">↶</button>
-                                    <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn">↷</button>
-                                </span>
+                            <div class="flex items-center justify-between gap-0 overflow-x-auto whitespace-nowrap p-1 [&>*]:flex-none">
+                                @foreach ($main as [$cmd, $icon, $word, $title])
+                                    <button type="button" @if ($cmd === 'photo') data-pick-photo @else data-cmd="{{ $cmd }}" @endif title="{{ $title }}" aria-label="{{ $title }}" class="{{ $tile }}">{!! $icon !!}<span class="text-[11px] font-bold leading-none">{{ $word }}</span></button>
+                                @endforeach
+                                <button type="button" data-more-toggle aria-expanded="false" aria-controls="ed-more" title="আরও সাজ" class="{{ $tile }}">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                                    <span class="text-[11px] font-bold leading-none" data-more-label>আরও</span>
+                                </button>
                             </div>
-                            <div id="ed-more" data-more hidden class="flex flex-wrap gap-1 border-t border-rule p-1.5 text-sm font-bold">
-                                <button type="button" data-cmd="underline" class="ed-btn px-2 underline">নিচে দাগ</button>
-                                <button type="button" data-cmd="strike" class="ed-btn px-2 line-through">কেটে দেওয়া</button>
-                                <button type="button" data-cmd="superscript" title="উপরে ছোট লেখা (যেমন ১ম, পাদটীকা¹)" class="ed-btn px-2">উপরে ছোট<sup>২</sup></button>
-                                <button type="button" data-cmd="subscript" class="ed-btn px-2">নিচে ছোট<sub>২</sub></button>
-                                <button type="button" data-cmd="orderedList" class="ed-btn px-2">১. নম্বর দিয়ে তালিকা</button>
-                                <button type="button" data-cmd="horizontalRule" class="ed-btn px-2">— দাগ টেনে ভাগ</button>
-                                <button type="button" data-cmd="alignLeft" class="ed-btn px-2">বাঁয়ে সাজান</button>
-                                <button type="button" data-cmd="alignCenter" class="ed-btn px-2">মাঝে সাজান</button>
-                                <button type="button" data-cmd="alignRight" class="ed-btn px-2">ডানে সাজান</button>
-                                <button type="button" data-cmd="undo" class="ed-btn px-2 sm:hidden">↶ ফিরিয়ে আনুন</button>
-                                <button type="button" data-cmd="redo" class="ed-btn px-2 sm:hidden">↷ আবার</button>
-                                <button type="button" data-cmd="clear" title="বাছাই করা অংশের সব সাজ মুছুন" class="ed-btn px-2">সাজ মুছুন</button>
+                            <div id="ed-more" data-more hidden class="grid grid-cols-4 gap-0.5 border-t border-rule p-1 sm:grid-cols-6 md:grid-cols-12">
+                                @foreach ($more as [$cmd, $icon, $word, $title])
+                                    <button type="button" data-cmd="{{ $cmd }}" title="{{ $title }}" aria-label="{{ $title }}" class="{{ $tile }}">{!! $icon !!}<span class="text-[11px] font-bold leading-none">{{ $word }}</span></button>
+                                @endforeach
                             </div>
                         </div>
                         <div class="ed-wrap font-serif text-lg leading-relaxed">

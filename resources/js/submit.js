@@ -105,7 +105,8 @@ if (form) {
         moreBtn?.addEventListener('click', () => {
             more.hidden = !more.hidden;
             moreBtn.setAttribute('aria-expanded', String(!more.hidden));
-            moreBtn.textContent = more.hidden ? 'আরও ▾' : 'বন্ধ ▴';
+            const label = moreBtn.querySelector('[data-more-label]');
+            if (label) label.textContent = more.hidden ? 'আরও' : 'বন্ধ';
         });
         const buttons = form.querySelectorAll('[data-toolbar] [data-cmd]');
         buttons.forEach((b) => b.addEventListener('click', () => commands[b.dataset.cmd]?.()));
