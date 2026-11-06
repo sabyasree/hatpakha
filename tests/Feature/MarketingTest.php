@@ -51,4 +51,27 @@ class MarketingTest extends TestCase
             ->call('posted', $s->id);
         $this->assertSame('posted', $s->fresh()->status);
     }
+
+    public function test_daily_always_offers_something_from_the_archive(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $old = $this->makePost(['status' => 'published', 'slug' => 'old', 'published_at' => now()->subYears(2), 'body_html' => '<p>পুরনো লেখা।</p>']);
+        Claude::$fake = fn () => ['facebook' => 'f', 'whatsapp' => 'w', 'instagram' => 'i', 'quote' => ''];
+        $s = Marketer::daily();
+        $this->assertSame('archive', $s->kind);
+        $this->assertSame($old->id, $s->subject_id);
+        $this->assertNull(Marketer::daily(), 'One a day');
+    }
+
+    public function test_owner_can_ask_for_a_post_and_see_team_work(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Claude::$fake = fn () => ['facebook' => 'দীপাবলির শুভেচ্ছা', 'whatsapp' => 'w', 'instagram' => 'i'];
+        Livewire::test(Marketing::class)->callAction('create', ['kind' => 'custom', 'topic' => 'দীপাবলির শুভেচ্ছা'])->assertHasNoActionErrors();
+        $this->assertSame(1, SocialPost::where('kind', 'custom')->count());
+        \App\Models\AiUsage::create(['provider' => 'anthropic', 'model' => 'm', 'purpose' => 'marketing', 'input_tokens' => 1, 'output_tokens' => 1, 'cost_usd' => 0.001]);
+        Livewire::test(\App\Filament\Pages\AiTeam::class)->call('show', 'marketing')->assertSee('পোস্ট তৈরি')->assertSee('ফল কোথায় দেখবেন');
+    }
 }

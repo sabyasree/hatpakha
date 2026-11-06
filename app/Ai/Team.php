@@ -26,6 +26,16 @@ final class Team
         'chief' => ['প্রধান সম্পাদক (এআই)', 'পুরো দলের কাজ দেখে: কেউ আটকে আছে কি না, ভুল বা বাড়তি খরচ, প্রকাশের দিন খালি কি না; মাসিক দল-পর্যালোচনা ও খরচের পূর্বাভাস', ['chief']],
     ];
 
+    /** Plain names for each kind of job (the "কী করেছে" list, D57). */
+    public const PURPOSES = [
+        'review' => 'লেখার রিপোর্ট', 'editor' => 'লেখার রিপোর্ট', 'blind_test' => 'অন্ধ পরীক্ষা', 'issue_plan' => 'সংখ্যার প্রস্তাব', 'editorial_draft' => 'সম্পাদকীয় খসড়া',
+        'comment_screen' => 'মন্তব্য পড়া', 'picks' => 'সম্পাদকের পছন্দ', 'followup' => 'লেখককে মনে করানো', 'certificate' => 'শংসাপত্র',
+        'proof' => 'প্রুফ দেখা', 'plagiarism' => 'মৌলিকতা যাচাই', 'seo' => 'এসইও তথ্য', 'seo_refresh' => 'এসইও ঘষামাজা',
+        'image_scene' => 'ছবির ভাবনা', 'image' => 'ছবি আঁকা', 'cover' => 'সংখ্যার প্রচ্ছদ', 'design' => 'নকশা',
+        'marketing' => 'পোস্ট তৈরি', 'newsletter' => 'সাপ্তাহিক চিঠি', 'chat' => 'চ্যাটের উত্তর', 'contest' => 'প্রতিযোগিতা',
+        'archive' => 'সংকলন', 'analyst' => 'পাঠকের হিসাব', 'chief' => 'কাজের মান যাচাই',
+    ];
+
     public static function agentFor(string $purpose): ?string
     {
         foreach (self::AGENTS as $key => [, , $purposes]) {

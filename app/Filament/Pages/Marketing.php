@@ -32,6 +32,56 @@ class Marketing extends Page
 
     public string $filter = 'ready';
 
+    /** "নতুন পোস্ট তৈরি করুন" (D57): ask the marketing expert for a post right now. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('create')->label(__('নতুন পোস্ট তৈরি করুন'))->icon('heroicon-o-sparkles')
+                ->modalHeading(__('মার্কেটিং বিশেষজ্ঞকে কী লিখতে বলবেন?'))
+                ->schema([
+                    \Filament\Forms\Components\Radio::make('kind')->label(__('কী নিয়ে'))->required()->default('archive')->live()->options([
+                        'archive' => __('আর্কাইভ থেকে একটি ভালো লেখা (এআই বাছবে)'),
+                        'piece' => __('আমার বাছা একটি লেখা'),
+                        'issue' => __('একটি সংখ্যা'),
+                        'weekly' => __('এই সপ্তাহের পরিকল্পনা'),
+                        'newsletter' => __('সাপ্তাহিক চিঠি (ই-মেল নিউজলেটার)'),
+                        'custom' => __('নিজের বিষয় (শুভেচ্ছা, ঘোষণা, প্রশ্ন…)'),
+                    ]),
+                    \Filament\Forms\Components\Select::make('post_id')->label(__('লেখা'))->searchable()
+                        ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.$search.'%')->latest('published_at')->limit(30)->pluck('title', 'id'))
+                        ->getOptionLabelUsing(fn ($value) => Post::find($value)?->title)
+                        ->visible(fn ($get) => $get('kind') === 'piece')->required(fn ($get) => $get('kind') === 'piece'),
+                    \Filament\Forms\Components\Select::make('issue_id')->label(__('সংখ্যা'))
+                        ->options(fn () => Issue::where('status', 'published')->orderByDesc('slug')->pluck('title', 'id'))
+                        ->visible(fn ($get) => $get('kind') === 'issue')->required(fn ($get) => $get('kind') === 'issue'),
+                    \Filament\Forms\Components\Textarea::make('topic')->label(__('বিষয়'))->rows(3)->maxLength(1000)
+                        ->placeholder(__('যেমন: দীপাবলির শুভেচ্ছা; পুজো সংখ্যার জন্য লেখা পাঠানোর শেষ তারিখ ২০ সেপ্টেম্বর'))
+                        ->visible(fn ($get) => $get('kind') === 'custom')->required(fn ($get) => $get('kind') === 'custom'),
+                ])
+                ->modalSubmitActionLabel(__('তৈরি করুন'))
+                ->action(function (array $data) {
+                    $made = match ($data['kind']) {
+                        'piece' => ($p = Post::published()->find($data['post_id'] ?? 0)) ? \App\Ai\Marketer::forPiece($p, force: true) : null,
+                        'issue' => ($i = Issue::find($data['issue_id'] ?? 0)) ? \App\Ai\Marketer::forIssue($i, force: true) : null,
+                        'weekly' => \App\Ai\Marketer::weekly(force: true),
+                        'newsletter' => \App\Ai\EditorJobs::newsletter(force: true),
+                        'custom' => \App\Ai\Marketer::custom((string) $data['topic']),
+                        default => self::archivePick(),
+                    };
+                    $this->filter = 'ready';
+                    Notification::make()->title($made ? __('তৈরি হয়েছে, নিচে দেখুন') : __('এখন হলো না; এআই থামানো আছে কি না দেখুন'))->{$made ? 'success' : 'warning'}()->send();
+                }),
+        ];
+    }
+
+    private static function archivePick(): ?SocialPost
+    {
+        $p = Post::published()->whereNotIn('id', SocialPost::where('created_at', '>=', now()->subMonths(6))->whereNotNull('subject_id')->select('subject_id'))
+            ->where('published_at', '<', now()->subMonths(3))->inRandomOrder()->first();
+
+        return $p ? \App\Ai\Marketer::forPiece($p, 'archive', true) : null;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = SocialPost::where('status', 'ready')->count()) ? (string) $n : null;
@@ -54,7 +104,10 @@ class Marketing extends Page
     {
         $items = SocialPost::with('subject')->where('status', $this->filter === 'done' ? '!=' : '=', 'ready')->latest()->limit(40)->get();
 
-        return ['items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];
+        $newsletter = \App\Models\EditorTask::open('newsletter')->latest()->first();
+        $readers = \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced'])->count();
+
+        return ['newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];
     }
 
     /** What the designer's card shows: only real data (title, writer, exact quote, picture). */

@@ -85,6 +85,9 @@ class AiShift extends Command
         foreach (\App\Models\Contest::openNow()->get() as $contest) {
             \App\Ai\Marketer::forContest($contest);
         }
+        // Never an empty marketing page (D57): something to post every day, and a plan each week.
+        \App\Ai\Marketer::daily();
+        \App\Ai\Marketer::weekly();
         foreach (Comment::with('post')->where('status', 'pending')->whereNull('ai_verdict')->oldest()->limit(20)->get() as $c) {
             CommentScreen::run($c);
         }

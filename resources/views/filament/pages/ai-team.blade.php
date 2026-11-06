@@ -37,10 +37,27 @@
                 <div>{{ __('এই মাসে') }}: {{ $n($s['calls']) }} {{ __('কাজ') }} · {{ $n(number_format($s['cost'], 2)) }} {{ __('ডলার') }}</div>
                 <div class="hp-muted">{{ __('শেষ কাজ:') }} {{ $s['last'] ? $n(\Illuminate\Support\Carbon::parse($s['last'])->locale(app()->getLocale())->diffForHumans()) : __('কখনও না') }}</div>
                 <div>
+                    <x-filament::button size="sm" :color="$open === $key ? 'primary' : 'gray'" icon="heroicon-o-queue-list" wire:click="show('{{ $key }}')">{{ __('কী করেছে') }}</x-filament::button>
                     <x-filament::button size="sm" :color="$paused ? 'success' : 'gray'" :icon="$paused ? 'heroicon-o-play' : 'heroicon-o-pause'" wire:click="toggle('{{ $key }}')">
                         {{ $paused ? __('আবার চালু করুন') : __('থামান') }}
                     </x-filament::button>
                 </div>
+                @if ($open === $key)
+                    @php([$where, $whereUrl] = \App\Filament\Pages\AiTeam::whereToSee($key))
+                    <div style="border-top:1px solid rgba(127,127,127,.2);padding-top:.5rem">
+                        <div class="hp-muted">{{ __('ফল কোথায় দেখবেন:') }} <a href="{{ $whereUrl }}" style="text-decoration:underline">{{ $where }}</a></div>
+                        @php($jobs = $this->recent($key))
+                        @forelse ($jobs as $j)
+                            <div style="font-size:.85rem;padding:.2rem 0;border-bottom:1px dashed rgba(127,127,127,.15)">
+                                <span class="hp-muted">{{ $n($j['at']->locale(app()->getLocale())->diffForHumans()) }}</span> ·
+                                {{ __(\App\Ai\Team::PURPOSES[$j['purpose']] ?? $j['purpose']) }}
+                                @if ($j['post']) · <a href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $j['post']->id]) }}" style="text-decoration:underline">{{ \Illuminate\Support\Str::limit($j['post']->title, 40) }}</a>@endif
+                            </div>
+                        @empty
+                            <div class="hp-muted">{{ __('এখনও কোনো কাজ করেনি।') }}</div>
+                        @endforelse
+                    </div>
+                @endif
             </div>
         @endforeach
     </div>

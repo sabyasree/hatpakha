@@ -14,9 +14,9 @@ class AiShiftTest extends TestCase
 
     public function test_the_routine_is_scheduled(): void
     {
-        $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())->map->command->implode("\n");
+        $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())->map->description->implode("\n");
         foreach (['inbox', 'backlog', 'daily', 'weekly', 'newsletter', 'monthly', 'brief'] as $task) {
-            $this->assertStringContainsString("hatpakha:ai-shift {$task}", $events);
+            $this->assertStringContainsString("ai-shift {$task}", $events);
         }
     }
 

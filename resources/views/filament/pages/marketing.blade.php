@@ -17,12 +17,31 @@
     </div>
     <p class="hp-muted">{{ __('মার্কেটিং বিশেষজ্ঞ প্রতিটি নতুন লেখা আর সংখ্যার জন্য লেখা তৈরি রাখে। কপি করে নিজের পাতায় পোস্ট করুন, তারপর "পোস্ট করেছি" টিপুন। ছবি নামিয়ে পোস্টের সঙ্গে দিন।') }}</p>
 
+    {{-- Weekly newsletter (D48, D57): drafted every Saturday (or now, from the button above); sent from আজকের কাজ. --}}
+    <x-filament::section icon="heroicon-o-envelope" collapsible>
+        <x-slot name="heading">{{ __('সাপ্তাহিক চিঠি (নিউজলেটার)') }}</x-slot>
+        <p class="hp-muted" style="margin:0 0 .5rem">{{ __('যাঁরা নিজে সম্মতি দিয়েছেন, শুধু তাঁরাই পান') }}: <strong>{{ \App\Support\Bn::num((string) $d['readers']) }}</strong> {{ __('জন') }}.
+            {{ __('প্রতি শনিবার সন্ধ্যায় খসড়া তৈরি হয়; এখনই চাইলে উপরের "নতুন পোস্ট তৈরি করুন" → "সাপ্তাহিক চিঠি"।') }}</p>
+        @if ($nl = $d['newsletter'])
+            <div class="hp-mk-text" style="max-height:none">
+                <strong>{{ $nl->payload['subject'] ?? $nl->title }}</strong>
+
+{{ $nl->payload['intro'] ?? '' }}
+@foreach ((array) ($nl->payload['items'] ?? []) as $it)
+• {{ $it['title'] }} — {{ $it['author'] }}: {{ $it['line'] }}
+@endforeach</div>
+            <x-filament::button tag="a" :href="\App\Filament\Pages\Dashboard::getUrl()" size="sm" icon="heroicon-o-paper-airplane" style="margin-top:.6rem">{{ __('আজকের কাজ-এ দেখে পাঠান') }}</x-filament::button>
+        @else
+            <div class="hp-muted">{{ __('এখন কোনো খসড়া নেই।') }}</div>
+        @endif
+    </x-filament::section>
+
     <div class="hp-mk">
         @forelse ($d['items'] as ['s' => $s, 'card' => $card])
             <div class="hp-mk-item" wire:key="mk-{{ $s->id }}">
                 <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center">
                     <strong>{{ $s->title }}</strong>
-                    <span class="hp-muted">{{ __(['piece' => 'লেখা', 'issue' => 'সংখ্যা', 'weekly' => 'সাপ্তাহিক পরিকল্পনা', 'spotlight' => 'লেখক পরিচিতি', 'festival' => 'উৎসব', 'contest' => 'প্রতিযোগিতা'][$s->kind] ?? $s->kind) }}
+                    <span class="hp-muted">{{ __(['piece' => 'লেখা', 'issue' => 'সংখ্যা', 'weekly' => 'সাপ্তাহিক পরিকল্পনা', 'spotlight' => 'লেখক পরিচিতি', 'festival' => 'উৎসব', 'contest' => 'প্রতিযোগিতা', 'archive' => 'আর্কাইভ থেকে', 'custom' => 'নিজের বিষয়'][$s->kind] ?? $s->kind) }}
                         · {{ $s->created_at->locale(app()->getLocale())->diffForHumans() }}
                         @if ($s->status === 'posted') · ✓ {{ __('পোস্ট করা') }} @endif</span>
                 </div>
