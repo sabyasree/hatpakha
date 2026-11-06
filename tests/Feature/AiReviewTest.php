@@ -198,4 +198,20 @@ class AiReviewTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->call('pauseAi')->assertForbidden();
         $this->assertFalse(\App\Ai\AiSwitch::paused());
     }
+
+    public function test_key_check_uses_free_model_lookup_and_reports_problems(): void
+    {
+        $this->enable();
+        config(['ai.openai.review_model' => 'wrong-model']);
+        Http::fake([
+            'api.anthropic.com/v1/models/*' => Http::response(['id' => 'claude-sonnet-5-5']),
+            '*/models/wrong-model' => Http::response(['error' => 'not found'], 404),
+        ]);
+        $r = \App\Ai\KeyCheck::run();
+        $this->assertTrue($r['anthropic']['ok']);
+        $this->assertFalse($r['openai']['ok']);
+        $this->assertStringContainsString('মডেলের নাম ভুল', $r['openai']['message']);
+        Http::assertSent(fn ($req) => $req->method() === 'GET');   // lookups only: no tokens, no cost
+        Http::assertNotSent(fn ($req) => str_contains($req->url(), 'messages') || str_contains($req->url(), 'responses'));
+    }
 }

@@ -55,6 +55,15 @@ class AiSettings extends Page
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('checkKeys')->label('চাবি যাচাই')->icon('heroicon-o-key')->color('gray')
+                ->action(function () {
+                    $names = ['anthropic' => 'Claude', 'openai' => 'OpenAI'];
+                    $all = \App\Ai\KeyCheck::run();
+                    $body = collect($all)->map(fn ($r, $p) => ($r['ok'] ? '✓ ' : '✗ ').$names[$p].': '.$r['message'])->implode("\n");
+                    $ok = collect($all)->every(fn ($r) => $r['ok']);
+                    Notification::make()->title($ok ? 'দুটো চাবিই কাজ করছে' : 'কিছু ঠিক করতে হবে')->body($body)
+                        ->{$ok ? 'success' : 'warning'}()->persistent()->send();
+                }),
             Action::make('pause')->label('এআই থামান')->icon('heroicon-o-pause')->color('danger')
                 ->visible(fn () => ! AiSwitch::paused())
                 ->requiresConfirmation()->modalHeading('এআই থামাবেন?')
