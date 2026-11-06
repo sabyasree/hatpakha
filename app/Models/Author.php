@@ -47,4 +47,10 @@ class Author extends Model
     {
         return \App\Support\Url::to('/author/'.rawurlencode($this->slug));
     }
+
+    /** Keeps published_count right (it decides full vs compact profile and indexing). */
+    public function refreshCount(): void
+    {
+        $this->forceFill(['published_count' => $this->posts()->published()->count()])->saveQuietly();
+    }
 }

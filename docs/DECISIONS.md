@@ -36,3 +36,5 @@ Format: **date · decision · reason · decided by**.
 | D29 | 2026-11-06 | **Submissions only through the website form** (`/submit/`, from the writer's account). No email, Facebook or WhatsApp submissions | Owner decision | Owner |
 | D30 | 2026-11-06 | Approved: docs/AUDIT-SUMMARY.md (remove 7, merge 9, noindex 66), docs/PAGES-REVIEW.md policies (with D29 replacing point 1), docs/CATEGORY-MAP.md including `puja-2020` → archive issue "শারদীয়া ১৪২৭" (`/sonkha/2020-10/`) | Owner review | Owner |
 | D31 | 2026-11-06 | New public URLs `/archive/` and `/archive/{year}/`; old date archives 301 there instead of home | Owner asked how readers can browse the archive | Owner |
+| D32 | 2026-11-06 | Submissions use a plain-text box (blank line = stanza/paragraph) instead of a rich editor; typed HTML is shown as text | Clean pastes from Word/Docs/WhatsApp, light page on mid-range phones, nothing to sanitise away | Claude |
+| D33 | 2026-11-06 | Scheduled posts become live when `published_at` passes (query-time), no cron needed | Hostinger cron is one less moving part | Claude |

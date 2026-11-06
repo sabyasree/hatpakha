@@ -87,7 +87,7 @@ class ContentAuditTest extends TestCase
         $this->actingAs($admin);
         Filament::setCurrentPanel(Filament::getPanel('desk'));
 
-        Livewire::test(ListPosts::class)->assertOk()->assertSee('তালিকার লেখা')
+        Livewire::test(ListPosts::class)->set('activeTab', 'published')->assertOk()->assertSee('তালিকার লেখা')
             ->assertTableActionVisible('applyAudit', $p)
             ->callTableAction('applyAudit', $p);
         $this->assertTrue($p->fresh()->noindex);

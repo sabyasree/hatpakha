@@ -61,6 +61,8 @@ class Post extends Model
         return $this->belongsToMany(Author::class)->withPivot('position')->orderByPivot('position');
     }
 
+    public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }
+
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }
 
     public function issue(): BelongsTo { return $this->belongsTo(Issue::class); }
@@ -71,9 +73,10 @@ class Post extends Model
 
     public function comments(): HasMany { return $this->hasMany(Comment::class); }
 
+    /** Live for readers: published, or scheduled whose time has come (no cron needed; 3c). */
     public function scopePublished(Builder $q): Builder
     {
-        return $q->where('status', 'published')->where('published_at', '<=', now());
+        return $q->whereIn('status', ['published', 'scheduled'])->where('published_at', '<=', now());
     }
 
     public function isPoem(): bool { return $this->format === 'poem'; }
