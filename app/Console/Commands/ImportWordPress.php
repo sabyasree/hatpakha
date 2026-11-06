@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportWordPress extends Command
 {
-    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages}';
+    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages} {--overwrite-edited : Also overwrite posts edited in /desk (owner decision only)}';
 
     protected $description = 'Import users, authors, sections, tags, posts (all statuses) and comments from the old WordPress database';
 
@@ -217,10 +217,27 @@ class ImportWordPress extends Command
         });
         $bar->finish();
         $this->newLine();
+        if ($this->skippedEdited) {
+            $this->warn("{$this->skippedEdited} posts edited in /desk were kept as they are (use --overwrite-edited to replace them).");
+        }
+    }
+
+    private int $skippedEdited = 0;
+
+    public static function editedInDesk(int $legacyId): bool
+    {
+        return Post::withTrashed()->where('legacy_wp_id', $legacyId)->whereNotNull('edited_in_desk_at')->exists();
     }
 
     private function importPost(object $p, $meta, $rels, $thumbs): void
     {
+        // Never overwrite an editor's work: posts saved in /desk keep their current version (Phase 2).
+        if (! $this->option('overwrite-edited') && self::editedInDesk((int) $p->ID)) {
+            $this->skippedEdited++;
+
+            return;
+        }
+
         $m = $meta->pluck('meta_value', 'meta_key');
         $title = trim(html_entity_decode($p->post_title, ENT_QUOTES | ENT_HTML5));
         $sample = $title.' '.mb_substr(strip_tags($p->post_content), 0, 2000);
