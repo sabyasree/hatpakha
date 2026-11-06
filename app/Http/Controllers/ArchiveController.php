@@ -146,4 +146,15 @@ class ArchiveController extends Controller
 
         return view('archive', compact('title', 'posts', 'seo', 'kicker'));
     }
+
+    /** The issue as a book (D68). Same text as the pieces' own pages, so noindex with the issue as canonical. */
+    public function issueBook(string $slug)
+    {
+        $issue = Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();
+        $pieces = \App\Support\IssueBook::pieces($issue);
+        abort_if($pieces->isEmpty(), 404);
+        $seo = new Seo(title: $issue->title.' (বই)', canonical: $issue->url(), noindex: true);
+
+        return view('issue-book', compact('issue', 'pieces', 'seo'));
+    }
 }

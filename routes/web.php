@@ -33,6 +33,12 @@ Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
+Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
+Route::get('/issue-print/{issue}', function (\App\Models\Issue $issue) {   // D68: print-ready book for "Save as PDF" (editors only)
+    abort_unless(auth()->user()?->hasRole(\App\Enums\Role::Editor), 403);
+
+    return view('issue-print', ['issue' => $issue, 'pieces' => \App\Support\IssueBook::pieces($issue)]);
+})->middleware('auth')->name('issue.print');
 
 // Certificate verification (public, read-only)
 Route::get('/certificate/{code}', CertificateController::class)->where('code', '[A-Z0-9]{6,16}')->name('certificate');

@@ -24,6 +24,38 @@ class EditIssue extends EditRecord
         $isAdmin = fn () => auth()->user()?->hasRole(Role::Admin) ?? false;
 
         return [
+            // D68: the issue as a book: EPUB for Google Play Books, print-ready page for PDF, and the listing pack.
+            \Filament\Actions\ActionGroup::make([
+                Action::make('epub')->label(__('ই-বুক (EPUB) নামান'))->icon('heroicon-o-arrow-down-tray')
+                    ->action(function (Issue $record) {
+                        abort_if(\App\Support\IssueBook::pieces($record)->isEmpty(), 404);
+                        $path = \App\Support\IssueBook::epub($record);
+
+                        return response()->download($path, 'hatpakha-'.$record->slug.'.epub', ['Content-Type' => 'application/epub+zip'])->deleteFileAfterSend();
+                    }),
+                Action::make('print')->label(__('ছাপার PDF বানান (ব্রাউজারে)'))->icon('heroicon-o-printer')
+                    ->url(fn (Issue $record) => route('issue.print', $record))->openUrlInNewTab(),
+                Action::make('listing')->label(__('Google Play Books-এর তথ্য'))->icon('heroicon-o-book-open')->slideOver()
+                    ->fillForm(fn (Issue $record) => ['book_description' => $record->book_description, 'book_keywords' => $record->book_keywords])
+                    ->schema(fn (Issue $record) => [
+                        \Filament\Forms\Components\Placeholder::make('pack')->hiddenLabel()->content(new \Illuminate\Support\HtmlString(view('filament.book-listing', ['issue' => $record, 'pieces' => \App\Support\IssueBook::pieces($record)])->render())),
+                        \Filament\Forms\Components\Textarea::make('book_description')->label(__('বইয়ের বিবরণ (দোকানে দেখা যাবে)'))->rows(7)->maxLength(4000),
+                        \Filament\Forms\Components\TextInput::make('book_keywords')->label(__('খোঁজার শব্দ (কমা দিয়ে)'))->maxLength(300),
+                    ])
+                    ->extraModalFooterActions(fn (Action $action) => [$action->makeModalSubmitAction('draft', ['draft' => true])->label(__('কপিরাইটারকে দিয়ে লেখান'))->color('gray')])
+                    ->modalSubmitActionLabel(__('রাখুন'))
+                    ->action(function (Issue $record, array $data, array $arguments) {
+                        if ($arguments['draft'] ?? false) {
+                            $ok = \App\Support\IssueBook::draftListing($record);
+                            Notification::make()->title($ok ? __('খসড়া তৈরি; আবার খুলে দেখুন') : __('এখন হলো না; এআই থামানো আছে কি না দেখুন'))->{$ok ? 'success' : 'warning'}()->send();
+
+                            return;
+                        }
+                        $record->forceFill(['book_description' => strip_tags((string) $data['book_description']), 'book_keywords' => strip_tags((string) $data['book_keywords'])])->save();
+                        Notification::make()->title(__('রাখা হয়েছে'))->success()->send();
+                    }),
+            ])->label(__('বই'))->icon('heroicon-o-book-open')->button()->color('gray')
+                ->visible(fn () => $this->record->status === 'published'),
             // D42: the owner gives the final approval of the AI editor's issue.
             Action::make('approveIssue')->label(__('সংখ্যা অনুমোদন'))->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Issue $record) => $isAdmin() && $record->status === 'proposed')

@@ -1,7 +1,22 @@
 {{-- The graphic designer's card template (D51): our own Bengali typesetting over the picture;
      the image model never writes text. 1080×1080, logo palette only. --}}
 @php($quote = $layout === 'quote')
-@if ($layout === 'issue')
+@if ($layout === 'book')
+{{-- E-book cover (D68): 1600×2560, the shape book stores recommend. Our own Bengali type over the artwork. --}}
+<div class="hp-card" style="width:1600px;height:2560px;position:relative;overflow:hidden;font-family:'Anek Bangla',sans-serif;background:#13212C;color:#FFFFFF">
+    @if ($card['image'])<img src="{{ $card['image'] }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">@endif
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(19,33,44,.88) 0%,rgba(19,33,44,0) 34%,rgba(19,33,44,0) 66%,rgba(19,33,44,.92) 100%)"></div>
+    <div style="position:absolute;top:120px;left:100px;right:100px;text-align:center">
+        <div style="font-family:'Galada',cursive;font-size:280px;line-height:1.05">হাতপাখা</div>
+        <div style="font-size:54px;opacity:.9">বাংলা সাহিত্যের ওয়েব পত্রিকা</div>
+    </div>
+    <div style="position:absolute;left:100px;right:100px;bottom:260px;text-align:center">
+        <div style="display:inline-block;background:#CB1B32;border-radius:999px;padding:24px 70px;font-size:104px;font-weight:700;line-height:1.2">{{ $card['title'] }}</div>
+        @if (! empty($card['by']))<div style="margin-top:40px;font-size:52px;color:#EFC08D">{{ $card['by'] }}</div>@endif
+    </div>
+    <div style="position:absolute;left:100px;right:100px;bottom:90px;font-size:40px;opacity:.85;display:flex;justify-content:space-between"><span>hatpakha.com</span><span>ISSN 2321-3035</span></div>
+</div>
+@elseif ($layout === 'issue')
 <div class="hp-card" style="width:1080px;height:1350px;position:relative;overflow:hidden;font-family:'Anek Bangla',sans-serif;background:#13212C;color:#FFFFFF">
     @if ($card['image'])<img src="{{ $card['image'] }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">@endif
     <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(19,33,44,.85) 0%,rgba(19,33,44,0) 38%,rgba(19,33,44,0) 70%,rgba(19,33,44,.9) 100%)"></div>

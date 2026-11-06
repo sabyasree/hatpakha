@@ -101,3 +101,13 @@
 .ta-left { text-align: left; }
 .ta-center { text-align: center; }
 .ta-right { text-align: right; }
+
+/* Book view of an issue (D68) */
+.book { padding: 1.5rem; }
+.book-pages { line-height: 1.8; font-size: 18px; }
+/* No padding on the paged box itself: one page = its width + the gap, exactly. */
+.book-pages.paged { height: calc(100dvh - 15rem); min-height: 22rem; column-width: 100vw; column-fill: auto; column-gap: 3rem; overflow: hidden; }
+.book-pages.paged .book-break { break-before: column; }
+.book-pages.paged .book-cover { text-align: center; }
+.book-pages.paged img { max-height: 55vh; break-inside: avoid; }
+@media (min-width: 768px) { .book { padding: 2.5rem 3rem; } }
