@@ -18,5 +18,5 @@
     </div>
     <button type="button" id="hp-chat-open" class="rounded-full bg-red px-5 py-3 font-semibold text-white shadow-lg">প্রশ্ন আছে?</button>
 </div>
-<script src="{{ asset('js/hp-chat.js') }}?v=1" defer></script>
+<script src="{{ asset('js/hp-chat.js') }}?v=2" defer></script>
 @endif

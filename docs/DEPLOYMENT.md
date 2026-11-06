@@ -74,6 +74,21 @@ The log file shows any error. A `[diagnose-cron]` staging deploy prints the hear
 (Production: the same with the production folder.) /desk → আজকের কাজ shows "শেষ কাজ: … আগে"; if it says the
 clock is not running, this line is missing. The schedule only prepares work and respects the pause button.
 
+## Speed: Cloudflare cache for guests (D65), one rule per domain
+
+The app already marks guests' public pages as shareable (`Cache-Control: public, s-maxage=300/600`, no cookies) and never shares anything for signed-in readers, writers or editors. Cloudflare only needs to be allowed to keep them:
+
+1. Cloudflare dashboard → the domain → **Caching → Cache Rules → Create rule**, name it `Hatpakha guest pages`.
+2. **When incoming requests match** (Edit expression):
+   `(http.host eq "new.hatpakha.com") and not http.cookie contains "hatpakha-session" and not starts_with(http.request.uri.path, "/desk") and not starts_with(http.request.uri.path, "/livewire")`
+   (for production use `hatpakha.com`; the cookie name is `SESSION_COOKIE` in the `.env`, by default `hatpakha-session`: check it in the browser's cookies once.)
+3. **Then**: Cache eligibility → **Eligible for cache**; Edge TTL → **Use cache-control header if present**; Browser TTL → **Respect origin**.
+4. Save. Check: open a post in a private window twice; the response header `cf-cache-status` should say `HIT` the second time. Signed in, it should say `DYNAMIC` or `BYPASS`.
+
+Also worth switching on (Speed → Optimization): Brotli, HTTP/3, Early Hints. Leave Rocket Loader **off** (it breaks the page scripts).
+
+New or edited pieces appear for guests within 5–10 minutes (the cache lifetime); for an urgent fix, use Caching → Purge → Custom purge with the page's address.
+
 ## WordPress data
 1. Import the old dump into a **separate** database on the server; put its credentials in `LEGACY_DB_*`.
 2. `php artisan migrate --seed --force` then `php artisan hatpakha:import-wp` (safe to re-run).

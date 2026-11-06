@@ -23,6 +23,11 @@
         say(q, true);
         const wait = say('…', false);
         try {
+            // The page may come from the shared cache (D65): get this visitor's own token first.
+            if (!root.dataset.fresh) {
+                const t = await fetch('/csrf-token', { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then((x) => x.json()).catch(() => null);
+                if (t && t.token) { root.dataset.token = t.token; root.dataset.fresh = '1'; }
+            }
             const r = await fetch(root.dataset.url, {
                 method: 'POST', credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': root.dataset.token },

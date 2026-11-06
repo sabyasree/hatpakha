@@ -25,8 +25,8 @@
                 <span class="-mt-1 text-[11px] font-bold">ISSN: 2321-3035</span>
             </a>
             <nav aria-label="বিভাগ" class="hidden gap-7 text-lg font-semibold lg:flex">
-                @foreach (\App\Models\Section::where('is_active', true)->orderBy('sort')->limit(6)->get() as $s)
-                    <a href="{{ $s->url() }}" class="hover:text-red">{{ $s->name_bn }}</a>
+                @foreach (\App\Models\Section::navLinks() as [$name, $href])
+                    <a href="{{ $href }}" class="hover:text-red">{{ $name }}</a>
                 @endforeach
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
             </nav>

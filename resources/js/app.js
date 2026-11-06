@@ -88,3 +88,24 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
         } catch (err) { form.submit(); } finally { btn.disabled = false; }
     });
 });
+
+// Pages for guests can come from the shared cache (D65), so their form token may be someone else's
+// (or none). As soon as a visitor touches a form, fetch their own token and put it in every form.
+let hpToken = null;
+let hpTokenReady = null;
+const hpFreshToken = () => hpTokenReady ??= fetch('/csrf-token', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    .then((r) => r.json()).then((d) => {
+        hpToken = d.token;
+        document.querySelectorAll('input[name="_token"]').forEach((i) => { i.value = d.token; });
+        document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', d.token);
+        return d.token;
+    }).catch(() => null);
+const hpIsPostForm = (el) => el?.closest?.('form[method="POST"], form[method="post"]');
+['focusin', 'pointerdown', 'keydown'].forEach((t) => document.addEventListener(t, (e) => { if (hpIsPostForm(e.target)) hpFreshToken(); }, true));
+document.addEventListener('submit', (e) => {
+    const f = e.target;
+    if (hpToken || !(f instanceof HTMLFormElement) || f.method.toLowerCase() !== 'post') return;   // token in place: carry on
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    hpFreshToken().then(() => (f.requestSubmit ? f.requestSubmit() : f.submit()));
+}, true);

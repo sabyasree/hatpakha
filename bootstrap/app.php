@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Behind Cloudflare/LiteSpeed: trust forwarded proto/host so HTTPS is detected.
         $middleware->trustProxies(at: '*');
         // docs/SEO.md §1 and docs/SECURITY.md §1
-        $middleware->web(prepend: [\App\Http\Middleware\EnforceTrailingSlash::class]);
+        $middleware->web(prepend: [\App\Http\Middleware\GuestPageCache::class, \App\Http\Middleware\EnforceTrailingSlash::class]);   // D65: outermost
         $middleware->web(append: [\App\Http\Middleware\SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

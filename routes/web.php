@@ -85,6 +85,10 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/2fa/disable', [\App\Http\Controllers\AccountController::class, 'twoFactorDisable'])->middleware('throttle:5,1');
 });
 
+// A fresh form token for pages served from the shared cache (D65). Never cached.
+Route::get('/csrf-token', fn () => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store, private'))
+    ->middleware('throttle:60,1')->name('csrf');
+
 // Site search (D64): results are noindex.
 Route::get('/search', \App\Http\Controllers\SearchController::class)->middleware('throttle:40,1')->name('search');
 // Reader features (D64): likes, reading list, following writers.
