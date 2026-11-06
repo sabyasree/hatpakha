@@ -54,6 +54,7 @@ final class HtmlSanitizer
                 ->withMaxInputLength(2_000_000)
         );
 
-        return self::$instance->sanitize($html);
+        // Removed elements (forms, inputs…) can leave empty paragraphs behind; parsers differ by PHP version.
+        return preg_replace('~<p>(?:\s|&nbsp;|\x{00A0})*</p>~u', '', self::$instance->sanitize($html)) ?? '';
     }
 }
