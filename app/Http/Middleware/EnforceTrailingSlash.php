@@ -20,7 +20,7 @@ class EnforceTrailingSlash
             && $path !== '/'
             && ! str_ends_with($path, '/')
             && ! preg_match('/\.[a-z0-9]{2,5}$/i', $path)
-            && ! $request->is('desk', 'desk/*', 'livewire*', 'filament/*', 'up', 'storage/*', 'build/*', 'wp-json*', 'wp-admin*', 'wp-includes*', 'wp-content/*')) {
+            && ! $request->is('desk', 'desk/*', 'livewire*', 'filament/*', 'up', 'storage/*', 'build/*', 'wp-json*', 'wp-admin*', 'wp-includes*', 'wp-content/*', 'email/verify/*', 'reset-password/*')) {
             $qs = $request->getQueryString();
 
             return redirect()->to($request->getSchemeAndHttpHost().$request->getBaseUrl().$path.'/'.($qs ? '?'.$qs : ''), 301);

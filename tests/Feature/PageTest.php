@@ -37,8 +37,8 @@ class PageTest extends TestCase
 
     public function test_old_plugin_pages_redirect_home(): void
     {
-        Redirect::create(['from_path' => '/login/', 'to_path' => '/', 'status_code' => 301]);
-        $this->get('/login/')->assertRedirect(url('/').'/');
+        Redirect::create(['from_path' => '/members/', 'to_path' => '/', 'status_code' => 301]);
+        $this->get('/members/')->assertRedirect(url('/').'/');
     }
 
     public function test_wordpress_shortcodes_are_converted(): void

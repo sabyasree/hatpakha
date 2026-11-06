@@ -53,7 +53,27 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 Route::get('/{y}/{m?}/{d?}', [LegacyController::class, 'dateArchive'])->where(['y' => '(19|20)\d\d', 'm' => '\d{1,2}', 'd' => '\d{1,2}']);
 Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '(?!(desk|livewire|filament|storage|build)$)[^/]+');
 
-// Submission form arrives in Phase 3; until then a holding page (submissions are form-only, owner decision D29).
+// Accounts (Phase 3a). Throttles: AppServiceProvider. All pages noindex.
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/register', [\App\Http\Controllers\Auth\AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Auth\AuthController::class, 'register'])->middleware('throttle:register');
+    Route::get('/forgot-password', [\App\Http\Controllers\Auth\AuthController::class, 'showForgot'])->name('password.request');
+    Route::post('/forgot-password', [\App\Http\Controllers\Auth\AuthController::class, 'sendResetLink'])->middleware('throttle:password-reset')->name('password.email');
+    Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\AuthController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [\App\Http\Controllers\Auth\AuthController::class, 'reset'])->middleware('throttle:password-reset')->name('password.update');
+});
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
+    Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account');
+    Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
+    Route::get('/email/verify', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
+});
+
+// Submission form arrives in Phase 3b; until then a holding page (submissions are form-only, owner decision D29).
 Route::get('/submit', fn () => view('submit-soon', ['seo' => new \App\Seo\Seo(title: 'লেখা পাঠান', noindex: true)]))->name('submit');
 
 // Posts at the root, exactly like WordPress. Reserved words are excluded.

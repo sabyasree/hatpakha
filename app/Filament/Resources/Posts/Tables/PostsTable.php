@@ -20,7 +20,8 @@ use Illuminate\Support\Collection;
 
 class PostsTable
 {
-    public const STATUS = ['published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়', 'draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'archived' => 'আর্কাইভ', 'rejected' => 'বাতিল'];
+    /** One label per Post::STATUSES entry (a test checks they stay in sync). */
+    public const STATUS = ['published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়', 'changes' => 'বদল চাওয়া হয়েছে', 'draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'archived' => 'আর্কাইভ', 'rejected' => 'বাতিল'];
 
     public static function configure(Table $table): Table
     {

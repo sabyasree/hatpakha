@@ -16,7 +16,7 @@ class Post extends Model
 {
     use SoftDeletes;
 
-    public const STATUSES = ['draft', 'pending', 'scheduled', 'published', 'rejected', 'archived'];
+    public const STATUSES = ['draft', 'pending', 'changes', 'scheduled', 'published', 'rejected', 'archived'];
 
     protected $guarded = ['id'];
 
@@ -29,6 +29,8 @@ class Post extends Model
             'audit_reasons' => 'array',
             'audit_decided_at' => 'datetime',
             'edited_in_desk_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'originality_confirmed_at' => 'datetime',
         ];
     }
 

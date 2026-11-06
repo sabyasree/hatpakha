@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use SensitiveParameter;
 
 #[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'legacy_password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
-class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -45,6 +46,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
                 AuditLog::record('user.role_changed', $user, ['from' => $user->getOriginal('role')?->value ?? $user->getOriginal('role'), 'to' => $user->role?->value, 'via' => 'desk']);
             }
         });
+    }
+
+    /** Public-site emails in Bengali (the /desk panel sends its own reset email). */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordBn($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        if (\App\Http\Controllers\AccountController::verificationRequired()) {
+            $this->notify(new \App\Notifications\VerifyEmailBn);
+        }
     }
 
     public function author(): HasOne

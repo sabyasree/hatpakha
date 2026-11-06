@@ -30,7 +30,12 @@
                 @endforeach
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
             </nav>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                @auth
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 items-center font-bold hover:text-red">আমার লেখা</a>
+                @else
+                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 items-center font-bold hover:text-red">লগ-ইন</a>
+                @endauth
                 <a href="{{ \App\Support\Url::to('/submissions') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
             </div>
         </div>

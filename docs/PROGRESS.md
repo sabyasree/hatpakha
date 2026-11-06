@@ -20,7 +20,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Admin `/desk`: branded, editor+ only, mandatory 2FA (authenticator app or email code, D20), admin-only user management
 - ✅ Console: `hatpakha:role`, `hatpakha:password` (hidden prompt, audited)
 - ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
-- ✅ Tests: 68 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Tests: 75 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ✅ Old WordPress pages imported at their URLs; 7 rewritten as an editor (docs/PAGES-REVIEW.md, owner to confirm); plugin pages 301; /desk → পাতা
 - ✅ Fixed: sanitizer was deleting text inside <span>/<div> (346 posts, 250 published); now unwrapped and kept, with regression tests
@@ -50,6 +50,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## Reader archive ✅
 - `/archive/` (years with counts, issues, sections) and `/archive/{year}/` (grouped by month, year switcher); linked in header, footer and mobile bar; in the sitemap. Old WordPress date URLs (`/2016/03/`) 301 to the year (`/archive/2016/#m3`)
+
+## Phase 3: Submissions + AI review 🟡
+- ✅ 3a Writer accounts: `/register/`, `/login/` (old WordPress passwords work and are upgraded), `/forgot-password/` + reset (no account enumeration), `/account/` "আমার লেখা" (status of every piece, editor's note, name change, logout). Honeypot + minimum-time check on sign-up; throttles; email verification required only where real mail is configured; old accounts count as verified; Bengali emails (the /desk panel keeps its own)
+- ⬜ 3b Submission form · ⬜ 3c Editor queue · ⬜ 3d AI review · ⬜ 3e blind provider test
 
 ## Launch blockers (must be done before cutover)
 - Phase 3 submission form at `/submit/` (D29: the only way to submit)

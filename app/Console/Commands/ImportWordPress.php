@@ -159,6 +159,8 @@ class ImportWordPress extends Command
                     // Legacy hash is stored as-is (never through the "hashed" cast) until first login.
                     'legacy_password' => $user->password ? null : ($u->user_pass ?: null),
                     'created_at' => $u->user_registered,
+                    // Accounts from the old site are treated as verified; new sign-ups verify by email.
+                    'email_verified_at' => $user->email_verified_at ?? $u->user_registered,
                 ])->save();
                 $this->userMap[$u->ID] = $user->id;
 
@@ -440,8 +442,10 @@ class ImportWordPress extends Command
      * Old WordPress pages that hold plugin screens (login, cart, …): their URLs 301 to the home page.
      * Everything else published is imported as a Page at the same URL.
      */
-    private const SYSTEM_PAGES = ['connections', 'edit-post', 'authors', 'user', 'login', 'register', 'members', 'logout',
-        'account', 'password-reset', 'home-4', 'tds-checkout', 'tds-my-account', 'tds-login-register'];
+    private const SYSTEM_PAGES = ['connections', 'edit-post', 'authors', 'user', 'members', 'home-4', 'tds-checkout', 'tds-my-account', 'tds-login-register'];
+
+    /** Old plugin URLs that are real pages again on the new site (Phase 3a): their old 301s are removed. */
+    private const LIVE_AGAIN = ['/login/', '/register/', '/account/', '/logout/', '/password-reset/'];
 
     /**
      * Pages the editor rewrote for the new magazine live in database/content/pages/{slug}.html
@@ -454,6 +458,8 @@ class ImportWordPress extends Command
         foreach (self::SYSTEM_PAGES as $slug) {
             Redirect::updateOrCreate(['from_path' => "/{$slug}/"], ['to_path' => '/', 'status_code' => 301]);
         }
+        Redirect::whereIn('from_path', self::LIVE_AGAIN)->delete();
+        Redirect::updateOrCreate(['from_path' => '/password-reset/'], ['to_path' => '/forgot-password/', 'status_code' => 301]);
 
         $rows = $this->wp->table('posts')->where('post_type', 'page')->where('post_status', 'publish')
             ->whereNotIn('post_name', self::SYSTEM_PAGES)->get(['ID', 'post_name', 'post_title', 'post_content', 'post_date', 'post_modified']);

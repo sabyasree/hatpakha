@@ -29,7 +29,7 @@ class PostForm
             ]),
             Section::make('প্রকাশ')->columnSpan(1)->schema([
                 Select::make('status')->label('অবস্থা')->required()->default('draft')
-                    ->options(array_combine(Post::STATUSES, ['খসড়া', 'অপেক্ষায়', 'নির্ধারিত', 'প্রকাশিত', 'বাতিল', 'আর্কাইভ'])),
+                    ->options(\App\Filament\Resources\Posts\Tables\PostsTable::STATUS),
                 DateTimePicker::make('published_at')->label('প্রকাশের সময়'),
                 Select::make('section_id')->label('বিভাগ')->relationship('section', 'name_bn')->preload(),
                 Select::make('authors')->label('লেখক')->relationship('authors', 'display_name')->multiple()->searchable()->required(),
