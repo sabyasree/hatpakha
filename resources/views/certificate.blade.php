@@ -1,7 +1,7 @@
 {{-- Certificate check + the certificate itself (D12, D71): anyone with the code sees it; the writer downloads it here. --}}
 @php
     $c = $certificate;
-    $file = 'hatpakha-sonod-'.$c->theme().'-'.$c->code;
+    $file = 'hatpakha-shongshapotro-'.$c->theme().'-'.$c->code;
     $share = 'হাতপাখার '.\App\Models\Certificate::THEMES[$c->theme()][0].': '.$c->verifyUrl();
 @endphp
 <x-layouts.app :seo="$seo">
@@ -18,9 +18,9 @@
         }
     </style>
     <section class="mx-auto max-w-[1100px] px-5 py-10">
-        <div class="text-center font-hand text-3xl text-red">সনদ যাচাই</div>
+        <div class="text-center font-hand text-3xl text-red">শংসাপত্র যাচাই</div>
         @if ($c->isValid())
-            <p class="mt-3 text-center font-bold text-sky-night">✓ এই সনদটি বৈধ। হাতপাখা {{ \App\Support\Bn::date($c->issued_at) }} এটি দিয়েছে।</p>
+            <p class="mt-3 text-center font-bold text-sky-night">✓ এই শংসাপত্রটি বৈধ। হাতপাখা {{ \App\Support\Bn::date($c->issued_at) }} এটি দিয়েছে।</p>
             <div class="hp-cert-frame mt-6" data-cert>
                 <x-certificate-sheet :certificate="$c" />
             </div>
@@ -35,7 +35,7 @@
                 <p class="mt-6 text-center"><a href="{{ $c->post->url() }}" class="font-bold text-sky-deep underline">লেখাটি পড়ুন</a></p>
             @endif
         @else
-            <div class="mx-auto mt-6 max-w-[680px] rounded-3xl border-2 border-red bg-white p-8 text-center text-red">এই সনদটি বাতিল করা হয়েছে।</div>
+            <div class="mx-auto mt-6 max-w-[680px] rounded-3xl border-2 border-red bg-white p-8 text-center text-red">এই শংসাপত্রটি বাতিল করা হয়েছে।</div>
         @endif
     </section>
     <script src="{{ asset('js/hp-card.js') }}?v=1" defer></script>

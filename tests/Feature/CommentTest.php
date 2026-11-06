@@ -31,7 +31,7 @@ class CommentTest extends TestCase
         $post = $this->makePost(['slug' => 'nodi']);
         Comment::create(['post_id' => $post->id, 'author_name' => 'ক', 'body' => 'দেখা যাবে', 'status' => 'approved']);
         Comment::create(['post_id' => $post->id, 'author_name' => 'খ', 'body' => 'লুকানো থাকবে', 'status' => 'pending']);
-        $this->get('/nodi/')->assertOk()->assertSee('আপনার কথা লিখুন')->assertSee('দেখা যাবে')->assertDontSee('লুকানো থাকবে')
+        $this->get('/nodi/')->assertOk()->assertSee('লেখাটি পড়ে কেমন লাগল')->assertSee('দেখা যাবে')->assertDontSee('লুকানো থাকবে')
             ->assertSee('আপনার নাম')->assertSee('/login/?next=', false);
     }
 
@@ -99,5 +99,17 @@ class CommentTest extends TestCase
         $post = $this->makePost(['slug' => 'nodi']);
         $codes = collect(range(1, 4))->map(fn ($i) => $this->post("/comment/{$post->id}", $this->form(['name' => 'কমল', 'body' => "মন্তব্য {$i}"]))->status());
         $this->assertSame(429, $codes->last(), 'Guests: a few a minute at most');
+    }
+
+    /** D74: signed-in readers see their letter status, not a sign-up form; the writer's comments are marked. */
+    public function test_signed_in_reader_sees_letter_status_and_writer_badge(): void
+    {
+        $writer = \App\Models\User::factory()->create(['email_verified_at' => now()]);
+        $author = \App\Models\Author::create(['user_id' => $writer->id, 'display_name' => 'লেখিকা', 'slug' => 'lekhika']);
+        $post = $this->makePost(['slug' => 'nodi', 'status' => 'published', 'published_at' => now()->subDay()], $author);
+        Comment::create(['post_id' => $post->id, 'user_id' => $writer->id, 'author_name' => 'লেখিকা', 'body' => 'ধন্যবাদ সবাইকে', 'status' => 'approved']);
+        $this->get('/nodi/')->assertSee('চিঠি চাই')->assertSee('লেখক</span>', false);
+        $this->actingAs(\App\Models\User::factory()->create(['email_verified_at' => now()]))->get('/nodi/')
+            ->assertSee('হাতপাখার চিঠি আপনি পাচ্ছেন')->assertDontSee('চিঠি চাই');
     }
 }

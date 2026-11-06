@@ -11,7 +11,7 @@ class CertificateController extends Controller
     public function __invoke(string $code)
     {
         $certificate = Certificate::with(['author', 'post'])->where('code', strtoupper($code))->firstOrFail();
-        $seo = new Seo(title: 'সনদ যাচাই · '.$certificate->code, noindex: true);
+        $seo = new Seo(title: 'শংসাপত্র যাচাই · '.$certificate->code, noindex: true);
 
         return view('certificate', compact('certificate', 'seo'));
     }

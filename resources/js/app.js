@@ -43,6 +43,19 @@ document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
     let started = false;
     const render = () => window.turnstile.render(box, {
         sitekey: box.dataset.sitekey, action: box.dataset.action, size: box.dataset.size, theme: box.dataset.theme, language: 'bn',
+        appearance: box.dataset.appearance || 'always',
+    });
+    // D74: the check is often invisible; if the visitor sends before it has finished, wait a moment for it.
+    form.addEventListener('submit', (e) => {
+        const token = form.querySelector('[name="cf-turnstile-response"]');
+        if (!started || (token && token.value) || form.dataset.waited) return;
+        e.preventDefault();
+        form.dataset.waited = '1';
+        let tries = 0;
+        const wait = setInterval(() => {
+            const t = form.querySelector('[name="cf-turnstile-response"]');
+            if ((t && t.value) || ++tries > 40) { clearInterval(wait); form.requestSubmit ? form.requestSubmit() : form.submit(); }
+        }, 250);
     });
     form.addEventListener('focusin', () => {
         if (started) return;

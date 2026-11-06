@@ -79,26 +79,26 @@ class EditPost extends EditRecord
                 }),
             // D71: the writer's certificate for this piece: issue (one per writer, e-mail with the link), open, withdraw.
             ActionGroup::make([
-                Action::make('issueCertificate')->label(__('সনদ দিন / পাঠান'))->icon('heroicon-o-academic-cap')->color('success')
+                Action::make('issueCertificate')->label(__('শংসাপত্র দিন / পাঠান'))->icon('heroicon-o-academic-cap')->color('success')
                     ->visible(fn (Post $record) => $record->isLive() && $record->authors()->where('is_desk', false)->exists())
-                    ->modalHeading(__('এই লেখার প্রকাশনা সনদ'))
-                    ->modalDescription(__('প্রত্যেক লেখকের জন্য একটি সনদ (আগে দেওয়া থাকলে সেটাই)। অ্যাকাউন্ট থাকলে লেখক ই-মেল পান আর "আমার লেখা"-তে দেখেন। অ্যাকাউন্ট না থাকলে নিচে ই-মেল দিন।'))
+                    ->modalHeading(__('এই লেখার প্রকাশনা শংসাপত্র'))
+                    ->modalDescription(__('প্রত্যেক লেখকের জন্য একটি শংসাপত্র (আগে দেওয়া থাকলে সেটাই)। অ্যাকাউন্ট থাকলে লেখক ই-মেল পান আর "আমার লেখা"-তে দেখেন। অ্যাকাউন্ট না থাকলে নিচে ই-মেল দিন।'))
                     ->schema([\Filament\Forms\Components\TextInput::make('email')->label(__('ই-মেলেও পাঠান (ঐচ্ছিক)'))->email()->maxLength(190)])
-                    ->modalSubmitActionLabel(__('সনদ দিন'))
+                    ->modalSubmitActionLabel(__('শংসাপত্র দিন'))
                     ->action(fn (Post $record, array $data) => \App\Filament\Pages\Certificates::give($record, $data['email'] ?? null)),
                 ...collect([0, 1, 2])->map(fn ($i) => Action::make('openCertificate'.$i)->icon('heroicon-o-document-text')
-                    ->label(fn (Post $record) => __('সনদ দেখুন').': '.(self::certs($record)[$i]->author_name_snapshot ?? ''))
+                    ->label(fn (Post $record) => __('শংসাপত্র দেখুন').': '.(self::certs($record)[$i]->author_name_snapshot ?? ''))
                     ->visible(fn (Post $record) => isset(self::certs($record)[$i]))
                     ->url(fn (Post $record) => self::certs($record)[$i]?->verifyUrl(), shouldOpenInNewTab: true))->all(),
-                Action::make('revokeCertificate')->label(__('সনদ বাতিল করুন'))->icon('heroicon-o-no-symbol')->color('danger')
+                Action::make('revokeCertificate')->label(__('শংসাপত্র বাতিল করুন'))->icon('heroicon-o-no-symbol')->color('danger')
                     ->visible(fn (Post $record) => self::certs($record)->isNotEmpty())
                     ->requiresConfirmation()->modalDescription(__('যাচাইয়ের পাতায় লেখা থাকবে "বাতিল"। যেমন, পরে লেখাটি নকল প্রমাণিত হলে।'))
                     ->action(function (Post $record) {
                         \App\Models\Certificate::where('post_id', $record->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
                         \App\Models\AuditLog::record('certificate.revoked', $record);
-                        \Filament\Notifications\Notification::make()->title(__('সনদ বাতিল হয়েছে'))->send();
+                        \Filament\Notifications\Notification::make()->title(__('শংসাপত্র বাতিল হয়েছে'))->send();
                     }),
-            ])->label(__('সনদ'))->icon('heroicon-o-academic-cap')->button()->color('gray')
+            ])->label(__('শংসাপত্র'))->icon('heroicon-o-academic-cap')->button()->color('gray')
                 ->visible(fn () => $this->record->isLive()),
             // Editors can drop an unsuitable cover (the piece stays; the writer can upload another).
             // D60: draw (or redraw) the cover with the AI designer; the owner then puts it on, or drops it.

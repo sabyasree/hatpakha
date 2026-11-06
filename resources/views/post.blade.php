@@ -77,52 +77,88 @@
             <x-author-card :author="$a" />
         @endforeach
 
-        <x-newsletter-signup variant="card" />
+        @php
+            $writerUsers = $post->authors->pluck('user_id')->filter()->all();
+            $me = auth()->user();
+        @endphp
+        {{-- Readers' comments (D39, D74): who, when, what; then a short form. Plain text, always escaped. --}}
+        <section id="comments" class="mt-12 scroll-mt-24" aria-labelledby="comments-h">
+            <div class="flex items-baseline justify-between gap-3 border-b-2 border-navy pb-3">
+                <h2 id="comments-h" class="font-display text-3xl font-extrabold">পাঠকের মতামত</h2>
+                @if ($comments->isNotEmpty())<span class="font-bold text-ink2">{{ \App\Support\Bn::num((string) $comments->count()) }}টি</span>@endif
+            </div>
 
-        <section id="comments" class="mt-10 scroll-mt-24" aria-label="পাঠকের মতামত">
-            <h2 class="font-display text-3xl font-extrabold">পাঠকের মতামত</h2>
-            @foreach ($comments as $c)
-                <div class="border-b border-rule py-4"><div class="font-bold">{{ $c->author_name }}</div><p class="mt-1 whitespace-pre-line">{{ $c->body }}</p></div>
-            @endforeach
+            @if ($comments->isEmpty())
+                <p class="mt-4 text-ink2">এখনও কেউ লেখেননি। প্রথম মতামতটি আপনার হোক।</p>
+            @else
+                <ol class="mt-2">
+                    @foreach ($comments as $c)
+                        @php($isWriter = $c->user_id && in_array($c->user_id, $writerUsers, true))
+                        @php($isDesk = ! $isWriter && $c->user?->hasRole(\App\Enums\Role::Editor))
+                        <li id="comment-{{ $c->id }}" class="flex gap-3 border-b border-rule py-5 last:border-0">
+                            <span class="flex h-10 w-10 flex-none items-center justify-center rounded-full font-extrabold {{ $isWriter ? 'bg-red text-white' : ($isDesk ? 'bg-navy text-white' : 'bg-peach-light text-red-dark') }}" aria-hidden="true">{{ mb_substr(trim((string) $c->author_name) ?: '?', 0, 1) }}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-baseline gap-x-2">
+                                    <span class="font-bold">{{ $c->author_name }}</span>
+                                    @if ($isWriter)<span class="rounded-full bg-red px-2 py-0.5 text-xs font-bold text-white">লেখক</span>@endif
+                                    @if ($isDesk)<span class="rounded-full bg-navy px-2 py-0.5 text-xs font-bold text-white">হাতপাখা</span>@endif
+                                    <span class="text-sm text-ink2">{{ \App\Support\Bn::date($c->created_at) }}</span>
+                                </div>
+                                <p class="mt-1 whitespace-pre-line break-words leading-relaxed">{{ $c->body }}</p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
 
             @if (session('comment_status'))
                 <p class="mt-5 rounded-2xl bg-sky-tint p-4 font-semibold" role="status">{{ session('comment_status') }}</p>
             @endif
 
             {{-- Comment form (D39). Plain text; guests are always checked by an editor. --}}
-            <form method="POST" action="{{ route('comment.store', $post) }}" class="mt-6 rounded-3xl bg-peach-light p-5">
+            <form method="POST" action="{{ route('comment.store', $post) }}" class="mt-6 rounded-3xl border-2 border-navy bg-white p-4 sm:p-5">
                 @csrf
                 <input type="hidden" name="started" value="{{ \App\Http\Controllers\CommentController::startedToken() }}">
                 <div aria-hidden="true" class="absolute -left-[9999px] h-px w-px overflow-hidden"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
-                <h3 class="text-xl font-extrabold">আপনার কথা লিখুন</h3>
-                @auth
-                    <p class="mt-1 text-sm text-ink2"><strong>{{ auth()->user()->name }}</strong> হিসেবে লিখছেন।</p>
-                @else
-                    <p class="mt-1 text-sm text-ink2">অ্যাকাউন্ট থাকলে <a class="font-bold text-sky-deep underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখুন</a>: আপনার মন্তব্য তাড়াতাড়ি প্রকাশ পাবে।</p>
-                    <label class="mt-4 block">
-                        <span class="mb-1 block font-bold">আপনার নাম</span>
-                        <input name="name" type="text" value="{{ old('name') }}" required minlength="2" maxlength="80" autocomplete="name"
-                            class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg focus:border-sky-deep">
-                    </label>
-                @endauth
-                <label class="mt-4 block">
-                    <span class="mb-1 block font-bold">মন্তব্য</span>
-                    <textarea name="body" rows="4" required minlength="2" maxlength="3000"
-                        class="block w-full rounded-xl border-2 border-navy bg-white p-4 text-lg leading-relaxed focus:border-sky-deep">{{ old('body') }}</textarea>
-                </label>
-                @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
-                @error('name')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
-                <label class="mt-3 flex items-start gap-3 text-sm">
-                    <input type="checkbox" name="not_featured" value="1" class="mt-1 h-5 w-5" @checked(old('not_featured'))>
-                    <span>প্রথম পাতার "পাঠকের চিঠি"-তে আমার মন্তব্য দেখাবেন না</span>
-                </label>
-                @guest
-                    <x-turnstile action="comment" class="mt-4" />
-                @endguest
-                <button class="mt-4 h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
-                <p class="mt-3 text-sm text-ink2">ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়। বিজ্ঞাপন বা কটু কথা প্রকাশ হয় না।</p>
+                <div class="flex items-start gap-3">
+                    <span class="hidden h-10 w-10 flex-none items-center justify-center rounded-full bg-peach-light font-extrabold text-red-dark sm:flex" aria-hidden="true">{{ $me ? mb_substr($me->name, 0, 1) : '✎' }}</span>
+                    <div class="min-w-0 flex-1">
+                        @auth
+                            <p class="text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong> হিসেবে লিখছেন</p>
+                        @else
+                            <label class="block">
+                                <span class="sr-only">আপনার নাম</span>
+                                <input name="name" type="text" value="{{ old('name') }}" required minlength="2" maxlength="80" autocomplete="name" placeholder="আপনার নাম"
+                                    class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg focus:border-sky-deep">
+                            </label>
+                        @endauth
+                        <label class="mt-2 block">
+                            <span class="sr-only">মন্তব্য</span>
+                            <textarea name="body" rows="3" required minlength="2" maxlength="3000" placeholder="লেখাটি পড়ে কেমন লাগল? দু-এক লাইন লিখুন…"
+                                class="block w-full rounded-xl border-2 border-navy bg-paper p-4 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('body') }}</textarea>
+                        </label>
+                        @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+                        @error('name')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+                        @guest
+                            <x-turnstile action="comment" class="mt-2" :lazy="true" appearance="interaction-only" />
+                        @endguest
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                            <label class="flex items-center gap-2 text-sm text-ink2">
+                                <input type="checkbox" name="not_featured" value="1" class="h-5 w-5" @checked(old('not_featured'))>
+                                প্রথম পাতার "পাঠকের চিঠি"-তে দেখাবেন না
+                            </label>
+                            <button class="h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
+                        </div>
+                        <p class="mt-3 text-xs text-ink2">
+                            @guest সম্পাদক দেখে প্রকাশ করেন। <a class="font-bold text-sky-deep underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
+                            ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়; বিজ্ঞাপন, লিংক বা কটু কথা নয়।
+                        </p>
+                    </div>
+                </div>
             </form>
         </section>
+
+        <x-newsletter-signup variant="card" />
     </article>
 
     @if ($related->isNotEmpty())

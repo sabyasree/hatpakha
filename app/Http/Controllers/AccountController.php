@@ -130,7 +130,7 @@ class AccountController extends Controller
     }
 
     /**
-     * "সনদ চাই" (D73): a writer asks for the certificate of an older published piece. With automatic
+     * "শংসাপত্র চাই" (D73): a writer asks for the certificate of an older published piece. With automatic
      * certificates on, it is made at once; otherwise the owner gets a request on আজকের কাজ.
      */
     public function requestCertificate(Request $request, Post $post)
@@ -145,11 +145,11 @@ class AccountController extends Controller
             \App\Models\Certificate::issueFor($post, tell: false);
             \App\Models\AuditLog::record('certificate.requested_issued', $post, ['by' => $request->user()->id]);
 
-            return redirect(Url::to('/account').'#writing')->with('status', 'আপনার সনদ তৈরি হয়েছে। নিচে "আমার শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
+            return redirect(Url::to('/account').'#writing')->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে। নিচে "আমার শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
         }
-        \App\Models\EditorTask::propose('certificate_request', 'লেখক সনদ চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
+        \App\Models\EditorTask::propose('certificate_request', 'লেখক শংসাপত্র চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
 
-        return redirect(Url::to('/account').'#writing')->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে সনদ দিলে আপনাকে জানানো হবে।');
+        return redirect(Url::to('/account').'#writing')->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
     }
 
     public function updateNewsletter(Request $request)

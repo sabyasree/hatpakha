@@ -115,7 +115,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ **Writers' audio readings** (D67): upload from the account page, owner approves; ⬜ check Hostinger's PHP upload limit is ≥ 25 MB
 - ✅ **Issues as books** (D68): page-turning reader view, EPUB, print-ready PDF (6×9 in) and store listing text; Amazon KDP doesn't take Bengali → Google Play Books
 - ✅ **Relaunch letter** draft + post, **online-only** campaigns, English filler options (D69); **undo** for covers and marketing, weekly plan pinned (D70)
-- ✅ **Certificate template** (D71): design on the check page, PNG + PDF download, share; issue/open/withdraw from the post's সনদ menu; e-mail to the writer
+- ✅ **Certificate template** (D71): design on the check page, PNG + PDF download, share; issue/open/withdraw from the post's শংসাপত্র menu; e-mail to the writer
 - ✅ **Certificates finished** (D73): automatic issue, manual/bulk for old pieces, writer requests, four designs, QR code, signature settings, desk page with previews
 - ✅ **Give the AI team work by hand** (D72): run now / redo per member, requests in your own words, results with links
 - ⬜ Owner: set the signer's name and signature picture on /desk → আরও → শংসাপত্র

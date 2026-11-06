@@ -66,13 +66,13 @@ final class Honours
         }
         $author->forceFill(['honour_label' => mb_substr($label, 0, 40), 'honour_note' => trim(strip_tags($praise)) ?: null, 'honoured_at' => now()])->save();
         AuditLog::record('author.honoured', $author, ['label' => $label]);
-        // D73: a সম্মাননা সনদ goes with every honour (one per honour and writer).
+        // D73: a সম্মাননা শংসাপত্র goes with every honour (one per honour and writer).
         $cert = $author->is_desk ? null : \App\Models\Certificate::firstOrCreate(['author_id' => $author->id, 'kind' => 'honour', 'title_snapshot' => mb_substr($label, 0, 400)],
             ['author_name_snapshot' => $author->publicName()]);
         if ($tellWriter && $author->user && \App\Support\NewsletterSender::realMail()) {
             $author->user->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনাকে অভিনন্দন!',
-                'নমস্কার '.$author->publicName().', হাতপাখা আপনাকে "'.$label.'" হিসেবে সম্মান জানাচ্ছে।'."\n\n".$praise."\n\nআপনার লেখক-পাতায় সম্মানটি দেখা যাবে, আর নিচের লিংকে আপনার সম্মাননা সনদ (ছবি বা PDF হিসেবে নামাতে পারবেন)। লিখতে থাকুন!",
-                $cert?->verifyUrl() ?? $author->url(), $cert ? 'সনদ দেখুন' : 'আমার লেখা'));
+                'নমস্কার '.$author->publicName().', হাতপাখা আপনাকে "'.$label.'" হিসেবে সম্মান জানাচ্ছে।'."\n\n".$praise."\n\nআপনার লেখক-পাতায় সম্মানটি দেখা যাবে, আর নিচের লিংকে আপনার সম্মাননা শংসাপত্র (ছবি বা PDF হিসেবে নামাতে পারবেন)। লিখতে থাকুন!",
+                $cert?->verifyUrl() ?? $author->url(), $cert ? 'শংসাপত্র দেখুন' : 'আমার লেখা'));
         }
     }
 }

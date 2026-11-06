@@ -30,7 +30,7 @@ class PostController extends Controller
                 ->latest('published_at')->limit(3 - $related->count())->get());
         }
 
-        $comments = $post->comments()->where('status', 'approved')->oldest()->limit(50)->get();
+        $comments = $post->comments()->with('user')->where('status', 'approved')->oldest()->limit(50)->get();
 
         $crumbs = [['হাতপাখা', url('/').'/']];
         if ($post->section) {

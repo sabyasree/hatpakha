@@ -15,10 +15,10 @@
     <x-filament::section icon="heroicon-o-information-circle">
         <x-slot name="heading">{{ __('কীভাবে চলে') }}</x-slot>
         <ul style="margin:0;padding-left:1.2rem;line-height:1.9">
-            <li>{{ $d['auto'] ? __('নতুন লেখা প্রকাশ হলে কয়েক মিনিটের মধ্যে সনদ নিজে থেকে তৈরি হয়; অ্যাকাউন্ট থাকলে লেখক ই-মেল পান।') : __('নিজে থেকে সনদ দেওয়া এখন বন্ধ; প্রতিটি সনদ আপনি দেন।') }}</li>
-            <li>{{ __('পুরনো লেখার জন্য: উপরের "একটি লেখার সনদ দিন", বা লেখার পাতায় "সনদ" মেনু, বা লেখার তালিকায় কয়েকটি বেছে "সনদ দিন"।') }}</li>
-            <li>{{ __('লেখক নিজের অ্যাকাউন্টে পুরনো লেখার পাশে "সনদ চাই" টিপতে পারেন।') }} {{ $d['auto'] ? __('নিজে থেকে দেওয়া চালু থাকায় সঙ্গে সঙ্গে পান।') : __('অনুরোধ নিচে আসে।') }}</li>
-            <li>{{ __('সনদ কোথাও ছবি বা ফাইল হিসেবে রাখা হয় না: যতবার খোলা হয়, নতুন করে আঁকা হয়। লেখক সেখান থেকে ছবি বা PDF নামান, প্রিন্ট করেন। QR কোড স্ক্যান করলে যাচাইয়ের পাতা খোলে।') }}</li>
+            <li>{{ $d['auto'] ? __('নতুন লেখা প্রকাশ হলে কয়েক মিনিটের মধ্যে শংসাপত্র নিজে থেকে তৈরি হয়; অ্যাকাউন্ট থাকলে লেখক ই-মেল পান।') : __('নিজে থেকে শংসাপত্র দেওয়া এখন বন্ধ; প্রতিটি শংসাপত্র আপনি দেন।') }}</li>
+            <li>{{ __('পুরনো লেখার জন্য: উপরের "একটি লেখার শংসাপত্র দিন", বা লেখার পাতায় "শংসাপত্র" মেনু, বা লেখার তালিকায় কয়েকটি বেছে "শংসাপত্র দিন"।') }}</li>
+            <li>{{ __('লেখক নিজের অ্যাকাউন্টে পুরনো লেখার পাশে "শংসাপত্র চাই" টিপতে পারেন।') }} {{ $d['auto'] ? __('নিজে থেকে দেওয়া চালু থাকায় সঙ্গে সঙ্গে পান।') : __('অনুরোধ নিচে আসে।') }}</li>
+            <li>{{ __('শংসাপত্র কোথাও ছবি বা ফাইল হিসেবে রাখা হয় না: যতবার খোলা হয়, নতুন করে আঁকা হয়। লেখক সেখান থেকে ছবি বা PDF নামান, প্রিন্ট করেন। QR কোড স্ক্যান করলে যাচাইয়ের পাতা খোলে।') }}</li>
         </ul>
         <div class="hp-muted" style="margin-top:.6rem">{{ __('সই') }}: <strong>{{ $d['signer']['name'] ?? '—' }}</strong>, {{ $d['signer']['title'] }} · {{ $d['signer']['image'] ? __('সইয়ের ছবি আছে') : __('সইয়ের ছবি নেই') }} · {{ __('বদলাতে উপরের "সই ও নিয়ম"।') }}</div>
     </x-filament::section>
@@ -31,7 +31,7 @@
                     <div style="flex:1;min-width:14rem"><strong>{{ $task->subject?->title ?? $task->title }}</strong>
                         <div class="hp-muted">{{ $task->subject?->authors->pluck('display_name')->implode(', ') }} · {{ $n($task->created_at->locale(app()->getLocale())->diffForHumans()) }}</div></div>
                     @if ($task->subject)<x-filament::button size="sm" color="gray" tag="a" target="_blank" :href="$task->subject->url()">{{ __('লেখাটি') }}</x-filament::button>@endif
-                    <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="approveRequest({{ $task->id }})">{{ __('সনদ দিন') }}</x-filament::button>
+                    <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="approveRequest({{ $task->id }})">{{ __('শংসাপত্র দিন') }}</x-filament::button>
                     <x-filament::button size="sm" color="gray" wire:click="declineRequest({{ $task->id }})">{{ __('এখন নয়') }}</x-filament::button>
                 </div>
             @endforeach
@@ -39,8 +39,8 @@
     @endif
 
     <x-filament::section icon="heroicon-o-swatch">
-        <x-slot name="heading">{{ __('সনদের ধরন') }}</x-slot>
-        <x-slot name="description">{{ __('কোন লেখা কোন নকশা পাবে, তা নিজে থেকে ঠিক হয়। নমুনায় সত্যিকারের সনদ থাকলে সেটাই দেখানো হয়েছে।') }}</x-slot>
+        <x-slot name="heading">{{ __('শংসাপত্রের ধরন') }}</x-slot>
+        <x-slot name="description">{{ __('কোন লেখা কোন নকশা পাবে, তা নিজে থেকে ঠিক হয়। নমুনায় সত্যিকারের শংসাপত্র থাকলে সেটাই দেখানো হয়েছে।') }}</x-slot>
         <div class="hp-gallery">
             @foreach ($d['samples'] as $theme => $sample)
                 <div>
@@ -53,11 +53,11 @@
                 </div>
             @endforeach
         </div>
-        <p class="hp-muted" style="margin-top:.75rem">* {{ __('প্রকাশনা আর সংখ্যার সনদ একই গোনা: লেখা কোনো সংখ্যায় থাকলে সংখ্যার নকশা দেখায়।') }}</p>
+        <p class="hp-muted" style="margin-top:.75rem">* {{ __('প্রকাশনা আর সংখ্যার শংসাপত্র একই গোনা: লেখা কোনো সংখ্যায় থাকলে সংখ্যার নকশা দেখায়।') }}</p>
     </x-filament::section>
 
     <x-filament::section icon="heroicon-o-queue-list" collapsible>
-        <x-slot name="heading">{{ __('দেওয়া সনদ') }}</x-slot>
+        <x-slot name="heading">{{ __('দেওয়া শংসাপত্র') }}</x-slot>
         @forelse ($d['recent'] as $c)
             <div class="hp-row" wire:key="c-{{ $c->id }}" style="{{ $c->revoked_at ? 'opacity:.55' : '' }}">
                 <div style="flex:1;min-width:14rem"><strong>{{ $c->author_name_snapshot }}</strong> · {{ \Illuminate\Support\Str::limit($c->title_snapshot, 60) }}
@@ -66,11 +66,11 @@
                 @if ($c->revoked_at)
                     <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-uturn-left" wire:click="restore({{ $c->id }})">{{ __('ফিরিয়ে আনুন') }}</x-filament::button>
                 @else
-                    <x-filament::button size="xs" color="danger" icon="heroicon-o-no-symbol" wire:click="withdraw({{ $c->id }})" wire:confirm="{{ __('এই সনদটি বাতিল করবেন? যাচাইয়ের পাতায় “বাতিল” দেখাবে।') }}">{{ __('বাতিল') }}</x-filament::button>
+                    <x-filament::button size="xs" color="danger" icon="heroicon-o-no-symbol" wire:click="withdraw({{ $c->id }})" wire:confirm="{{ __('এই শংসাপত্রটি বাতিল করবেন? যাচাইয়ের পাতায় “বাতিল” দেখাবে।') }}">{{ __('বাতিল') }}</x-filament::button>
                 @endif
             </div>
         @empty
-            <div class="hp-muted">{{ __('এখনও কোনো সনদ দেওয়া হয়নি।') }}</div>
+            <div class="hp-muted">{{ __('এখনও কোনো শংসাপত্র দেওয়া হয়নি।') }}</div>
         @endforelse
     </x-filament::section>
 </x-filament-panels::page>

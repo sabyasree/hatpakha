@@ -38,7 +38,7 @@ class CertificateTest extends TestCase
         }
         $this->assertSame([], Certificate::issueFor($post->fresh()), 'Never twice');
 
-        $this->get($c->verifyUrl())->assertOk()->assertSee('প্রকাশনা সনদ')->assertSee('মেঘলা দাস')->assertSee('সন্ধ্যার নদী')
+        $this->get($c->verifyUrl())->assertOk()->assertSee('প্রকাশনা শংসাপত্র')->assertSee('মেঘলা দাস')->assertSee('সন্ধ্যার নদী')
             ->assertSee('ISSN 2321-3035')->assertSee($c->code)->assertSee('ছবি নামান (PNG)')->assertSee('js/hp-cert.js', false);
 
         Livewire::test(EditPost::class, ['record' => $post->getRouteKey()])->callAction('revokeCertificate');
@@ -64,7 +64,7 @@ class CertificateTest extends TestCase
         $this->assertSame(1, Certificate::autoIssue(), 'Only the piece published after the switch');
         $this->assertSame($new->id, Certificate::sole()->post_id);
 
-        $this->actingAs($writer)->get('/account/')->assertOk()->assertSee('সনদ চাই');
+        $this->actingAs($writer)->get('/account/')->assertOk()->assertSee('শংসাপত্র চাই');
         $this->actingAs($writer)->post('/account/certificate/'.$old->id.'/')->assertRedirect();
         $this->assertTrue(Certificate::where('post_id', $old->id)->exists(), 'Automatic on: given at once');
 
@@ -96,10 +96,10 @@ class CertificateTest extends TestCase
         $h = Certificate::create(['author_id' => $author->id, 'kind' => 'honour', 'title_snapshot' => 'মাসের লেখক', 'author_name_snapshot' => 'অতিথি লেখক']);
         $this->assertSame(['issue', 'publication', 'contest', 'honour'], [$a->theme(), $b->theme(), $c->theme(), $h->theme()]);
 
-        $this->get($a->verifyUrl())->assertOk()->assertSee('সংখ্যায় প্রকাশের সনদ')->assertSee('শারদীয়া ১৪৩৩')->assertSee('<svg', false);
-        $this->get($c->verifyUrl())->assertOk()->assertSee('প্রতিযোগিতার সনদ')->assertSee('দ্বিতীয়')->assertSee('বর্ষার গল্প');
-        $this->get($h->verifyUrl())->assertOk()->assertSee('সম্মাননা সনদ')->assertSee('মাসের লেখক');
-        $this->get($b->verifyUrl())->assertOk()->assertSee('প্রকাশনা সনদ')->assertSee('সম্পাদক, হাতপাখা');
+        $this->get($a->verifyUrl())->assertOk()->assertSee('সংখ্যায় প্রকাশের শংসাপত্র')->assertSee('শারদীয়া ১৪৩৩')->assertSee('<svg', false);
+        $this->get($c->verifyUrl())->assertOk()->assertSee('প্রতিযোগিতার শংসাপত্র')->assertSee('দ্বিতীয়')->assertSee('বর্ষার গল্প');
+        $this->get($h->verifyUrl())->assertOk()->assertSee('সম্মাননা শংসাপত্র')->assertSee('মাসের লেখক');
+        $this->get($b->verifyUrl())->assertOk()->assertSee('প্রকাশনা শংসাপত্র')->assertSee('সম্পাদক, হাতপাখা');
 
         // Signature: re-encoded PNG, white made transparent, shown with the signer's name.
         $img = imagecreatetruecolor(300, 100);
@@ -118,11 +118,11 @@ class CertificateTest extends TestCase
 
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         Filament::setCurrentPanel(Filament::getPanel('desk'));
-        Livewire::test(\App\Filament\Pages\Certificates::class)->assertOk()->assertSee('সনদের ধরন')->assertSee('সম্মাননা সনদ')
+        Livewire::test(\App\Filament\Pages\Certificates::class)->assertOk()->assertSee('শংসাপত্রের ধরন')->assertSee('সম্মাননা শংসাপত্র')
             ->call('withdraw', $b->id);
         $this->assertNotNull($b->fresh()->revoked_at);
         Livewire::test(\App\Filament\Pages\Certificates::class)->call('restore', $b->id);
         $this->assertNull($b->fresh()->revoked_at);
-        Livewire::test(EditPost::class, ['record' => $plain->getRouteKey()])->assertSee('সনদের পাতা খুলুন');
+        Livewire::test(EditPost::class, ['record' => $plain->getRouteKey()])->assertSee('শংসাপত্রের পাতা খুলুন');
     }
 }

@@ -80,15 +80,15 @@ class PostForm
                         }),
                 ]),
                 // D73: the certificate, as the writer sees it (published pieces).
-                Section::make(__('সনদ'))->visible(fn (?Post $record) => (bool) $record?->isLive() && $record->authors()->where('is_desk', false)->exists())
+                Section::make(__('শংসাপত্র'))->visible(fn (?Post $record) => (bool) $record?->isLive() && $record->authors()->where('is_desk', false)->exists())
                     ->collapsible()->schema([
                         Placeholder::make('cert_now')->hiddenLabel()->content(function (Post $record) {
                             $c = \App\Models\Certificate::with('post.issue')->where('post_id', $record->id)->where('kind', 'publication')->whereNull('revoked_at')->first();
                             $sample = $c ?? new \App\Models\Certificate(['kind' => 'publication', 'post_id' => $record->id, 'author_name_snapshot' => $record->authors->first()?->publicName(),
                                 'title_snapshot' => $record->title, 'issue_label' => $record->issue?->status === 'published' ? $record->issue->title : null]);
                             $sample->setRelation('post', $record);
-                            $note = $c ? '<div style="font-size:.85rem;margin-top:.5rem"><a href="'.e($c->verifyUrl()).'" target="_blank" style="text-decoration:underline;font-weight:600">'.e(__('সনদের পাতা খুলুন')).'</a> · '.e($c->code).'</div>'
-                                : '<div style="font-size:.85rem;opacity:.75;margin-top:.5rem">'.e(__('এখনও দেওয়া হয়নি; এটি নমুনা। উপরের "সনদ" মেনু থেকে দিন।')).'</div>';
+                            $note = $c ? '<div style="font-size:.85rem;margin-top:.5rem"><a href="'.e($c->verifyUrl()).'" target="_blank" style="text-decoration:underline;font-weight:600">'.e(__('শংসাপত্রের পাতা খুলুন')).'</a> · '.e($c->code).'</div>'
+                                : '<div style="font-size:.85rem;opacity:.75;margin-top:.5rem">'.e(__('এখনও দেওয়া হয়নি; এটি নমুনা। উপরের "শংসাপত্র" মেনু থেকে দিন।')).'</div>';
 
                             return new \Illuminate\Support\HtmlString(view('filament.partials.cert-preview', ['certificate' => $sample])->render().$note);
                         }),

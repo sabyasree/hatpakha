@@ -108,13 +108,13 @@ class PostsTable
                                 : Notification::make()->title(__('আঁকা শুরু হয়েছে; কয়েক মিনিট পরে "ছবি অনুমোদন" দেখুন।'))->success()->send();
                         })->deselectRecordsAfterCompletion(),
                     // D73: certificates for several published pieces at once (old ones too); writers with accounts are told.
-                    BulkAction::make('certificates')->label(__('সনদ দিন'))->icon('heroicon-o-academic-cap')
+                    BulkAction::make('certificates')->label(__('শংসাপত্র দিন'))->icon('heroicon-o-academic-cap')
                         ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin))
-                        ->requiresConfirmation()->modalDescription(__('বেছে নেওয়া প্রকাশিত লেখাগুলোর প্রত্যেক লেখক সনদ পাবেন (আগে দেওয়া থাকলে নতুন হবে না)। অ্যাকাউন্ট থাকলে ই-মেল যাবে।'))
+                        ->requiresConfirmation()->modalDescription(__('বেছে নেওয়া প্রকাশিত লেখাগুলোর প্রত্যেক লেখক শংসাপত্র পাবেন (আগে দেওয়া থাকলে নতুন হবে না)। অ্যাকাউন্ট থাকলে ই-মেল যাবে।'))
                         ->action(function (\Illuminate\Support\Collection $records) {
                             $n = $records->filter(fn ($p) => $p->isLive())->take(50)->sum(fn ($p) => count(\App\Models\Certificate::issueFor($p)));
                             \App\Models\AuditLog::record('certificate.issued_bulk', null, ['count' => $n]);
-                            Notification::make()->title(\App\Support\Bn::num((string) $n).__('টি নতুন সনদ দেওয়া হয়েছে'))->success()->send();
+                            Notification::make()->title(\App\Support\Bn::num((string) $n).__('টি নতুন শংসাপত্র দেওয়া হয়েছে'))->success()->send();
                         })->deselectRecordsAfterCompletion(),
                     BulkAction::make('applyAudit')->label(__('বেছে নেওয়া লেখায় সুপারিশ মানুন'))->icon('heroicon-o-check')->color('warning')
                         ->requiresConfirmation()

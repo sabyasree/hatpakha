@@ -81,7 +81,7 @@
                     <div style="width:136px;height:136px;border:2px dashed {{ $navy }};border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.6">QR</div>
                 @endif
                 <div>
-                    <div style="opacity:.7">সনদ নম্বর</div>
+                    <div style="opacity:.7">শংসাপত্র নম্বর</div>
                     <div style="font-size:30px;font-weight:800;letter-spacing:.12em">{{ $c->code ?: ($preview ? 'নমুনা' : '') }}</div>
                     <div style="opacity:.8">{{ $shortUrl ? 'যাচাই: '.$shortUrl : 'কোড স্ক্যান করে যাচাই করুন' }}</div>
                 </div>

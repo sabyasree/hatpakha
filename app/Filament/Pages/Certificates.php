@@ -52,7 +52,7 @@ class Certificates extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('issue')->label(__('একটি লেখার সনদ দিন'))->icon('heroicon-o-academic-cap')
+            Action::make('issue')->label(__('একটি লেখার শংসাপত্র দিন'))->icon('heroicon-o-academic-cap')
                 ->modalDescription(__('পুরনো বা নতুন যেকোনো প্রকাশিত লেখা। লেখকের অ্যাকাউন্ট থাকলে তিনি ই-মেল পাবেন; না থাকলে নিচে ই-মেল দিলে সেখানে লিংক যাবে।'))
                 ->schema([
                     Select::make('post')->label(__('লেখা'))->required()->searchable()
@@ -60,7 +60,7 @@ class Certificates extends Page
                         ->getOptionLabelUsing(fn ($value) => Post::find($value)?->title),
                     TextInput::make('email')->label(__('ই-মেলেও পাঠান (ঐচ্ছিক)'))->email()->maxLength(190),
                 ])
-                ->modalSubmitActionLabel(__('সনদ দিন'))
+                ->modalSubmitActionLabel(__('শংসাপত্র দিন'))
                 ->action(function (array $data) {
                     $post = Post::published()->findOrFail($data['post']);
                     self::give($post, $data['email'] ?? null);
@@ -78,8 +78,8 @@ class Certificates extends Page
                         ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
                         ->helperText(__('সাদা কাগজে কালো কালিতে সই করে ছবি তুলুন। সাদা অংশ নিজে থেকে স্বচ্ছ হয়ে যাবে।')),
                     Toggle::make('remove_signature')->label(__('এখনকার সইয়ের ছবি সরান'))->visible(fn () => (bool) Setting::get('certificates.signature')),
-                    Toggle::make('auto')->label(__('নতুন প্রকাশিত লেখার সনদ নিজে থেকে দিন'))
-                        ->helperText(__('চালু থাকলে লেখা প্রকাশের কয়েক মিনিটের মধ্যে সনদ তৈরি হয়, অ্যাকাউন্ট থাকলে লেখক ই-মেল পান; লেখক "সনদ চাই" টিপলেও সঙ্গে সঙ্গে পান। বন্ধ থাকলে সব অনুরোধ এখানে আসে।')),
+                    Toggle::make('auto')->label(__('নতুন প্রকাশিত লেখার শংসাপত্র নিজে থেকে দিন'))
+                        ->helperText(__('চালু থাকলে লেখা প্রকাশের কয়েক মিনিটের মধ্যে শংসাপত্র তৈরি হয়, অ্যাকাউন্ট থাকলে লেখক ই-মেল পান; লেখক "শংসাপত্র চাই" টিপলেও সঙ্গে সঙ্গে পান। বন্ধ থাকলে সব অনুরোধ এখানে আসে।')),
                 ])
                 ->modalSubmitActionLabel(__('রাখুন'))
                 ->action(function (array $data) {
@@ -110,13 +110,13 @@ class Certificates extends Page
         $all = Certificate::where('post_id', $post->id)->where('kind', 'publication')->whereNull('revoked_at')->get();
         if (filled($email) && $all->isNotEmpty()) {
             foreach ($all as $c) {
-                \Illuminate\Support\Facades\Notification::route('mail', $email)->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার লেখার সনদ',
-                    'হাতপাখায় প্রকাশিত আপনার লেখা "'.$c->title_snapshot.'"-এর সনদ। নিচের লিংক খুলে ছবি (PNG) বা PDF হিসেবে নামাতে বা প্রিন্ট করতে পারবেন।',
-                    $c->verifyUrl(), 'সনদ দেখুন ও নামান'));
+                \Illuminate\Support\Facades\Notification::route('mail', $email)->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার লেখার শংসাপত্র',
+                    'হাতপাখায় প্রকাশিত আপনার লেখা "'.$c->title_snapshot.'"-এর শংসাপত্র। নিচের লিংক খুলে ছবি (PNG) বা PDF হিসেবে নামাতে বা প্রিন্ট করতে পারবেন।',
+                    $c->verifyUrl(), 'শংসাপত্র দেখুন ও নামান'));
             }
         }
         AuditLog::record('certificate.issued', $post, ['count' => count($new), 'mailed' => filled($email)]);
-        Notification::make()->title($new ? __('সনদ দেওয়া হয়েছে') : __('সনদ আগেই দেওয়া ছিল'))->body(filled($email) ? __('লিংক ই-মেলে পাঠানো হয়েছে।') : null)->success()->send();
+        Notification::make()->title($new ? __('শংসাপত্র দেওয়া হয়েছে') : __('শংসাপত্র আগেই দেওয়া ছিল'))->body(filled($email) ? __('লিংক ই-মেলে পাঠানো হয়েছে।') : null)->success()->send();
     }
 
     public function approveRequest(int $taskId): void
@@ -138,7 +138,7 @@ class Certificates extends Page
     {
         Certificate::findOrFail($id)->forceFill(['revoked_at' => now()])->save();
         AuditLog::record('certificate.revoked', null, ['certificate' => $id]);
-        Notification::make()->title(__('সনদ বাতিল হয়েছে'))->body(__('ভুল হলে "ফিরিয়ে আনুন" টিপুন।'))->send();
+        Notification::make()->title(__('শংসাপত্র বাতিল হয়েছে'))->body(__('ভুল হলে "ফিরিয়ে আনুন" টিপুন।'))->send();
     }
 
     public function restore(int $id): void

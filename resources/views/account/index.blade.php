@@ -131,12 +131,12 @@
                                 @if ($p->status === 'published')<a href="{{ $p->url() }}" class="font-bold text-sky-deep underline">দেখুন</a>
                                     {{-- D73: this piece's certificate, or ask for it --}}
                                     @if ($cert = $certificates->first(fn ($c) => $c->post_id === $p->id && $c->kind === 'publication'))
-                                        <a href="{{ $cert->verifyUrl() }}" class="inline-flex h-9 items-center rounded-full bg-peach-light px-3 text-sm font-bold">🏅 সনদ</a>
+                                        <a href="{{ $cert->verifyUrl() }}" class="inline-flex h-9 items-center rounded-full bg-peach-light px-3 text-sm font-bold">🏅 শংসাপত্র</a>
                                     @elseif (in_array($p->id, $certRequested, true))
-                                        <span class="text-sm text-ink2">সনদ চাওয়া হয়েছে</span>
+                                        <span class="text-sm text-ink2">শংসাপত্র চাওয়া হয়েছে</span>
                                     @else
                                         <form method="POST" action="{{ Url::to('/account/certificate/'.$p->id) }}">@csrf
-                                            <button class="inline-flex h-9 items-center rounded-full border-2 border-navy px-3 text-sm font-bold">সনদ চাই</button></form>
+                                            <button class="inline-flex h-9 items-center rounded-full border-2 border-navy px-3 text-sm font-bold">শংসাপত্র চাই</button></form>
                                     @endif
                                 @endif
                             </div>
