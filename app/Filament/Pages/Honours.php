@@ -63,6 +63,28 @@ class Honours extends Page
             });
     }
 
+    /** D77: the AI editor reads a sample of the shortlisted writers' work; the cost is shown first. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('read')->label(__('এআই দিয়ে লেখা পড়ান'))->icon('heroicon-o-book-open')
+                ->modalHeading(__('শীর্ষ লেখকদের লেখা পড়ানো'))
+                ->modalDescription(function () {
+                    $pool = HonourJobs::toRead(20);
+
+                    return $pool->isEmpty()
+                        ? __('সবার লেখা গত ৯০ দিনের মধ্যে পড়া হয়েছে। আবার পড়াতে চাইলে নিচে "আবার পড়ুক" চালু করুন।')
+                        : __('এআই সম্পাদক :n জন লেখকের ৫টি করে লেখা (৩টি নতুন, ২টি পুরনো) পড়ে লেখার মান দেখবে। আনুমানিক খরচ $:cost। কয়েক মিনিট লাগবে।', ['n' => \App\Support\Bn::num((string) $pool->count()), 'cost' => HonourJobs::estimate($pool)]);
+                })
+                ->schema([Toggle::make('redo')->label(__('আগে পড়া লেখকদেরও আবার পড়ুক'))->helperText(__('খরচ বাড়বে।'))])
+                ->modalSubmitActionLabel(__('পড়া শুরু করুন'))
+                ->action(function (array $data) {
+                    \App\Ai\TeamJobs::queue('editor', 'read_writers', null, (bool) ($data['redo'] ?? false));
+                    Notification::make()->title(__('পড়া শুরু হচ্ছে; কয়েক মিনিট পরে এই পাতা আবার খুলুন।'))->success()->send();
+                }),
+        ];
+    }
+
     public function unhonour(int $id): void
     {
         Author::findOrFail($id)->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null])->save();
@@ -75,6 +97,8 @@ class Honours extends Page
         return [
             'honoured' => Author::whereNotNull('honour_label')->latest('honoured_at')->get(),
             'candidates' => HonourJobs::candidates(12),
+            'readCount' => Author::whereNotNull('quality_at')->count(),
+            'reading' => \App\Models\TeamRequest::where('job', 'read_writers')->whereIn('status', ['queued', 'running'])->exists(),
             'proposal' => \App\Models\EditorTask::open('honour')->latest()->first(),
         ];
     }

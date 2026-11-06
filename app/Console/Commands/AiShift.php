@@ -172,6 +172,7 @@ class AiShift extends Command
         \App\Ai\EditorJobs::report();
         \App\Ai\Marketer::spotlight();
         \App\Ai\Analyst::monthly();
+        \App\Ai\Honours::readSamples(20);   // D77: read writers not read in 90 days, so the writing leads the choice
         \App\Ai\Honours::proposeWriterOfMonth();   // D66: the owner approves before anything shows
         \App\Ai\Strategist::monthly();   // D63: after the analyst, so the memo sees last month's numbers
         \App\Ai\Chief::teamReview();

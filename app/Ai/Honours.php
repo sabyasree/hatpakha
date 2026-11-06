@@ -18,17 +18,18 @@ final class Honours
     public const LABELS = ['month' => 'মাসের লেখক', 'pick' => 'সম্পাদকের পছন্দের লেখক', 'honour' => 'হাতপাখা সম্মান', 'rising' => 'নতুন প্রতিভা'];
 
     /**
-     * D76: writers worth honouring, from the whole archive, by the numbers only (no AI, no cost):
-     * published pieces, readers' likes and comments, reads, and the AI editor's scores where we have them.
-     * The owner decides; this is a shortlist, not a verdict.
+     * Writers worth honouring (D76, D77). The writing matters most (owner): the AI editor reads a sample of each
+     * writer's pieces (readSamples) and that score leads. The numbers only nudge: pieces count with diminishing
+     * returns and recent work counts more; readers' likes, comments and reads add as they build up.
+     * Writers not read yet come after those read. The owner decides; this is a shortlist, not a verdict.
      *
-     * @return \Illuminate\Support\Collection<int, array{author: Author, pieces: int, likes: int, comments: int, reads: int, score: ?float, best: ?Post, points: float}>
+     * @return \Illuminate\Support\Collection<int, array{author: Author, pieces: int, recent: int, likes: int, comments: int, reads: int, score: ?float, quality: ?float, best: ?Post, points: float}>
      */
-    public static function candidates(int $limit = 12): \Illuminate\Support\Collection
+    public static function candidates(int $limit = 12, bool $numbersOnly = false): \Illuminate\Support\Collection
     {
         $rows = DB::table('author_post')->join('posts', 'posts.id', '=', 'author_post.post_id')->join('authors', 'authors.id', '=', 'author_post.author_id')
             ->where('posts.status', 'published')->whereNull('posts.deleted_at')->where('authors.is_desk', false)->where('posts.language', 'bn')
-            ->select('author_post.author_id', 'posts.id as post_id', 'posts.likes_count')->get();
+            ->select('author_post.author_id', 'posts.id as post_id', 'posts.likes_count', 'posts.published_at')->get();
         if ($rows->isEmpty()) {
             return collect();
         }
@@ -38,19 +39,98 @@ final class Honours
         $scores = DB::table('ai_reviews')->where('status', 'done')->whereNull('blind_run')->whereNotNull('score')->whereIn('post_id', $postIds)
             ->groupBy('post_id')->selectRaw('post_id, max(score) s')->pluck('s', 'post_id');
         $honouredRecently = Author::whereNotNull('honoured_at')->where('honoured_at', '>=', now()->subMonths(6))->pluck('id')->all();
+        $authors = Author::whereIn('id', $rows->pluck('author_id')->unique())->get()->keyBy('id');
+        // Recent work counts more: last 2 years in full, 2-5 years half, older a quarter.
+        $weight = fn ($at) => ! $at ? 0.25 : (($age = \Illuminate\Support\Carbon::parse($at)->diffInYears(now())) < 2 ? 1 : ($age < 5 ? 0.5 : 0.25));
 
-        return $rows->groupBy('author_id')->reject(fn ($r, $id) => in_array((int) $id, $honouredRecently, true))->map(function ($r, $id) use ($comments, $reads, $scores) {
+        $list = $rows->groupBy('author_id')->reject(fn ($r, $id) => in_array((int) $id, $honouredRecently, true))->map(function ($r, $id) use ($comments, $reads, $scores, $weight, $authors, $numbersOnly) {
             $ids = $r->pluck('post_id');
             $c = (int) $ids->sum(fn ($p) => $comments[$p] ?? 0);
             $v = (int) $ids->sum(fn ($p) => $reads[$p] ?? 0);
             $l = (int) $r->sum('likes_count');
             $s = $ids->map(fn ($p) => $scores[$p] ?? null)->filter()->avg();
+            $weighted = $r->sum(fn ($x) => $weight($x->published_at));
+            $q = $numbersOnly ? null : $authors[$id]?->quality_score;
+            // Numbers: a gentle nudge (at most about 25 points from the count, however many pieces).
+            $numbers = 6 * sqrt($weighted) + min(20, $l * 2) + min(15, $c) + min(15, $v / 30) + ($s ? ($s - 5) * 3 : 0);
+            // Writing: the AI editor's reading leads (a 9/10 adds 80, a 5/10 nothing, a 3/10 takes off 40).
+            $writing = $q !== null ? ($q - 5) * 20 : 0;
             $bestId = $ids->sortByDesc(fn ($p) => ($scores[$p] ?? 0) * 10 + ($comments[$p] ?? 0) * 2 + ($reads[$p] ?? 0) / 10)->first();
 
-            return ['author_id' => (int) $id, 'pieces' => $ids->count(), 'likes' => $l, 'comments' => $c, 'reads' => $v, 'score' => $s ? round($s, 1) : null, 'best_id' => $bestId,
-                'points' => min($ids->count(), 25) * 2 + $l * 3 + $c * 1.5 + $v / 20 + ($s ? ($s - 5) * 4 : 0)];
-        })->sortByDesc('points')->take($limit)->values()->map(fn ($x) => $x + ['author' => Author::find($x['author_id']), 'best' => Post::find($x['best_id'])])
+            return ['author_id' => (int) $id, 'pieces' => $ids->count(), 'recent' => $r->filter(fn ($x) => $weight($x->published_at) === 1)->count(),
+                'likes' => $l, 'comments' => $c, 'reads' => $v, 'score' => $s ? round($s, 1) : null, 'quality' => $q, 'best_id' => $bestId,
+                'read' => $q !== null, 'points' => $numbers + $writing];
+        });
+
+        // Writers the AI has read come first (best writing first); then the rest by the numbers.
+        return $list->sortBy([['read', 'desc'], ['points', 'desc']])->take($limit)->values()
+            ->map(fn ($x) => $x + ['author' => $authors[$x['author_id']] ?? null, 'best' => Post::find($x['best_id'])])
             ->filter(fn ($x) => $x['author'])->values();
+    }
+
+    /** Who the AI should read next: the broad pool by numbers, not read in the last 90 days (unless redo). */
+    public static function toRead(int $limit = 20, bool $force = false): \Illuminate\Support\Collection
+    {
+        return self::candidates(60, true)->reject(fn ($x) => ! $force && $x['author']->quality_at && $x['author']->quality_at->gt(now()->subDays(90)))
+            ->take($limit)->values();
+    }
+
+    /** A fair sample: the 3 newest pieces and 2 older ones, each up to ~2000 characters. */
+    private static function sample(Author $author): \Illuminate\Support\Collection
+    {
+        $all = Post::published()->where('language', 'bn')->whereHas('authors', fn ($q) => $q->whereKey($author->id))->with('section')->latest('published_at')->get();
+
+        return $all->take(3)->merge($all->slice(3)->shuffle()->take(2))->values();
+    }
+
+    private static function text(Post $p): string
+    {
+        return mb_substr(trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n\n"], (string) $p->body_html)))), 0, 2000);
+    }
+
+    /** Estimated cost in USD of reading these writers (shown to the owner before anything runs). */
+    public static function estimate(\Illuminate\Support\Collection $pool): float
+    {
+        $price = config('ai.prices.'.config('ai.anthropic.review_model')) ?? ['in' => 2, 'out' => 10];
+        $chars = $pool->sum(fn ($x) => self::sample($x['author'])->sum(fn ($p) => mb_strlen(self::text($p)) + mb_strlen($p->title)));
+        $in = $chars / 1.5 + $pool->count() * 3500;   // Bengali ≈ 1.5 characters a token; + the shared brief and instructions
+        $out = $pool->count() * 400;
+
+        return round(($in * $price['in'] + $out * $price['out']) / 1_000_000, 2);
+    }
+
+    /**
+     * D77: the AI editor reads a sample of each writer's work and scores the writing itself (craft, voice, language,
+     * form), with one line on its strengths. Only for the honours shortlist; never shown to readers. Returns how many.
+     */
+    public static function readSamples(int $limit = 20, bool $force = false): int
+    {
+        $n = 0;
+        foreach (self::toRead($limit, $force) as $x) {
+            $author = $x['author'];
+            $pieces = self::sample($author);
+            if ($pieces->isEmpty()) {
+                continue;
+            }
+            $body = $pieces->map(fn ($p) => '<piece title="'.e($p->title).'" form="'.e($p->section?->name_bn ?? '').'" year="'.$p->published_at?->format('Y').'">'."\n".e(self::text($p))."\n</piece>")->implode("\n");
+            [$d] = Claude::json('editor',
+                'You are the editor of Hatpakha (হাতপাখা), a Bengali literary magazine, choosing writers to honour. Read these pieces by one writer (DATA) '
+                .'and judge the WRITING itself: craft, voice, freshness of images and ideas, command of Bengali, and mastery of the form (judge a ছড়া as a ছড়া, '
+                .'an অণুগল্প as an অণুগল্প). Do not reward length or how many pieces they wrote. Old typing errors from the old website matter little. '
+                .'Score 1-10 (5 = competent, 7 = good, 8 = very good, 9-10 = outstanding), and write one honest Bengali sentence on their strengths '
+                .'(and the main weakness if the score is below 7). Never invent facts about the writer.',
+                $body,
+                ['type' => 'object', 'additionalProperties' => false, 'required' => ['score', 'note'], 'properties' => [
+                    'score' => ['type' => 'number'], 'note' => ['type' => 'string']]],
+                null, 800);
+            if (! $d) {
+                continue;
+            }
+            $author->forceFill(['quality_score' => max(1, min(10, round((float) $d['score'], 1))), 'quality_note' => mb_substr(trim(strip_tags((string) $d['note'])), 0, 400), 'quality_at' => now()])->save();
+            $n++;
+        }
+
+        return $n;
     }
 
     /** Words of praise for the owner to edit (D76): from the writer's own titles and numbers only; never invented facts. */
@@ -96,7 +176,7 @@ final class Honours
             foreach (self::candidates(15) as $x) {
                 $byAuthor[$x['author_id']] = ['author' => $x['author']];
                 $list .= 'id '.$x['author_id'].' | '.$x['author']->publicName().' | '.$x['pieces'].' pieces, '.$x['likes'].' likes, '.$x['comments'].' comments, '.$x['reads'].' reads'
-                    .($x['score'] ? ', AI score '.$x['score'] : '').($x['best'] ? ', e.g. "'.$x['best']->title.'"' : '')."\n";
+                    .($x['quality'] !== null ? ', writing quality '.$x['quality'].'/10 ('.$x['author']->quality_note.')' : '').($x['best'] ? ', e.g. "'.$x['best']->title.'"' : '')."\n";
             }
             if ($list === '') {
                 return null;

@@ -30,6 +30,7 @@ final class TeamJobs
             'picks' => ['সম্পাদকের পছন্দ ও "এই দিনে"', null, 'today'],
             'followups' => ['যে লেখকদের মনে করানো দরকার', null, 'today'],
             'honour' => ['মাসের লেখকের প্রস্তাব', null, 'today'],
+            'read_writers' => ['সম্মানের তালিকার লেখকদের লেখা পড়া', null, 'honours'],
         ],
         'proofreader' => [
             'backlog' => ['অপ্রকাশিত ১০টি লেখার প্রুফ', null, 'posts'],
@@ -172,6 +173,7 @@ final class TeamJobs
             'editor.picks' => $done(EditorJobs::picks($redo), 'সম্পাদকের পছন্দ তৈরি; আজকের কাজে দেখুন।'),
             'editor.followups' => [true, 'মনে করানোর প্রস্তাব: '.EditorJobs::followups().'টি; আজকের কাজে দেখুন।'],
             'editor.honour' => $done(Honours::proposeWriterOfMonth($redo), 'মাসের লেখকের প্রস্তাব আজকের কাজে আছে।'),
+            'editor.read_writers' => [true, 'পড়া হয়েছে: '.Honours::readSamples(20, $redo).' জন লেখকের লেখা। সম্মানিত লেখক পাতায় দেখুন।'],
             'proofreader.backlog' => [true, 'প্রুফ হয়েছে: '.self::each(Post::where('status', 'pending')->when(! $redo, fn ($q) => $q->whereNull('proof_at'))->orderBy('backlog_tier')->limit(10)->get(), fn ($p) => Proofreader::run($p)).'টি লেখা।'],
             'proofreader.post' => $err(Proofreader::run($post), 'প্রুফ হয়েছে: "'.$post->title.'"।'),
             'plagiarism.new' => [true, 'যাচাই হয়েছে: '.self::each(Post::where('status', 'pending')->whereNotNull('submitted_by')->when(! $redo, fn ($q) => $q->whereNull('plagiarism_at'))->latest('submitted_at')->limit(3)->get(), fn ($p) => PlagiarismCheck::run($p)).'টি লেখা।'],

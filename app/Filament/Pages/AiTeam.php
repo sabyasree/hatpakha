@@ -155,6 +155,7 @@ class AiTeam extends Page
             'marketing' => [__('মার্কেটিং'), Marketing::getUrl()],
             'letters' => [__('চিঠি'), \App\Filament\Resources\Newsletters\NewsletterResource::getUrl()],
             'contests' => [__('প্রতিযোগিতা'), \App\Filament\Resources\Contests\ContestResource::getUrl()],
+            'honours' => [__('সম্মানিত লেখক'), Honours::getUrl()],
             default => null,
         };
     }

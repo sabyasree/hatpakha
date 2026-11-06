@@ -20,6 +20,7 @@
             <li>{{ __('সাইটে দেখা যাবে: প্রথম পাতায় "সম্মানিত লেখক" (৬০ দিন), লেখকের পাতায় ★ ব্যাজ আর আপনার কথা, প্রতিটি লেখার নিচের লেখক-পরিচিতিতে ★।') }}</li>
             <li>{{ __('লেখক পান একটি সম্মাননা শংসাপত্র আর (চাইলে) অভিনন্দনের ই-মেল; মার্কেটিং পাতায় তাঁকে নিয়ে একটি পোস্ট তৈরি হয়।') }}</li>
             <li>{{ __('প্রতি মাসের ১ তারিখে এআই সম্পাদক একজন "মাসের লেখক" প্রস্তাব করে (আজকের কাজে আসে); এআই দল পাতা থেকে এখনই চাইতেও পারেন।') }}</li>
+            <li>{{ __('তালিকায় লেখার মানই আগে: এআই সম্পাদক প্রত্যেকের কয়েকটি লেখা পড়ে নম্বর দেয়। এই নম্বর শুধু আপনি দেখেন, পাঠকেরা নয়।') }}</li>
         </ol>
     </x-filament::section>
 
@@ -59,7 +60,12 @@
 
     <x-filament::section icon="heroicon-o-trophy">
         <x-slot name="heading">{{ __('যাঁদের সম্মান দেওয়া যায়') }}</x-slot>
-        <x-slot name="description">{{ __('পুরো আর্কাইভ থেকে, শুধু সংখ্যা দিয়ে: প্রকাশিত লেখা, পাঠকের ভালো লাগা ও মতামত, পড়া, আর এআই সম্পাদকের নম্বর। শেষ সিদ্ধান্ত আপনার।') }}</x-slot>
+        <x-slot name="description">{{ __('লেখার মানই আগে: এআই সম্পাদক প্রত্যেকের কয়েকটি লেখা পড়ে নম্বর দেয়, সেটাই ক্রম ঠিক করে। লেখার সংখ্যা সামান্য গুরুত্ব পায় (যত বেশিই হোক), সাম্প্রতিক লেখা বেশি; পাঠকের ভালো লাগা, মতামত আর পড়া যোগ হয়। যাঁদের লেখা এখনও পড়া হয়নি, তাঁরা পরে। শেষ সিদ্ধান্ত আপনার।') }}</x-slot>
+        @if ($d['reading'])
+            <div style="padding:.6rem .8rem;border-radius:.6rem;background:rgba(45,170,226,.12);margin-bottom:.8rem">{{ __('এআই সম্পাদক এখন লেখা পড়ছে; কয়েক মিনিট পরে পাতাটি আবার খুলুন।') }}</div>
+        @elseif ($d['readCount'] === 0)
+            <div style="padding:.6rem .8rem;border-radius:.6rem;background:rgba(239,192,141,.25);margin-bottom:.8rem">{{ __('এখনও কারও লেখা পড়া হয়নি, তাই তালিকাটি শুধু সংখ্যা দিয়ে সাজানো। উপরের "এআই দিয়ে লেখা পড়ান" টিপুন (প্রতি মাসের ১ তারিখেও নিজে থেকে পড়ে)।') }}</div>
+        @endif
         <div class="hp-cards">
             @forelse ($d['candidates'] as $c)
                 @php($a = $c['author'])
@@ -74,8 +80,16 @@
                         @if ($c['likes'])<span>♥ {{ $n($c['likes']) }}</span>@endif
                         @if ($c['comments'])<span>{{ $n($c['comments']) }} {{ __('মতামত') }}</span>@endif
                         @if ($c['reads'])<span>{{ $n($c['reads']) }} {{ __('বার পড়া') }}</span>@endif
-                        @if ($c['score'])<span>{{ __('এআই') }} {{ $n($c['score']) }}/১০</span>@endif
+                        @if ($c['recent'])<span>{{ $n($c['recent']) }} {{ __('টি গত দুই বছরে') }}</span>@endif
                     </div>
+                    @if ($c['quality'] !== null)
+                        <div style="padding:.5rem .6rem;border-radius:.6rem;background:rgba(239,192,141,.22)">
+                            <strong style="color:#7A1022">{{ __('লেখার মান') }}: {{ $n($c['quality']) }}/১০</strong>
+                            <div style="font-size:.85rem;line-height:1.5;margin-top:.15rem">{{ $c['author']->quality_note }}</div>
+                        </div>
+                    @else
+                        <div class="hp-muted">{{ __('লেখা এখনও পড়া হয়নি') }}</div>
+                    @endif
                     <div style="display:flex;gap:.4rem;flex-wrap:wrap">
                         {{ ($this->honourAction)(['author' => $a->id]) }}
                         <x-filament::button size="xs" color="gray" tag="a" target="_blank" :href="$a->url()" icon="heroicon-o-arrow-top-right-on-square">{{ __('লেখা দেখুন') }}</x-filament::button>
