@@ -2,7 +2,10 @@
     @vite('resources/js/submit.js')
     @include('partials.chat')
     <section class="mx-auto max-w-[820px] px-5 pb-28 pt-8 sm:pb-16">
-        <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="inline-flex min-h-11 items-center hover:text-red">← আমার লেখা</a></nav>
+        <div class="flex items-center justify-between gap-2">
+            <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="inline-flex min-h-11 items-center hover:text-red">← আমার লেখা</a></nav>
+            @include('partials.chat-button')
+        </div>
         <div class="mt-2 flex flex-wrap items-end justify-between gap-2">
             <h1 class="font-display text-4xl font-extrabold">{{ $post->exists ? 'লেখাটি সাজান' : 'নতুন লেখা' }}</h1>
             <span id="autosave-status" aria-live="polite" class="text-sm font-semibold text-sky-night"></span>

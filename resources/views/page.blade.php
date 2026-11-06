@@ -13,7 +13,10 @@
         @endif
         @if ($page->slug === 'submissions')
             {{-- After the rules, the next step (mobile UX review) --}}
-            <a href="{{ \App\Support\Url::to('/submit') }}" class="mt-10 flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[4px_4px_0_#13212C] sm:w-fit sm:px-10">লেখা পাঠান</a>
+            <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[4px_4px_0_#13212C] sm:w-fit sm:px-10">লেখা পাঠান</a>
+                @include('partials.chat-button', ['class' => 'justify-center sm:justify-start'])
+            </div>
         @endif
     </article>
     @if ($page->slug === 'submissions')

@@ -13,8 +13,16 @@
         log.scrollTop = log.scrollHeight;
         return p;
     };
-    document.getElementById('hp-chat-open').addEventListener('click', () => { box.hidden = !box.hidden; if (!box.hidden) input.focus(); });
-    document.getElementById('hp-chat-close').addEventListener('click', () => { box.hidden = true; });
+    // Opened from in-page "প্রশ্ন আছে?" buttons (never a floating one, so nothing on the page is ever covered).
+    let opener = null;
+    const show = (open) => {
+        box.hidden = !open;
+        document.querySelectorAll('[data-chat-open]').forEach((b) => b.setAttribute('aria-expanded', open ? 'true' : 'false'));
+        if (open) input.focus(); else if (opener) opener.focus();
+    };
+    document.querySelectorAll('[data-chat-open]').forEach((b) => b.addEventListener('click', () => { opener = b; show(box.hidden); }));
+    document.getElementById('hp-chat-close').addEventListener('click', () => show(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !box.hidden) show(false); });
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const q = input.value.trim();

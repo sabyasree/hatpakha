@@ -1,6 +1,7 @@
 {{-- Relationship manager chat (D52): the submission pages and the account pages (D86). Plain text in and out (textContent). --}}
 @if (config('ai.enabled') && ! \App\Ai\Team::paused('relations'))
-<div id="hp-chat" data-url="{{ route('chat') }}" data-token="{{ csrf_token() }}" class="fixed bottom-20 right-4 z-40 flex flex-col items-end gap-2 md:bottom-4">
+{{-- Only the window lives here; it opens from a "প্রশ্ন আছে?" button placed in the page (partials.chat-button), so nothing floats over the page while it is closed. --}}
+<div id="hp-chat" data-url="{{ route('chat') }}" data-token="{{ csrf_token() }}" class="fixed bottom-20 right-4 z-[55] md:bottom-4">
     <div id="hp-chat-box" hidden class="flex h-[min(26rem,calc(100dvh-10rem))] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-rule bg-paper shadow-xl">
         <div class="flex items-center justify-between bg-navy px-4 py-3 text-white">
             <strong class="font-display">হাতপাখা সহায়ক</strong>
@@ -16,7 +17,6 @@
         </form>
         <p class="px-3 pb-2 text-xs text-ink2">এআই সহায়ক; ভুল হতে পারে। কোনো কিছু বদলাতে বা প্রকাশ করতে পারে না।</p>
     </div>
-    <button type="button" id="hp-chat-open" class="rounded-full bg-red px-5 py-3 font-semibold text-white shadow-lg">প্রশ্ন আছে?</button>
 </div>
-<script src="{{ asset('js/hp-chat.js') }}?v=2" defer></script>
+<script src="{{ asset('js/hp-chat.js') }}?v=3" defer></script>
 @endif

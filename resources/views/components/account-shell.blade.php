@@ -25,6 +25,7 @@
                 @if ($author && $author->published_count > 0)<a href="{{ $author->url() }}" class="font-bold text-sky-deep underline">আমার লেখক-পাতা</a>@endif
             </div>
         </div>
+        @include('partials.chat-button')
     </div>
     @if ($tab === 'home')
         <a href="{{ \App\Support\Url::to('/submit') }}" class="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-red font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-8">+ নতুন লেখা পাঠান</a>
@@ -58,7 +59,7 @@
     </div>
 </nav>
 
-<div class="mx-auto max-w-[1000px] px-5 pb-36 pt-6 md:pb-20">
+<div class="mx-auto max-w-[1000px] px-5 pb-20 pt-6">
     {{ $slot }}
 </div>
 @include('partials.chat')

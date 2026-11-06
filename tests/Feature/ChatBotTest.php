@@ -84,7 +84,8 @@ class ChatBotTest extends TestCase
         $post->authors()->attach($author->id, ['position' => 0]);
         $this->actingAs($me);
         foreach (['/account/', '/account/writings/', '/account/profile/', '/account/reading/', '/account/settings/'] as $u) {
-            $this->get($u)->assertOk()->assertSee('hp-chat', false);
+            // Owner: the help button must never cover anything: it sits in the page, nothing floats while closed.
+            $this->get($u)->assertOk()->assertSee('hp-chat', false)->assertSee('data-chat-open', false)->assertDontSee('hp-chat-open', false);
         }
         $this->postJson('/chat', ['question' => 'শংসাপত্র কোথায় পাব?'])->assertOk();
         $this->assertStringContainsString('<account_guide>', $this->seen);
