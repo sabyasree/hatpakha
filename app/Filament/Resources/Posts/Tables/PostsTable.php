@@ -95,6 +95,18 @@ class PostsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    // D60: draw covers for several pieces at once (proposals; approve on ছবি অনুমোদন).
+                    BulkAction::make('drawCovers')->label(__('এআই দিয়ে ছবি আঁকান'))->icon('heroicon-o-paint-brush')
+                        ->requiresConfirmation()->modalDescription(__('একবারে ১০টি পর্যন্ত। ছবিগুলো তৈরি হলে "ছবি অনুমোদন" পাতায় দেখে বসাবেন।'))
+                        ->action(function (\Illuminate\Support\Collection $records) {
+                            $why = null;
+                            foreach ($records->take(10) as $r) {
+                                $why ??= \App\Ai\Illustrator::queue($r);
+                            }
+                            $why
+                                ? Notification::make()->title(__('এখন আঁকা যাবে না: ').$why)->warning()->send()
+                                : Notification::make()->title(__('আঁকা শুরু হয়েছে; কয়েক মিনিট পরে "ছবি অনুমোদন" দেখুন।'))->success()->send();
+                        })->deselectRecordsAfterCompletion(),
                     BulkAction::make('applyAudit')->label(__('বেছে নেওয়া লেখায় সুপারিশ মানুন'))->icon('heroicon-o-check')->color('warning')
                         ->requiresConfirmation()
                         ->modalDescription(__('প্রতিটি লেখায় তার নিজের অডিট সুপারিশ কার্যকর হবে (গুগল থেকে লুকানো, বা আর্কাইভ করে ৪১০/৩০১)। সব বদল লগে থাকে এবং ফেরানো যায়।'))

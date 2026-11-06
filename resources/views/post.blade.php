@@ -91,10 +91,7 @@
                     <span>প্রথম পাতার "পাঠকের চিঠি"-তে আমার মন্তব্য দেখাবেন না</span>
                 </label>
                 @guest
-                    @if (\App\Support\Turnstile::enabled())
-                        <div class="cf-turnstile mt-4" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="bn"></div>
-                        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
-                    @endif
+                    <x-turnstile action="comment" class="mt-4" />
                 @endguest
                 <button class="mt-4 h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
                 <p class="mt-3 text-sm text-ink2">ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়। বিজ্ঞাপন বা কটু কথা প্রকাশ হয় না।</p>

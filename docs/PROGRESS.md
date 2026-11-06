@@ -106,6 +106,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - **Editor-in-chief** (D49, D56): hourly checks + deadline watch (empty publishing days, next issue not approved by the 25th, ended contests), weekly quality review, monthly team review and cost forecast
 - **Newsletters** (D58): public sign-up with double opt-in; /desk → চিঠি to readers, writers or both (AI drafts weekly + monthly, owner tests and sends, batched); needs real SMTP in the server .env to actually send
 - **Accounts** (D59): verify-before-anything, no account probing, Turnstile on auth forms, breached-password check, optional 2FA (TOTP + recovery codes) with a nudge; redesigned /account/ (tabs) and author pages with the writer's own photo, cover, bio and links; all verified accounts get the newsletter unless they switch it off
+- **Turnstile** finished (D60): action + hostname checks, fail-closed; **draw/redraw a cover** from any post or in bulk (D60)
 - ⬜ Later: automatic Facebook posting (owner turns on), anthology e-book file, Search Console data for the SEO expert, privacy-policy wording for the read counter (owner)
 
 ## Deploys

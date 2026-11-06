@@ -34,3 +34,29 @@ document.querySelectorAll('[data-preview-input]').forEach((input) => {
         reader.readAsDataURL(file);
     });
 });
+
+// Turnstile on the footer form (D60): loaded only when the visitor starts typing there, so ordinary
+// page views never load Cloudflare's script. Explicit render keeps the widget's action.
+document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
+    const form = box.closest('form');
+    if (!form) return;
+    let started = false;
+    const render = () => window.turnstile.render(box, {
+        sitekey: box.dataset.sitekey, action: box.dataset.action, size: box.dataset.size, theme: box.dataset.theme, language: 'bn',
+    });
+    form.addEventListener('focusin', () => {
+        if (started) return;
+        started = true;
+        if (window.turnstile) { render(); return; }
+        if (document.querySelector('script[src*="turnstile/v0/api.js"]')) {
+            // The page already loads it (e.g. the comment form): wait for it instead of loading twice.
+            const wait = setInterval(() => { if (window.turnstile) { clearInterval(wait); render(); } }, 200);
+            return;
+        }
+        window.hpTurnstileReady = render;
+        const s = document.createElement('script');
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=hpTurnstileReady';
+        s.async = true;
+        document.head.appendChild(s);
+    });
+});

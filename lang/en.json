@@ -757,5 +757,22 @@
     "এআই (লেখকদের চিঠি)": "AI (writers' letter)",
     "এআই (আপনার বিষয়)": "AI (your topic)",
     "চিঠির খসড়া তৈরি: ": "Newsletter draft ready: ",
-    "পাঠক = যাঁরা চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন, আর ই-মেল যাচাই করা সব অ্যাকাউন্ট (যাঁরা বন্ধ করেননি)। লেখক = যাচাই করা লেখক-অ্যাকাউন্ট। একজন দু'বার পাবেন না।": "Readers = people who signed up and confirmed, plus every account with a verified email (unless they switched it off). Writers = verified writer accounts. Nobody gets it twice."
+    "পাঠক = যাঁরা চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন, আর ই-মেল যাচাই করা সব অ্যাকাউন্ট (যাঁরা বন্ধ করেননি)। লেখক = যাচাই করা লেখক-অ্যাকাউন্ট। একজন দু'বার পাবেন না।": "Readers = people who signed up and confirmed, plus every account with a verified email (unless they switched it off). Writers = verified writer accounts. Nobody gets it twice.",
+    "নতুন ছবি আঁকান": "Draw a new picture",
+    "এআই দিয়ে ছবি আঁকান": "Draw a picture with AI",
+    "গ্রাফিক ডিজাইনারকে দিয়ে প্রচ্ছদ আঁকান": "Have the graphic designer draw a cover",
+    "লেখা পড়ে একটি ছবি আঁকা হবে (এক-দুই মিনিট লাগে)। তৈরি হলে এখানেই দেখে বসাবেন; আগের ছবি তার আগে বদলাবে না।": "A picture will be drawn from the piece (takes a minute or two). Review it here and put it on; the current picture stays until then.",
+    "ছবির ভাবনা (ঐচ্ছিক)": "Picture idea (optional)",
+    "যেমন: বর্ষার সন্ধ্যায় নদীর ঘাট, একটা খালি নৌকা": "e.g. a river ghat on a monsoon evening, an empty boat",
+    "আঁকুন": "Draw",
+    "এখন আঁকা যাবে না: ": "Cannot draw now: ",
+    "আঁকার তালিকায় রাখা হলো। দুই-তিন মিনিট পরে পাতাটি আবার খুলুন।": "Added to the drawing list. Reopen this page in two or three minutes.",
+    "আঁকা ছবি দেখুন": "See the drawn picture",
+    "বসালে এখনকার প্রচ্ছদের জায়গায় এটি বসবে।": "It will replace the current cover.",
+    "এটা বসান": "Use this",
+    "ছবি বসানো হয়েছে": "Picture put on",
+    "ছবি আঁকা হচ্ছে…": "Drawing a picture…",
+    "প্রচ্ছদ": "Cover",
+    "একবারে ১০টি পর্যন্ত। ছবিগুলো তৈরি হলে \"ছবি অনুমোদন\" পাতায় দেখে বসাবেন।": "Up to 10 at a time. When ready, review them on \"Picture approval\".",
+    "আঁকা শুরু হয়েছে; কয়েক মিনিট পরে \"ছবি অনুমোদন\" দেখুন।": "Drawing started; check \"Picture approval\" in a few minutes."
 }

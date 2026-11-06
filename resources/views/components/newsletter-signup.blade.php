@@ -16,6 +16,7 @@
             <button class="h-12 flex-none rounded-full bg-red px-5 font-bold text-white">চাই</button>
         </div>
         <div class="hidden" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+        <x-turnstile action="newsletter" class="mt-2" theme="dark" :lazy="true" />
         @if ($mine && session('newsletter'))<p role="status" class="mt-2 text-sm text-peach-light">{{ session('newsletter') }}</p>@endif
         @if ($mine)@error('email')<p class="mt-2 text-sm text-peach-light">{{ $message }}</p>@enderror @endif
         <p class="mt-2 text-xs text-peach-light">যখন খুশি বন্ধ করা যায়। <a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="underline">গোপনীয়তা</a></p>
@@ -39,10 +40,7 @@
                     class="h-12 rounded-xl border-2 border-navy bg-white px-4">
                 <button class="h-12 rounded-full bg-red px-6 font-bold text-white">চিঠি চাই</button>
                 <div class="hidden" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
-                @if (\App\Support\Turnstile::enabled())
-                    <div class="cf-turnstile sm:col-span-3" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="bn"></div>
-                    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
-                @endif
+                <x-turnstile action="newsletter" class="sm:col-span-3" />
             </form>
             @if ($mine)@error('email')<p class="mt-2 font-semibold text-red">{{ $message }}</p>@enderror @endif
             <p class="mt-3 text-sm text-ink2">একটি নিশ্চিত করার লিংক যাবে; সেটায় চাপলেই চালু। আপনার ই-মেল কাউকে দেওয়া হয় না (<a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="underline">গোপনীয়তা নীতি</a>)।</p>

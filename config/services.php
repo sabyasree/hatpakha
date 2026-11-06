@@ -7,6 +7,8 @@ return [
     'turnstile' => [
         'site_key' => env('TURNSTILE_SITE_KEY'),
         'secret' => env('TURNSTILE_SECRET'),
+        // Our own hostnames; a token from anywhere else is refused (D60). Default: the APP_URL host.
+        'hostnames' => env('TURNSTILE_HOSTNAMES', parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: ''),
     ],
 
     'adsense' => [

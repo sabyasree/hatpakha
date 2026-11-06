@@ -25,4 +25,6 @@ Schedule::call($shift('chief'))->name('ai-shift chief')->hourlyAt(45)->withoutOv
 Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timezone('Asia/Kolkata');
 // Newsletters (D58): after the owner's click, a small batch every minute until all are sent.
 Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newsletter batch')->everyMinute()->withoutOverlapping(10);
+// Covers the owner asked for from /desk (D60): two a minute, inside this process.
+Schedule::call(fn () => \App\Ai\Illustrator::drawRequested())->name('draw covers')->everyMinute()->withoutOverlapping(10);
 

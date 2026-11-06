@@ -36,7 +36,7 @@ class NewsletterController extends Controller
         if (filled($request->input('website'))) {
             return $done;
         }
-        if (! Turnstile::passes($request->input('cf-turnstile-response'), $request->ip())) {
+        if (! Turnstile::passes($request->input('cf-turnstile-response'), $request->ip(), 'newsletter')) {
             return back()->withErrors(['email' => 'যাচাই হয়নি, আবার চেষ্টা করুন।'])->with('newsletter_from', $from)->withFragment('newsletter-'.$from);
         }
         $email = mb_strtolower(trim($data['email']));

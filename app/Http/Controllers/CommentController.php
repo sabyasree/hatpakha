@@ -38,7 +38,7 @@ class CommentController extends Controller
             'body.required' => 'মন্তব্য লিখুন।',
             'body.max' => 'মন্তব্য একটু ছোট করুন (৩০০০ অক্ষরের মধ্যে)।',
         ]);
-        if (! $user && ! Turnstile::passes($request->input('cf-turnstile-response'), $request->ip())) {
+        if (! $user && ! Turnstile::passes($request->input('cf-turnstile-response'), $request->ip(), 'comment')) {
             throw ValidationException::withMessages(['body' => 'আপনি মানুষ কি না যাচাই হয়নি। আবার চেষ্টা করুন।'])->redirectTo($back);
         }
 

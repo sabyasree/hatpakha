@@ -44,7 +44,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate(['email' => ['required', 'email', 'max:190'], 'password' => ['required', 'string', 'max:200']]);
-        self::checkHuman($request, 'email');
+        self::checkHuman($request, 'email', 'login');
 
         $credentials = ['email' => strtolower($data['email']), 'password' => $data['password']];
         if (! Auth::validate($credentials)) {
@@ -121,9 +121,9 @@ class AuthController extends Controller
     }
 
     /** Turnstile on the public auth forms (D59), when it is switched on. */
-    public static function checkHuman(Request $request, string $field): void
+    public static function checkHuman(Request $request, string $field, string $action): void
     {
-        if (! \App\Support\Turnstile::passes($request->input('cf-turnstile-response'), $request->ip())) {
+        if (! \App\Support\Turnstile::passes($request->input('cf-turnstile-response'), $request->ip(), $action)) {
             throw ValidationException::withMessages([$field => 'আপনি মানুষ কি না যাচাই হয়নি। আবার চেষ্টা করুন।']);
         }
     }
@@ -159,7 +159,7 @@ class AuthController extends Controller
             'password.confirmed' => 'দুটি পাসওয়ার্ড মেলেনি।',
             'password.uncompromised' => 'এই পাসওয়ার্ডটি অন্য কোনো সাইটের ফাঁস হওয়া তালিকায় আছে। অন্য একটি পাসওয়ার্ড দিন।',
         ]);
-        self::checkHuman($request, 'email');
+        self::checkHuman($request, 'email', 'register');
         $email = strtolower($data['email']);
         $realMail = \App\Http\Controllers\AccountController::verificationRequired();
         $check = redirect(Url::to('/register/check-email'))->with('register_email', $email);
@@ -207,7 +207,7 @@ class AuthController extends Controller
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => ['required', 'email', 'max:190']]);
-        self::checkHuman($request, 'email');
+        self::checkHuman($request, 'email', 'forgot');
         Password::sendResetLink(['email' => strtolower((string) $request->input('email'))]);
 
         // Same answer whether or not the account exists (no account enumeration).

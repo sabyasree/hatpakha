@@ -78,6 +78,44 @@ class EditPost extends EditRecord
                     $this->redirect(PostResource::getUrl('edit', ['record' => $record]));
                 }),
             // Editors can drop an unsuitable cover (the piece stays; the writer can upload another).
+            // D60: draw (or redraw) the cover with the AI designer; the owner then puts it on, or drops it.
+            ActionGroup::make([
+                Action::make('drawCover')->icon('heroicon-o-paint-brush')
+                    ->label(fn (Post $record) => $record->featured_image_path || $record->proposed_image_path ? __('নতুন ছবি আঁকান') : __('এআই দিয়ে ছবি আঁকান'))
+                    ->modalHeading(__('গ্রাফিক ডিজাইনারকে দিয়ে প্রচ্ছদ আঁকান'))
+                    ->modalDescription(__('লেখা পড়ে একটি ছবি আঁকা হবে (এক-দুই মিনিট লাগে)। তৈরি হলে এখানেই দেখে বসাবেন; আগের ছবি তার আগে বদলাবে না।'))
+                    ->schema([\Filament\Forms\Components\Textarea::make('hint')->label(__('ছবির ভাবনা (ঐচ্ছিক)'))->rows(2)->maxLength(400)
+                        ->placeholder(__('যেমন: বর্ষার সন্ধ্যায় নদীর ঘাট, একটা খালি নৌকা'))])
+                    ->modalSubmitActionLabel(__('আঁকুন'))
+                    ->action(function (Post $record, array $data) {
+                        $why = \App\Ai\Illustrator::queue($record, $data['hint'] ?? null);
+                        $why
+                            ? \Filament\Notifications\Notification::make()->title(__('এখন আঁকা যাবে না: ').$why)->warning()->send()
+                            : \Filament\Notifications\Notification::make()->title(__('আঁকার তালিকায় রাখা হলো। দুই-তিন মিনিট পরে পাতাটি আবার খুলুন।'))->success()->send();
+                    }),
+                Action::make('reviewDrawn')->label(__('আঁকা ছবি দেখুন'))->icon('heroicon-o-eye')->color('success')
+                    ->visible(fn (Post $record) => (bool) $record->proposed_image_path)
+                    ->modalHeading(__('এআই-এর আঁকা ছবি'))
+                    ->modalContent(fn (Post $record) => new \Illuminate\Support\HtmlString('<img src="'.e(asset(ltrim((string) $record->proposed_image_path, '/'))).'" alt="" style="width:100%;border-radius:.75rem">'
+                        .($record->featured_image_path ? '<p style="margin-top:.5rem;opacity:.75">'.e(__('বসালে এখনকার প্রচ্ছদের জায়গায় এটি বসবে।')).'</p>' : '')))
+                    ->modalSubmitActionLabel(__('এটা বসান'))
+                    ->extraModalFooterActions(fn (Action $action) => [
+                        $action->makeModalSubmitAction('drop', ['drop' => true])->label(__('বাদ দিন'))->color('gray'),
+                    ])
+                    ->action(function (Post $record, array $arguments) {
+                        if ($arguments['drop'] ?? false) {
+                            \App\Support\CoverImage::discardProposed($record);
+                            \Filament\Notifications\Notification::make()->title(__('বাদ দেওয়া হয়েছে'))->send();
+
+                            return;
+                        }
+                        \App\Support\CoverImage::acceptProposed($record);
+                        \App\Models\AuditLog::record('post.ai_images_approved', $record, ['count' => 1]);
+                        $this->refreshFormData(['featured_image_path']);
+                        \Filament\Notifications\Notification::make()->title(__('ছবি বসানো হয়েছে'))->success()->send();
+                    }),
+            ])->label(fn () => \App\Ai\Illustrator::drawing($this->record) ? __('ছবি আঁকা হচ্ছে…') : __('প্রচ্ছদ'))
+                ->icon('heroicon-o-photo')->button()->color(fn () => $this->record->proposed_image_path ? 'success' : 'gray'),
             Action::make('removeCover')->label(__('প্রচ্ছদ সরান'))->icon('heroicon-o-photo')->color('gray')
                 ->visible(fn (Post $record) => \App\Support\CoverImage::isOurs($record->featured_image_path))
                 ->requiresConfirmation()->modalDescription(__('লেখকের দেওয়া প্রচ্ছদের ছবিটি মুছে যাবে। লেখাটি থাকবে।'))
