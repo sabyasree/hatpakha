@@ -20,17 +20,17 @@
     {{-- Weekly newsletter (D48, D57): drafted every Saturday (or now, from the button above); sent from আজকের কাজ. --}}
     <x-filament::section icon="heroicon-o-envelope" collapsible>
         <x-slot name="heading">{{ __('সাপ্তাহিক চিঠি (নিউজলেটার)') }}</x-slot>
-        <p class="hp-muted" style="margin:0 0 .5rem">{{ __('যাঁরা নিজে সম্মতি দিয়েছেন, শুধু তাঁরাই পান') }}: <strong>{{ \App\Support\Bn::num((string) $d['readers']) }}</strong> {{ __('জন') }}.
-            {{ __('প্রতি শনিবার সন্ধ্যায় খসড়া তৈরি হয়; এখনই চাইলে উপরের "নতুন পোস্ট তৈরি করুন" → "সাপ্তাহিক চিঠি"।') }}</p>
+        <p class="hp-muted" style="margin:0 0 .5rem">{{ __('যাঁরা নিজে সম্মতি দিয়েছেন, শুধু তাঁরাই পান') }}: <strong>{{ \App\Support\Bn::num((string) $d['readers']) }}</strong> {{ __('জন') }}।
+            {{ __('প্রতি শনিবার পাঠকদের আর প্রতি মাসের ২১ তারিখে লেখকদের চিঠির খসড়া তৈরি হয়। সব চিঠি:') }} <a href="{{ \App\Filament\Resources\Newsletters\NewsletterResource::getUrl() }}" style="text-decoration:underline">{{ __('চিঠি') }}</a></p>
         @if ($nl = $d['newsletter'])
             <div class="hp-mk-text" style="max-height:none">
-                <strong>{{ $nl->payload['subject'] ?? $nl->title }}</strong>
+                <strong>{{ $nl->subject }}</strong>
 
-{{ $nl->payload['intro'] ?? '' }}
-@foreach ((array) ($nl->payload['items'] ?? []) as $it)
+{{ $nl->intro }}
+@foreach ((array) $nl->items as $it)
 • {{ $it['title'] }} — {{ $it['author'] }}: {{ $it['line'] }}
 @endforeach</div>
-            <x-filament::button tag="a" :href="\App\Filament\Pages\Dashboard::getUrl()" size="sm" icon="heroicon-o-paper-airplane" style="margin-top:.6rem">{{ __('আজকের কাজ-এ দেখে পাঠান') }}</x-filament::button>
+            <x-filament::button tag="a" :href="\App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $nl])" size="sm" icon="heroicon-o-paper-airplane" style="margin-top:.6rem">{{ __('খুলুন, দেখে পাঠান') }}</x-filament::button>
         @else
             <div class="hp-muted">{{ __('এখন কোনো খসড়া নেই।') }}</div>
         @endif

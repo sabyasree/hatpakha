@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Filament\Resources\Newsletters;
+
+use App\Filament\Resources\Newsletters\Pages\CreateNewsletter;
+use App\Filament\Resources\Newsletters\Pages\EditNewsletter;
+use App\Filament\Resources\Newsletters\Pages\ListNewsletters;
+use App\Models\Newsletter;
+use App\Models\Post;
+use App\Support\NewsletterSender;
+use BackedEnum;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+/** Letters to readers and writers (D58). The AI team drafts; the owner tests and sends. */
+class NewsletterResource extends Resource
+{
+    use \App\Filament\Concerns\TranslatedResourceLabels;
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
+    protected static ?string $model = Newsletter::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
+
+    protected static ?string $modelLabel = 'চিঠি';
+
+    protected static ?string $pluralModelLabel = 'চিঠি';
+
+    protected static ?int $navigationSort = 4;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return ($n = Newsletter::where('status', 'draft')->count()) ? (string) $n : null;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Radio::make('audience')->label(__('কাকে পাঠাবেন'))->required()->default('readers')->inline()
+                ->options(fn () => collect(Newsletter::AUDIENCES)->mapWithKeys(fn ($l, $k) => [$k => __($l).' ('.\App\Support\Bn::num((string) NewsletterSender::count($k)).')'])->all())
+                ->helperText(__('পাঠক = যাঁরা নিজে চিঠি চেয়ে ই-মেল নিশ্চিত করেছেন। লেখক = যাঁদের অ্যাকাউন্ট যাচাই করা ও যাঁরা বন্ধ করেননি। একজন দু\'বার পাবেন না।'))
+                ->columnSpanFull(),
+            TextInput::make('subject')->label(__('বিষয় (ই-মেলের শিরোনাম)'))->required()->maxLength(120)->columnSpanFull(),
+            Textarea::make('intro')->label(__('শুরুর কথা'))->rows(5)->maxLength(3000)->columnSpanFull()
+                ->helperText(__('অনুচ্ছেদের মাঝে একটি ফাঁকা লাইন দিন।')),
+            Repeater::make('items')->label(__('লেখা (ঐচ্ছিক)'))->columnSpanFull()->reorderable()->collapsible()->defaultItems(0)->maxItems(12)
+                ->addActionLabel(__('লেখা যোগ করুন'))
+                ->itemLabel(fn (array $state) => $state['title'] ?? null)
+                ->schema([
+                    Select::make('id')->label(__('লেখা'))->required()->searchable()
+                        ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.$search.'%')->latest('published_at')->limit(30)->pluck('title', 'id'))
+                        ->getOptionLabelUsing(fn ($value) => Post::find($value)?->title),
+                    TextInput::make('line')->label(__('এক লাইনে কেন পড়বেন'))->maxLength(240),
+                ])->columns(2),
+            Textarea::make('closing')->label(__('শেষের কথা (ঐচ্ছিক)'))->rows(3)->maxLength(2000)->columnSpanFull(),
+        ])->disabled(fn (?Newsletter $record) => $record && ! $record->editable());
+    }
+
+    /** Title, writer and link are filled in from the piece itself (never typed by hand). */
+    public static function resolveItems(array $items): array
+    {
+        return collect($items)->map(function ($it) {
+            $p = Post::published()->with('authors')->find($it['id'] ?? 0);
+
+            return $p ? ['id' => $p->id, 'title' => $p->title, 'author' => $p->authors->first()?->publicName() ?? '', 'url' => $p->url(), 'line' => strip_tags((string) ($it['line'] ?? ''))] : null;
+        })->filter()->values()->all();
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table->defaultSort('id', 'desc')
+            ->columns([
+                TextColumn::make('subject')->label(__('বিষয়'))->weight('bold')->wrap()->searchable()
+                    ->description(fn (Newsletter $record) => __(Newsletter::SOURCES[$record->source] ?? $record->source)),
+                TextColumn::make('audience')->label(__('কাকে'))->badge()->formatStateUsing(fn ($state) => __(Newsletter::AUDIENCES[$state] ?? $state)),
+                TextColumn::make('status')->label(__('অবস্থা'))->badge()->formatStateUsing(fn ($state) => __(Newsletter::STATUS[$state] ?? $state))
+                    ->color(fn ($state) => ['draft' => 'warning', 'sent' => 'success', 'cancelled' => 'gray'][$state] ?? 'info'),
+                TextColumn::make('sent')->label(__('পাঠানো'))->formatStateUsing(fn ($state, Newsletter $record) => $record->recipients ? \App\Support\Bn::num($state.' / '.$record->recipients) : '—'),
+                TextColumn::make('updated_at')->label(__('শেষ বদল'))->since(),
+            ])
+            ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন'))]);
+    }
+
+    public static function getPages(): array
+    {
+        return ['index' => ListNewsletters::route('/'), 'create' => CreateNewsletter::route('/create'), 'edit' => EditNewsletter::route('/{record}/edit')];
+    }
+}

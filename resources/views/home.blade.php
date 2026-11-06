@@ -84,6 +84,8 @@
     </section>
     @endif
 
+    <div class="mx-auto max-w-[1320px] px-5 pb-6"><x-newsletter-signup variant="home" /></div>
+
     {{-- Travel stamps --}}
     @if ($travel->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 pb-12">

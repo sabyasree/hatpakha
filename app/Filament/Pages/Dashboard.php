@@ -268,45 +268,6 @@ class Dashboard extends BaseDashboard
             });
     }
 
-    /** Newsletter: preview, edit the opening, send to confirmed readers only. */
-    public function sendNewsletterAction(): \Filament\Actions\Action
-    {
-        $recipients = fn () => \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced']);
-
-        return \Filament\Actions\Action::make('sendNewsletter')->label(__('দেখুন ও পাঠান'))->icon('heroicon-o-envelope')->size('sm')
-            ->modalHeading(fn (array $arguments) => $this->task($arguments)->payload['subject'] ?? '')
-            ->fillForm(fn (array $arguments) => ['subject' => $this->task($arguments)->payload['subject'] ?? '', 'intro' => $this->task($arguments)->payload['intro'] ?? ''])
-            ->schema(fn (array $arguments) => [
-                \Filament\Forms\Components\TextInput::make('subject')->label(__('বিষয়'))->required()->maxLength(90),
-                \Filament\Forms\Components\Textarea::make('intro')->label(__('শুরুর কথা'))->required()->rows(4)->maxLength(800),
-                \Filament\Forms\Components\Placeholder::make('items')->label(__('এই সপ্তাহের লেখা'))->content(new \Illuminate\Support\HtmlString(collect($this->task($arguments)->payload['items'] ?? [])
-                    ->map(fn ($it) => '<p style="margin:.3rem 0"><strong>'.e($it['title']).'</strong> — '.e($it['author']).'<br>'.e($it['line']).'</p>')->implode(''))),
-                \Filament\Forms\Components\Placeholder::make('who')->label(__('কারা পাবেন'))->content(fn () => \App\Support\Bn::num($recipients()->count()).' '.__('জন (যাঁরা নিজে সম্মতি দিয়েছেন)')
-                    .(in_array(config('mail.default'), ['log', 'array'], true) ? ' · '.__('এই সার্ভারে আসল ই-মেল চালু নেই, তাই পাঠানো যাবে না') : '')),
-            ])
-            ->modalSubmitActionLabel(__('এখন পাঠান'))
-            ->action(function (array $data, array $arguments) use ($recipients) {
-                abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
-                if (in_array(config('mail.default'), ['log', 'array'], true)) {
-                    Notification::make()->title(__('আসল ই-মেল চালু হলে পাঠানো যাবে'))->warning()->send();
-
-                    return;
-                }
-                $task = $this->task($arguments);
-                $issue = ['subject' => $data['subject'], 'intro' => $data['intro'], 'items' => $task->payload['items'] ?? []];
-                $n = 0;
-                foreach ($recipients()->get() as $sub) {
-                    \Illuminate\Support\Facades\Notification::route('mail', $sub->email)->notify(new \App\Notifications\NewsletterIssue($issue,
-                        \Illuminate\Support\Facades\URL::signedRoute('newsletter.unsubscribe', ['subscriber' => $sub->id])));
-                    $sub->forceFill(['last_sent_at' => now()])->save();
-                    $n++;
-                }
-                $task->forceFill(['payload' => $issue + ['sent_to' => $n]])->save();
-                $task->close();
-                Notification::make()->title(\App\Support\Bn::num($n).' '.__('জনকে পাঠানো হয়েছে'))->success()->send();
-            });
-    }
-
     /** Monthly report / site health: read, then mark as seen. */
     public function readTaskAction(): \Filament\Actions\Action
     {

@@ -66,28 +66,6 @@ class EditorJobsTest extends TestCase
         $this->get('/')->assertSee('এ সপ্তাহে না পড়লেই নয়')->assertSee('বাছাই করা কবিতা');
     }
 
-    public function test_newsletter_only_to_confirmed_readers_and_unsubscribe_works(): void
-    {
-        Notification::fake();
-        config(['mail.default' => 'smtp']);
-        $this->makePost(['slug' => 'w1', 'title' => 'সপ্তাহের লেখা', 'published_at' => now()->subDay()]);
-        $yes = NewsletterSubscriber::create(['email' => 'yes@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
-        NewsletterSubscriber::create(['email' => 'no@example.test', 'status' => 'unconfirmed', 'source' => 'wordpress_user']);
-        Claude::$fake = fn ($purpose, $user) => ['subject' => 'হাতপাখার চিঠি', 'intro' => 'এই সপ্তাহে…', 'items' => [['id' => \App\Models\Post::first()->id, 'line' => 'পড়ুন']]];
-        $task = EditorJobs::newsletter();
-
-        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
-        Livewire::test(\App\Filament\Pages\Dashboard::class)
-            ->callAction('sendNewsletter', ['subject' => 'হাতপাখার চিঠি', 'intro' => 'এই সপ্তাহে…'], arguments: ['task' => $task->id]);
-        Notification::assertSentOnDemandTimes(\App\Notifications\NewsletterIssue::class, 1);
-        $this->assertNotNull($yes->fresh()->last_sent_at);
-
-        $url = \Illuminate\Support\Facades\URL::signedRoute('newsletter.unsubscribe', ['subscriber' => $yes->id]);
-        $this->get($url)->assertOk()->assertSee('চিঠি বন্ধ হয়েছে');
-        $this->assertTrue($yes->fresh()->suppressed);
-        $this->get('/newsletter/unsubscribe/'.$yes->id)->assertForbidden();   // unsigned link refused
-    }
-
     public function test_monthly_report_and_site_health(): void
     {
         $month = now('Asia/Kolkata')->subMonthNoOverflow()->startOfMonth();

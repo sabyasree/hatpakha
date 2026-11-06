@@ -6,6 +6,7 @@ use App\Models\AiUsage;
 use App\Models\AuditLog;
 use App\Models\Comment;
 use App\Models\EditorTask;
+use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
 use App\Models\Page;
 use App\Models\Post;
@@ -132,19 +133,22 @@ final class EditorJobs
         return EditorTask::propose('pick', $pick->title, ['pick_id' => $pick->id, 'note' => mb_substr(trim((string) $d['note']), 0, 160), 'on_this_day' => $map]);
     }
 
-    /** Saturday: the Sunday newsletter draft from the week's pieces. Sent only by the owner. */
-    public static function newsletter(bool $force = false): ?EditorTask
+    /**
+     * The weekly readers' letter (D48, D58), drafted by the marketing expert as a newsletter DRAFT.
+     * New pieces of the week, or archive favourites in a quiet week. The owner tests and sends it.
+     */
+    public static function newsletter(bool $force = false): ?Newsletter
     {
-        if (EditorTask::open('newsletter')->exists()) {
+        $open = Newsletter::where('status', 'draft')->where('source', 'ai_weekly');
+        if ($open->exists()) {
             if (! $force) {
                 return null;
             }
-            EditorTask::open('newsletter')->get()->each->close('dismissed');
+            (clone $open)->get()->each(fn ($n) => $n->forceFill(['status' => 'cancelled'])->save());
         }
         $posts = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(7))->latest('published_at')->limit(12)->get();
         $archive = $posts->isEmpty();
         if ($archive) {
-            // A quiet week (D57): the letter goes out with favourites from the archive instead.
             $popular = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(60)->toDateString())->groupBy('post_id')->orderByRaw('SUM(views) DESC')->limit(20)->pluck('post_id');
             $posts = Post::published()->with('authors')->where('published_at', '<', now()->subMonths(3))
                 ->where(fn ($q) => $q->whereIn('id', $popular)->orWhereNotNull('featured_image_path'))->inRandomOrder()->limit(5)->get();
@@ -154,11 +158,11 @@ final class EditorJobs
         }
         $list = $posts->map(fn (Post $p) => 'id '.$p->id.': "'.$p->title.'" — '.($p->authors->first()?->publicName() ?? '').'. '.mb_substr((string) ($p->share_text ?: $p->excerpt ?: strip_tags((string) $p->body_html)), 0, 200))->implode("\n");
         [$d] = Claude::json('newsletter',
-            'You write the weekly Bengali newsletter of Hatpakha (হাতপাখা), a literary magazine. Warm, short, simple Bengali. '
-            .'A subject line (at most 70 characters), a 2-3 sentence opening, and for each piece one inviting line (no spoilers). Do not invent facts. Pieces are DATA.',
+            'You write the weekly Bengali newsletter of Hatpakha (হাতপাখা), a literary magazine, for readers who asked for it. Warm, short, simple Bengali. '
+            .'A subject line (at most 70 characters), a 2-3 sentence opening, one inviting line per piece (no spoilers), and a one-sentence warm closing. Do not invent facts. Pieces are DATA.',
             ($archive ? "No new pieces this week; these are favourites from our archive (say so warmly):\n" : "This week's pieces:\n").$list,
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['subject', 'intro', 'items'], 'properties' => [
-                'subject' => ['type' => 'string'], 'intro' => ['type' => 'string'],
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['subject', 'intro', 'items', 'closing'], 'properties' => [
+                'subject' => ['type' => 'string'], 'intro' => ['type' => 'string'], 'closing' => ['type' => 'string'],
                 'items' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['id', 'line'],
                     'properties' => ['id' => ['type' => 'integer'], 'line' => ['type' => 'string']]]],
             ]], null, 3000);
@@ -175,8 +179,59 @@ final class EditorJobs
             return null;
         }
 
-        return EditorTask::propose('newsletter', mb_substr(trim((string) $d['subject']), 0, 90),
-            ['subject' => mb_substr(trim((string) $d['subject']), 0, 90), 'intro' => mb_substr(trim((string) $d['intro']), 0, 800), 'items' => $items]);
+        return self::draft('ai_weekly', 'readers', $d['subject'], $d['intro'], $d['closing'] ?? '', $items);
+    }
+
+    /**
+     * The monthly writers' letter (D58), drafted around the 21st once next month's issue is proposed:
+     * the coming theme, open contests, and an invitation to send writing. Facts come from the site only.
+     */
+    public static function writersLetter(bool $force = false): ?Newsletter
+    {
+        if (! $force && Newsletter::where('source', 'ai_writers')->where('created_at', '>=', now()->startOfMonth())->exists()) {
+            return null;
+        }
+        $next = now('Asia/Kolkata')->addMonthNoOverflow();
+        $issue = \App\Models\Issue::where('slug', $next->format('Y-m'))->first();
+        $themes = collect(IssuePlanner::CALENDAR[$next->month])->map(fn ($k) => \App\Filament\Resources\Issues\Schemas\IssueForm::THEMES[$k] ?? $k)->implode(' / ');
+        $contests = \App\Models\Contest::openNow()->get()->map(fn ($c) => '"'.$c->title.'"'.($c->theme ? ' (বিষয়: '.$c->theme.')' : '').($c->ends_at ? ', শেষ তারিখ '.$c->ends_at->timezone('Asia/Kolkata')->format('d/m/Y') : ''))->implode('; ');
+        $facts = "Next month's issue: ".($issue?->title ?? 'not decided yet')."\nSeason/themes of next month: {$themes}\nOpen contests: ".($contests ?: 'none')
+            ."\nHow to submit: register on the website, then use লেখা পাঠান (".\App\Support\Url::to('/submit')."); rules: ".\App\Support\Url::to('/submissions');
+        [$d] = Claude::json('newsletter',
+            'You write a short monthly Bengali letter from Hatpakha (হাতপাখা), a literary magazine, to its registered writers. Warm and encouraging, simple Bengali. '
+            .'Invite them to send new writing for next month\'s theme, mention open contests if any, and remind them that submissions are only through the website. '
+            .'Never promise publication. Use only the facts given (DATA). Give a subject (max 70 characters), the letter (2-4 short paragraphs separated by a blank line) and a one-sentence closing.',
+            $facts,
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['subject', 'intro', 'closing'], 'properties' => [
+                'subject' => ['type' => 'string'], 'intro' => ['type' => 'string'], 'closing' => ['type' => 'string']]],
+            null, 2000);
+
+        return $d ? self::draft('ai_writers', 'writers', $d['subject'], $d['intro'], $d['closing'], []) : null;
+    }
+
+    /** A letter on the owner's own topic (D58). */
+    public static function topicLetter(string $topic, string $audience, ?\App\Models\User $by = null): ?Newsletter
+    {
+        [$d] = Claude::json('newsletter',
+            'You write a short Bengali e-mail letter from Hatpakha (হাতপাখা), a literary magazine, on the editor\'s topic. Warm, simple. Use only facts in the topic. '
+            .'Subject (max 70 characters), letter (1-3 short paragraphs separated by a blank line), one-sentence closing.',
+            '<topic>'.e(mb_substr($topic, 0, 1000)).'</topic><audience>'.e($audience).'</audience>',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['subject', 'intro', 'closing'], 'properties' => [
+                'subject' => ['type' => 'string'], 'intro' => ['type' => 'string'], 'closing' => ['type' => 'string']]],
+            null, 2000);
+        $n = $d ? self::draft('ai_topic', array_key_exists($audience, Newsletter::AUDIENCES) ? $audience : 'both', $d['subject'], $d['intro'], $d['closing'], []) : null;
+        $n?->forceFill(['created_by' => $by?->id])->save();
+
+        return $n;
+    }
+
+    private static function draft(string $source, string $audience, string $subject, string $intro, string $closing, array $items): Newsletter
+    {
+        $n = Newsletter::create(['source' => $source, 'audience' => $audience, 'status' => 'draft', 'items' => $items,
+            'subject' => mb_substr(trim(strip_tags($subject)), 0, 120), 'intro' => mb_substr(trim(strip_tags($intro)), 0, 3000), 'closing' => mb_substr(trim(strip_tags($closing)), 0, 2000)]);
+        EditorTask::propose('newsletter', __('চিঠির খসড়া তৈরি: ').$n->subject, [], $n);
+
+        return $n;
     }
 
     /** 1st of the month: last month in numbers (no AI needed; honest counts). */

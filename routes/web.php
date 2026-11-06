@@ -97,6 +97,10 @@ Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $reques
 })->middleware('auth')->name('desk.language');
 
 // Newsletter: one-click unsubscribe from the signed link in every issue (D48). Never emailed again.
+// Newsletter sign-up with double opt-in (D58).
+Route::post('/newsletter/subscribe', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->middleware('throttle:6,1')->name('newsletter.subscribe');
+Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
+Route::get('/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
 Route::get('/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {
     $subscriber->forceFill(['status' => 'unsubscribed', 'suppressed' => true])->save();
     \App\Models\AuditLog::record('newsletter.unsubscribed', $subscriber);

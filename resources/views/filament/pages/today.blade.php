@@ -130,7 +130,7 @@
                             <div style="display:flex;flex-wrap:wrap;gap:.4rem">
                                 @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'newsletter') {{ ($this->sendNewsletterAction)(['task' => $task->id]) }} @endif
+                                @if ($task->type === 'newsletter' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-envelope" :href="\App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $task->subject])">{{ __('দেখুন ও পাঠান') }}</x-filament::button> @endif
                                 @if ($task->type === 'certificates') {{ ($this->issueCertificatesAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'tags') {{ ($this->mergeTagsAction)(['task' => $task->id]) }} @endif

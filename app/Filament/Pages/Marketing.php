@@ -104,7 +104,7 @@ class Marketing extends Page
     {
         $items = SocialPost::with('subject')->where('status', $this->filter === 'done' ? '!=' : '=', 'ready')->latest()->limit(40)->get();
 
-        $newsletter = \App\Models\EditorTask::open('newsletter')->latest()->first();
+        $newsletter = \App\Models\Newsletter::where('status', 'draft')->latest()->first();
         $readers = \App\Models\NewsletterSubscriber::whereNotNull('consented_at')->where('suppressed', false)->whereNotIn('status', ['unsubscribed', 'bounced'])->count();
 
         return ['newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s)])];

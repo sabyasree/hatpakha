@@ -23,3 +23,6 @@ Schedule::call($shift('newsletter'))->name('ai-shift newsletter')->weeklyOn(6, '
 Schedule::call($shift('monthly'))->name('ai-shift monthly')->monthlyOn(1, '08:15')->timezone('Asia/Kolkata');                     // 1st: report, insights, collection, team review
 Schedule::call($shift('chief'))->name('ai-shift chief')->hourlyAt(45)->withoutOverlapping(30);                                  // editor-in-chief checks (no AI)
 Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timezone('Asia/Kolkata');
+// Newsletters (D58): after the owner's click, a small batch every minute until all are sent.
+Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newsletter batch')->everyMinute()->withoutOverlapping(10);
+

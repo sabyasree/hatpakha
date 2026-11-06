@@ -115,4 +115,8 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+
+    // Newsletters (D58): letters sent per minute by the scheduler. Shared hosting allows only so many per hour.
+    'batch' => (int) env('MAIL_BATCH', 30),
+
 ];

@@ -51,6 +51,8 @@
             </div>
         @endforeach
 
+        <x-newsletter-signup variant="card" />
+
         <section id="comments" class="mt-10 scroll-mt-24" aria-label="পাঠকের মতামত">
             <h2 class="font-display text-3xl font-extrabold">পাঠকের মতামত</h2>
             @foreach ($comments as $c)
