@@ -1119,5 +1119,16 @@
     "লাইনটি লেখায় হুবহু পাওয়া যায়নি, তাই দেখানো হবে না।": "That line is not in the piece word for word, so it will not be shown.",
     "লেখকদের প্রথম লেখা, ১০/২৫/৫০/১০০তম লেখা, হাতপাখায় ৫/১০/১৫ বছর: সত্যিকারের তথ্য থেকে রোজ খোঁজা হয়। অনুমোদন দিলে প্রথম পাতার \"অভিনন্দন\" সারিতে ৪৫ দিন দেখা যাবে।": "Writers' first piece, 10th/25th/50th/100th piece, 5/10/15 years with Hatpakha: found daily from real data. Once approved, they show in the home page \"Congratulations\" row for 45 days.",
     "লেখা থেকে একটি লাইন (হুবহু)": "One line from the piece (word for word)",
-    "লেখায় হুবহু না থাকলে দেখানো হবে না।": "Shown only if it is in the piece word for word."
+    "লেখায় হুবহু না থাকলে দেখানো হবে না।": "Shown only if it is in the piece word for word.",
+    "পরীক্ষার লেখক অ্যাকাউন্ট": "Test writer account",
+    "পরীক্ষার লেখক অ্যাকাউন্ট তৈরি করুন": "Create a test writer account",
+    "একজন সাধারণ লেখকের মতো অ্যাকাউন্ট: অ্যাডমিন বা সম্পাদকের কোনো ক্ষমতা নেই। ই-মেল যাচাই হয়েছে বলে ধরা হবে, চিঠি যাবে না। অন্য ব্রাউজারে বা ছদ্মবেশী (Incognito) জানালায় এই ই-মেল আর পাসওয়ার্ড দিয়ে লগ-ইন করুন, তাহলে আপনার অ্যাডমিন লগ-ইন বন্ধ করতে হবে না।": "An ordinary writer account: no admin or editor powers. The e-mail is treated as checked and no letters are sent. Log in with this e-mail and password in another browser or a private (Incognito) window, so you stay logged in as admin here.",
+    "ই-মেল": "E-mail",
+    "যেকোনো ঠিকানা, যেমন test+writer@আপনার-ডোমেন; এখানে কোনো চিঠি যায় না।": "Any address, e.g. test+writer@your-domain; nothing is mailed to it.",
+    "পাসওয়ার্ড": "Password",
+    "অন্তত ১০ অক্ষর, অক্ষর আর সংখ্যা দুই-ই।": "At least 10 characters, with letters and numbers.",
+    "পরীক্ষার অ্যাকাউন্ট তৈরি হয়েছে": "Test account created",
+    "ছদ্মবেশী জানালায় :url খুলে এই ই-মেল আর পাসওয়ার্ড দিয়ে লগ-ইন করুন।": "Open :url in a private window and log in with this e-mail and password.",
+    "ই-মেল যাচাই হয়েছে ধরুন": "Mark e-mail as checked",
+    "যাচাই হয়েছে বলে ধরা হলো": "Marked as checked"
 }

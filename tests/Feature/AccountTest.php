@@ -115,4 +115,21 @@ class AccountTest extends TestCase
         $this->get('/account/settings/')->assertOk()->assertSee('নিরাপত্তা')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
         $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect(url('/account/settings').'/#letters');
     }
+
+    /** Owner: a test writer account from /desk, to see the site as a writer does. */
+    public function test_admin_creates_a_ready_test_writer_account(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->callAction('testAccount', ['name' => 'পরীক্ষার লেখক', 'email' => 'test-writer@example.test', 'password' => 'lekhok2026abc'])->assertHasNoActionErrors();
+        $u = User::where('email', 'test-writer@example.test')->sole();
+        $this->assertTrue($u->hasVerifiedEmail());
+        $this->assertSame(\App\Enums\Role::Writer, $u->role);
+        $this->assertTrue((bool) $u->mail_opt_out, 'No newsletter to a test account');
+        auth()->logout();
+        $this->post('/login/', ['email' => 'test-writer@example.test', 'password' => 'lekhok2026abc'])->assertRedirect();
+        $this->get('/account/')->assertOk()->assertSee('পরীক্ষার লেখক');
+        $this->get('/desk')->assertForbidden();
+    }
 }
