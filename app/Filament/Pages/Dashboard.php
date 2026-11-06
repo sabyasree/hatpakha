@@ -154,6 +154,27 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** A writer's chat question the helper could not answer (D52): the owner replies by e-mail. */
+    public function replyQuestionAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('replyQuestion')->label(__('উত্তর দিন'))->icon('heroicon-o-chat-bubble-left-right')->size('sm')
+            ->modalHeading(fn (array $arguments) => __('লেখকের প্রশ্ন'))
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\Placeholder::make('q')->label(fn () => ($this->task($arguments)->payload['name'] ?? '').' · '.($this->task($arguments)->payload['email'] ?? ''))
+                    ->content($this->task($arguments)->payload['question'] ?? ''),
+                \Filament\Forms\Components\Textarea::make('message')->label(__('উত্তর'))->required()->rows(5)->maxLength(2000),
+            ])
+            ->modalSubmitActionLabel(__('পাঠান'))
+            ->action(function (array $data, array $arguments) {
+                $task = $this->task($arguments);
+                $writer = $task->subject;
+                abort_unless($writer instanceof \App\Models\User, 404);
+                $writer->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার প্রশ্নের উত্তর', $data['message'], \App\Support\Url::to('/account')));
+                $task->close();
+                Notification::make()->title(__('পাঠানো হয়েছে'))->success()->send();
+            });
+    }
+
     /** Weekly picks: edit the note, then they go on the home page. */
     public function approvePickAction(): \Filament\Actions\Action
     {

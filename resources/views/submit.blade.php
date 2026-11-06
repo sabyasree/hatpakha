@@ -1,5 +1,6 @@
 <x-layouts.app :seo="$seo">
     @vite('resources/js/submit.js')
+    @include('partials.chat')
     <section class="mx-auto max-w-[820px] px-5 pb-16 pt-8">
         <nav aria-label="অবস্থান" class="text-sm text-ink2"><a href="{{ \App\Support\Url::to('/account') }}" class="hover:text-red">আমার লেখা</a> ›</nav>
         <h1 class="mt-2 font-display text-4xl font-extrabold">{{ $post->exists ? $post->title : 'লেখা পাঠান' }}</h1>

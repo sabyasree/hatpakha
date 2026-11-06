@@ -23,6 +23,12 @@
             <p style="margin:0;font-weight:700">{{ __('মানদণ্ডে যা যোগ করা যায়') }}</p>
             <ol style="margin:0;padding-inline-start:1.4rem;list-style:decimal">@foreach ($p['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol>
         @endif
+    @elseif ($task->type === 'plagiarism')
+        <p style="margin:0">{{ $task->subject?->title }}</p>
+        <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">
+            @foreach ((array) ($p['matches'] ?? []) as $m)<li><a href="{{ $m['url'] }}" target="_blank" rel="noopener noreferrer nofollow" style="text-decoration:underline">{{ $m['url'] }}</a> <span style="opacity:.75">{{ $m['line'] }}</span></li>@endforeach
+        </ul>
+        @if ($task->subject)<p style="margin:.6rem 0 0"><a href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject]) }}" style="text-decoration:underline">{{ __('লেখাটি খুলুন') }}</a></p>@endif
     @elseif ($task->type === 'alert')
         <p style="margin:0">{{ $task->title }}</p>
         @if (! empty($p['errors']))<ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($p['errors'] as $e)<li style="opacity:.8">{{ $e }}</li>@endforeach</ul>@endif

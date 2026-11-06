@@ -8,4 +8,7 @@
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer); Embeds only adds validated YouTube players. --}}
         <div class="prose-bn mt-6">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($page->body_html ?? '')) !!}</div>
     </article>
+    @if ($page->slug === 'submissions')
+        @include('partials.chat')
+    @endif
 </x-layouts.app>

@@ -73,6 +73,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerifyEmailController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 });
 
+// The submission-page helper chat (D52): guests get public answers, writers their own pieces' status.
+Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'ask'])->middleware('throttle:30,1')->name('chat');
+
 // Submissions (Phase 3b): the only way to submit (D29). Writers only see/edit their own pieces.
 Route::middleware('auth')->group(function () {
     Route::get('/submit', [\App\Http\Controllers\SubmissionController::class, 'create'])->name('submit');
