@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Support\HtmlSanitizer;
 
 /**
  * Phase 3b: the ONLY way to submit writing (owner decision D29). One screen, plain text (pasting
@@ -47,6 +48,7 @@ class SubmissionController extends Controller
             'seo' => new Seo(title: 'লেখা পাঠান', noindex: true),
             'post' => $post,
             'text' => $post->exists ? self::toText((string) $post->body_html) : '',
+            'html' => $post->exists ? self::fromEditor((string) $post->body_html) : '',
             'sections' => self::sections(),
             'editable' => in_array($post->status, ['draft', 'changes'], true),
             'needsVerification' => AccountController::verificationRequired() && ! $request->user()->hasVerifiedEmail(),
@@ -91,7 +93,7 @@ class SubmissionController extends Controller
     {
         $data = $request->validate(['title' => ['nullable', 'string', 'max:200'], 'body' => ['nullable', 'string', 'max:200000'], 'section_id' => ['nullable', 'integer']]);
         $post = new Post(['title' => $data['title'] ?? '', 'format' => $this->formatFor($data['section_id'] ?? null)]);
-        $post->body_html = \App\Support\BodyFormatter::format(\App\Support\HtmlSanitizer::clean(self::toHtml($data['body'] ?? '')), $post->format, null);
+        $post->body_html = \App\Support\BodyFormatter::format(\App\Support\HtmlSanitizer::clean(self::bodyHtml($request, $data['body'] ?? '')), $post->format, null);
 
         return response()->json(['poem' => $post->format === 'poem', 'html' => Embeds::render($post->body_html)]);
     }
@@ -127,6 +129,9 @@ class SubmissionController extends Controller
             }
         }
 
+        if (mb_strlen(trim(html_entity_decode(strip_tags(self::bodyHtml($request, $data['body']))))) < 30) {
+            throw ValidationException::withMessages(['body' => 'লেখাটি খুব ছোট।']);
+        }
         $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
         if ($request->hasFile('cover')) {
             \App\Support\CoverImage::attach($post, $request->file('cover'));
@@ -160,10 +165,10 @@ class SubmissionController extends Controller
             'display_name' => $user->name,
             'slug' => $this->authorSlug($user->name, $user->id),
         ]);
-        $sample = $title.' '.mb_substr($body, 0, 2000);
+        $sample = $title.' '.mb_substr(strip_tags($body), 0, 2000);
         $post->forceFill([
             'title' => trim(strip_tags($title)) ?: 'শিরোনামহীন',
-            'body_html' => self::toHtml($body),
+            'body_html' => self::bodyHtml($request, $body),
             'section_id' => $sectionId,
             'format' => $this->formatFor($sectionId),
             'language' => preg_match('/[\x{0985}-\x{09B9}]/u', $sample) ? 'bn' : (preg_match('/[\x{0905}-\x{0939}]/u', $sample) ? 'hi' : 'en'),
@@ -196,6 +201,27 @@ class SubmissionController extends Controller
     }
 
     /** Plain text from the form → HTML paragraphs (blank line = stanza/paragraph, newline = line break). */
+    /** The editor sends HTML (body_format=html); without JavaScript the box is plain text. */
+    public static function bodyHtml(Request $request, string $body): string
+    {
+        return $request->input('body_format') === 'html' ? self::fromEditor($body) : self::toHtml($body);
+    }
+
+    /** Formatting a writer may use (D40). Everything else is unwrapped to its text; no attributes survive. */
+    public const WRITER_TAGS = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h3', 'blockquote', 'ul', 'ol', 'li', 'hr'];
+
+    public static function fromEditor(string $html): string
+    {
+        $html = HtmlSanitizer::clean($html);
+        $html = preg_replace('~<h[24]\b~i', '<h3', $html);
+        $html = preg_replace('~</h[24]>~i', '</h3>', $html);
+        $html = strip_tags($html, self::WRITER_TAGS);
+        $html = preg_replace('~<('.implode('|', self::WRITER_TAGS).')\b[^>]*>~i', '<$1>', $html);   // drop every attribute
+        $html = preg_replace('~<p>(\s|&nbsp;|<br>)*</p>~i', '', $html);                                 // empty paragraphs
+
+        return trim($html);
+    }
+
     public static function toHtml(string $text): string
     {
         $text = e(str_replace(["\r\n", "\r"], "\n", trim($text)));

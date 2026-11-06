@@ -23,6 +23,7 @@
                 <p class="font-bold">লেখাটি জমা পড়েছে; এখন আর বদলানো যায় না।</p>
                 <p class="mt-1 text-ink2">অবস্থা: {{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</p>
             </div>
+            @if ($post->featured_image_path)<img src="{{ asset($post->featured_image_path) }}" alt="" class="mt-6 w-full rounded-2xl">@endif
             <div class="{{ $post->format === 'poem' ? 'poem-bn text-center' : 'prose-bn' }} mt-6">{!! $post->body_html !!}</div>
         @else
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
@@ -35,24 +36,48 @@
                     <select name="section_id" required class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg">
                         <option value="">বেছে নিন…</option>
                         @foreach ($sections as $s)
-                            <option value="{{ $s->id }}" @selected((int) old('section_id', $post->section_id) === $s->id)>{{ $s->name_bn }}</option>
+                            <option value="{{ $s->id }}" data-format="{{ $s->format }}" @selected((int) old('section_id', $post->section_id) === $s->id)>{{ $s->name_bn }}</option>
                         @endforeach
                     </select>
                 </label>
                 <x-field name="title" label="শিরোনাম" :value="$post->exists ? $post->title : ''" maxlength="200" required />
-                <label class="mb-2 block">
-                    <span class="mb-1 flex items-baseline justify-between font-bold"><span>লেখা</span><span id="word-count" class="text-sm font-normal text-ink2"></span></span>
+                {{-- Editor (D40): a small toolbar over the text. Without JavaScript the plain box below still works. --}}
+                <input type="hidden" name="body_format" value="text" data-body-format>
+                <script type="application/json" id="body-initial">@json(old('body_format') === 'html' ? (string) old('body') : $html)</script>
+                <div class="mb-2">
+                    <span class="mb-1 flex items-baseline justify-between font-bold"><span id="body-label">লেখা</span><span id="word-count" class="text-sm font-normal text-ink2"></span></span>
+                    <div data-editor-shell hidden class="rounded-xl border-2 border-navy bg-white focus-within:border-sky-deep">
+                        <div role="toolbar" aria-label="লেখার সাজ" data-toolbar class="sticky top-0 z-10 flex flex-wrap gap-1 rounded-t-xl border-b-2 border-rule bg-paper p-2">
+                            <button type="button" data-cmd="bold" title="গাঢ় (Ctrl+B)" aria-label="গাঢ়" class="ed-btn font-extrabold">ক</button>
+                            <button type="button" data-cmd="italic" title="বাঁকা (Ctrl+I)" aria-label="বাঁকা" class="ed-btn italic">ক</button>
+                            <button type="button" data-cmd="underline" title="নিচে দাগ (Ctrl+U)" aria-label="নিচে দাগ" class="ed-btn underline">ক</button>
+                            <span class="mx-1 w-px self-stretch bg-rule" aria-hidden="true"></span>
+                            <button type="button" data-cmd="heading" title="উপশিরোনাম" aria-label="উপশিরোনাম" class="ed-btn px-3 text-sm font-bold">উপশিরোনাম</button>
+                            <button type="button" data-cmd="blockquote" title="উদ্ধৃতি" aria-label="উদ্ধৃতি" class="ed-btn text-2xl leading-none">“</button>
+                            <button type="button" data-cmd="bulletList" title="তালিকা" aria-label="তালিকা" class="ed-btn">•</button>
+                            <button type="button" data-cmd="orderedList" title="ক্রমিক তালিকা" aria-label="ক্রমিক তালিকা" class="ed-btn">১.</button>
+                            <button type="button" data-cmd="horizontalRule" title="ভাগ (অংশের মাঝে দাগ)" aria-label="ভাগ" class="ed-btn">—</button>
+                            <span class="mx-1 w-px self-stretch bg-rule" aria-hidden="true"></span>
+                            <button type="button" data-cmd="undo" title="ফিরিয়ে আনুন (Ctrl+Z)" aria-label="ফিরিয়ে আনুন" class="ed-btn">↶</button>
+                            <button type="button" data-cmd="redo" title="আবার করুন" aria-label="আবার করুন" class="ed-btn">↷</button>
+                        </div>
+                        <div class="ed-wrap font-serif text-lg leading-relaxed">
+                            <div data-editor-placeholder class="ed-placeholder" aria-hidden="true">এখানে লিখুন, বা Word / Google Docs / WhatsApp থেকে পেস্ট করুন।</div>
+                            <div data-editor lang="bn"></div>
+                        </div>
+                    </div>
+                    <p data-editor-hint hidden class="mt-1 text-sm text-ink2"></p>
                     <textarea name="body" rows="18" required lang="bn"
                         class="block w-full rounded-xl border-2 border-navy bg-white p-4 font-serif text-lg leading-relaxed"
-                        placeholder="এখানে লিখুন, বা Word / Google Docs / WhatsApp থেকে পেস্ট করুন।&#10;কবিতায় প্রতিটি লাইন আলাদা লাইনে; স্তবকের মাঝে একটি ফাঁকা লাইন।">{{ old('body', $text) }}</textarea>
-                </label>
+                        placeholder="এখানে লিখুন, বা Word / Google Docs / WhatsApp থেকে পেস্ট করুন।&#10;কবিতায় প্রতিটি লাইন আলাদা লাইনে; স্তবকের মাঝে একটি ফাঁকা লাইন।">{{ old('body_format') === 'html' ? '' : old('body', $text) }}</textarea>
+                </div>
                 <p class="mb-5 text-sm text-ink2"><span id="autosave-status" aria-live="polite"></span></p>
 
                 {{-- Optional cover (3f). Re-encoded on the server: location and camera data are removed. --}}
                 <fieldset class="mb-6 rounded-xl border-2 border-rule p-4">
                     <legend class="px-1 font-bold">প্রচ্ছদের ছবি <span class="font-normal text-ink2">(ইচ্ছে হলে)</span></legend>
                     @if ($post->featured_image_path)
-                        <img src="{{ asset($post->featured_image_path) }}" alt="এখনকার প্রচ্ছদ" class="mb-3 max-h-56 rounded-xl">
+                        <img src="{{ asset($post->featured_image_path) }}" alt="এখনকার প্রচ্ছদ" data-current-cover class="mb-3 max-h-56 rounded-xl">
                         <label class="mb-3 flex items-center gap-3"><input type="checkbox" name="remove_cover" value="1" class="h-5 w-5"> ছবিটি সরিয়ে দিন</label>
                     @endif
                     {{-- The browser's own file button is English ("Choose File"); a Bengali label opens it instead. --}}
@@ -84,6 +109,8 @@
                     <h2 data-title class="font-display text-3xl font-extrabold"></h2>
                     <button type="button" data-close class="h-11 rounded-full border-2 border-navy px-4 font-bold">বন্ধ</button>
                 </div>
+                <img data-preview-cover alt="" hidden class="mt-5 w-full rounded-2xl">
+                <p class="mt-3 font-semibold text-ink2">{{ auth()->user()->name }}</p>
                 <div data-body></div>
             </dialog>
         @endif

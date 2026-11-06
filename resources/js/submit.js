@@ -1,19 +1,108 @@
-// Submission form (Phase 3b): autosave, word count, preview. No inline handlers (strict CSP).
+// Submission form (Phase 3b + D40): small formatting editor, autosave, word count, preview with cover.
+// No inline handlers (strict CSP). Without JavaScript the plain textarea still works.
+import { Editor, Extension } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+
 const form = document.querySelector('form[data-submit-form]');
 if (form) {
     const csrf = form.querySelector('input[name=_token]').value;
     const title = form.querySelector('[name=title]');
-    const body = form.querySelector('[name=body]');
+    const textarea = form.querySelector('[name=body]');
+    const formatInput = form.querySelector('[data-body-format]');
     const section = form.querySelector('[name=section_id]');
     const status = document.getElementById('autosave-status');
     const count = document.getElementById('word-count');
+    const hint = form.querySelector('[data-editor-hint]');
     let autosaveUrl = form.dataset.autosaveUrl;
     let timer = null;
     let dirty = false;
+    let editor = null;
 
+    const isPoem = () => section.selectedOptions[0]?.dataset.format === 'poem';
+    const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // Poems: Enter = new line; Enter on an empty line = new stanza (same rule as before: blank line = stanza).
+    const PoemLines = Extension.create({
+        name: 'poemLines',
+        addKeyboardShortcuts() {
+            return {
+                Enter: ({ editor: ed }) => {
+                    if (!isPoem()) return false;
+                    const { $from, empty } = ed.state.selection;
+                    if (!empty || $from.parent.type.name !== 'paragraph') return false;
+                    if ($from.nodeBefore?.type.name === 'hardBreak') {
+                        return ed.chain().command(({ tr }) => { tr.delete($from.pos - 1, $from.pos); return true; }).splitBlock().run();
+                    }
+                    return ed.commands.setHardBreak();
+                },
+            };
+        },
+    });
+
+    const shell = form.querySelector('[data-editor-shell]');
+    const mount = form.querySelector('[data-editor]');
+    const placeholder = form.querySelector('[data-editor-placeholder]');
+    if (shell && mount) {
+        let initial = '';
+        try { initial = JSON.parse(document.getElementById('body-initial')?.textContent || '""'); } catch { initial = ''; }
+        if (!initial && textarea.value.trim()) {
+            initial = textarea.value.trim().split(/\n\s*\n/).map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`).join('');
+        }
+        editor = new Editor({
+            element: mount,
+            extensions: [
+                StarterKit.configure({ heading: { levels: [3] }, link: false, code: false, codeBlock: false, strike: false }),
+                PoemLines,
+            ],
+            content: initial,
+            editorProps: { attributes: { class: 'ed-area', 'aria-labelledby': 'body-label', 'aria-multiline': 'true', role: 'textbox' } },
+        });
+        shell.hidden = false;
+        textarea.hidden = true;
+        textarea.required = false;
+        formatInput.value = 'html';
+        hint.hidden = false;
+
+        const sync = () => {
+            textarea.value = editor.isEmpty ? '' : editor.getHTML();
+            placeholder.hidden = !editor.isEmpty;
+        };
+        const commands = {
+            bold: () => editor.chain().focus().toggleBold().run(),
+            italic: () => editor.chain().focus().toggleItalic().run(),
+            underline: () => editor.chain().focus().toggleUnderline().run(),
+            heading: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+            blockquote: () => editor.chain().focus().toggleBlockquote().run(),
+            bulletList: () => editor.chain().focus().toggleBulletList().run(),
+            orderedList: () => editor.chain().focus().toggleOrderedList().run(),
+            horizontalRule: () => editor.chain().focus().setHorizontalRule().run(),
+            undo: () => editor.chain().focus().undo().run(),
+            redo: () => editor.chain().focus().redo().run(),
+        };
+        const buttons = form.querySelectorAll('[data-toolbar] [data-cmd]');
+        buttons.forEach((b) => b.addEventListener('click', () => commands[b.dataset.cmd]?.()));
+        const refreshToolbar = () => buttons.forEach((b) => {
+            const name = b.dataset.cmd === 'heading' ? ['heading', { level: 3 }] : [b.dataset.cmd];
+            if (!['undo', 'redo', 'horizontalRule'].includes(b.dataset.cmd)) b.setAttribute('aria-pressed', editor.isActive(...name) ? 'true' : 'false');
+        });
+        editor.on('update', () => { sync(); changed(); });
+        editor.on('selectionUpdate', refreshToolbar);
+        editor.on('transaction', refreshToolbar);
+        sync();
+    }
+
+    const setHint = () => {
+        if (!hint) return;
+        hint.textContent = isPoem()
+            ? 'কবিতা: Enter চাপলে নতুন লাইন; ফাঁকা লাইনে আবার Enter চাপলে নতুন স্তবক।'
+            : 'গদ্য: Enter চাপলে নতুন অনুচ্ছেদ; Shift+Enter চাপলে একই অনুচ্ছেদে নতুন লাইন।';
+    };
+
+    const bodyText = () => (editor ? editor.getText({ blockSeparator: '\n' }) : textarea.value);
     const words = () => {
-        const n = body.value.trim() ? body.value.trim().split(/\s+/u).length : 0;
-        const lines = body.value.split('\n').filter((l) => l.trim()).length;
+        const t = bodyText();
+        const n = t.trim() ? t.trim().split(/\s+/u).length : 0;
+        const lines = t.split('\n').filter((l) => l.trim()).length;
         count.textContent = `${n.toLocaleString('bn-IN')} শব্দ · ${lines.toLocaleString('bn-IN')} লাইন`;
     };
 
@@ -24,7 +113,12 @@ if (form) {
         credentials: 'same-origin',
     }).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
 
-    const payload = () => ({ title: title.value, body: body.value, section_id: section.value ? Number(section.value) : null });
+    const payload = () => ({
+        title: title.value,
+        body: textarea.value,
+        body_format: formatInput.value,
+        section_id: section.value ? Number(section.value) : null,
+    });
 
     const save = () => {
         if (!dirty || !form.dataset.editable) return;
@@ -43,23 +137,12 @@ if (form) {
         }).catch(() => { dirty = true; status.textContent = 'রাখা যায়নি — ইন্টারনেট দেখুন, একটু পরে আবার চেষ্টা হবে।'; });
     };
 
-    const changed = () => { dirty = true; words(); clearTimeout(timer); timer = setTimeout(save, 4000); };
-    [title, body, section].forEach((el) => el.addEventListener('input', changed));
+    function changed() { dirty = true; words(); clearTimeout(timer); timer = setTimeout(save, 4000); }
+    [title, textarea, section].forEach((el) => el.addEventListener('input', changed));
+    section.addEventListener('change', setHint);
     window.addEventListener('beforeunload', (e) => { if (dirty) { save(); e.preventDefault(); } });
     words();
-
-    // Preview in a <dialog>, rendered by the server exactly like the published page.
-    const dialog = document.getElementById('preview');
-    document.getElementById('preview-btn')?.addEventListener('click', () => {
-        post(form.dataset.previewUrl, payload()).then((res) => {
-            dialog.querySelector('[data-title]').textContent = title.value || 'শিরোনামহীন';
-            const box = dialog.querySelector('[data-body]');
-            box.className = res.poem ? 'poem-bn mt-6 text-center' : 'prose-bn mt-6';
-            box.innerHTML = res.html; // sanitised + formatted on the server
-            dialog.showModal();
-        });
-    });
-    dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+    setHint();
 
     // Cover: show the chosen picture before saving; warn early about size (the server checks again).
     const cover = form.querySelector('[data-cover]');
@@ -68,7 +151,7 @@ if (form) {
         const file = cover.files?.[0];
         coverPreview.classList.add('hidden');
         const name = form.querySelector('[data-cover-name]');
-        if (name) name.textContent = cover.files?.[0]?.name || 'কোনো ছবি বাছা হয়নি';
+        if (name) name.textContent = file?.name || 'কোনো ছবি বাছা হয়নি';
         cover.setCustomValidity('');
         if (!file) return;
         if (file.size > 8 * 1024 * 1024) {
@@ -80,4 +163,24 @@ if (form) {
         reader.onload = () => { coverPreview.src = reader.result; coverPreview.classList.remove('hidden'); };
         reader.readAsDataURL(file);
     });
+
+    // Preview in a <dialog>: the body is rendered by the server exactly like the published page,
+    // with the cover the writer has chosen (new file, or the one already saved).
+    const dialog = document.getElementById('preview');
+    document.getElementById('preview-btn')?.addEventListener('click', () => {
+        post(form.dataset.previewUrl, payload()).then((res) => {
+            dialog.querySelector('[data-title]').textContent = title.value || 'শিরোনামহীন';
+            const img = dialog.querySelector('[data-preview-cover]');
+            const removing = form.querySelector('[name=remove_cover]')?.checked;
+            const current = form.querySelector('[data-current-cover]');
+            const src = coverPreview && !coverPreview.classList.contains('hidden') ? coverPreview.src : (current && !removing ? current.src : '');
+            img.hidden = !src;
+            if (src) img.src = src;
+            const box = dialog.querySelector('[data-body]');
+            box.className = res.poem ? 'poem-bn mt-6 text-center' : 'prose-bn mt-6';
+            box.innerHTML = res.html; // sanitised + formatted on the server
+            dialog.showModal();
+        });
+    });
+    dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
 }

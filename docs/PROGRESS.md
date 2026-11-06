@@ -66,6 +66,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Reader comments (D39): form under every post for guests (name only) and signed-in readers; guests always moderated, accounts trusted after 2 approved; "log in to comment" returns to the post; opt-out from পাঠকের চিঠি; honeypot, timing, rate limits, optional Turnstile (`TURNSTILE_SITE_KEY/SECRET`); আজকের কাজ shows অতিথি/অ্যাকাউন্ট. ⚠ If guest HTML is ever cached at Cloudflare, the form's CSRF token must be fetched fresh (note for the production cache rules)
 - ✅ 3f Cover image on the submission form (optional): Bengali file button with instant preview; server sniffs the real type (JPG/PNG/WebP, ≤ 8 MB, ≥ 800 px wide), re-encodes with GD (EXIF/GPS and hidden payloads gone, phone rotation kept), random name under storage/app/public/covers (served at /storage/covers/, scripts blocked by .htaccess), WebP sizes; writer can replace/remove; editors see it in জমার তথ্য and can remove it (logged). Deploy runs `storage:link`
 
+- ✅ Formatting editor on /submit/ (D40): toolbar in Bengali; poems keep line/stanza rules; paste from Word/Docs keeps bold/italic; server allows only the safe set. Preview (কেমন দেখাবে) now shows the cover and byline; submitted pieces show their cover
+
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
 

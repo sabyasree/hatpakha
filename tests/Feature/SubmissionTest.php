@@ -117,4 +117,29 @@ class SubmissionTest extends TestCase
         $this->assertSame('pending', $post->fresh()->status);
         $this->assertDatabaseHas('audit_logs', ['action' => 'submission.resubmitted']);
     }
+
+    public function test_editor_formatting_is_kept_but_only_the_safe_set(): void
+    {
+        $html = '<h2 style="color:red">উপশিরোনাম</h2><p>আকাশ <strong>ভরা</strong> <em>মেঘ</em> <u>দাগ</u><br>ভিজে গেছে <a href="https://spam.example">মাঠ</a></p>'
+            .'<blockquote><p>উদ্ধৃতি</p></blockquote><ul><li>এক</li></ul><hr><p onclick="x()">তোমার কথা</p><img src="x" onerror="alert(1)"><script>alert(1)</script><p></p>';
+        $this->actingAs($this->writer)->post('/submit/', $this->poem(['body' => $html, 'body_format' => 'html', 'section_id' => $this->poetry->id]))
+            ->assertSessionHasNoErrors();
+        $body = Post::where('title', 'বৃষ্টির দিন')->firstOrFail()->body_html;
+        foreach (['<strong>ভরা</strong>', '<em>মেঘ</em>', '<u>দাগ</u>', 'উপশিরোনাম', '<blockquote>', '<li>এক</li>', 'মাঠ', 'তোমার কথা'] as $kept) {
+            $this->assertStringContainsString($kept, $body);
+        }
+        foreach (['<a ', 'spam.example', 'onclick', 'onerror', '<img', '<script', 'style='] as $gone) {
+            $this->assertStringNotContainsString($gone, $body);
+        }
+        // The editor reopens with the formatting (JSON island, never executed).
+        $post = Post::where('title', 'বৃষ্টির দিন')->firstOrFail();
+        $post->forceFill(['status' => 'draft'])->save();
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('id="body-initial"', false)->assertSee('\u003Cstrong\u003E', false);
+    }
+
+    public function test_empty_editor_is_too_short_even_with_markup(): void
+    {
+        $this->actingAs($this->writer)->post('/submit/', $this->poem(['body' => str_repeat('<p><strong></strong></p>', 20), 'body_format' => 'html']))
+            ->assertSessionHasErrors('body');
+    }
 }
