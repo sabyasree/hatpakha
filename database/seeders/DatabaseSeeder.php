@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             ['social', 'সমাজ', 'Social', 'prose', '#12304A', 60],
             ['inspiration', 'অনুপ্রেরণা', 'Inspiration', 'prose', '#E39A6A', 70],
             ['sher-o-shayari', 'শের-ও-শায়েরি', 'Sher-O-Shayari', 'poem', '#B0162B', 80],
-            ['translated', 'অনুবাদ', 'Translated', 'prose', '#1B3A52', 90],
+            ['translated', 'অনুবাদ', 'Translated', 'prose', '#12304A', 90],
             ['english', 'English', 'English', 'prose', '#12304A', 100],
         ];
         foreach ($sections as [$slug, $bn, $en, $format, $color, $sort]) {

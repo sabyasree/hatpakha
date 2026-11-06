@@ -41,13 +41,13 @@
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 py-12">
             <div>
                 <div class="font-hand text-6xl leading-none text-sky md:text-8xl">আবার আসবেন</div>
-                <p class="mt-3 text-sm text-[#C9D3DA]">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
+                <p class="mt-3 text-sm text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
             </div>
-            <nav aria-label="ফুটার" class="flex gap-10 text-base">
-                @foreach (array_chunk(\App\Models\Page::footerLinks(), 4) as $col)
-                    <div class="flex flex-col gap-2">@foreach ($col as [$t, $u])<a href="{{ $u }}" class="hover:text-sky">{{ $t }}</a>@endforeach</div>
+            <nav aria-label="ফুটার" class="grid w-full grid-cols-2 gap-x-6 text-base sm:w-auto sm:grid-cols-3">
+                @foreach (\App\Models\Page::footerLinks() as [$t, $u])
+                    <a href="{{ $u }}" class="flex min-h-11 items-center hover:text-sky">{{ $t }}</a>
                 @endforeach
-                <div class="flex flex-col gap-2"><a href="{{ \App\Support\Url::to('/feed') }}" class="hover:text-sky">RSS</a></div>
+                <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
             </nav>
         </div>
     </footer>

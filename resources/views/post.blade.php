@@ -36,7 +36,7 @@
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
 
         <div class="flex flex-wrap justify-center gap-3 border-y border-rule py-4">
-            <a href="https://wa.me/?text={{ rawurlencode($post->title.' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-[#1FAF5A] px-5 font-bold text-white">WhatsApp-এ পাঠান</a>
+            <a href="https://wa.me/?text={{ rawurlencode($post->title.' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp-এ পাঠান</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
 
@@ -65,7 +65,7 @@
             <h2 class="font-display text-4xl font-extrabold">আরও {{ $post->section?->name_bn }}</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-3">
                 @foreach ($related as $r)
-                    <a href="{{ $r->url() }}" class="block"><x-title-card :post="$r" /><span class="mt-2 block text-sm font-semibold text-ink2">{{ $r->authors->first()?->publicName() }}</span></a>
+                    <a href="{{ $r->url() }}" class="block"><x-title-card :post="$r" />@if ($r->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $r->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $r->authors->first()?->publicName() }}</span></a>
                 @endforeach
             </div>
         </section>

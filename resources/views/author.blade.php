@@ -20,9 +20,9 @@
         @if ($author->is_guest && ! $author->is_desk && ! $author->claimed_at)
             <div class="mt-6 max-w-[720px] rounded-2xl bg-peach-light p-5"><div class="text-lg font-extrabold">এই প্রোফাইল কি আপনার?</div><p class="mt-1 text-ink2">দাবি করলে ছবি, পরিচিতি যোগ করতে আর নতুন লেখা পাঠাতে পারবেন। (শীঘ্রই)</p></div>
         @endif
-        <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="mt-10 grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-6 lg:grid-cols-3">
             @foreach ($posts as $p)
-                <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" /><span class="mt-2 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ \App\Support\Bn::date($p->published_at) }}</span></a>
+                <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ \App\Support\Bn::date($p->published_at) }}</span></a>
             @endforeach
         </div>
         <div class="mt-10">{{ $posts->links() }}</div>

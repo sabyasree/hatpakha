@@ -3,7 +3,7 @@
         <div class="font-hand text-3xl text-red">প্রকাশনা সনদ যাচাই</div>
         @if ($certificate->isValid())
             <div class="mt-6 rounded-3xl border-2 border-navy bg-white p-8 shadow-[6px_6px_0_#13212C]">
-                <div class="text-sm font-bold text-[#1E6B35]">✓ এই সনদটি বৈধ</div>
+                <div class="text-sm font-bold text-sky-night">✓ এই সনদটি বৈধ</div>
                 <div class="mt-3 font-display text-4xl font-extrabold">{{ $certificate->author_name_snapshot }}</div>
                 <div class="mt-2 font-serif text-xl">“{{ $certificate->title_snapshot }}”</div>
                 <div class="mt-2 text-ink2">{{ $certificate->issue_label }} · {{ \App\Support\Bn::date($certificate->issued_at) }}</div>

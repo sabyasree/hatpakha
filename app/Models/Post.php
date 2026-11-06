@@ -75,6 +75,12 @@ class Post extends Model
 
     public function url(): string { return \App\Support\Url::to('/'.Slug::encode($this->slug)); }
 
+    /** Cards show the photo only for large images; otherwise the title itself is the card (title-card). */
+    public function hasCardImage(): bool
+    {
+        return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 1000;
+    }
+
     public function metaTitle(): string { return $this->seo_title ?: $this->title; }
 
     public function metaDescription(): string

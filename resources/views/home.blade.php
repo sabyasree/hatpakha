@@ -28,14 +28,14 @@
 
     @if ($poemOfDay)
     {{-- Poem poster --}}
-    <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#1B3A52)">
+    <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#12304A)">
         <div class="absolute -right-10 -top-40 font-serif text-[520px] leading-none text-red" aria-hidden="true">“</div>
         <div class="relative mx-auto grid max-w-[1320px] gap-10 px-5 py-16 md:grid-cols-[1fr_2fr] md:py-24">
             <div class="flex flex-col gap-3">
                 <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">আজকের কবিতা</span>
                 <a href="{{ $poemOfDay->url() }}" class="font-display text-5xl font-extrabold leading-none">{{ $poemOfDay->title }}</a>
                 <span class="font-hand text-xl text-peach">সম্পাদকের পছন্দ — না পড়লে মিস করবেন!</span>
-                <span class="text-[#C9D3DA]"><x-byline :post="$poemOfDay" /> · {{ \App\Support\Bn::num($poemOfDay->reading_minutes) }} মিনিট</span>
+                <span class="text-peach-light"><x-byline :post="$poemOfDay" /> · {{ \App\Support\Bn::num($poemOfDay->reading_minutes) }} মিনিট</span>
                 <a href="{{ $poemOfDay->url() }}" class="mt-2 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy">পুরো কবিতা পড়ুন</a>
             </div>
             <div class="poem-bn text-2xl md:text-4xl [&_p]:mb-3">{!! \App\Support\Excerpt::lines($poemOfDay->body_html, 6) !!}</div>
@@ -56,7 +56,7 @@
                     <a href="{{ $story->url() }}" class="lift relative flex flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                         <span class="absolute -top-3 left-6 h-5 w-20 -rotate-6 bg-peach/90" aria-hidden="true"></span>
                         <x-title-card :post="$story" class="!rounded-none border-2 border-navy" />
-                        <span class="font-serif text-xl font-bold leading-snug">{{ $story->title }}</span>
+                        @if ($story->hasCardImage())<span class="font-serif text-xl font-bold leading-snug">{{ $story->title }}</span>@endif
                         <span class="flex justify-between text-sm font-semibold"><span>{{ $story->authors->first()?->publicName() }}</span><span class="text-red">{{ \App\Support\Bn::num($story->reading_minutes) }} মিনিট</span></span>
                     </a>
                 @endforeach
