@@ -59,6 +59,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ 3d AI review (docs/AI.md): report after each submission (no cron), AI score + report in /desk, re-run button, editable rubric + monthly spend in /desk → AI সহকারী; cost guards (off by default, key required, min words, pause button (D37), usage log); prompt-injection-safe input; refusal fallback. Never decides anything
 - ✅ 3e Blind test: `php artisan hatpakha:ai-blind-test` (estimate first, stops above $6) + /desk → AI পরীক্ষা (anonymous A/B scoring, reveal at the end). 🟡 Owner: add keys to staging ENV_FILE, run it, score, set `AI_PROVIDER`
 - ✅ No AI spending cap (D37); admin pause/resume button on এআই সহকারী and on আজকের কাজ, logged
+- ✅ Blind test run on staging (30 pieces, est. $1.36). Scoring page redesigned: one piece at a time, reports A/B side by side, one question (A better / same / B better), progress bar, auto-next, reveal at the end. AI report view rebuilt with inline styles (utility classes don't exist in /desk)
 - ✅ "চাবি যাচাই" button on এআই সহকারী: checks both keys and model names via the free model-lookup endpoints (no tokens)
 - ✅ Owner added AI keys to the staging ENV_FILE
 - ⬜ Cover image upload on the submission form (re-encode, strip metadata)

@@ -5,13 +5,15 @@ namespace App\Filament\Pages;
 use App\Models\AiReview;
 use App\Models\AuditLog;
 use BackedEnum;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Collection;
 
 /**
- * Phase 3e: score the two anonymous reports per piece (1–5). Which provider wrote A or B stays hidden
- * until every report in the run is scored; then the totals are revealed (D11).
+ * Phase 3e: one piece at a time, the two anonymous reports side by side, one question:
+ * "which report helps you more as an editor?" (A / same / B). Which provider wrote A or B stays
+ * hidden until every pair is judged; then the result is revealed (D11).
+ * Stored as editor_score: better = 5, worse = 1, same = 3 for both.
  */
 class AiBlindTest extends Page
 {
@@ -23,23 +25,22 @@ class AiBlindTest extends Page
 
     protected static ?string $navigationLabel = 'এআই পরীক্ষা';
 
-    protected static ?string $title = 'এআই পরীক্ষা (অন্ধ তুলনা)';
+    protected static ?string $title = 'এআই পরীক্ষা';
 
     protected static ?int $navigationSort = 91;
+
+    /** The piece on screen. */
+    public ?int $postId = null;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
     }
 
-    /** @var array<int,int|string|null> review id → score */
-    public array $scores = [];
-
     public function mount(): void
     {
-        foreach ($this->reviews() as $r) {
-            $this->scores[$r->id] = $r->editor_score;
-        }
+        $this->postId = $this->pairs()->first(fn ($pair) => $pair->contains(fn ($r) => $r->editor_score === null))?->first()->post_id
+            ?? $this->pairs()->first()?->first()->post_id;
     }
 
     public function run(): ?string
@@ -47,39 +48,73 @@ class AiBlindTest extends Page
         return AiReview::whereNotNull('blind_run')->latest('id')->value('blind_run');
     }
 
-    public function reviews()
+    /** Pairs where both reports were written, keyed by post id, in a stable order. */
+    public function pairs(): Collection
     {
-        return ($run = $this->run()) ? AiReview::with('post.section')->where('blind_run', $run)->orderBy('post_id')->orderBy('blind_label')->get() : collect();
+        if (! ($run = $this->run())) {
+            return collect();
+        }
+
+        return AiReview::with('post.section')->where('blind_run', $run)->orderBy('post_id')->orderBy('blind_label')->get()
+            ->groupBy('post_id')->filter(fn ($pair) => $pair->count() === 2 && $pair->every(fn ($r) => $r->status === 'done'));
     }
 
-    public function score(int $reviewId): void
+    public function failedCount(): int
     {
-        $value = (int) ($this->scores[$reviewId] ?? 0);
-        abort_unless($value >= 1 && $value <= 5, 422);
-        $review = AiReview::whereKey($reviewId)->where('blind_run', $this->run())->firstOrFail();
-        $review->forceFill(['editor_score' => $value, 'scored_by' => auth()->id()])->save();
-        Notification::make()->title('স্কোর রাখা হয়েছে')->success()->send();
+        return ($run = $this->run()) ? AiReview::where('blind_run', $run)->where('status', '!=', 'done')->distinct()->count('post_id') : 0;
     }
 
-    /** Null until every report is scored; then per-provider totals (the reveal). */
+    public function go(int $postId): void
+    {
+        abort_unless($this->pairs()->has($postId), 404);
+        $this->postId = $postId;
+    }
+
+    /** $choice: A, B or same. Saves and moves to the next piece not yet judged. */
+    public function choose(string $choice): void
+    {
+        abort_unless(in_array($choice, ['A', 'B', 'same'], true), 422);
+        $pair = $this->pairs()->get($this->postId);
+        abort_unless($pair, 404);
+        foreach ($pair as $review) {
+            $score = $choice === 'same' ? 3 : ($review->blind_label === $choice ? 5 : 1);
+            $review->forceFill(['editor_score' => $score, 'scored_by' => auth()->id()])->save();
+        }
+        $pairs = $this->pairs();
+        $ids = $pairs->keys()->values();
+        $next = $ids->slice($ids->search($this->postId) + 1)->merge($ids)
+            ->first(fn ($id) => $pairs[$id]->contains(fn ($r) => $r->editor_score === null));
+        $this->postId = $next ?? $this->postId;
+    }
+
+    /** What the editor picked for a pair: A, B, same or null. */
+    public static function choiceOf(Collection $pair): ?string
+    {
+        $a = $pair->firstWhere('blind_label', 'A')?->editor_score;
+        $b = $pair->firstWhere('blind_label', 'B')?->editor_score;
+
+        return match (true) {
+            $a === null || $b === null => null,
+            $a === $b => 'same',
+            default => $a > $b ? 'A' : 'B',
+        };
+    }
+
+    /** Null until every pair is judged; then the reveal. */
     public function result(): ?array
     {
-        $reviews = $this->reviews()->where('status', 'done');
-        if ($reviews->isEmpty() || $reviews->contains(fn ($r) => $r->editor_score === null)) {
+        $pairs = $this->pairs();
+        if ($pairs->isEmpty() || $pairs->contains(fn ($pair) => self::choiceOf($pair) === null)) {
             return null;
         }
-        $out = [];
-        foreach ($reviews->groupBy('provider') as $provider => $g) {
-            $out[$provider] = ['model' => $g->first()->model, 'avg' => round($g->avg('editor_score'), 2), 'n' => $g->count()];
+        $wins = ['anthropic' => 0, 'openai' => 0, 'same' => 0];
+        foreach ($pairs as $pair) {
+            $choice = self::choiceOf($pair);
+            $wins[$choice === 'same' ? 'same' : $pair->firstWhere('blind_label', $choice)->provider]++;
         }
-        $wins = ['anthropic' => 0, 'openai' => 0, 'tie' => 0];
-        foreach ($reviews->groupBy('post_id') as $pair) {
-            $a = $pair->firstWhere('provider', 'anthropic')?->editor_score;
-            $o = $pair->firstWhere('provider', 'openai')?->editor_score;
-            $wins[$a === $o ? 'tie' : ($a > $o ? 'anthropic' : 'openai')]++;
-        }
-        AuditLog::record('ai.blind_test_revealed', null, ['run' => $this->run()] + $out);
+        $models = $pairs->flatten()->pluck('model', 'provider')->all();
+        AuditLog::record('ai.blind_test_revealed', null, ['run' => $this->run(), 'wins' => $wins]);
 
-        return ['providers' => $out, 'wins' => $wins];
+        return ['wins' => $wins, 'models' => $models, 'total' => $pairs->count()];
     }
 }

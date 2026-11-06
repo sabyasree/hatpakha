@@ -157,13 +157,20 @@ class AiReviewTest extends TestCase
         }
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
-        $page = \Livewire\Livewire::test(\App\Filament\Pages\AiBlindTest::class)->assertOk()->assertSee('রিপোর্ট A')
-            ->assertDontSee('anthropic-model')->assertDontSee('openai-model');
-
-        foreach (AiReview::all() as $r) {
-            $page->set("scores.{$r->id}", $r->provider === 'anthropic' ? 5 : 3)->call('score', $r->id);
+        $second = $this->makePost(['slug' => 'second-piece', 'status' => 'pending', 'body_html' => $post->body_html]);
+        foreach (['openai' => 'A', 'anthropic' => 'B'] as $p => $l) {
+            AiReview::create(['post_id' => $second->id, 'provider' => $p, 'model' => $p.'-model', 'status' => 'done', 'report' => self::REPORT, 'score' => 8, 'blind_run' => 'r1', 'blind_label' => $l]);
         }
-        \Livewire\Livewire::test(\App\Filament\Pages\AiBlindTest::class)->assertSee('ফলাফল')->assertSee('anthropic-model');
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\AiBlindTest::class)->assertOk()
+            ->assertSee('রিপোর্ট A')->assertSee('রিপোর্ট B')->assertSee('কোন রিপোর্টটা আপনার বেশি কাজে লাগবে?')
+            ->assertDontSee('anthropic-model')->assertDontSee('openai-model')->assertDontSee('Claude')->assertDontSee('OpenAI')
+            ->assertSet('postId', $post->id)
+            ->call('choose', 'A')->assertSet('postId', $second->id)          // moves to the next piece by itself
+            ->assertDontSee('ফলাফল')
+            ->call('choose', 'B');                                             // B is Claude here
+        $this->assertSame([5, 1], AiReview::where('post_id', $post->id)->orderBy('blind_label')->pluck('editor_score')->all());
+        \Livewire\Livewire::test(\App\Filament\Pages\AiBlindTest::class)->assertSee('ফলাফল')->assertSee('জিতেছে')->assertSee('Claude');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'ai.blind_test_revealed']);
     }
 
     public function test_ai_settings_page_is_admin_only(): void

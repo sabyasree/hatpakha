@@ -1,28 +1,63 @@
-{{-- AI report for editors only (advice, never a decision). All values escaped. --}}
-@php($r = $review?->report)
-<div class="space-y-4 text-sm leading-relaxed">
+{{--
+  AI report for editors only (advice, never a decision). All values escaped.
+  Inline styles: /desk only ships Filament's own CSS, so utility classes don't exist here.
+  $review: AiReview|null · $blind: hide provider/model (blind test)
+--}}
+@php
+    use App\Support\Bn;
+    $r = $review?->report;
+    $blind = $blind ?? false;
+    $sectionName = fn ($slug) => \App\Models\Section::where('slug', $slug)->value('name_bn') ?? $slug;
+    $box = 'border:1px solid rgba(127,127,127,.25);border-radius:.75rem;padding:.75rem 1rem;margin-top:.75rem';
+    $h = 'font-weight:700;margin:0 0 .35rem';
+@endphp
+<div style="font-size:.95rem;line-height:1.75">
     @if (! $review)
         <p>এখনও কোনও এআই রিপোর্ট নেই।</p>
     @elseif ($review->status !== 'done')
         <p><strong>রিপোর্ট হয়নি:</strong> {{ $review->error }}</p>
     @else
-        <div class="flex flex-wrap items-center gap-3">
-            <span class="rounded-full bg-gray-100 px-3 py-1 text-base font-bold dark:bg-white/10">মান {{ $r['quality_score'] }}/১০</span>
-            <span>{{ $r['genre'] ?? '' }}</span>
-            <span>{{ ($r['fits_magazine'] ?? false) ? '✓ পত্রিকার উপযোগী' : '✗ পত্রিকার উপযোগী নয়' }}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+            <x-filament::badge size="lg" :color="$r['quality_score'] >= 7 ? 'success' : ($r['quality_score'] >= 5 ? 'warning' : 'gray')">
+                মান {{ Bn::num((string) $r['quality_score']) }} / ১০
+            </x-filament::badge>
+            <x-filament::badge :color="($r['fits_magazine'] ?? false) ? 'success' : 'danger'">
+                {{ ($r['fits_magazine'] ?? false) ? 'পত্রিকার উপযোগী' : 'পত্রিকার উপযোগী নয়' }}
+            </x-filament::badge>
+            @if (! empty($r['genre']))<span style="opacity:.75">{{ $r['genre'] }}</span>@endif
         </div>
-        <p>{{ $r['summary'] ?? '' }}</p>
+
+        <p style="margin:.75rem 0 0">{{ $r['summary'] ?? '' }}</p>
+
         @if (! empty($r['policy_flags']))
-            <p class="font-bold text-danger-600">⚠ নীতি: {{ implode(', ', $r['policy_flags']) }}</p>
+            <div style="{{ $box }};border-color:#B0162B"><p style="{{ $h }};color:#B0162B">সাবধান</p>{{ implode(', ', $r['policy_flags']) }}</div>
         @endif
-        <div><strong>ভালো দিক</strong><ul class="ms-5 list-disc">@foreach ($r['strengths'] ?? [] as $s)<li>{{ $s }}</li>@endforeach</ul></div>
-        <div><strong>লেখকের জন্য পরামর্শ</strong> <span class="text-gray-500">(চাইলে "বদল চাই" বার্তায় নিজের ভাষায় দিন)</span><ol class="ms-5 list-decimal">@foreach ($r['suggestions'] ?? [] as $s)<li>{{ $s }}</li>@endforeach</ol></div>
+
+        @if (! empty($r['strengths']))
+            <div style="{{ $box }}"><p style="{{ $h }}">ভালো দিক</p>
+                <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['strengths'] as $s)<li>{{ $s }}</li>@endforeach</ul></div>
+        @endif
+
+        @if (! empty($r['suggestions']))
+            <div style="{{ $box }}"><p style="{{ $h }}">লেখকের জন্য পরামর্শ</p>
+                <ol style="margin:0;padding-inline-start:1.2rem;list-style:decimal">@foreach ($r['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol></div>
+        @endif
+
         @if (! empty($r['spelling']))
-            <div><strong>বানান</strong><ul class="ms-5 list-disc">@foreach ($r['spelling'] as $sp)<li>{{ $sp['original'] ?? '' }} → {{ $sp['suggestion'] ?? '' }}</li>@endforeach</ul></div>
+            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">বানান ({{ Bn::num(count($r['spelling'])) }}টি)</summary>
+                <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['spelling'] as $sp)<li>{{ $sp['original'] ?? '' }} → <strong>{{ $sp['suggestion'] ?? '' }}</strong></li>@endforeach</ul></details>
         @endif
-        <div><strong>বিভাগ:</strong> {{ $r['suggested_section'] ?? '' }} · <strong>ট্যাগ:</strong> {{ implode(', ', $r['tags'] ?? []) }}</div>
-        <div><strong>SEO:</strong> {{ $r['seo_title'] ?? '' }} — {{ $r['seo_description'] ?? '' }}</div>
-        <p class="text-gray-500">{{ $r['fit_reason'] ?? '' }}</p>
-        <p class="text-xs text-gray-500">{{ $review->provider }} · {{ $review->model }} · {{ $review->created_at?->diffForHumans() }}</p>
+
+        <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">বিভাগ, ট্যাগ, গুগলের জন্য</summary>
+            <p style="margin:.4rem 0 0"><strong>বিভাগ:</strong> {{ $sectionName($r['suggested_section'] ?? '') }}</p>
+            <p style="margin:0"><strong>ট্যাগ:</strong> {{ implode(', ', $r['tags'] ?? []) }}</p>
+            <p style="margin:0"><strong>শিরোনাম:</strong> {{ $r['seo_title'] ?? '' }}</p>
+            <p style="margin:0"><strong>বিবরণ:</strong> {{ $r['seo_description'] ?? '' }}</p>
+            @if (! empty($r['fit_reason']))<p style="margin:.4rem 0 0;opacity:.75">{{ $r['fit_reason'] }}</p>@endif
+        </details>
+
+        @unless ($blind)
+            <p style="margin:.75rem 0 0;font-size:.8rem;opacity:.6">{{ $review->provider === 'anthropic' ? 'Claude' : 'OpenAI' }} · {{ Bn::num((string) $review->created_at?->diffForHumans()) }}</p>
+        @endunless
     @endif
 </div>
