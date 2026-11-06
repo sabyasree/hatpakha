@@ -13,9 +13,9 @@
         </nav>
 
         {{-- Month jump links --}}
-        <nav aria-label="মাস" class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold">
+        <nav aria-label="মাস" class="mt-4 flex flex-wrap gap-2 text-sm font-bold">
             @foreach ($months as $m => $list)
-                <a href="#m{{ $m }}" class="text-sky-deep underline underline-offset-4">{{ \App\Support\Bn::MONTHS[$m - 1] }} ({{ \App\Support\Bn::num($list->count()) }})</a>
+                <a href="#m{{ $m }}" class="inline-flex h-10 items-center gap-1 rounded-full border-2 border-navy bg-white px-3 hover:bg-peach-light">{{ \App\Support\Bn::MONTHS[$m - 1] }} <span class="text-ink2">{{ \App\Support\Bn::num($list->count()) }}</span></a>
             @endforeach
         </nav>
     </section>

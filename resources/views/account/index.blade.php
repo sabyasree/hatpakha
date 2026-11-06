@@ -213,7 +213,7 @@
                 @csrf
                 {{-- Live preview of cover + photo --}}
                 <div class="relative h-36 bg-sky md:h-48">
-                    <img data-preview="cover" src="{{ $author?->cover_path }}" alt="" class="{{ $author?->cover_path ? '' : 'hidden' }} h-full w-full object-cover">
+                    <img data-preview="cover" @if ($author?->cover_path) src="{{ $author->cover_path }}" @endif alt="" class="{{ $author?->cover_path ? '' : 'hidden' }} h-full w-full object-cover">
                     @unless ($author?->cover_path)<div class="halftone absolute inset-0" aria-hidden="true"></div>@endunless
                     <label class="absolute right-3 top-3 flex h-10 cursor-pointer items-center rounded-full bg-white/95 px-4 text-sm font-bold shadow">
                         প্রচ্ছদ বদলান<input type="file" name="cover" accept="image/jpeg,image/png,image/webp" data-preview-input="cover" class="sr-only"></label>
@@ -221,7 +221,7 @@
                 <div class="px-5 pb-5">
                     <div class="-mt-12 flex items-end gap-4">
                         <div class="relative">
-                            <img data-preview="avatar" src="{{ $avatar }}" alt="" class="{{ $avatar ? '' : 'hidden' }} h-24 w-24 rounded-full border-4 border-white object-cover outline outline-2 outline-navy">
+                            <img data-preview="avatar" @if ($avatar) src="{{ $avatar }}" @endif alt="" class="{{ $avatar ? '' : 'hidden' }} h-24 w-24 rounded-full border-4 border-white object-cover outline outline-2 outline-navy">
                             @unless ($avatar)<span data-preview-fallback="avatar" class="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-peach to-peach-deep text-4xl font-extrabold outline outline-2 outline-navy" aria-hidden="true">{{ mb_substr($user->name, 0, 1) }}</span>@endunless
                         </div>
                         <label class="mb-1 flex h-10 cursor-pointer items-center rounded-full border-2 border-navy px-4 text-sm font-bold">
