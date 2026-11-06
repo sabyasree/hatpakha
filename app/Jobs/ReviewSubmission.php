@@ -18,7 +18,9 @@ class ReviewSubmission implements ShouldQueue
     {
         $post = Post::find($this->postId);
         if ($post && $post->status === 'pending') {
-            $service->run($post);
+            \App\Ai\Proofreader::run($post);   // D50: careful language pass first
+            \App\Ai\PlagiarismCheck::run($post);   // D50: is it already on the web?
+            $service->run($post->fresh());
             // No picture from the writer: the AI editor proposes one (D43); used only if the owner approves.
             if (! $post->featured_image_path && ! $post->proposed_image_path) {
                 \App\Ai\Illustrator::make($post->fresh());

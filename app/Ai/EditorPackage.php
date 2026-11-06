@@ -28,7 +28,15 @@ final class EditorPackage
     /** @return array<int,array{original:string,replacement:string,kind:string}> */
     public static function edits(Post $post): array
     {
-        return array_values((array) (self::report($post)['edits'] ?? []));
+        // The proofreader's careful pass first (D50), then anything extra the editor noticed.
+        $all = array_merge((array) ($post->proof['edits'] ?? []), (array) (self::report($post)['edits'] ?? []));
+        $seen = [];
+
+        return array_values(array_filter($all, function ($e) use (&$seen) {
+            $k = ($e['original'] ?? '').'→'.($e['replacement'] ?? '');
+
+            return isset($seen[$k]) ? false : ($seen[$k] = true);
+        }));
     }
 
     /** Checkbox labels for the approve dialog, e.g. "করিনা → করি না · বানান". */
@@ -54,7 +62,7 @@ final class EditorPackage
      * @param array<int,int|string> $chosen indexes of the edits the owner kept
      * @return string "published" or "confirm" (waiting for the writer)
      */
-    public static function approve(Post $post, User $owner, CarbonInterface $at, ?string $slug, ?string $note, array $chosen, bool $metadata): string
+    public static function approve(Post $post, User $owner, CarbonInterface $at, ?string $slug, ?string $note, array $chosen, bool $metadata, bool $applyTitleFix = false): string
     {
         $edits = self::edits($post);
         $chosen = array_values(array_intersect(array_map('intval', $chosen), array_keys($edits)));
@@ -62,6 +70,11 @@ final class EditorPackage
         $word = array_values(array_filter($chosen, fn ($i) => $edits[$i]['kind'] === 'word'));
 
         self::applyEdits($post, array_intersect_key($edits, array_flip($safe)));
+        if ($titleFix = ($post->proof['title_fix'] ?? '')) {
+            if ($applyTitleFix) {
+                $post->forceFill(['title' => $titleFix])->save();
+            }
+        }
         if ($metadata && ($r = self::report($post))) {
             self::applyMetadata($post, $r);
         }

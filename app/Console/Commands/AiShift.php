@@ -87,6 +87,10 @@ class AiShift extends Command
             ->orderBy('backlog_tier')->orderByDesc('submitted_at')->limit(10)->get() as $p) {
             $service->run($p, null, 'editor');
         }
+        // Proofreader (D50): 10 unpublished old pieces an hour (published pieces are never proofread).
+        foreach (Post::where('status', 'pending')->whereNull('proof_at')->orderBy('backlog_tier')->limit(10)->get() as $p) {
+            \App\Ai\Proofreader::run($p);
+        }
         // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
         foreach (Post::published()->whereNull('seo_done_at')->orderByDesc('published_at')->limit(10)->get() as $p) {
             \App\Ai\SeoExpert::run($p, onlyMissing: true);

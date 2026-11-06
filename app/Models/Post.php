@@ -37,6 +37,10 @@ class Post extends Model
             'related_ids' => 'array',
             'seo_proposal' => 'array',
             'seo_done_at' => 'datetime',
+            'proof' => 'array',
+            'proof_at' => 'datetime',
+            'plagiarism' => 'array',
+            'plagiarism_at' => 'datetime',
         ];
     }
 

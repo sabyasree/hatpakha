@@ -138,6 +138,15 @@ class PostsTable
                         ->bulkToggleable()->columns(1)
                         ->helperText(__('"শব্দ বদল" টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ হবে।'))
                         ->visible(fn (Post $record) => EditorPackage::edits($record) !== []),
+                    // Proofreader (D50): a typo fix in the title, and its note for the editor.
+                    Toggle::make('title_fix')->label(fn (Post $record) => __('শিরোনাম ঠিক করুন: ').($record->proof['title_fix'] ?? ''))->default(true)
+                        ->visible(fn (Post $record) => ($record->proof['title_fix'] ?? '') !== ''),
+                    \Filament\Forms\Components\Placeholder::make('proof_note')->label(__('প্রুফরিডারের মন্তব্য'))
+                        ->content(fn (Post $record) => $record->proof['note'] ?? '')
+                        ->visible(fn (Post $record) => ($record->proof['note'] ?? '') !== ''),
+                    \Filament\Forms\Components\Placeholder::make('plagiarism')->label(__('মৌলিকতা যাচাই'))
+                        ->content(fn (Post $record) => \App\Ai\PlagiarismCheck::summary($record))
+                        ->visible(fn (Post $record) => \App\Ai\PlagiarismCheck::summary($record) !== ''),
                     Toggle::make('use_ai_image')->label(__('এআই-এর আঁকা প্রচ্ছদ ব্যবহার করুন'))->default(true)
                         ->helperText(fn (Post $record) => $record->proposed_image_path ? new \Illuminate\Support\HtmlString('<img src="'.e(asset($record->proposed_image_path)).'" alt="" style="margin-top:.5rem;max-height:10rem;border-radius:.75rem">') : null)
                         ->visible(fn (Post $record) => $record->proposed_image_path && ! $record->featured_image_path),
@@ -156,7 +165,7 @@ class PostsTable
                         \App\Support\CoverImage::acceptProposed($record);
                     }
                     $result = EditorPackage::approve($record, auth()->user(), \Illuminate\Support\Carbon::parse($data['at']), $data['slug'] ?? null,
-                        $data['note'] ?? null, (array) ($data['edits'] ?? []), (bool) ($data['metadata'] ?? false));
+                        $data['note'] ?? null, (array) ($data['edits'] ?? []), (bool) ($data['metadata'] ?? false), (bool) ($data['title_fix'] ?? false));
                     Notification::make()->title($result === 'confirm' ? __('লেখকের সম্মতি চাওয়া হয়েছে; সম্মতি দিলেই প্রকাশ হবে') : __('মনোনীত হয়েছে, লেখককে জানানো হয়েছে'))->success()->send();
                 }),
             Action::make('requestChanges')->label(__('বদল চাই'))->icon('heroicon-o-pencil-square')->color('warning')

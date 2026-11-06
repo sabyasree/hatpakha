@@ -66,6 +66,62 @@ final class Claude
         return [null, 'no text'];
     }
 
+    /**
+     * A call that may search the web (plagiarism checker, D50). Server-side web search, at most $maxUses
+     * searches ($10 per 1,000). The answer is JSON in the final text; resumes once on pause_turn.
+     *
+     * @return array{0: ?array, 1: ?string}
+     */
+    public static function search(string $purpose, string $system, string $user, int $maxUses = 4, ?int $postId = null): array
+    {
+        if ($why = self::blocked() ?? Team::blockedFor($purpose)) {
+            return [null, $why];
+        }
+        if (self::$fake) {
+            return [(self::$fake)($purpose, $user, []), null];
+        }
+        $model = (string) config('ai.anthropic.review_model');
+        $messages = [['role' => 'user', 'content' => $user]];
+        try {
+            $client = new Client(apiKey: (string) config('ai.anthropic.key'));
+            for ($round = 0; $round < 2; $round++) {
+                $message = $client->beta->messages->create(
+                    model: $model,
+                    maxTokens: 8000,
+                    system: [['type' => 'text', 'text' => $system]],
+                    messages: $messages,
+                    tools: [['type' => 'web_search_20260209', 'name' => 'web_search', 'maxUses' => $maxUses]],
+                    fallbacks: 'default',
+                    betas: ['server-side-fallback-2026-07-01'],
+                );
+                $u = $message->usage;
+                $searches = (int) ($u->serverToolUse?->webSearchRequests ?? 0);
+                $usage = ['in' => $u->inputTokens, 'out' => $u->outputTokens, 'cache_read' => (int) $u->cacheReadInputTokens, 'cache_write' => (int) $u->cacheCreationInputTokens];
+                self::log('anthropic', $model, $purpose, $postId, $usage, ReviewService::cost($model, $usage) + $searches * 0.01);
+                if ($message->stopReason !== 'pause_turn') {
+                    break;
+                }
+                $messages[] = ['role' => 'assistant', 'content' => $message->content];   // resume where it paused
+            }
+        } catch (\Throwable $e) {
+            return [null, mb_substr($e->getMessage(), 0, 200)];
+        }
+        if ($message->stopReason === 'refusal') {
+            return [null, 'refusal'];
+        }
+        $text = '';
+        foreach ($message->content as $block) {
+            if ($block->type === 'text') {
+                $text .= $block->text;
+            }
+        }
+        if (preg_match('/\{.*\}/s', $text, $m) && is_array($data = json_decode($m[0], true))) {
+            return [$data, null];
+        }
+
+        return [null, 'invalid JSON'];
+    }
+
     /** @param array{in:int,out:int,cache_read:int,cache_write:int} $u */
     public static function log(string $provider, string $model, string $purpose, ?int $postId, array $u, ?float $costUsd = null): void
     {
