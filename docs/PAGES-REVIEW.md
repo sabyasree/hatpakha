@@ -25,8 +25,8 @@ The old site had 12 published pages. I read each one as an editor. Rule used: **
 ## Old plugin pages → 301 to home
 `/login/`, `/register/`, `/account/`, `/password-reset/`, `/user/`, `/members/`, `/logout/`, `/authors/`, `/edit-post/`, `/connections/`, `/home-4/`, `/tds-checkout/`, `/tds-my-account/`, `/tds-login-register/`. They will point to the new reader login and writer area when those exist (Phase 3).
 
-## Policy points to confirm (I wrote sensible defaults; change anything)
-1. **Submissions by email** to editor@hatpakha.com until the new form launches (Phase 3). Subject format: `লেখা — বিভাগ — শিরোনাম`. Max 3 poems per email.
+## Policy points (✅ approved by the owner, D30)
+1. ~~Submissions by email~~ → **Owner decision D29: submissions only through the website form** (`/submit/`). Pages updated; `/submit/` shows a holding page until the Phase 3 form exists.
 2. **Previously published work** is accepted if the writer tells us where it appeared. (Alternative: only unpublished work.)
 3. **Copyright stays with the author**; Hatpakha gets a non-exclusive licence (site, issues, e-books, social posts).
 4. **No payment to writers** for now; no fee to submit (already decided, D7).

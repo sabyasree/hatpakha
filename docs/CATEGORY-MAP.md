@@ -34,4 +34,4 @@ Rules applied to each post: (1) English-language posts go to **English**, except
 | game, quiz, coupon, main, uncategorized | 11 | সমাজ (default) | **check**: coupon/game look like old promo posts; likely noindex/410 in the audit |
 | news-updates, jokes | 0 | — | redirect only |
 
-**Please confirm or change:** (a) the mapping above, (b) whether `puja-2020` should become an archive issue, (c) whether off-topic groups (amazing-facts, videos, coupon, game, quiz) should be hidden from Google in the Phase 2 content audit. Removing anything needs your approval.
+✅ **Approved by the owner (D30)**, including `puja-2020` → archive issue শারদীয়া ১৪২৭ (`/sonkha/2020-10/`). Originally asked: (a) the mapping above, (b) whether `puja-2020` should become an archive issue, (c) whether off-topic groups (amazing-facts, videos, coupon, game, quiz) should be hidden from Google in the Phase 2 content audit. Removing anything needs your approval.

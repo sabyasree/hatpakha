@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportWordPress extends Command
 {
-    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages} {--overwrite-edited : Also overwrite posts edited in /desk (owner decision only)}';
+    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages} {--refresh-pages : Replace pages that have revised copy in database/content/pages, unless edited in /desk} {--overwrite-edited : Also overwrite posts edited in /desk (owner decision only)}';
 
     protected $description = 'Import users, authors, sections, tags, posts (all statuses) and comments from the old WordPress database';
 
@@ -41,6 +41,15 @@ class ImportWordPress extends Command
 
     /** When a post has several categories, the first match in this order wins. */
     private const SECTION_PRIORITY = ['poetry', 'sher-o-shayari', 'short-stories', 'travel', 'translated', 'literature', 'editorial', 'inspiration', 'social'];
+
+    /**
+     * Old categories that were really festival issues → archive issues (owner approved, docs/CATEGORY-MAP.md).
+     * slug => [issue slug yyyy-mm, Bengali title, theme]
+     */
+    private const ARCHIVE_ISSUES = ['puja-2020' => ['2020-10', 'শারদীয়া ১৪২৭', 'puja']];
+
+    /** @var array<string,int> old category slug → issue id */
+    private array $issueByCategory = [];
 
     private const STATUS_MAP = ['publish' => 'published', 'pending' => 'pending', 'draft' => 'draft', 'future' => 'scheduled', 'private' => 'archived'];
 
@@ -91,6 +100,14 @@ class ImportWordPress extends Command
             $old = Slug::normalize($c->slug);
             $this->catSlug[$c->term_id] = $old;
             $new = self::SECTION_MAP[$old] ?? 'social';
+            if (isset(self::ARCHIVE_ISSUES[$old])) {
+                [$issueSlug, $title, $theme] = self::ARCHIVE_ISSUES[$old];
+                $issue = \App\Models\Issue::firstOrCreate(['slug' => $issueSlug], ['title' => $title, 'kind' => 'festival', 'theme_key' => $theme, 'status' => 'published']);
+                $this->issueByCategory[$old] = $issue->id;
+                Redirect::updateOrCreate(['from_path' => "/category/{$old}/"], ['to_path' => "/sonkha/{$issueSlug}/", 'status_code' => 301]);
+
+                continue;
+            }
             if ($old !== $new) {
                 // Merged category: keep the old URL working (docs/SEO.md §1).
                 Redirect::updateOrCreate(['from_path' => "/category/{$old}/"], ['to_path' => "/category/{$new}/", 'status_code' => 301]);
@@ -259,6 +276,7 @@ class ImportWordPress extends Command
         $language = $isBengali ? 'bn' : ($isDevanagari ? 'hi' : 'en');
 
         $catSlugs = $rels->where('taxonomy', 'category')->map(fn ($r) => self::SECTION_MAP[$this->catSlug[$r->term_id] ?? ''] ?? null)->filter()->all();
+        $issueId = $rels->where('taxonomy', 'category')->map(fn ($r) => $this->issueByCategory[$this->catSlug[$r->term_id] ?? ''] ?? null)->filter()->first();
         $byCategory = collect(self::SECTION_PRIORITY)->first(fn ($s) => in_array($s, $catSlugs, true));
         // English-language pieces go to the English section, except shayari written in Latin script.
         $sectionSlug = $language === 'en' && $byCategory !== 'sher-o-shayari' ? 'english' : ($byCategory ?? 'social');
@@ -285,6 +303,7 @@ class ImportWordPress extends Command
             'submitted_at' => $status === 'pending' ? $date : null,
             'published_at' => in_array($status, ['published', 'scheduled', 'archived'], true) ? $date : null,
             'section_id' => $this->sectionId[$sectionSlug] ?? null,
+            'issue_id' => $issueId,
             'featured_image_path' => $imgPath,
             'featured_image_width' => $imgW,
             'featured_image_height' => $imgH,
@@ -439,10 +458,27 @@ class ImportWordPress extends Command
 
         foreach ($rows as $p) {
             $slug = Slug::normalize((string) $p->post_name);
-            if ($slug === '' || Page::where('legacy_wp_id', $p->ID)->orWhere('slug', $slug)->exists()) {
+            if ($slug === '') {
                 continue;
             }
             $revised = self::revisedPage($slug);
+            $existing = Page::where('legacy_wp_id', $p->ID)->orWhere('slug', $slug)->first();
+            if ($existing) {
+                // Refresh only from revised copy, and never over an editor's work in /desk.
+                if ($this->option('refresh-pages') && $revised && ! $existing->edited_in_desk_at) {
+                    $existing->update([
+                        'title' => $revised['title'] ?? $existing->title,
+                        'body_html' => $revised['body'],
+                        'seo_description' => $revised['seo_description'] ?? $existing->seo_description,
+                        'noindex' => (bool) ($revised['noindex'] ?? $existing->noindex),
+                        'show_in_footer' => (bool) ($revised['footer'] ?? $existing->show_in_footer),
+                        'sort' => (int) ($revised['sort'] ?? $existing->sort),
+                    ]);
+                    $refreshed = ($refreshed ?? 0) + 1;
+                }
+
+                continue;
+            }
             Page::create([
                 'slug' => $slug,
                 'legacy_wp_id' => $p->ID,
@@ -455,7 +491,7 @@ class ImportWordPress extends Command
             ]);
             $count++;
         }
-        $this->info("Pages: {$count} new");
+        $this->info("Pages: {$count} new".(isset($refreshed) ? ", {$refreshed} refreshed from revised copy" : ''));
     }
 
     /** @return array<string,string>|null front matter + 'body' from database/content/pages/{slug}.html */

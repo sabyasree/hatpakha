@@ -20,7 +20,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Admin `/desk`: branded, editor+ only, mandatory 2FA (authenticator app or email code, D20), admin-only user management
 - ✅ Console: `hatpakha:role`, `hatpakha:password` (hidden prompt, audited)
 - ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
-- ✅ Tests: 62 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Tests: 64 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ✅ Old WordPress pages imported at their URLs; 7 rewritten as an editor (docs/PAGES-REVIEW.md, owner to confirm); plugin pages 301; /desk → পাতা
 - ✅ Fixed: sanitizer was deleting text inside <span>/<div> (346 posts, 250 published); now unwrapped and kept, with regression tests
@@ -40,10 +40,18 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Fixed: sanitizer blanked 5 long posts (regex limit); now impossible (fallback + regression test). **Staging needs a re-import.**
 - ✅ `[pdf-embedder]` → link to the PDF; `[pageview]` iframes dropped
 - ✅ URL inventory + redirect audit (`php artisan hatpakha:url-audit`): 8,040 old URLs (DB + live Yoast sitemaps) checked against staging; 8,023 OK, the 17 broken (nested `/category/a/b/`, two house-account author URLs, `/sitemap.html`) fixed. ⬜ Re-run before launch with a Search Console export (`--file=`)
-- ⬜ Owner decisions on the audit (docs/AUDIT-SUMMARY.md), then apply in /desk
+- ✅ Owner approved the audit, page policies and category map (D30); submissions are form-only (D29): pages rewritten, `/submit/` holding page until Phase 3
+- ✅ `hatpakha:audit --apply=… --by=<admin>` applies approved suggestions (logged, reversible); `hatpakha:import-wp --refresh-pages` updates pages from revised copy unless edited in /desk
+- ✅ Archive issue শারদীয়া ১৪২৭ (`/sonkha/2020-10/`) from the 8 `puja-2020` posts; old category URL 301s to it
+- 🟡 Owner: run on staging: import --refresh-pages, then audit --apply
 - ✅ Least privilege: the import never grants admin/editor; a re-import takes back panel roles that only came from WordPress (explicit grants via `hatpakha:role` or /desk are logged and kept). `php artisan hatpakha:role --list` shows who can open /desk. Found: 4 old WordPress admins incl. a vendor test account ("test test", @optimusedge.com)
 - ✅ Spam flags (never deletes): 8 accounts (4 bot sign-ups on throwaway domains, 4 Facebook test accounts); real readers who never posted are not flagged
 - ✅ Newsletter: 1,790 MailPoet addresses imported with source + status; 170 unsubscribed/bounced permanently suppressed; only 2 have confirmed consent (+26 unconfirmed form sign-ups). Nobody emailed. ⬜ Owner: approve a one-time re-consent email (Phase 5)
+
+## Launch blockers (must be done before cutover)
+- Phase 3 submission form at `/submit/` (D29: the only way to submit)
+- Final URL audit with a Search Console export
+- Cloudflare cache rules for production
 
 ## Next up (in order)
 1. ✅ Owner: created the GitHub Environments (`staging`, `production`) and secrets (docs/DEPLOYMENT.md), create `new.hatpakha.com` and its database on Hostinger.

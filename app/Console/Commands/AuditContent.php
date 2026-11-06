@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\DB;
  */
 class AuditContent extends Command
 {
-    protected $signature = 'hatpakha:audit {--connection=legacy : Old WordPress DB, used to read old categories (optional)}';
+    protected $signature = 'hatpakha:audit {--connection=legacy : Old WordPress DB, used to read old categories (optional)}
+        {--apply= : Apply the OWNER-APPROVED suggestions of these labels, e.g. remove,merge,noindex}
+        {--by= : Email of the admin recording the decision (required with --apply)}';
 
     protected $description = 'Suggest keep / improve / merge / noindex / remove for every published post';
 
@@ -51,7 +53,41 @@ class AuditContent extends Command
         arsort($reasons);
         $this->table(['Reason', 'Posts'], collect($reasons)->map(fn ($n, $w) => [$w, $n])->values()->all());
         $this->tierBacklog($posts);
+
+        if ($labels = array_filter(array_map('trim', explode(',', (string) $this->option('apply'))))) {
+            return $this->applyApproved($labels);
+        }
         $this->info('Nothing was changed on the site. Review in /desk → লেখা → filter "অডিট".');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Applies suggestions the owner approved (docs/AUDIT-SUMMARY.md). Logged per post, reversible,
+     * and recorded under a named admin, exactly like pressing "সুপারিশ মানুন" in /desk.
+     */
+    private function applyApproved(array $labels): int
+    {
+        $admin = \App\Models\User::where('email', (string) $this->option('by'))->first();
+        if (! $admin || ! $admin->hasRole(\App\Enums\Role::Admin)) {
+            $this->error('--by must be the email of an admin (php artisan hatpakha:role --list).');
+
+            return self::FAILURE;
+        }
+        $bad = array_diff($labels, ['remove', 'merge', 'noindex']);
+        if ($bad) {
+            $this->error('Only remove, merge and noindex can be applied: '.implode(', ', $bad));
+
+            return self::FAILURE;
+        }
+        $todo = Post::published()->whereIn('audit_label', $labels)->whereNull('audit_decision')->get();
+        if (! $this->confirm("Apply {$todo->count()} approved suggestions (".implode(', ', $labels).') as '.$admin->email.'?', true)) {
+            return self::FAILURE;
+        }
+        foreach ($todo as $p) {
+            ContentAudit::apply($p, $admin);
+        }
+        $this->info("Applied {$todo->count()} decisions. Undo any of them in /desk (status back to প্রকাশিত, remove the redirect, untick noindex).");
 
         return self::SUCCESS;
     }

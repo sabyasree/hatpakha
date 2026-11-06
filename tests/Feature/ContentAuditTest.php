@@ -92,4 +92,20 @@ class ContentAuditTest extends TestCase
             ->callTableAction('applyAudit', $p);
         $this->assertTrue($p->fresh()->noindex);
     }
+
+    public function test_owner_approved_suggestions_can_be_applied_from_the_console_by_an_admin_only(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'email' => 'owner@example.com']);
+        User::factory()->create(['role' => Role::Editor, 'email' => 'ed@example.com']);
+        $spam = $this->makePost(['slug' => 'coupon', 'title' => 'Flight Coupon Code deals', 'body_html' => '<p>'.str_repeat('travel ', 100).'</p>']);
+
+        $this->artisan('hatpakha:audit', ['--connection' => 'none', '--apply' => 'remove', '--by' => 'ed@example.com'])->assertFailed();
+        $this->assertNull($spam->fresh()->audit_decision);
+
+        $this->artisan('hatpakha:audit', ['--connection' => 'none', '--apply' => 'remove', '--by' => 'owner@example.com'])
+            ->expectsConfirmation('Apply 1 approved suggestions (remove) as owner@example.com?', 'yes')->assertSuccessful();
+        $this->assertSame('applied', $spam->fresh()->audit_decision);
+        $this->assertSame($admin->id, $spam->fresh()->audit_decided_by);
+        $this->get('/coupon/')->assertStatus(410);
+    }
 }

@@ -51,6 +51,9 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 Route::get('/{y}/{m?}/{d?}', [LegacyController::class, 'dateArchive'])->where(['y' => '(19|20)\d\d', 'm' => '\d{1,2}', 'd' => '\d{1,2}']);
 Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '(?!(desk|livewire|filament|storage|build)$)[^/]+');
 
+// Submission form arrives in Phase 3; until then a holding page (submissions are form-only, owner decision D29).
+Route::get('/submit', fn () => view('submit-soon', ['seo' => new \App\Seo\Seo(title: 'লেখা পাঠান', noindex: true)]))->name('submit');
+
 // Posts at the root, exactly like WordPress. Reserved words are excluded.
 Route::get('/{slug}', PostController::class)
     ->where('slug', '(?!(desk|livewire|filament|up|storage|build|search|submit|account|login|logout|register)$)[^/]+')

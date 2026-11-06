@@ -1,5 +1,8 @@
 # Content audit: summary for the owner
 
+✅ **Approved by the owner (D30).** Apply on each environment with:
+`php artisan hatpakha:audit --apply=remove,merge,noindex --by=<admin email>`
+
 `php artisan hatpakha:audit` looked at all **1,393 published posts**. These are **suggestions only**: nothing has been hidden or removed. Decide per row, then an admin applies it in **/desk → লেখা** (filter "অডিট সুপারিশ", button "সুপারিশ মানুন"), or keeps the post ("রাখুন"). Every action is logged and can be undone.
 
 | Suggestion | What applying it does | Posts |

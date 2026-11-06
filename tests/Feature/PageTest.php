@@ -84,4 +84,15 @@ class PageTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/\[[^\]]*(TODO|placeholder|lorem)/i', $page['body'], 'No placeholders on public pages.');
         }
     }
+
+    public function test_submissions_are_form_only(): void
+    {
+        // Owner decision D29: writing is accepted only through the website form, never by email.
+        $guide = ImportWordPress::revisedPage('submissions')['body'];
+        $this->assertStringContainsString('href="/submit/"', $guide);
+        $this->assertStringNotContainsString('mailto:', $guide);
+        $this->assertStringContainsString('href="/submit/"', ImportWordPress::revisedPage('faqs')['body']);
+
+        $this->get('/submit/')->assertOk()->assertSee('noindex', false)->assertSee('ইমেলে নয়');
+    }
 }
