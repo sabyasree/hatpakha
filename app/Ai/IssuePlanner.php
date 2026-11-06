@@ -54,7 +54,7 @@ final class IssuePlanner
         $slug = $month->format('Y-m');
         $existing = Issue::where('slug', $slug)->first();
         if ($existing && $existing->status !== 'proposed') {
-            return [null, 'এই মাসের সংখ্যা আগেই তৈরি হয়েছে'];
+            return [null, __('এই মাসের সংখ্যা আগেই তৈরি হয়েছে')];
         }
         $editorial = Section::where('slug', 'editorial')->value('id');
         $candidates = Post::with(['authors', 'section', 'latestAiReview'])
@@ -63,7 +63,7 @@ final class IssuePlanner
                 ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '<=', $month->copy()->endOfMonth())))
             ->orderByDesc('published_at')->limit(60)->get();
         if ($candidates->count() < 3) {
-            return [null, 'সংখ্যার জন্য যথেষ্ট নতুন লেখা নেই (অন্তত ৩টি দরকার)'];
+            return [null, __('সংখ্যার জন্য যথেষ্ট নতুন লেখা নেই (অন্তত ৩টি দরকার)')];
         }
         $themes = self::CALENDAR[$month->month];
         $list = $candidates->map(fn (Post $p) => '- id '.$p->id.' | '.$p->section?->name_bn.' | '.$p->title.' | '.($p->authors->first()?->publicName() ?? '')
@@ -85,11 +85,11 @@ final class IssuePlanner
                 'editorial_brief' => ['type' => 'string', 'description' => 'Notes in Bengali for writing this month\'s editorial'],
             ]], null, 6000);
         if (! $plan) {
-            return [null, 'প্রস্তাব তৈরি হয়নি: '.$err];
+            return [null, __('প্রস্তাব তৈরি হয়নি: ').$err];
         }
         $ids = array_values(array_intersect(array_map('intval', (array) $plan['post_ids']), $candidates->pluck('id')->all()));
         if (count($ids) < 3) {
-            return [null, 'প্রস্তাবে যথেষ্ট লেখা আসেনি'];
+            return [null, __('প্রস্তাবে যথেষ্ট লেখা আসেনি')];
         }
         $theme = in_array($plan['theme_key'], $themes, true) ? $plan['theme_key'] : $themes[0];
         $issue = $existing ?? new Issue(['slug' => $slug]);

@@ -25,6 +25,8 @@ use Filament\Pages\Dashboard as BaseDashboard;
  */
 class Dashboard extends BaseDashboard
 {
+    use \App\Filament\Concerns\TranslatedPageLabels;
+
     protected static ?string $title = 'আজকের কাজ';
 
     protected static ?string $navigationLabel = 'আজকের কাজ';
@@ -98,12 +100,12 @@ class Dashboard extends BaseDashboard
     {
         abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
         if ($why = Claude::blocked()) {
-            Notification::make()->title('এআই এখন কাজ করতে পারছে না')->body($why)->warning()->send();
+            Notification::make()->title(__('এআই এখন কাজ করতে পারছে না'))->body($why)->warning()->send();
 
             return;
         }
         $this->planIssueInBackground();
-        Notification::make()->title('এআই সম্পাদক সংখ্যা সাজাচ্ছে')->body('এক-দুই মিনিট পরে পাতাটি নতুন করে খুলুন।')->success()->send();
+        Notification::make()->title(__('এআই সম্পাদক সংখ্যা সাজাচ্ছে'))->body(__('এক-দুই মিনিট পরে পাতাটি নতুন করে খুলুন।'))->success()->send();
     }
 
     private function planIssueInBackground(): void
@@ -131,7 +133,7 @@ class Dashboard extends BaseDashboard
             CommentsTable::setStatus($c, 'approved');
             $n++;
         }
-        Notification::make()->title(\App\Support\Bn::num($n).'টি মন্তব্য প্রকাশিত')->success()->send();
+        Notification::make()->title(\App\Support\Bn::num($n).__('টি মন্তব্য প্রকাশিত'))->success()->send();
     }
 
     public function editUrl(Post $post): string
@@ -142,23 +144,23 @@ class Dashboard extends BaseDashboard
     public function pauseAi(): void
     {
         AiSwitch::set(true);
-        Notification::make()->title('এআই থামানো হয়েছে')->success()->send();
+        Notification::make()->title(__('এআই থামানো হয়েছে'))->success()->send();
     }
 
     public function resumeAi(): void
     {
         AiSwitch::set(false);
-        Notification::make()->title('এআই আবার চালু')->success()->send();
+        Notification::make()->title(__('এআই আবার চালু'))->success()->send();
     }
 
     public function approveComment(int $id): void
     {
-        $this->moderate($id, 'approved', 'মন্তব্য প্রকাশিত');
+        $this->moderate($id, 'approved', __('মন্তব্য প্রকাশিত'));
     }
 
     public function spamComment(int $id): void
     {
-        $this->moderate($id, 'spam', 'স্প্যামে সরানো হয়েছে');
+        $this->moderate($id, 'spam', __('স্প্যামে সরানো হয়েছে'));
     }
 
     private function moderate(int $id, string $status, string $message): void

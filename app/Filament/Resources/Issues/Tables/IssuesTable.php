@@ -17,15 +17,15 @@ class IssuesTable
             ->modifyQueryUsing(fn ($query) => $query->withCount('posts'))
             ->defaultSort('slug', 'desc')
             ->columns([
-                TextColumn::make('title')->label('সংখ্যা')->weight('bold')->searchable()->description(fn (Issue $record) => '/sonkha/'.$record->slug.'/'),
-                TextColumn::make('kind')->label('ধরন')->badge()->formatStateUsing(fn ($state) => $state === 'festival' ? 'উৎসব' : 'মাসিক'),
-                TextColumn::make('theme_key')->label('থিম')->formatStateUsing(fn ($state) => IssueForm::THEMES[$state] ?? $state)->toggleable(),
-                TextColumn::make('posts_count')->label('লেখা')->numeric(),
-                TextColumn::make('status')->label('অবস্থা')->badge()->formatStateUsing(fn ($state) => IssueForm::STATUS[$state] ?? $state)
+                TextColumn::make('title')->label(__('সংখ্যা'))->weight('bold')->searchable()->description(fn (Issue $record) => '/sonkha/'.$record->slug.'/'),
+                TextColumn::make('kind')->label(__('ধরন'))->badge()->formatStateUsing(fn ($state) => $state === 'festival' ? __('উৎসব') : __('মাসিক')),
+                TextColumn::make('theme_key')->label(__('থিম'))->formatStateUsing(fn ($state) => __(IssueForm::THEMES[$state] ?? $state))->toggleable(),
+                TextColumn::make('posts_count')->label(__('লেখা'))->numeric(),
+                TextColumn::make('status')->label(__('অবস্থা'))->badge()->formatStateUsing(fn ($state) => __(IssueForm::STATUS[$state] ?? $state))
                     ->color(fn ($state) => ['published' => 'success', 'proposed' => 'info'][$state] ?? 'warning'),
             ])
             ->recordActions([
-                Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Issue $record) => $record->url())->openUrlInNewTab()
+                Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Issue $record) => $record->url())->openUrlInNewTab()
                     ->visible(fn (Issue $record) => $record->status === 'published'),
                 EditAction::make(),
             ]);

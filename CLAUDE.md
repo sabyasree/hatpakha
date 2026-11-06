@@ -74,4 +74,4 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - Pipe test output carefully: use `set -o pipefail` so a failing `php artisan test | tail` stops the commit.
 
 ## 7. Language
-UI copy is **Bengali-first** (English section for English content). Code, comments and docs are in English. Write UI text simply; a native Bengali copy editor reviews it before launch.
+UI copy is **Bengali-first** (English section for English content). In /desk, write labels in Bengali inside `__()` and add the English to `lang/en.json` (D45; a test checks it). Code, comments and docs are in English. Write UI text simply; a native Bengali copy editor reviews it before launch.

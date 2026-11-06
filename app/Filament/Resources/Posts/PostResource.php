@@ -18,6 +18,15 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PostResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels {
+        getModelLabel as translatedModelLabel;
+    }
+
+    /** "লেখা" is both singular and plural in Bengali; English needs "piece" for one. */
+    public static function getModelLabel(): string
+    {
+        return app()->getLocale() === 'en' ? 'piece' : static::translatedModelLabel();
+    }
     use \App\Filament\Concerns\AdminDeletesOnly;
 
     protected static ?string $model = Post::class;

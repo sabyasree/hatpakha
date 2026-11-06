@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 /** Read-only history of every decision taken in /desk (who, what, when). Admins only. */
 class AuditLogResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels;
     protected static ?string $model = AuditLog::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
@@ -57,19 +58,19 @@ class AuditLogResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'subject']))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('created_at')->label('কখন')->dateTime('d M Y, H:i')->sortable()
+                TextColumn::make('created_at')->label(__('কখন'))->dateTime('d M Y, H:i')->sortable()
                     ->description(fn (AuditLog $record) => $record->created_at?->diffForHumans()),
-                TextColumn::make('user.name')->label('কে')->placeholder('সিস্টেম / কমান্ড')->searchable(),
-                TextColumn::make('action')->label('কী')->badge()
-                    ->formatStateUsing(fn ($state) => self::ACTIONS[$state] ?? $state),
-                TextColumn::make('subject')->label('কোনটি')->wrap()
+                TextColumn::make('user.name')->label(__('কে'))->placeholder(__('সিস্টেম / কমান্ড'))->searchable(),
+                TextColumn::make('action')->label(__('কী'))->badge()
+                    ->formatStateUsing(fn ($state) => __(self::ACTIONS[$state] ?? $state)),
+                TextColumn::make('subject')->label(__('কোনটি'))->wrap()
                     ->state(fn (AuditLog $record) => $record->subject?->title ?? $record->subject?->name ?? $record->subject?->email
                         ?? ($record->subject_type ? class_basename($record->subject_type).' #'.$record->subject_id : '—')),
-                TextColumn::make('meta')->label('বিস্তারিত')->wrap()->toggleable(isToggledHiddenByDefault: true)
+                TextColumn::make('meta')->label(__('বিস্তারিত'))->wrap()->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (AuditLog $record) => $record->meta ? json_encode($record->meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '—'),
             ])
             ->filters([
-                SelectFilter::make('action')->label('কাজ')->options(self::ACTIONS),
+                SelectFilter::make('action')->label(__('কাজ'))->options(\App\Support\Lang::t(self::ACTIONS)),
             ]);
     }
 

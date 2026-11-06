@@ -24,22 +24,22 @@ class IssueForm
     {
         return $schema->components([
             // The AI editor's proposal (D42): what it chose and why. The owner approves from the top of the page.
-            \Filament\Schemas\Components\Section::make('এআই সম্পাদকের প্রস্তাব')->columnSpanFull()
+            \Filament\Schemas\Components\Section::make(__('এআই সম্পাদকের প্রস্তাব'))->columnSpanFull()
                 ->visible(fn ($record) => filled($record?->ai_plan))
                 ->schema([
                     \Filament\Forms\Components\Placeholder::make('plan')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
                         view('filament.issue-plan', ['issue' => $record])->render())),
                 ]),
-            TextInput::make('title')->label('সংখ্যার নাম')->required()->maxLength(120)->placeholder('যেমন: শারদীয়া ১৪৩৩'),
-            TextInput::make('slug')->label('ঠিকানা')->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
-                ->unique(ignoreRecord: true)->helperText('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।')
+            TextInput::make('title')->label(__('সংখ্যার নাম'))->required()->maxLength(120)->placeholder(__('যেমন: শারদীয়া ১৪৩৩')),
+            TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
+                ->unique(ignoreRecord: true)->helperText(__('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।'))
                 ->disabled(fn ($record) => $record?->status === 'published'),
-            Select::make('kind')->label('ধরন')->options(['festival' => 'উৎসব সংখ্যা', 'monthly' => 'মাসিক সংখ্যা'])->required()->default('monthly'),
-            Select::make('theme_key')->label('প্রচ্ছদের থিম')->options(self::THEMES)->required(),
-            Select::make('status')->label('অবস্থা')->options(self::STATUS)->required()->default('planning'),
-            DateTimePicker::make('published_at')->label('প্রকাশের তারিখ')->seconds(false),
-            Textarea::make('editor_note')->label('সম্পাদকের কথা')->rows(6)->maxLength(5000)->columnSpanFull()
-                ->helperText('সংখ্যার শুরুতে ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।'),
+            Select::make('kind')->label(__('ধরন'))->options(['festival' => __('উৎসব সংখ্যা'), 'monthly' => __('মাসিক সংখ্যা')])->required()->default('monthly'),
+            Select::make('theme_key')->label(__('প্রচ্ছদের থিম'))->options(\App\Support\Lang::t(self::THEMES))->required(),
+            Select::make('status')->label(__('অবস্থা'))->options(\App\Support\Lang::t(self::STATUS))->required()->default('planning'),
+            DateTimePicker::make('published_at')->label(__('প্রকাশের তারিখ'))->seconds(false),
+            Textarea::make('editor_note')->label(__('সম্পাদকের কথা'))->rows(6)->maxLength(5000)->columnSpanFull()
+                ->helperText(__('সংখ্যার শুরুতে ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।')),
         ]);
     }
 }

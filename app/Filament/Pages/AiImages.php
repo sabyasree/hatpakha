@@ -18,6 +18,8 @@ use Filament\Support\Icons\Heroicon;
  */
 class AiImages extends Page
 {
+    use \App\Filament\Concerns\TranslatedPageLabels;
+
     protected string $view = 'filament.pages.ai-images';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
@@ -68,14 +70,14 @@ class AiImages extends Page
         }
         AuditLog::record('post.ai_images_approved', null, ['count' => $n]);
         $this->picked = [];
-        Notification::make()->title(\App\Support\Bn::num($n).'টি ছবি সাইটে বসানো হয়েছে')->success()->send();
+        Notification::make()->title(\App\Support\Bn::num($n).__('টি ছবি সাইটে বসানো হয়েছে'))->success()->send();
     }
 
     public function drop(int $id): void
     {
         $post = self::waiting()->findOrFail($id);
         CoverImage::discardProposed($post);
-        $post->forceFill(['proposed_image_error' => 'বাদ দেওয়া হয়েছে'])->save();   // not redrawn by the batch unless asked
+        $post->forceFill(['proposed_image_error' => __('বাদ দেওয়া হয়েছে')])->save();   // not redrawn by the batch unless asked
         unset($this->picked[$id]);
     }
 
@@ -84,7 +86,7 @@ class AiImages extends Page
         $post = self::waiting()->findOrFail($id);
         CoverImage::discardProposed($post);
         $why = Illustrator::make($post->fresh());
-        $why ? Notification::make()->title('আবার আঁকা গেল না')->body($why)->warning()->send()
-             : Notification::make()->title('নতুন ছবি তৈরি')->success()->send();
+        $why ? Notification::make()->title(__('আবার আঁকা গেল না'))->body($why)->warning()->send()
+             : Notification::make()->title(__('নতুন ছবি তৈরি'))->success()->send();
     }
 }

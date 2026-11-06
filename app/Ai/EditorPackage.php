@@ -36,7 +36,7 @@ final class EditorPackage
     {
         $out = [];
         foreach (self::edits($post) as $i => $e) {
-            $out[$i] = $e['original'].' → '.$e['replacement'].' · '.(CopyEdit::LABELS[$e['kind']] ?? $e['kind']);
+            $out[$i] = $e['original'].' → '.$e['replacement'].' · '.__(CopyEdit::LABELS[$e['kind']] ?? $e['kind']);
         }
 
         return $out;

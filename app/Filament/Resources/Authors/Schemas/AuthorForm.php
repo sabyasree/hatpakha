@@ -16,16 +16,16 @@ class AuthorForm
         $admin = fn () => auth()->user()?->hasRole(Role::Admin) ?? false;
 
         return $schema->components([
-            TextInput::make('display_name')->label('ছাপার নাম')->required()->maxLength(120),
-            TextInput::make('display_name_bn')->label('বাংলা বানানে নাম (লেখক নিজে দিলে)')->maxLength(120),
+            TextInput::make('display_name')->label(__('ছাপার নাম'))->required()->maxLength(120),
+            TextInput::make('display_name_bn')->label(__('বাংলা বানানে নাম (লেখক নিজে দিলে)'))->maxLength(120),
             // The URL is permanent: old links and Google depend on it (docs/SEO.md §1).
-            TextInput::make('slug')->label('ঠিকানা')->prefix('/author/')->suffix('/')->required()->maxLength(191)
-                ->unique(ignoreRecord: true)->disabledOn('edit')->helperText('একবার তৈরি হলে বদলানো যায় না।'),
-            TextInput::make('city')->label('শহর')->maxLength(80),
-            Textarea::make('bio')->label('পরিচয়')->rows(4)->maxLength(2000)->columnSpanFull(),
-            Section::make('ধরন (শুধু অ্যাডমিন)')->columns(2)->visible($admin)->schema([
-                Toggle::make('is_guest')->label('অতিথি লেখক (অ্যাকাউন্ট নেই)'),
-                Toggle::make('is_desk')->label('হাতপাখা ডেস্কের বাইলাইন'),
+            TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/author/')->suffix('/')->required()->maxLength(191)
+                ->unique(ignoreRecord: true)->disabledOn('edit')->helperText(__('একবার তৈরি হলে বদলানো যায় না।')),
+            TextInput::make('city')->label(__('শহর'))->maxLength(80),
+            Textarea::make('bio')->label(__('পরিচয়'))->rows(4)->maxLength(2000)->columnSpanFull(),
+            Section::make(__('ধরন (শুধু অ্যাডমিন)'))->columns(2)->visible($admin)->schema([
+                Toggle::make('is_guest')->label(__('অতিথি লেখক (অ্যাকাউন্ট নেই)')),
+                Toggle::make('is_desk')->label(__('হাতপাখা ডেস্কের বাইলাইন')),
             ]),
         ]);
     }

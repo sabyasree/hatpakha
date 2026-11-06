@@ -17,6 +17,8 @@ use Illuminate\Support\Collection;
  */
 class AiBlindTest extends Page
 {
+    use \App\Filament\Concerns\TranslatedPageLabels;
+
     protected string $view = 'filament.pages.ai-blind-test';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;

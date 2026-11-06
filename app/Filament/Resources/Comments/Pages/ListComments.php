@@ -20,11 +20,11 @@ class ListComments extends ListRecords
     public function getTabs(): array
     {
         return [
-            'pending' => Tab::make('অপেক্ষায়')->badge(fn () => Comment::where('status', 'pending')->count() ?: null)
+            'pending' => Tab::make(__('অপেক্ষায়'))->badge(fn () => Comment::where('status', 'pending')->count() ?: null)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')),
-            'approved' => Tab::make('প্রকাশিত')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'approved')),
-            'spam' => Tab::make('স্প্যাম')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'spam')),
-            'all' => Tab::make('সব'),
+            'approved' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'approved')),
+            'spam' => Tab::make(__('স্প্যাম'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'spam')),
+            'all' => Tab::make(__('সব')),
         ];
     }
 }

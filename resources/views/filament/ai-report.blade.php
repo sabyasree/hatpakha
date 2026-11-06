@@ -13,60 +13,60 @@
 @endphp
 <div style="font-size:.95rem;line-height:1.75">
     @if (! $review)
-        <p>এখনও কোনও এআই রিপোর্ট নেই।</p>
+        <p>{{ __('এখনও কোনও এআই রিপোর্ট নেই।') }}</p>
     @elseif ($review->status !== 'done')
-        <p><strong>রিপোর্ট হয়নি:</strong> {{ $review->error }}</p>
+        <p><strong>{{ __('রিপোর্ট হয়নি:') }}</strong> {{ $review->error }}</p>
     @else
         <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
             <x-filament::badge size="lg" :color="$r['quality_score'] >= 7 ? 'success' : ($r['quality_score'] >= 5 ? 'warning' : 'gray')">
-                মান {{ Bn::num((string) $r['quality_score']) }} / ১০
+                {{ __('মান') }} {{ Bn::num((string) $r['quality_score']) }} {{ __('/ ১০') }}
             </x-filament::badge>
             <x-filament::badge :color="($r['fits_magazine'] ?? false) ? 'success' : 'danger'">
-                {{ ($r['fits_magazine'] ?? false) ? 'পত্রিকার উপযোগী' : 'পত্রিকার উপযোগী নয়' }}
+                {{ ($r['fits_magazine'] ?? false) ? __('পত্রিকার উপযোগী') : __('পত্রিকার উপযোগী নয়') }}
             </x-filament::badge>
             @if (! empty($r['genre']))<span style="opacity:.75">{{ $r['genre'] }}</span>@endif
         </div>
 
         @if (! empty($r['decision']))
-            @php($d = ['publish' => ['প্রস্তাব: প্রকাশ করা যায়', 'success'], 'changes' => ['প্রস্তাব: লেখককে বদল চাওয়া', 'warning'], 'decline' => ['প্রস্তাব: এবার নয়', 'gray']][$r['decision']] ?? null)
+            @php($d = ['publish' => [__('প্রস্তাব: প্রকাশ করা যায়'), 'success'], 'changes' => [__('প্রস্তাব: লেখককে বদল চাওয়া'), 'warning'], 'decline' => [__('প্রস্তাব: এবার নয়'), 'gray']][$r['decision']] ?? null)
             @if ($d)<div style="margin-top:.6rem"><x-filament::badge :color="$d[1]">{{ $d[0] }}</x-filament::badge></div>@endif
         @endif
         <p style="margin:.75rem 0 0">{{ $r['summary'] ?? '' }}</p>
         @if (! empty($r['note_to_writer']))
-            <div style="{{ $box }}"><p style="{{ $h }}">লেখককে খসড়া বার্তা</p>{{ $r['note_to_writer'] }}</div>
+            <div style="{{ $box }}"><p style="{{ $h }}">{{ __('লেখককে খসড়া বার্তা') }}</p>{{ $r['note_to_writer'] }}</div>
         @endif
 
         @if (! empty($r['policy_flags']))
-            <div style="{{ $box }};border-color:#B0162B"><p style="{{ $h }};color:#B0162B">সাবধান</p>{{ implode(', ', $r['policy_flags']) }}</div>
+            <div style="{{ $box }};border-color:#B0162B"><p style="{{ $h }};color:#B0162B">{{ __('সাবধান') }}</p>{{ implode(', ', $r['policy_flags']) }}</div>
         @endif
 
         @if (! empty($r['strengths']))
-            <div style="{{ $box }}"><p style="{{ $h }}">ভালো দিক</p>
+            <div style="{{ $box }}"><p style="{{ $h }}">{{ __('ভালো দিক') }}</p>
                 <ul style="margin:0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['strengths'] as $s)<li>{{ $s }}</li>@endforeach</ul></div>
         @endif
 
         @if (! empty($r['suggestions']))
-            <div style="{{ $box }}"><p style="{{ $h }}">লেখকের জন্য পরামর্শ</p>
+            <div style="{{ $box }}"><p style="{{ $h }}">{{ __('লেখকের জন্য পরামর্শ') }}</p>
                 <ol style="margin:0;padding-inline-start:1.2rem;list-style:decimal">@foreach ($r['suggestions'] as $s)<li>{{ $s }}</li>@endforeach</ol></div>
         @endif
 
         @if (! empty($r['edits']))
-            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">সংশোধন ({{ Bn::num(count($r['edits'])) }}টি)</summary>
-                <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['edits'] as $e)<li>{{ $e['original'] ?? '' }} → <strong>{{ $e['replacement'] ?? '' }}</strong> <span style="opacity:.65">· {{ \App\Ai\CopyEdit::LABELS[$e['kind'] ?? 'word'] ?? '' }}</span></li>@endforeach</ul></details>
+            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">{{ __('সংশোধন (') }}{{ Bn::num(count($r['edits'])) }}{{ __('টি)') }}</summary>
+                <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['edits'] as $e)<li>{{ $e['original'] ?? '' }} → <strong>{{ $e['replacement'] ?? '' }}</strong> <span style="opacity:.65">· {{ __(\App\Ai\CopyEdit::LABELS[$e['kind'] ?? 'word'] ?? '') }}</span></li>@endforeach</ul></details>
         @endif
         @if (! empty($r['excerpt']))
-            <p style="margin:.75rem 0 0"><strong>এক লাইনের পরিচিতি:</strong> {{ $r['excerpt'] }}</p>
+            <p style="margin:.75rem 0 0"><strong>{{ __('এক লাইনের পরিচিতি:') }}</strong> {{ $r['excerpt'] }}</p>
         @endif
         @if (! empty($r['spelling']))
-            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">বানান ({{ Bn::num(count($r['spelling'])) }}টি)</summary>
+            <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">{{ __('বানান (') }}{{ Bn::num(count($r['spelling'])) }}{{ __('টি)') }}</summary>
                 <ul style="margin:.4rem 0 0;padding-inline-start:1.2rem;list-style:disc">@foreach ($r['spelling'] as $sp)<li>{{ $sp['original'] ?? '' }} → <strong>{{ $sp['suggestion'] ?? '' }}</strong></li>@endforeach</ul></details>
         @endif
 
-        <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">বিভাগ, ট্যাগ, গুগলের জন্য</summary>
-            <p style="margin:.4rem 0 0"><strong>বিভাগ:</strong> {{ $sectionName($r['suggested_section'] ?? '') }}</p>
-            <p style="margin:0"><strong>ট্যাগ:</strong> {{ implode(', ', $r['tags'] ?? []) }}</p>
-            <p style="margin:0"><strong>শিরোনাম:</strong> {{ $r['seo_title'] ?? '' }}</p>
-            <p style="margin:0"><strong>বিবরণ:</strong> {{ $r['seo_description'] ?? '' }}</p>
+        <details style="{{ $box }}"><summary style="cursor:pointer;font-weight:700">{{ __('বিভাগ, ট্যাগ, গুগলের জন্য') }}</summary>
+            <p style="margin:.4rem 0 0"><strong>{{ __('বিভাগ:') }}</strong> {{ $sectionName($r['suggested_section'] ?? '') }}</p>
+            <p style="margin:0"><strong>{{ __('ট্যাগ:') }}</strong> {{ implode(', ', $r['tags'] ?? []) }}</p>
+            <p style="margin:0"><strong>{{ __('শিরোনাম:') }}</strong> {{ $r['seo_title'] ?? '' }}</p>
+            <p style="margin:0"><strong>{{ __('বিবরণ:') }}</strong> {{ $r['seo_description'] ?? '' }}</p>
             @if (! empty($r['fit_reason']))<p style="margin:.4rem 0 0;opacity:.75">{{ $r['fit_reason'] }}</p>@endif
         </details>
 

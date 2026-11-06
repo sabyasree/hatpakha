@@ -19,6 +19,8 @@ use Filament\Support\Icons\Heroicon;
 /** Admin-only: AI status, this month's spend, and the editable editorial rubric (PLAN.md §4). */
 class AiSettings extends Page
 {
+    use \App\Filament\Concerns\TranslatedPageLabels;
+
     protected string $view = 'filament.pages.ai-settings';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
@@ -46,8 +48,8 @@ class AiSettings extends Page
     public function form(Schema $schema): Schema
     {
         return $schema->statePath('data')->components([
-            Textarea::make('rubric')->label('সম্পাদকীয় মানদণ্ড (এআই এটা মেনে রিপোর্ট লেখে)')->rows(22)->required()->maxLength(20000)
-                ->helperText('বদলালে পরের রিপোর্ট থেকে কার্যকর। এআই শুধু পরামর্শ দেয়; সিদ্ধান্ত সম্পাদকের।'),
+            Textarea::make('rubric')->label(__('সম্পাদকীয় মানদণ্ড (এআই এটা মেনে রিপোর্ট লেখে)'))->rows(22)->required()->maxLength(20000)
+                ->helperText(__('বদলালে পরের রিপোর্ট থেকে কার্যকর। এআই শুধু পরামর্শ দেয়; সিদ্ধান্ত সম্পাদকের।')),
         ]);
     }
 
@@ -55,29 +57,29 @@ class AiSettings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('checkKeys')->label('চাবি যাচাই')->icon('heroicon-o-key')->color('gray')
+            Action::make('checkKeys')->label(__('চাবি যাচাই'))->icon('heroicon-o-key')->color('gray')
                 ->action(function () {
                     $names = ['anthropic' => 'Claude', 'openai' => 'OpenAI'];
                     $all = \App\Ai\KeyCheck::run();
                     $body = collect($all)->map(fn ($r, $p) => ($r['ok'] ? '✓ ' : '✗ ').$names[$p].': '.$r['message'])->implode("\n");
                     $ok = collect($all)->every(fn ($r) => $r['ok']);
-                    Notification::make()->title($ok ? 'দুটো চাবিই কাজ করছে' : 'কিছু ঠিক করতে হবে')->body($body)
+                    Notification::make()->title($ok ? __('দুটো চাবিই কাজ করছে') : __('কিছু ঠিক করতে হবে'))->body($body)
                         ->{$ok ? 'success' : 'warning'}()->persistent()->send();
                 }),
-            Action::make('pause')->label('এআই থামান')->icon('heroicon-o-pause')->color('danger')
+            Action::make('pause')->label(__('এআই থামান'))->icon('heroicon-o-pause')->color('danger')
                 ->visible(fn () => ! AiSwitch::paused())
-                ->requiresConfirmation()->modalHeading('এআই থামাবেন?')
-                ->modalDescription('নতুন লেখার এআই রিপোর্ট আর তৈরি হবে না, খরচও হবে না। জমা আর সম্পাদনা আগের মতোই চলবে। যেকোনো সময় আবার চালু করা যায়।')
-                ->modalSubmitActionLabel('থামান')
+                ->requiresConfirmation()->modalHeading(__('এআই থামাবেন?'))
+                ->modalDescription(__('নতুন লেখার এআই রিপোর্ট আর তৈরি হবে না, খরচও হবে না। জমা আর সম্পাদনা আগের মতোই চলবে। যেকোনো সময় আবার চালু করা যায়।'))
+                ->modalSubmitActionLabel(__('থামান'))
                 ->action(function () {
                     AiSwitch::set(true);
-                    Notification::make()->title('এআই থামানো হয়েছে')->success()->send();
+                    Notification::make()->title(__('এআই থামানো হয়েছে'))->success()->send();
                 }),
-            Action::make('resume')->label('এআই চালু করুন')->icon('heroicon-o-play')->color('success')
+            Action::make('resume')->label(__('এআই চালু করুন'))->icon('heroicon-o-play')->color('success')
                 ->visible(fn () => AiSwitch::paused())
                 ->action(function () {
                     AiSwitch::set(false);
-                    Notification::make()->title('এআই আবার চালু')->success()->send();
+                    Notification::make()->title(__('এআই আবার চালু'))->success()->send();
                 }),
         ];
     }
@@ -87,7 +89,7 @@ class AiSettings extends Page
         $rubric = (string) $this->form->getState()['rubric'];
         Setting::put('ai.rubric', $rubric);
         AuditLog::record('ai.rubric_changed', null, ['length' => mb_strlen($rubric)]);
-        Notification::make()->title('মানদণ্ড রাখা হয়েছে')->success()->send();
+        Notification::make()->title(__('মানদণ্ড রাখা হয়েছে'))->success()->send();
     }
 
     public function stats(): array

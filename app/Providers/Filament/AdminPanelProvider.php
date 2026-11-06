@@ -49,10 +49,17 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             // Everyone can change their name, password and 2FA (app / recovery codes) here.
             ->profile(isSimple: false)
+            // বাংলা / English switch for each desk user (D45).
+            ->userMenuItems([
+                \Filament\Actions\Action::make('deskLanguage')
+                    ->label(fn () => app()->getLocale() === 'en' ? 'বাংলা' : 'English')
+                    ->icon('heroicon-o-language')
+                    ->url(fn () => route('desk.language', app()->getLocale() === 'en' ? 'bn' : 'en')),
+            ])
             ->navigationGroups([
                 // Editors' daily work is the top three items; everything else is folded away.
-                NavigationGroup::make('আরও')->collapsed(),
-                NavigationGroup::make('প্রশাসন')->collapsed(),
+                NavigationGroup::make('আরও')->label(fn () => __('আরও'))->collapsed(),
+                NavigationGroup::make('প্রশাসন')->label(fn () => __('প্রশাসন'))->collapsed(),
             ])
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications(false)
@@ -87,7 +94,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->middleware([\App\Http\Middleware\DeskLocale::class], isPersistent: true)
             // Bengali calendar names + Bengali digits on screen (public/js/desk-bn.js).
-            ->renderHook(\Filament\View\PanelsRenderHook::BODY_END, fn () => new \Illuminate\Support\HtmlString('<script src="'.asset('js/desk-bn.js').'?v=3"></script>'))
+            ->renderHook(\Filament\View\PanelsRenderHook::BODY_END, fn () => app()->getLocale() === 'bn' ? new \Illuminate\Support\HtmlString('<script src="'.asset('js/desk-bn.js').'?v=3"></script>') : '')
             ->authMiddleware([Authenticate::class])
             ->loginRouteSlug('login')
             ->authGuard('web');

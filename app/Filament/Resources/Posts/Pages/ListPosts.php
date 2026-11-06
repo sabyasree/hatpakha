@@ -22,15 +22,15 @@ class ListPosts extends ListRecords
     public function getTabs(): array
     {
         return [
-            'review' => Tab::make('অপেক্ষায়')
+            'review' => Tab::make(__('অপেক্ষায়'))
                 ->badge(fn () => Post::where('status', 'pending')->whereNotNull('submitted_by')->count() ?: null)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNotNull('submitted_by')->reorder()->orderBy('submitted_at')),
             // The 424 old WordPress submissions, kept apart so they never bury new ones (tiers: D16, Phase 2).
-            'backlog' => Tab::make('পুরনো জমা')
+            'backlog' => Tab::make(__('পুরনো জমা'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->reorder()->orderBy('backlog_tier')->orderByDesc('submitted_at')),
-            'changes' => Tab::make('বদল চাওয়া')->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
-            'published' => Tab::make('প্রকাশিত')->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ['published', 'scheduled'])),
-            'all' => Tab::make('সব'),
+            'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
+            'published' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ['published', 'scheduled'])),
+            'all' => Tab::make(__('সব')),
         ];
     }
 

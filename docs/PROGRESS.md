@@ -81,6 +81,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - 🟡 Owner: set `OPENAI_IMAGE_MODEL` (+ `OPENAI_IMAGE_PRICE`) in ENV_FILE; then the batch makes pictures
 - 🟡 Backlog batch on staging (`hatpakha:ai-editor --backlog --images`, started by a `[run-ai-editor]` deploy, runs in the background, log: storage/logs/ai-editor.log)
 
+## Desk language ✅ (D45)
+- বাংলা / English switch in the user menu (top right), per user; every desk label, page, button, filter, date and number follows it; `lang/en.json` + coverage test
+
 ## Deploys
 - ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
 

@@ -85,6 +85,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/submit/{post}/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->whereNumber('post')->middleware('throttle:60,1');
 });
 
+// /desk language (D45): saved on the user's account, then back to where they were.
+Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $request, string $locale) {
+    abort_unless(in_array($locale, ['bn', 'en'], true), 404);
+    $request->user()->forceFill(['desk_locale' => $locale])->save();
+
+    return redirect()->back(fallback: url('/desk'));
+})->middleware('auth')->name('desk.language');
+
 // Reader comments (D39): guests and signed-in readers; plain text, moderated until trusted.
 Route::post('/comment/{post}', [\App\Http\Controllers\CommentController::class, 'store'])->whereNumber('post')->middleware('throttle:comment')->name('comment.store');
 

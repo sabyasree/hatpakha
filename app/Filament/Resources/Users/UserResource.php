@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 
 class UserResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels;
     use \App\Filament\Concerns\AdminDeletesOnly;
 
     /** Only admins manage accounts and roles (docs/SECURITY.md §3). */

@@ -29,32 +29,32 @@ class UsersTable
         return $table
             ->defaultSort('last_login_at', 'desc')
             ->columns([
-                TextColumn::make('name')->label('নাম')->weight('bold')->searchable(['name', 'email'])
+                TextColumn::make('name')->label(__('নাম'))->weight('bold')->searchable(['name', 'email'])
                     ->description(fn (User $record) => $record->email),
-                TextColumn::make('role')->label('ভূমিকা')->badge()
+                TextColumn::make('role')->label(__('ভূমিকা'))->badge()
                     ->formatStateUsing(fn ($state) => UserForm::roles()[$roleValue($state)] ?? $roleValue($state))
                     ->color(fn ($state) => in_array($roleValue($state), ['editor', 'chief_editor', 'admin'], true) ? 'danger' : 'gray'),
-                IconColumn::make('twofa')->label('২-ধাপ')->boolean()
+                IconColumn::make('twofa')->label(__('২-ধাপ'))->boolean()
                     ->state(fn (User $record) => filled($record->app_authentication_secret) || $record->hasEmailAuthentication()),
-                TextColumn::make('legacy_role')->label('পুরনো ভূমিকা')->placeholder('—')->toggleable(),
-                TextColumn::make('spam_reason')->label('স্প্যাম')->badge()->color('warning')->placeholder('—')->toggleable(),
-                TextColumn::make('last_login_at')->label('শেষ লগইন')->since()->sortable()->placeholder('কখনও না'),
-                TextColumn::make('created_at')->label('যোগ দিয়েছেন')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('legacy_role')->label(__('পুরনো ভূমিকা'))->placeholder('—')->toggleable(),
+                TextColumn::make('spam_reason')->label(__('স্প্যাম'))->badge()->color('warning')->placeholder('—')->toggleable(),
+                TextColumn::make('last_login_at')->label(__('শেষ লগইন'))->since()->sortable()->placeholder(__('কখনও না')),
+                TextColumn::make('created_at')->label(__('যোগ দিয়েছেন'))->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('role')->label('ভূমিকা')->options(UserForm::roles()),
-                SelectFilter::make('desk')->label('ডেস্ক খুলতে পারেন')->options(['yes' => 'হ্যাঁ'])
+                SelectFilter::make('role')->label(__('ভূমিকা'))->options(UserForm::roles()),
+                SelectFilter::make('desk')->label(__('ডেস্ক খুলতে পারেন'))->options(['yes' => __('হ্যাঁ')])
                     ->query(fn ($query, array $data) => ($data['value'] ?? null) === 'yes'
                         ? $query->whereIn('role', ['editor', 'chief_editor', 'admin']) : $query),
-                TernaryFilter::make('spam_reason')->label('স্প্যাম চিহ্নিত')->nullable(),
+                TernaryFilter::make('spam_reason')->label(__('স্প্যাম চিহ্নিত'))->nullable(),
             ])
             ->recordActions([
-                Action::make('resetLink')->label('পাসওয়ার্ড লিংক')->icon('heroicon-o-key')->color('gray')
-                    ->requiresConfirmation()->modalDescription(fn (User $record) => "{$record->email} ঠিকানায় নতুন পাসওয়ার্ড বানানোর লিংক যাবে।")
+                Action::make('resetLink')->label(__('পাসওয়ার্ড লিংক'))->icon('heroicon-o-key')->color('gray')
+                    ->requiresConfirmation()->modalDescription(fn (User $record) => __(':email ঠিকানায় নতুন পাসওয়ার্ড বানানোর লিংক যাবে।', ['email' => $record->email]))
                     ->action(function (User $record) {
                         $ok = self::sendResetLink($record);
                         \App\Models\AuditLog::record('user.reset_link_sent', $record, ['by' => auth()->id()]);
-                        Notification::make()->title($ok ? 'লিংক পাঠানো হয়েছে' : 'এখনই পাঠানো গেল না, একটু পরে চেষ্টা করুন')
+                        Notification::make()->title($ok ? __('লিংক পাঠানো হয়েছে') : __('এখনই পাঠানো গেল না, একটু পরে চেষ্টা করুন'))
                             ->{$ok ? 'success' : 'warning'}()->send();
                     }),
                 EditAction::make(),

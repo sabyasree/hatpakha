@@ -20,14 +20,14 @@ class SectionsTable
             ->reorderable('sort')
             ->columns([
                 ColorColumn::make('color')->label(''),
-                TextColumn::make('name_bn')->label('বিভাগ')->weight('bold')->searchable(['name_bn', 'name_en', 'slug'])
+                TextColumn::make('name_bn')->label(__('বিভাগ'))->weight('bold')->searchable(['name_bn', 'name_en', 'slug'])
                     ->description(fn (Section $record) => '/category/'.$record->slug.'/'),
-                TextColumn::make('format')->label('ধরন')->badge()->formatStateUsing(fn ($state) => $state === 'poem' ? 'কবিতা' : 'গদ্য'),
-                TextColumn::make('posts_count')->label('লেখা')->numeric(),
-                IconColumn::make('is_active')->label('সক্রিয়')->boolean(),
+                TextColumn::make('format')->label(__('ধরন'))->badge()->formatStateUsing(fn ($state) => $state === 'poem' ? __('কবিতা') : __('গদ্য')),
+                TextColumn::make('posts_count')->label(__('লেখা'))->numeric(),
+                IconColumn::make('is_active')->label(__('সক্রিয়'))->boolean(),
             ])
             ->recordActions([
-                Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Section $record) => $record->url())->openUrlInNewTab(),
+                Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Section $record) => $record->url())->openUrlInNewTab(),
                 EditAction::make(),
             ]);
     }

@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 
 class AuthorResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels;
     use \App\Filament\Concerns\AdminDeletesOnly;
 
     protected static ?string $model = Author::class;

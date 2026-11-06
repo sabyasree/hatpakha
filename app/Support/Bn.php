@@ -11,8 +11,15 @@ final class Bn
         return self::num((string) $y);
     }
 
+    /** /desk in English (D45): digits stay 0-9. The public site never sets this. */
+    public static bool $latin = false;
+
     public static function num(int|string $n): string
     {
+        if (self::$latin) {
+            return is_int($n) ? number_format($n) : (string) $n;
+        }
+
         return strtr(is_int($n) ? number_format($n) : $n, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
     }
 

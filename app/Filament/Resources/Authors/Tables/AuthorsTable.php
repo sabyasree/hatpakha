@@ -16,17 +16,17 @@ class AuthorsTable
         return $table
             ->defaultSort('published_count', 'desc')
             ->columns([
-                TextColumn::make('display_name')->label('নাম')->searchable(['display_name', 'display_name_bn', 'slug'])->weight('bold')
+                TextColumn::make('display_name')->label(__('নাম'))->searchable(['display_name', 'display_name_bn', 'slug'])->weight('bold')
                     ->description(fn (Author $record) => $record->display_name_bn ?: '/author/'.$record->slug.'/'),
-                TextColumn::make('kind')->label('ধরন')->badge()
-                    ->state(fn (Author $record) => $record->is_desk ? 'ডেস্ক' : ($record->user_id ? 'অ্যাকাউন্ট' : 'অতিথি'))
-                    ->color(fn ($state) => ['ডেস্ক' => 'danger', 'অ্যাকাউন্ট' => 'success'][$state] ?? 'gray'),
-                TextColumn::make('published_count')->label('প্রকাশিত')->numeric()->sortable(),
-                TextColumn::make('city')->label('শহর')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')->label('শেষ বদল')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('kind')->label(__('ধরন'))->badge()
+                    ->state(fn (Author $record) => $record->is_desk ? __('ডেস্ক') : ($record->user_id ? __('অ্যাকাউন্ট') : __('অতিথি')))
+                    ->color(fn ($state) => [__('ডেস্ক') => 'danger', __('অ্যাকাউন্ট') => 'success'][$state] ?? 'gray'),
+                TextColumn::make('published_count')->label(__('প্রকাশিত'))->numeric()->sortable(),
+                TextColumn::make('city')->label(__('শহর'))->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')->label(__('শেষ বদল'))->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('kind')->label('ধরন')->options(['account' => 'অ্যাকাউন্ট', 'guest' => 'অতিথি', 'desk' => 'ডেস্ক'])
+                SelectFilter::make('kind')->label(__('ধরন'))->options(['account' => __('অ্যাকাউন্ট'), 'guest' => __('অতিথি'), 'desk' => __('ডেস্ক')])
                     ->query(fn ($query, array $data) => match ($data['value'] ?? null) {
                         'account' => $query->whereNotNull('user_id'),
                         'guest' => $query->whereNull('user_id')->where('is_desk', false),
@@ -35,7 +35,7 @@ class AuthorsTable
                     }),
             ])
             ->recordActions([
-                Action::make('view')->label('দেখুন')->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Author $record) => $record->url())->openUrlInNewTab(),
+                Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Author $record) => $record->url())->openUrlInNewTab(),
                 EditAction::make(),
             ]);
     }
