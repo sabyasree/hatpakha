@@ -20,7 +20,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Admin `/desk`: branded, editor+ only, mandatory 2FA (authenticator app or email code, D20), admin-only user management
 - ✅ Console: `hatpakha:role`, `hatpakha:password` (hidden prompt, audited)
 - ✅ Staging/non-live sites are noindex (`SEO_INDEXABLE`, robots + `X-Robots-Tag`)
-- ✅ Tests: 45 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
+- ✅ Tests: 47 passing (SEO URL policy, meta, JSON-LD, sitemaps, headers, XSS, legacy login, roles)
 - ✅ CI (tests + composer/npm audit) and SSH deploy workflows
 - ✅ Old WordPress pages imported at their URLs; 7 rewritten as an editor (docs/PAGES-REVIEW.md, owner to confirm); plugin pages 301; /desk → পাতা
 - ✅ Fixed: sanitizer was deleting text inside <span>/<div> (346 posts, 250 published); now unwrapped and kept, with regression tests
@@ -29,7 +29,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Fonts self-hosted (`public/fonts/`, OFL): Anek Bangla (variable weight+width), Noto Serif Bengali, Galada; Bengali faces preloaded; site and /desk share one stylesheet; CSP no longer allows any font host
 - ✅ Staging: WordPress imported (same counts as local), uploads copied (6.7 GB), owner promoted to admin
 - ⬜ Uploads clean-up: remove plugin leftovers (e.g. `uploads/mailpoet` PHP cache) from the copy; review WordPress admin/editor accounts imported with panel access
-- ⬜ Image pipeline: WebP/AVIF sizes for old uploads
+- ✅ Image pipeline: `php artisan hatpakha:images` makes WebP copies (480/960/1440) of every image posts/pages use, next to the originals (never changed); pages serve <picture> + srcset, lazy-loaded; falls back to originals until the command has run. 🟡 Owner: run it on staging
 - ⬜ Mobile layouts polished against design boards ৩–৭
 - 🟡 Category merge: table ready for the owner in docs/CATEGORY-MAP.md (32 old categories → 10 sections; all old URLs 301)
 

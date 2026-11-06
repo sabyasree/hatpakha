@@ -64,7 +64,8 @@
 1. Import the old dump into a **separate** database on the server; put its credentials in `LEGACY_DB_*`.
 2. `php artisan migrate --seed --force` then `php artisan hatpakha:import-wp` (safe to re-run).
 3. Copy the old `wp-content/uploads` to `app/public/wp-content/uploads/` (old image URLs keep working). The `.htaccess` there blocks PHP and scripts; still scan the folder before going live (Phase 1 leftover: scanner script).
-4. Create the first admin: after the import your WordPress account exists, so run `php artisan hatpakha:role you@example.com admin`, then sign in at `/desk/` with your old WordPress password (it is re-hashed on first login). The panel forces 2FA setup on first login.
+4. Make phone-sized images: `php artisan hatpakha:images` (re-run after each new import; it skips what exists).
+5. Create the first admin: after the import your WordPress account exists, so run `php artisan hatpakha:role you@example.com admin`, then sign in at `/desk/` with your old WordPress password (it is re-hashed on first login). The panel forces 2FA setup on first login.
 
 ## Never
 - Commit `.env`, the DB dump, keys or the uploads folder.

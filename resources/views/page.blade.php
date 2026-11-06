@@ -6,6 +6,6 @@
         </nav>
         <h1 class="mt-4 font-display text-4xl font-extrabold leading-tight md:text-5xl" style="font-stretch: 85%">{{ $page->title }}</h1>
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer); Embeds only adds validated YouTube players. --}}
-        <div class="prose-bn mt-6">{!! \App\Support\Embeds::render($page->body_html ?? '') !!}</div>
+        <div class="prose-bn mt-6">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($page->body_html ?? '')) !!}</div>
     </article>
 </x-layouts.app>

@@ -47,6 +47,7 @@ php artisan migrate --seed
 php artisan hatpakha:import-wp            # import old WordPress DB (LEGACY_DB_* in .env)
 php artisan hatpakha:role you@example.com admin   # give an existing user a role
 php artisan hatpakha:password you@example.com     # set a password at a hidden prompt (--reset-2fa to redo 2FA)
+php artisan hatpakha:images                       # WebP sizes for images used by posts (safe to re-run)
 php artisan test                          # must be green
 php artisan serve
 ```
