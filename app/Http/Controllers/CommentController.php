@@ -38,6 +38,9 @@ class CommentController extends Controller
             'body.required' => 'মন্তব্য লিখুন।',
             'body.max' => 'মন্তব্য একটু ছোট করুন (৩০০০ অক্ষরের মধ্যে)।',
         ]);
+        if (Comment::hasLink($data['body']) || Comment::hasLink((string) ($data['name'] ?? ''))) {
+            throw ValidationException::withMessages(['body' => 'মন্তব্যে লিংক, ওয়েবসাইট বা ই-মেলের ঠিকানা দেওয়া যায় না। ঠিকানাটি বাদ দিয়ে আবার পাঠান।'])->redirectTo($back);
+        }
         if (! $user && ! Turnstile::passes($request->input('cf-turnstile-response'), $request->ip(), 'comment')) {
             throw ValidationException::withMessages(['body' => 'আপনি মানুষ কি না যাচাই হয়নি। আবার চেষ্টা করুন।'])->redirectTo($back);
         }

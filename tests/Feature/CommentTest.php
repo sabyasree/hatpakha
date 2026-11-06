@@ -112,4 +112,20 @@ class CommentTest extends TestCase
         $this->actingAs(\App\Models\User::factory()->create(['email_verified_at' => now()]))->get('/nodi/')
             ->assertSee('হাতপাখার চিঠি আপনি পাচ্ছেন')->assertDontSee('চিঠি চাই');
     }
+
+    /** D75: no links in comments, however they are written; ordinary text still goes through. */
+    public function test_comments_cannot_carry_links(): void
+    {
+        foreach (['https://example.in/x', 'www.example', 'northbengaltourism dot com', 'example[.]com', 'example . com', 'ডট কম', 'লিখুন a@b.com-এ', 'sheroshayri.in'] as $spam) {
+            $this->assertTrue(Comment::hasLink($spam), $spam);
+        }
+        foreach (['খুব ভালো লাগল। ৩.৫ বছর আগে পড়েছিলাম', 'e.g. Mr.Ghosh বলেছিলেন', 'in the end. Com on!', 'U.S.A তে থাকি'] as $fine) {
+            $this->assertFalse(Comment::hasLink($fine), $fine);
+        }
+        $post = $this->makePost(['slug' => 'nodi', 'status' => 'published', 'published_at' => now()->subDay()]);
+        $this->actingAs(\App\Models\User::factory()->create(['email_verified_at' => now()]))
+            ->post('/comment/'.$post->id.'/', $this->form(['body' => 'দারুণ! আমার সাইট দেখুন northbengaltourism dot com']))
+            ->assertSessionHasErrors('body');
+        $this->assertSame(0, Comment::count());
+    }
 }

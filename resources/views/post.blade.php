@@ -151,7 +151,7 @@
                         </div>
                         <p class="mt-3 text-xs text-ink2">
                             @guest সম্পাদক দেখে প্রকাশ করেন। <a class="font-bold text-sky-deep underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
-                            ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়; বিজ্ঞাপন, লিংক বা কটু কথা নয়।
+                            ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়। লিংক, ওয়েবসাইট বা ই-মেলের ঠিকানা দেওয়া যায় না; বিজ্ঞাপন বা কটু কথাও নয়।
                         </p>
                     </div>
                 </div>
