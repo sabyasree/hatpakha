@@ -63,6 +63,24 @@
                         @endforeach
                     </select>
                 </label>
+                @php($contests = \App\Models\Contest::openNow()->orderBy('ends_at')->get())
+                @if ($contests->isNotEmpty() || $post->contest_id)
+                    {{-- Writing contests (D53): optional; entries go through this same form. --}}
+                    <label class="mb-4 block rounded-xl border-2 border-peach-deep bg-peach-light p-3">
+                        <span class="mb-1 block font-bold">প্রতিযোগিতায় পাঠাতে চান? (ঐচ্ছিক)</span>
+                        <select name="contest_id" class="block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg">
+                            <option value="">না, সাধারণ লেখা</option>
+                            @foreach ($contests as $c)
+                                <option value="{{ $c->id }}" @selected((int) old('contest_id', $post->contest_id) === $c->id)>{{ $c->title }}@if ($c->ends_at) (শেষ {{ \App\Support\Bn::num($c->ends_at->timezone('Asia/Kolkata')->format('d/m')) }})@endif</option>
+                            @endforeach
+                        </select>
+                        @foreach ($contests as $c)
+                            @if ($c->rules)
+                                <details class="mt-2 text-sm"><summary class="cursor-pointer font-semibold">"{{ $c->title }}"-এর নিয়ম</summary><div class="mt-1 whitespace-pre-line">{{ $c->rules }}</div></details>
+                            @endif
+                        @endforeach
+                    </label>
+                @endif
                 <x-field name="title" label="শিরোনাম" :value="$post->exists ? $post->title : ''" maxlength="200" required />
                 {{-- Editor (D40): a small toolbar over the text. Without JavaScript the plain box below still works. --}}
                 <input type="hidden" name="body_format" value="text" data-body-format>

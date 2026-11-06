@@ -125,6 +125,7 @@ class SubmissionController extends Controller
             // Checked again for real (sniffed + re-encoded) in CoverImage; this is the quick first gate.
             'cover' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
             'remove_cover' => ['nullable', 'boolean'],
+            'contest_id' => ['nullable', 'integer'],
         ], [
             'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
             'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
@@ -149,6 +150,18 @@ class SubmissionController extends Controller
             throw ValidationException::withMessages(['body' => 'লেখাটি খুব ছোট।']);
         }
         $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
+        // Contest entry (D53): only an open contest; one entry per writer per contest; never changed after judging starts.
+        $contestId = $data['contest_id'] ?? null;
+        if ($contestId && $contestId !== $post->contest_id) {
+            $open = \App\Models\Contest::openNow()->whereKey($contestId)->exists();
+            $already = Post::where('contest_id', $contestId)->where('submitted_by', $request->user()->id)->whereKeyNot($post->id)->exists();
+            if (! $open || $already) {
+                throw ValidationException::withMessages(['contest_id' => $already ? 'এই প্রতিযোগিতায় আপনার একটি লেখা আগেই জমা আছে।' : 'এই প্রতিযোগিতা এখন চলছে না।']);
+            }
+        }
+        if (! $post->contest_id || \App\Models\Contest::openNow()->whereKey($post->contest_id)->exists()) {
+            $post->forceFill(['contest_id' => $contestId ?: null])->save();
+        }
         if ($request->hasFile('cover')) {
             \App\Support\CoverImage::attach($post, $request->file('cover'));
         } elseif ($request->boolean('remove_cover')) {

@@ -54,6 +54,21 @@ final class Marketer
         return $d ? self::store('issue', $issue, $issue->title, self::clean($d), $issue->url()) : null;
     }
 
+    /** Contest promotion (D53): once, when a contest opens. */
+    public static function forContest(\App\Models\Contest $contest): ?SocialPost
+    {
+        if ($contest->status !== 'open' || SocialPost::hasFor($contest, 'contest')) {
+            return null;
+        }
+        [$d] = Claude::json('marketing', self::RULES.' Announce a writing contest and invite writers to take part through the website (register, then "লেখা পাঠান" and choose the contest). '
+            .'Mention the theme and the last date. Do not invent prizes or judges.',
+            '<contest><title>'.e($contest->title).'</title><theme>'.e((string) $contest->theme).'</theme><ends>'.e((string) $contest->ends_at?->timezone('Asia/Kolkata')->format('d/m/Y')).'</ends>'
+            .'<rules>'.e(mb_substr((string) $contest->rules, 0, 2000)).'</rules></contest>',
+            self::schema(), config('ai.anthropic.tags_model'), 2000);
+
+        return $d ? self::store('contest', $contest, __('প্রতিযোগিতা').': '.$contest->title, self::clean($d), \App\Support\Url::to('/submissions')) : null;
+    }
+
     /** Monday: what to post on which day this week (pieces going live, issue, festival days). */
     public static function weekly(): ?SocialPost
     {

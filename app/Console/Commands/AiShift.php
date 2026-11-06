@@ -82,6 +82,9 @@ class AiShift extends Command
         foreach (\App\Models\Issue::where('status', 'published')->where('published_at', '>=', now()->subDays(7))->get() as $issue) {
             \App\Ai\Marketer::forIssue($issue);
         }
+        foreach (\App\Models\Contest::openNow()->get() as $contest) {
+            \App\Ai\Marketer::forContest($contest);
+        }
         foreach (Comment::with('post')->where('status', 'pending')->whereNull('ai_verdict')->oldest()->limit(20)->get() as $c) {
             CommentScreen::run($c);
         }
