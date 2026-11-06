@@ -63,6 +63,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ Owner added AI keys to the staging ENV_FILE
 - ⬜ Cover image upload on the submission form (re-encode, strip metadata)
 
+## Deploys
+- ✅ Visitors see a Bengali "একটু পরেই ফিরছি" page (503, auto-retry every 30 s, noindex) for the whole deploy instead of 500s: maintenance mode now starts before any file is uploaded, and the page is pre-rendered so it works even while vendor/ is half uploaded. If a deploy fails, that page stays up until the next good deploy
+
 ## Desk UX (owner: "too many places to check") ✅
 - /desk opens on **আজকের কাজ**: one inbox with every item waiting for a person (new submissions oldest first with "পড়ুন ও সিদ্ধান্ত নিন"; reader comments with প্রকাশ / স্প্যাম right there); an info box needing no action; admin box folded
 - Side menu for editors: আজকের কাজ · লেখা · মন্তব্য, plus a folded "আরও" (সংখ্যা, লেখক, পাতা). Admins also get a folded "প্রশাসন" (বিভাগ, রিডাইরেক্ট, ব্যবহারকারী, কাজের খাতা, AI)
