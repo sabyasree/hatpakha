@@ -14,7 +14,6 @@ Add to the `ENV_FILE` secret (staging first), never to git or chat:
 AI_ENABLED=true
 AI_PROVIDER=anthropic          # winner of the blind test
 ANTHROPIC_API_KEY=…            # console.anthropic.com → API keys
-AI_MONTHLY_BUDGET_USD=25       # hard stop; also set a spend limit in each provider's console
 # For the blind test only:
 OPENAI_API_KEY=…
 OPENAI_REVIEW_MODEL=…          # the OpenAI model to compare (check OpenAI's model list)
@@ -25,7 +24,7 @@ Optional: `ANTHROPIC_REVIEW_MODEL` (default `claude-sonnet-5-5`, per the plan), 
 ## Cost guards
 - Off unless `AI_ENABLED=true` **and** a key is set; nothing is sent otherwise.
 - Pieces under `AI_MIN_WORDS` are never sent.
-- `AI_MONTHLY_BUDGET_USD`: when this month's logged spend reaches it, reviews are skipped (the queue still works).
+- No spending cap (owner, D37). An admin pauses or resumes AI with one button in /desk → এআই সহকারী (or the অ্যাডমিন box on আজকের কাজ); while paused, new reports are skipped and the review queue works as normal. Every pause/resume is in the audit log. Spend is still logged per call and shown on that page.
 - Every call's tokens and cost are logged in `ai_usages` (prices in `config/ai.php`; update when providers change prices).
 - The rubric is cached (cheaper repeat calls); writers can submit 3 pieces/day.
 - Planning estimate (PLAN.md §4): ₹1,300–1,800/month at 400 submissions/month.

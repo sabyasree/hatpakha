@@ -48,12 +48,25 @@ class Dashboard extends BaseDashboard
             'auditOpen' => $isAdmin ? Post::whereIn('audit_label', ['merge', 'noindex', 'remove'])->whereNull('audit_decision')->count() : 0,
             'aiSpent' => $isAdmin ? AiUsage::spentThisMonthUsd() : 0,
             'aiEnabled' => (bool) config('ai.enabled'),
+            'aiPaused' => \App\Ai\AiSwitch::paused(),
         ];
     }
 
     public function editUrl(Post $post): string
     {
         return PostResource::getUrl('edit', ['record' => $post]);
+    }
+
+    public function pauseAi(): void
+    {
+        \App\Ai\AiSwitch::set(true);
+        Notification::make()->title('এআই থামানো হয়েছে')->success()->send();
+    }
+
+    public function resumeAi(): void
+    {
+        \App\Ai\AiSwitch::set(false);
+        Notification::make()->title('এআই আবার চালু')->success()->send();
     }
 
     public function approveComment(int $id): void

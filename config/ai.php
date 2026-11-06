@@ -23,8 +23,6 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
     ],
 
-    // Cost guards (PLAN.md §4 "Cost guards").
-    'monthly_budget_usd' => (float) env('AI_MONTHLY_BUDGET_USD', 25),
     'min_words' => (int) env('AI_MIN_WORDS', 20),
 
     // USD per 1M tokens, for the spend log. Update when prices change (docs/AI.md).

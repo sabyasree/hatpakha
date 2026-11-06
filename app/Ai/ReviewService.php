@@ -9,7 +9,7 @@ use App\Models\Post;
 
 /**
  * Runs AI reviews with the cost guards from PLAN.md §4: off unless enabled + keyed, cheap pre-filter before
- * any call, a monthly USD cap, and every call's tokens and cost logged. Reports are advice for editors only.
+ * any call, an admin pause switch (no cap, D37), and every call's tokens and cost logged. Reports are advice for editors only.
  */
 final class ReviewService
 {
@@ -48,15 +48,16 @@ final class ReviewService
         if (! config('ai.enabled')) {
             return 'AI is switched off (AI_ENABLED=false)';
         }
+        // The owner's pause button in /desk → এআই সহকারী (no spending cap, D37).
+        if (AiSwitch::paused()) {
+            return 'AI is paused by an admin';
+        }
         if (blank(config("ai.{$provider}.key"))) {
             return "No API key for {$provider}";
         }
         $words = count(preg_split('/\s+/u', trim(strip_tags((string) $post->body_html)), -1, PREG_SPLIT_NO_EMPTY));
         if ($words < (int) config('ai.min_words')) {
             return "Too short for an AI review ({$words} words)";
-        }
-        if (AiUsage::spentThisMonthUsd() >= (float) config('ai.monthly_budget_usd')) {
-            return 'Monthly AI budget reached';
         }
 
         return null;

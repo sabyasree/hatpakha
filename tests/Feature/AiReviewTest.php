@@ -121,7 +121,8 @@ class AiReviewTest extends TestCase
         $short = $this->makePost(['slug' => 'short', 'body_html' => '<p>দুটি শব্দ</p>']);
         $this->assertStringContainsString('Too short', $svc->run($short)->error);
         AiUsage::create(['provider' => 'anthropic', 'model' => 'x', 'purpose' => 'review', 'cost_usd' => 999]);
-        $this->assertStringContainsString('budget', $svc->run($post)->error);
+        \App\Models\Setting::put('ai.paused', '1');                                            // no cap; the admin's pause button
+        $this->assertStringContainsString('paused', $svc->run($post)->error);
 
         $this->assertSame(0, $calls, 'No provider call was made while blocked');
         $this->assertSame(4, AiReview::where('status', 'skipped')->count());
@@ -174,5 +175,27 @@ class AiReviewTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         \Livewire\Livewire::test(\App\Filament\Pages\AiSettings::class)->set('data.rubric', 'নতুন মানদণ্ড')->call('save');
         $this->assertSame('নতুন মানদণ্ড', \App\Models\Setting::get('ai.rubric'));
+    }
+
+    public function test_admin_pause_button_stops_reports_and_is_logged(): void
+    {
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Livewire\Livewire::test(\App\Filament\Pages\AiSettings::class)
+            ->assertActionVisible('pause')->callAction('pause')->assertActionVisible('resume');
+        $this->assertTrue(\App\Ai\AiSwitch::paused());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'ai.paused']);
+
+        // Same switch from the inbox; no spending cap blocks anything (D37).
+        \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('এআই চালু করুন')->call('resumeAi');
+        $this->assertFalse(\App\Ai\AiSwitch::paused());
+        $this->enable();
+        AiUsage::create(['provider' => 'anthropic', 'model' => 'x', 'purpose' => 'review', 'cost_usd' => 9999]);
+        $this->assertNull(app(ReviewService::class)->blockedReason($this->piece(), 'anthropic'));
+
+        // Editors can't flip it.
+        $this->actingAs(User::factory()->create(['role' => Role::Editor]));
+        \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->call('pauseAi')->assertForbidden();
+        $this->assertFalse(\App\Ai\AiSwitch::paused());
     }
 }

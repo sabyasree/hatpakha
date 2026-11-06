@@ -88,7 +88,16 @@
         <x-filament::section icon="heroicon-o-shield-check" collapsible collapsed>
             <x-slot name="heading">অ্যাডমিন</x-slot>
             <ul style="list-style:disc;padding-inline-start:1.25rem;line-height:1.9">
-                <li>এআই: {{ $t['aiEnabled'] ? 'চালু' : 'বন্ধ' }} · এই মাসের খরচ {{ \App\Support\Bn::num(number_format($t['aiSpent'], 2)) }} ডলার / {{ \App\Support\Bn::num(number_format((float) config('ai.monthly_budget_usd'), 0)) }} ডলার · <a href="{{ \App\Filament\Pages\AiSettings::getUrl() }}" style="text-decoration:underline">এআই সহকারী</a></li>
+                <li style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+                    এআই: <strong>{{ ! $t['aiEnabled'] ? 'বন্ধ' : ($t['aiPaused'] ? 'থামানো' : 'চালু') }}</strong>
+                    · এই মাসের খরচ {{ \App\Support\Bn::num(number_format($t['aiSpent'], 2)) }} ডলার
+                    @if ($t['aiPaused'])
+                        <x-filament::button size="sm" color="success" icon="heroicon-o-play" wire:click="resumeAi">এআই চালু করুন</x-filament::button>
+                    @else
+                        <x-filament::button size="sm" color="danger" icon="heroicon-o-pause" wire:click="pauseAi" wire:confirm="এআই থামাবেন? নতুন রিপোর্ট আর খরচ বন্ধ থাকবে, বাকি সব আগের মতো চলবে।">এআই থামান</x-filament::button>
+                    @endif
+                    <a href="{{ \App\Filament\Pages\AiSettings::getUrl() }}" style="text-decoration:underline">এআই সহকারী</a>
+                </li>
                 <li>অডিট সুপারিশ, সিদ্ধান্ত বাকি: {{ Bn::num($t['auditOpen']) }}টি</li>
                 <li><a href="{{ \App\Filament\Resources\Users\UserResource::getUrl('index') }}" style="text-decoration:underline">কারা ডেস্ক খুলতে পারেন</a></li>
             </ul>

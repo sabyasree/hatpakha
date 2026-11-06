@@ -56,8 +56,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - ✅ 3b Submission form `/submit/` (sign-in required): section, title, plain-text body (paste is clean; blank line = stanza/paragraph), word/line count, autosave every few seconds (first save turns the URL into the draft's own page), server-rendered preview identical to the site, originality declaration, 3 submissions/day, email verification where mail is real, edit & resubmit when changes are requested, status tracker on আমার লেখা. Typed HTML is shown as text, never executed. ⬜ Cover image upload (later in Phase 3, with re-encoding)
 - ✅ 3c Editor review queue in /desk → লেখা: tabs অপেক্ষায় (new form submissions, oldest first) · পুরনো জমা (WordPress backlog by tier) · বদল চাওয়া · প্রকাশিত · সব. Actions মনোনীত (publish now or schedule; readable Latin URL from the title, D14), বদল চাই, বাতিল, each with kind editable templates; the writer gets one Bengali email and sees the note on আমার লেখা. Scheduled posts go live on their date without cron. Every decision is in the audit log 
 
-- ✅ 3d AI review (docs/AI.md): report after each submission (no cron), AI score + report in /desk, re-run button, editable rubric + monthly spend in /desk → AI সহকারী; cost guards (off by default, key required, min words, monthly cap, usage log); prompt-injection-safe input; refusal fallback. Never decides anything
+- ✅ 3d AI review (docs/AI.md): report after each submission (no cron), AI score + report in /desk, re-run button, editable rubric + monthly spend in /desk → AI সহকারী; cost guards (off by default, key required, min words, pause button (D37), usage log); prompt-injection-safe input; refusal fallback. Never decides anything
 - ✅ 3e Blind test: `php artisan hatpakha:ai-blind-test` (estimate first, stops above $6) + /desk → AI পরীক্ষা (anonymous A/B scoring, reveal at the end). 🟡 Owner: add keys to staging ENV_FILE, run it, score, set `AI_PROVIDER`
+- ✅ No AI spending cap (D37); admin pause/resume button on এআই সহকারী and on আজকের কাজ, logged
 - ⬜ Cover image upload on the submission form (re-encode, strip metadata)
 
 ## Desk UX (owner: "too many places to check") ✅

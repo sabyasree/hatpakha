@@ -34,7 +34,7 @@ class AuditLogResource extends Resource
         'comment.approved' => 'মন্তব্য প্রকাশ', 'comment.spam' => 'মন্তব্য স্প্যাম', 'comment.pending' => 'মন্তব্য অপেক্ষায় ফেরত',
         'post.audit_applied' => 'অডিট সুপারিশ মানা হলো', 'post.audit_dismissed' => 'অডিট সুপারিশ বাদ', 'post.slug_changed' => 'লেখার ঠিকানা বদল (৩০১)',
         'user.role_changed' => 'ভূমিকা বদল', 'user.created' => 'নতুন অ্যাকাউন্ট', 'user.reset_link_sent' => 'পাসওয়ার্ড লিংক পাঠানো',
-        'ai.rubric_changed' => 'এআই মানদণ্ড বদল', 'ai.blind_test_revealed' => 'এআই পরীক্ষার ফল খোলা',
+        'ai.rubric_changed' => 'এআই মানদণ্ড বদল', 'ai.blind_test_revealed' => 'এআই পরীক্ষার ফল খোলা', 'ai.paused' => 'এআই থামানো', 'ai.resumed' => 'এআই আবার চালু',
         'user.registered' => 'নতুন নিবন্ধন', 'user.password_reset' => 'পাসওয়ার্ড রিসেট', 'user.password_set' => 'পাসওয়ার্ড সেট (কমান্ড)',
     ];
 

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Ai\AiSwitch;
 use App\Enums\Role;
+use Filament\Actions\Action;
 use App\Models\AiReview;
 use App\Models\AiUsage;
 use App\Models\AuditLog;
@@ -49,6 +51,28 @@ class AiSettings extends Page
         ]);
     }
 
+    /** One button: pause or resume all AI reports. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('pause')->label('এআই থামান')->icon('heroicon-o-pause')->color('danger')
+                ->visible(fn () => ! AiSwitch::paused())
+                ->requiresConfirmation()->modalHeading('এআই থামাবেন?')
+                ->modalDescription('নতুন লেখার এআই রিপোর্ট আর তৈরি হবে না, খরচও হবে না। জমা আর সম্পাদনা আগের মতোই চলবে। যেকোনো সময় আবার চালু করা যায়।')
+                ->modalSubmitActionLabel('থামান')
+                ->action(function () {
+                    AiSwitch::set(true);
+                    Notification::make()->title('এআই থামানো হয়েছে')->success()->send();
+                }),
+            Action::make('resume')->label('এআই চালু করুন')->icon('heroicon-o-play')->color('success')
+                ->visible(fn () => AiSwitch::paused())
+                ->action(function () {
+                    AiSwitch::set(false);
+                    Notification::make()->title('এআই আবার চালু')->success()->send();
+                }),
+        ];
+    }
+
     public function save(): void
     {
         $rubric = (string) $this->form->getState()['rubric'];
@@ -63,10 +87,10 @@ class AiSettings extends Page
 
         return [
             'enabled' => (bool) config('ai.enabled'),
+            'paused' => AiSwitch::paused(),
             'provider' => (string) config('ai.provider'),
             'keys' => ['anthropic' => filled(config('ai.anthropic.key')), 'openai' => filled(config('ai.openai.key'))],
             'spent' => $spent,
-            'budget' => (float) config('ai.monthly_budget_usd'),
             'reviews' => AiReview::whereNull('blind_run')->where('created_at', '>=', now()->startOfMonth())->where('status', 'done')->count(),
             'avg' => AiReview::whereNull('blind_run')->where('status', 'done')->where('created_at', '>=', now()->startOfMonth())->count()
                 ? $spent / max(1, AiReview::whereNull('blind_run')->where('status', 'done')->where('created_at', '>=', now()->startOfMonth())->count()) : 0,
