@@ -116,20 +116,56 @@ class AccountTest extends TestCase
         $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect(url('/account/settings').'/#letters');
     }
 
-    /** Owner: a test writer account from /desk, to see the site as a writer does. */
-    public function test_admin_creates_a_ready_test_writer_account(): void
+    /** D85: an admin looks at the site through a writer's eyes; look only, never as staff, logged, ends. */
+    public function test_admin_views_the_site_as_a_writer_look_only(): void
     {
-        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        $admin = User::factory()->create(['role' => Role::Admin, 'name' => 'Owner']);
+        $writer = User::factory()->create(['role' => Role::Writer, 'name' => 'Busy Writer']);
+        $author = Author::create(['display_name' => 'Busy Writer', 'slug' => 'busy-writer', 'user_id' => $writer->id]);
+        $post = \App\Models\Post::create(['title' => 'Busy one', 'slug' => 'busy-one', 'status' => 'draft', 'body_html' => '<p>x</p>']);
+        $post->authors()->attach($author->id, ['position' => 0]);
+        $editor = User::factory()->create(['role' => Role::Editor]);
+
+        $this->actingAs($admin);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $this->assertSame($writer->id, array_key_first(\App\Http\Middleware\ViewAs::choices()), 'The busiest writer comes first; staff are never offered');
+        $this->assertArrayNotHasKey($editor->id, \App\Http\Middleware\ViewAs::choices());
         \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
-            ->callAction('testAccount', ['name' => 'পরীক্ষার লেখক', 'email' => 'test-writer@example.test', 'password' => 'lekhok2026abc'])->assertHasNoActionErrors();
-        $u = User::where('email', 'test-writer@example.test')->sole();
-        $this->assertTrue($u->hasVerifiedEmail());
-        $this->assertSame(\App\Enums\Role::Writer, $u->role);
-        $this->assertTrue((bool) $u->mail_opt_out, 'No newsletter to a test account');
-        auth()->logout();
-        $this->post('/login/', ['email' => 'test-writer@example.test', 'password' => 'lekhok2026abc'])->assertRedirect();
-        $this->get('/account/')->assertOk()->assertSee('পরীক্ষার লেখক');
-        $this->get('/desk')->assertForbidden();
+            ->callAction('viewAs', ['user' => $writer->id])->assertHasNoActionErrors()->assertRedirect(url('/account').'/');
+        $this->assertDatabaseHas('audit_logs', ['action' => 'user.view_as', 'subject_id' => $writer->id, 'user_id' => $admin->id]);
+
+        $page = $this->get('/account/')->assertOk()->assertSee('Busy Writer')->assertSee('Busy one')->assertSee('চোখে দেখছেন')->assertSee('বন্ধ করুন');
+        $this->assertStringContainsString('no-store', (string) $page->headers->get('Cache-Control'));
+        $this->get('/account/writings/')->assertOk()->assertSee('Busy one');
+
+        // Nothing can be changed as them
+        $this->post('/account/profile/', ['name' => 'Hacked'])->assertRedirect();
+        $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect();
+        $this->assertSame('Busy Writer', $writer->fresh()->name);
+        $this->assertFalse((bool) $writer->fresh()->mail_opt_out);
+        $this->postJson('/submit/autosave/', ['title' => 'x'])->assertForbidden();
+
+        // The desk stays the admin's own
+        $this->assertNotSame(403, $this->get('/desk')->status(), 'A writer would be refused; the admin is not');
+
+        // Stop: back to the admin
+        $this->post('/view-as/stop/')->assertRedirect('/desk');
+        $this->get('/account/')->assertOk()->assertSee('Owner')->assertDontSee('চোখে দেখছেন');
+
+        // Never as staff; ends by itself after 30 minutes
+        $this->assertNull(\App\Http\Middleware\ViewAs::start($editor));
+        \App\Http\Middleware\ViewAs::start($writer);
+        $this->travel(31)->minutes();
+        $this->get('/account/')->assertOk()->assertDontSee('চোখে দেখছেন')->assertSee('দেখা শেষ হয়েছে');
+    }
+
+    public function test_only_an_admin_can_view_as(): void
+    {
+        $writer = User::factory()->create(['role' => Role::Writer]);
+        $this->actingAs(User::factory()->create(['role' => Role::Editor]));
+        $this->assertNull(\App\Http\Middleware\ViewAs::start($writer));
+        // a forged session flag does nothing for a non-admin
+        $this->withSession(['view_as' => ['user' => $writer->id, 'by' => auth()->id(), 'at' => now()->timestamp]])
+            ->get('/account/')->assertOk()->assertDontSee('চোখে দেখছেন');
     }
 }

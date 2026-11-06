@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         // docs/SEO.md §1 and docs/SECURITY.md §1
         $middleware->web(prepend: [\App\Http\Middleware\GuestPageCache::class, \App\Http\Middleware\EnforceTrailingSlash::class]);   // D65: outermost
-        $middleware->web(append: [\App\Http\Middleware\SecurityHeaders::class]);
+        $middleware->web(append: [\App\Http\Middleware\ViewAs::class, \App\Http\Middleware\SecurityHeaders::class]);   // D85: view as a writer (look only)
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

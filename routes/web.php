@@ -85,6 +85,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account/writings', [\App\Http\Controllers\AccountController::class, 'writings'])->name('account.writings');
     Route::get('/account/reading', [\App\Http\Controllers\AccountController::class, 'reading'])->name('account.reading');
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
+    Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
+        $request->session()->forget('view_as');
+
+        return redirect('/desk');
+    })->name('view-as.stop');
     Route::get('/account/profile', [\App\Http\Controllers\AccountController::class, 'profile'])->name('account.profile');
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
     Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');

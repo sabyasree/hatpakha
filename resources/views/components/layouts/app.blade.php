@@ -17,6 +17,22 @@
     @endif
 </head>
 <body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
+    @if ($va = request()->attributes->get('view_as'))
+        {{-- D85: the admin is looking through a writer's eyes --}}
+        <div data-view-as class="sticky top-0 z-[60] flex flex-wrap items-center gap-x-3 gap-y-1 bg-red px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sm font-bold text-white" role="status">
+            <span class="min-w-0 flex-1 leading-snug"><span class="block truncate">{{ $va['name'] }}-এর চোখে দেখছেন</span><span class="block text-xs font-semibold">শুধু দেখা, কিছু বদলাবে না · ৩০ মিনিটে নিজে বন্ধ হবে</span></span>
+            <form method="POST" action="{{ route('view-as.stop') }}">@csrf<button class="min-h-11 rounded-full bg-white px-4 text-red">বন্ধ করুন</button></form>
+        </div>
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            // Look only: every save/send button is shown as off, so nothing invites a press that would be refused.
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('form[method="POST"] button, form[method="post"] button').forEach(function (b) {
+                    if (b.closest('[data-view-as]')) return;
+                    b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = 'শুধু দেখা'; b.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+            });
+        </script>
+    @endif
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-paper focus:p-2">মূল লেখায় যান</a>
 
     <header class="border-b-2 border-navy bg-paper">

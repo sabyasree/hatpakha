@@ -30,6 +30,11 @@ class EditAuthor extends EditRecord
             \Filament\Actions\Action::make('unhonour')->label(__('সম্মান সরান'))->icon('heroicon-o-x-mark')->color('gray')->requiresConfirmation()
                 ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) && $this->record->honour_label)
                 ->action(fn () => $this->record->forceFill(['honour_label' => null, 'honour_note' => null, 'honoured_at' => null, 'honour_post_id' => null, 'honour_quote' => null])->save()),
+            \Filament\Actions\Action::make('viewAs')->label(__('লেখকের চোখে দেখুন'))->icon('heroicon-o-eye')->color('gray')
+                ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) && ($u = $this->record->user) && ! $u->hasRole(\App\Enums\Role::Editor))
+                ->requiresConfirmation()->modalHeading(__('এঁর চোখে সাইটটি দেখুন'))
+                ->modalDescription(__('শুধু দেখা যাবে: কিছু বদলানো বা পাঠানো যাবে না। ৩০ মিনিট পরে বা "বন্ধ করুন" টিপলে শেষ হবে।'))
+                ->action(fn () => ($to = \App\Http\Middleware\ViewAs::start($this->record->user)) ? $this->redirect($to) : null),
             DeleteAction::make(),
         ];
     }

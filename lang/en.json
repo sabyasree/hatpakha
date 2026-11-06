@@ -1130,5 +1130,13 @@
     "পরীক্ষার অ্যাকাউন্ট তৈরি হয়েছে": "Test account created",
     "ছদ্মবেশী জানালায় :url খুলে এই ই-মেল আর পাসওয়ার্ড দিয়ে লগ-ইন করুন।": "Open :url in a private window and log in with this e-mail and password.",
     "ই-মেল যাচাই হয়েছে ধরুন": "Mark e-mail as checked",
-    "যাচাই হয়েছে বলে ধরা হলো": "Marked as checked"
+    "যাচাই হয়েছে বলে ধরা হলো": "Marked as checked",
+    "লেখকের চোখে দেখুন": "View as writer",
+    "এঁর চোখে সাইটটি দেখুন": "See the site as this person",
+    "শুধু দেখা যাবে: কিছু বদলানো বা পাঠানো যাবে না। ৩০ মিনিট পরে বা \"বন্ধ করুন\" টিপলে শেষ হবে।": "Look only: nothing can be changed or sent. It ends after 30 minutes or when you press \"Stop\".",
+    "একজন লেখক বা পাঠকের চোখে সাইটটি দেখুন": "See the site as a writer or reader",
+    "তাঁর অ্যাকাউন্ট আর সাইট ঠিক যেমন তিনি দেখেন, তেমন দেখাবে। শুধু দেখা যাবে: কিছু বদলানো, পাঠানো বা মুছে ফেলা যাবে না। ৩০ মিনিট পরে বা \"বন্ধ করুন\" টিপলে শেষ হবে। কে কবে দেখলেন তা লগে থাকে।": "Their account and the site look exactly as they see them. Look only: nothing can be changed, sent or deleted. It ends after 30 minutes or when you press \"Stop\". Who looked and when is logged.",
+    "কার চোখে": "As whom",
+    "সবচেয়ে বেশি লেখা যাঁর, তিনি প্রথমে।": "The writer with the most pieces comes first.",
+    "এই অ্যাকাউন্টটি দেখা যাবে না": "This account can't be viewed"
 }
