@@ -32,6 +32,15 @@ class PostForm
                     ->formatStateUsing(fn (?string $state) => \App\Support\HtmlSanitizer::alignmentForEditor($state)),
             ]),
             Group::make()->columnSpan(1)->schema([
+                // D101: children's pieces: age band and word meanings (the AI teacher suggests; the owner edits)
+                Section::make(__('ছোটদের হাতপাখা'))->visible(fn (?Post $record) => $record?->section?->slug === \App\Models\Section::KIDS)->schema([
+                    \Filament\Forms\Components\Select::make('age_band')->label(__('বয়স'))->options(\App\Support\Lang::t(\App\Ai\KidsTeacher::AGES)),
+                    \Filament\Forms\Components\Repeater::make('glossary')->label(__('শব্দের মানে'))->schema([
+                        TextInput::make('word')->label(__('শব্দ'))->required()->maxLength(40),
+                        TextInput::make('bn')->label(__('বাংলায়'))->required()->maxLength(160),
+                        TextInput::make('en')->label(__('ইংরেজিতে'))->maxLength(160),
+                    ])->columns(1)->reorderable()->addActionLabel(__('শব্দ যোগ করুন'))->maxItems(12)->defaultItems(0),
+                ]),
                 // D95: an AI draft's desk-only note (facts to check, photo ideas). Never shown to readers.
                 Section::make(__('এআই খসড়ার নোট'))->visible(fn (?Post $record) => filled($record?->ai_note))->schema([
                     Placeholder::make('ai_note_text')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString('<div style="white-space:pre-wrap;line-height:1.7">'.e($record->ai_note).'</div>')),

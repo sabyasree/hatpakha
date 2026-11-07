@@ -74,14 +74,14 @@ class EditPost extends EditRecord
                 ->schema(fn (Post $record) => array_filter([
                     \Filament\Forms\Components\DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A'),
                     // D95: a desk draft is published under the house byline or the owner's own name, never anyone else's
-                    $record->ai_note ? \Filament\Forms\Components\Radio::make('byline')->label(__('কার নামে'))->required()->default('desk')
+                    $record->ai_note && $record->authors()->where('is_desk', true)->exists() ? \Filament\Forms\Components\Radio::make('byline')->label(__('কার নামে'))->required()->default('desk')
                         ->options(['desk' => __('হাতপাখা ডেস্ক'), 'me' => __('আমার নামে (নিজে লিখে নিয়েছি)')]) : null,
                     $record->ai_note ? \Filament\Forms\Components\Checkbox::make('checked')->accepted()->validationMessages(['accepted' => __('আগে লেখাটি বদলে তথ্য যাচাই করুন।')])
                         ->label(__('লেখাটি নিজের মতো করে লিখেছি আর নোটের সব তথ্য যাচাই করেছি')) : null,
                 ]))
                 ->action(function (Post $record, array $data) {
                     $at = \Illuminate\Support\Carbon::parse($data['at']);
-                    if ($record->ai_note && ($data['byline'] ?? 'desk') === 'me') {
+                    if ($record->ai_note && ($data['byline'] ?? 'desk') === 'me' && $record->authors()->where('is_desk', true)->exists()) {
                         $mine = \App\Models\Author::where('user_id', auth()->id())->first() ?? \App\Models\Author::create(['user_id' => auth()->id(), 'display_name' => auth()->user()->name, 'slug' => 'editor-'.auth()->id()]);
                         $record->authors()->sync([$mine->id => ['position' => 0]]);
                     }

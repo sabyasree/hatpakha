@@ -156,6 +156,7 @@ class AiTeam extends Page
             'letters' => [__('চিঠি'), \App\Filament\Resources\Newsletters\NewsletterResource::getUrl()],
             'contests' => [__('প্রতিযোগিতা'), \App\Filament\Resources\Contests\ContestResource::getUrl()],
             'honours' => [__('সম্মানিত লেখক'), Honours::getUrl()],
+            'kids' => [__('ছোটদের হাতপাখা'), KidsCorner::getUrl()],
             default => null,
         };
     }

@@ -22,7 +22,7 @@ class PostController extends Controller
         // "আরও পড়ুন": the SEO expert's picks (D46), otherwise the newest in the same section.
         $picked = array_map('intval', (array) $post->related_ids);
         $related = $picked
-            ? Post::published()->with('authors')->whereIn('id', $picked)->get()->sortBy(fn ($p) => array_search($p->id, $picked))->values()
+            ? Post::published()->with('authors')->whereIn('id', $picked)->when($post->isKids(), fn ($q) => $q->where('section_id', $post->section_id))->get()->sortBy(fn ($p) => array_search($p->id, $picked))->values()
             : collect();
         if ($related->count() < 3) {
             $related = $related->concat(Post::published()->with('authors')
@@ -33,7 +33,9 @@ class PostController extends Controller
         // "পরের লেখা" (mobile UX review): one more by the same writer first, when there is one.
         $writerIds = $post->authors->where('is_desk', false)->pluck('id');
         if ($writerIds->isNotEmpty() && ($same = Post::published()->with('authors')->whereKeyNot($post->id)->whereNotIn('id', $related->pluck('id'))
-            ->whereHas('authors', fn ($q) => $q->whereIn('authors.id', $writerIds))->inRandomOrder()->first())) {
+            ->whereHas('authors', fn ($q) => $q->whereIn('authors.id', $writerIds))
+            ->when($post->isKids(), fn ($q) => $q->where('section_id', $post->section_id))   // D101: children stay among children's pieces
+            ->inRandomOrder()->first())) {
             $related = collect([$same])->concat($related)->take(4)->values();
         }
 
@@ -58,6 +60,10 @@ class PostController extends Controller
             shareTitle: $post->shareTitle(),
         );
 
+        if ($post->isKids()) {
+            request()->attributes->set('hp.no_ads', true);   // D101: no ads around children's pieces
+        }
+
         return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));
     }
 
@@ -77,6 +83,10 @@ class PostController extends Controller
             noindex: $page->noindex,
             jsonLd: [JsonLd::breadcrumbs($crumbs)],
         );
+
+        if ($page->slug === 'bornomala') {
+            request()->attributes->set('hp.no_ads', true);   // D101
+        }
 
         return view('page', compact('page', 'seo', 'crumbs'));
     }

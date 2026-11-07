@@ -19,7 +19,7 @@ class CommentController extends Controller
 {
     public function store(Request $request, Post $post)
     {
-        abort_unless($post->isLive(), 404);
+        abort_unless($post->isLive() && ! $post->isKids(), 404);   // D101: no comments on children's pieces
         $user = $request->user();
         $back = $post->url().'#comments';
         if ($user && AccountController::verificationRequired() && ! $user->hasVerifiedEmail()) {

@@ -12,6 +12,9 @@
             {{-- D89: a form instead of an e-mail address --}}
             @include('partials.contact-form', ['kind' => $page->slug === 'advertise' ? 'advertise' : 'contact'])
         @endif
+        @if ($page->slug === 'bornomala')
+            @include('partials.bornomala')
+        @endif
         @if ($page->slug === 'submissions')
             {{-- After the rules, the next step (mobile UX review) --}}
             <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">

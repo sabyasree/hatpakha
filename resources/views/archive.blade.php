@@ -3,7 +3,20 @@
         @if ($kicker)<div class="font-hand text-2xl text-red">{{ $kicker }}</div>@endif
         <h1 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">{{ $title }}</h1>
         @if (($section ?? null)?->about)<p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed text-ink2">{{ $section->about }}</p>@endif
-        @if (($section ?? null) && $posts->total() === 0)
+        @if (($section ?? null)?->slug === \App\Models\Section::KIDS)
+            {{-- D101: by age, and the alphabet --}}
+            <nav class="mt-6 flex flex-wrap items-center gap-2" aria-label="বয়স ধরে">
+                <a href="{{ $section->url() }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold {{ ! ($age ?? null) ? 'bg-navy text-white' : 'hover:bg-peach-light' }}" @if (! ($age ?? null)) aria-current="page" @endif>সব বয়স</a>
+                @foreach (\App\Ai\KidsTeacher::AGES as $band => $label)
+                    <a href="{{ $section->url() }}?age={{ $band }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold {{ ($age ?? null) === $band ? 'bg-navy text-white' : 'hover:bg-peach-light' }}" @if (($age ?? null) === $band) aria-current="page" @endif>{{ $label }}</a>
+                @endforeach
+                <a href="{{ \App\Support\Url::to('/bornomala') }}" class="flex min-h-11 items-center rounded-full bg-sky px-4 font-bold text-navy hover:bg-sky-light">অ আ ক খ — বর্ণমালা →</a>
+            </nav>
+            @if (($age ?? null) && $posts->total() === 0)
+                <p class="mt-6 font-serif text-lg text-ink2">এই বয়সের লেখা এখনও নেই। <a href="{{ $section->url() }}" class="font-bold text-sky-deep underline">সব বয়সের লেখা দেখুন</a></p>
+            @endif
+        @endif
+        @if (($section ?? null) && $posts->total() === 0 && ! ($age ?? null))
             {{-- D96: a new section waiting for its first piece --}}
             <div class="mt-8 max-w-[720px] rounded-3xl border-2 border-dashed border-navy p-6 sm:p-8">
                 <p class="font-hand text-3xl text-red">নতুন বিভাগ</p>

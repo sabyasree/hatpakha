@@ -20,12 +20,15 @@ class ArchiveController extends Controller
         if (! $section) {
             return app(LegacyController::class)->fallback($request);  // merged old categories → 301
         }
-        $posts = $section->posts()->published()->with('authors')->latest('published_at')->paginate(24);
+        // D101: the children's section can be narrowed by age (?age=6-8); filtered lists stay out of Google.
+        $age = $section->slug === Section::KIDS && array_key_exists((string) $request->query('age'), \App\Ai\KidsTeacher::AGES) ? (string) $request->query('age') : null;
+        $posts = $section->posts()->published()->with('authors')->when($age, fn ($q) => $q->where('age_band', $age))
+            ->latest('published_at')->paginate(24)->withQueryString();
 
         // D96: an empty new section still has a page: its introduction and an invitation to write (kept out of Google until it has a piece).
         return $this->list($request, $section->name_bn, $section->about ?: "হাতপাখার {$section->name_bn} — সব লেখা।", $posts, [
             JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], [$section->name_bn, $section->url()]]),
-        ], noindex: $posts->total() === 0, kicker: 'বিভাগ', section: $section);
+        ], noindex: $posts->total() === 0 || $age, kicker: 'বিভাগ', section: $section, age: $age);
     }
 
     public function tag(Request $request, string $slug)
@@ -135,17 +138,17 @@ class ArchiveController extends Controller
         return view('issue', compact('issue', 'posts', 'seo'));
     }
 
-    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null)
+    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null, ?string $age = null)
     {
         $seo = new Seo(
             title: $title.($posts->currentPage() > 1 ? " — পাতা {$posts->currentPage()}" : ''),
             description: $description,
-            canonical: $posts->currentPage() > 1 ? $request->fullUrl() : null,
+            canonical: $age ? $section?->url() : ($posts->currentPage() > 1 ? $request->fullUrl() : null),
             noindex: $noindex || $posts->currentPage() > 1,
             jsonLd: $jsonLd,
         );
 
-        return view('archive', compact('title', 'posts', 'seo', 'kicker', 'section'));
+        return view('archive', compact('title', 'posts', 'seo', 'kicker', 'section', 'age'));
     }
 
     /** The issue as a book (D68). Same text as the pieces' own pages, so noindex with the issue as canonical. */

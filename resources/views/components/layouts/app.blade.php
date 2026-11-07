@@ -12,7 +12,7 @@
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if (config('services.adsense.client'))
+    @if (config('services.adsense.client') && ! request()->attributes->get('hp.no_ads'))
         <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>
     @endif
 </head>

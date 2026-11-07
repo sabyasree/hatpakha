@@ -27,7 +27,8 @@ class SectionsMenuTest extends TestCase
 
         $m = Section::menu();
         $this->assertSame([['কবিতা', $poetry->url(), 'bn']], $m['top']);
-        $this->assertSame(['সাহিত্য', 'জীবন ও সংস্কৃতি', 'আরও'], array_column($m['groups'], 'label'));
+        $this->assertSame(['সাহিত্য', 'জীবন ও সংস্কৃতি', 'ছোটদের', 'আরও'], array_column($m['groups'], 'label'));
+        $this->assertSame(['বর্ণমালা', \App\Support\Url::to('/bornomala'), 'bn'], collect($m['groups'])->firstWhere('label', 'ছোটদের')['links'][1] ?? null, 'D101: the alphabet sits under ছোটদের');
         $life = collect($m['groups'])->firstWhere('label', 'জীবন ও সংস্কৃতি')['links'];
         $this->assertSame([['ঐতিহ্য ও উৎসব', $heritage->url(), 'bn'], ['রান্নাঘরের গল্প', $kitchen->url(), 'bn']], array_slice($life, 0, 2), 'New sections show even before their first piece (D96)');
         $this->assertSame([['English', $english->url(), 'en']], collect($m['groups'])->firstWhere('label', 'আরও')['links'], 'English is an ordinary section in আরও');

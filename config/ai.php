@@ -26,6 +26,10 @@ return [
         'image_size' => env('OPENAI_IMAGE_SIZE', '1536x1024'),
         'image_quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
         'image_price_usd' => (float) env('OPENAI_IMAGE_PRICE', 0),   // per image, for the spend log
+        // D101: the narrator's AI voice (text to speech) for ছোটদের হাতপাখা
+        'tts_model' => env('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts'),
+        'tts_voice' => env('OPENAI_TTS_VOICE', 'coral'),
+        'tts_price_per_1k_chars' => (float) env('OPENAI_TTS_PRICE_1K', 0.015),   // estimate for the spend log
     ],
 
     'min_words' => (int) env('AI_MIN_WORDS', 20),

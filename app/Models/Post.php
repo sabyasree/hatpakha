@@ -33,6 +33,8 @@ class Post extends Model
             'originality_confirmed_at' => 'datetime',
             'pending_edits' => 'array',
             'ai_drafted_at' => 'datetime',
+            'glossary' => 'array',
+            'audio_ai' => 'boolean',
             'image_is_ai' => 'boolean',
             'related_ids' => 'array',
             'seo_proposal' => 'array',
@@ -111,6 +113,17 @@ class Post extends Model
     }
 
     public function isPoem(): bool { return $this->format === 'poem'; }
+
+    /** D101: a piece in ছোটদের হাতপাখা (no comments, no ads, age badge, glossary). */
+    public function isKids(): bool { return $this->section?->slug === \App\Models\Section::KIDS; }
+
+    public function ageLabel(): ?string { return \App\Ai\KidsTeacher::AGES[$this->age_band] ?? null; }
+
+    /** Glossary rows that are complete (word plus at least one meaning). */
+    public function glossaryRows(): array
+    {
+        return array_values(array_filter((array) $this->glossary, fn ($g) => is_array($g) && filled($g['word'] ?? null) && (filled($g['bn'] ?? null) || filled($g['en'] ?? null))));
+    }
 
     public function url(): string { return \App\Support\Url::to('/'.Slug::encode($this->slug)); }
 

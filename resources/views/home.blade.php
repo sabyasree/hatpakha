@@ -182,6 +182,30 @@
         </section>
     @endif
 
+    @if ($kids)
+        {{-- D101: ছোটদের হাতপাখা --}}
+        <section class="border-b-2 border-navy bg-sky-tint" aria-labelledby="kids-h">
+            <div class="mx-auto grid max-w-[1100px] gap-6 px-5 py-12 md:grid-cols-[1fr_1.2fr] md:items-center">
+                <div>
+                    <div class="font-hand text-2xl text-red">বিদেশে বড় হওয়া ছোটদের জন্যও</div>
+                    <h2 id="kids-h" class="font-display text-4xl font-extrabold leading-tight md:text-5xl"><a href="{{ $kids->url() }}" class="hover:text-red">{{ $kids->name_bn }}</a></h2>
+                    <p class="mt-3 max-w-[50ch] font-serif text-lg text-ink2">ছড়া, গল্প আর বর্ণমালা। কঠিন শব্দের মানে পাশে লেখা।</p>
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <a href="{{ \App\Support\Url::to('/bornomala') }}" class="inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">অ আ ক খ — বর্ণমালা</a>
+                        <a href="{{ $kids->url() }}" class="inline-flex h-12 items-center rounded-full border-2 border-navy bg-paper px-6 font-bold hover:bg-peach-light">সব লেখা →</a>
+                    </div>
+                </div>
+                @if ($kidsPosts->isNotEmpty())
+                    <ul class="divide-y divide-rule rounded-2xl border-2 border-navy bg-paper px-3">
+                        @foreach ($kidsPosts as $p)
+                            <li><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->ageLabel() ? ' · বয়স '.$p->ageLabel() : '')" /></li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </section>
+    @endif
+
     {{-- Reader letters (real comments, opt-out respected) --}}
     @if ($letters->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 py-16">

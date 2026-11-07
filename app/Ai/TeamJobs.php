@@ -49,6 +49,7 @@ final class TeamJobs
             'covers' => ['ছবি ছাড়া ৩টি লেখার ছবি আঁকা', null, 'images'],
             'post' => ['একটি লেখার ছবি আঁকা', 'post', 'post'],
             'issue_cover' => ['পরের সংখ্যার প্রচ্ছদ', null, 'issues'],
+            'alphabet' => ['বর্ণমালার ছবি (১২টি করে)', null, 'kids'],
         ],
         'marketing' => [
             'daily' => ['আজকের পোস্ট', null, 'marketing'],
@@ -67,6 +68,16 @@ final class TeamJobs
         ],
         'contest' => [
             'shortlist' => ['চলতি প্রতিযোগিতার বাছাই তালিকা', null, 'contests'],
+        ],
+        // D101: ছোটদের হাতপাখা
+        'teacher' => [
+            'all' => ['ছোটদের লেখার বয়স আর শব্দের মানে (১০টি করে)', null, 'kids'],
+            'post' => ['একটি লেখার বয়স আর শব্দের মানে', 'post', 'post'],
+        ],
+        'narrator' => [
+            'alphabet' => ['বর্ণমালার সব অক্ষর পড়ে শোনানো', null, 'kids'],
+            'all' => ['ছোটদের লেখা পড়ে শোনানো (৫টি করে)', null, 'kids'],
+            'post' => ['একটি লেখা পড়ে শোনানো', 'post', 'post'],
         ],
         'archivist' => [
             'collection' => ['এই মাসের সংকলন', null, 'today'],
@@ -207,6 +218,12 @@ final class TeamJobs
             'contest.shortlist' => ($c = \App\Models\Contest::whereIn('status', ['open', 'judging'])->latest('id')->first())
                 ? $err(ContestManager::shortlist($c), 'বাছাই তালিকা তৈরি: '.$c->title.'। প্রতিযোগিতার পাতায় দেখুন।') : [false, 'চলতি কোনো প্রতিযোগিতা নেই।'],
             'archivist.collection' => $done(Archivist::collection(null, $redo), 'সংকলনের প্রস্তাব আজকের কাজে আছে।'),
+            'teacher.all' => $done(KidsTeacher::backlog(), 'ছোটদের লেখার বয়স আর শব্দের মানে তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখুন।'),
+            'teacher.post' => $err(KidsTeacher::prepare($post), 'বয়স আর শব্দের মানে তৈরি: "'.$post?->title.'"।'),
+            'narrator.alphabet' => $done(Narrator::alphabet(), 'বর্ণমালার কণ্ঠ তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় শুনে অনুমোদন দিন।'),
+            'narrator.all' => $done(Narrator::backlog(), 'পাঠ তৈরি; প্রতিটি লেখার পাতায় শুনে অনুমোদন দিন।'),
+            'narrator.post' => $err(Narrator::forPost($post), 'পাঠ তৈরি: "'.$post?->title.'"; লেখার পাতায় শুনে অনুমোদন দিন।'),
+            'designer.alphabet' => $done(KidsAlphabet::pictures(), 'বর্ণমালার ছবি তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখে অনুমোদন দিন।'),
             'archivist.themed' => (function () use ($topic) {
                 [$c, $e] = Archivist::themed($topic);
 

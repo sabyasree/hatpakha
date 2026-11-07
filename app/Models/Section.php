@@ -12,7 +12,10 @@ class Section extends Model
     protected function casts(): array { return ['is_active' => 'boolean', 'in_top_bar' => 'boolean']; }
 
     /** Menu groups (D95), in this order. */
-    public const GROUPS = ['literature' => 'সাহিত্য', 'life' => 'জীবন ও সংস্কৃতি', 'other' => 'আরও'];
+    public const GROUPS = ['literature' => 'সাহিত্য', 'life' => 'জীবন ও সংস্কৃতি', 'kids' => 'ছোটদের', 'other' => 'আরও'];
+
+    /** D101: the children's section. */
+    public const KIDS = 'chhotoder';
 
     public function posts(): HasMany { return $this->hasMany(Post::class); }
 
@@ -54,6 +57,9 @@ class Section extends Model
             $groups = [];
             foreach (self::GROUPS as $key => $label) {
                 $links = $live->where('nav_group', $key)->map($link)->values()->all();
+                if ($key === 'kids' && $links) {
+                    $links[] = ['বর্ণমালা', \App\Support\Url::to('/bornomala'), 'bn'];   // D101
+                }
                 if ($links) {
                     $groups[] = ['label' => $label, 'links' => $links];
                 }

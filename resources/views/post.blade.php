@@ -12,6 +12,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
             @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
+            @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
         <div class="mt-5 flex items-center gap-3">
@@ -43,13 +44,34 @@
         @if ($post->audio_path && $post->audio_status === 'approved')
             {{-- D67: the writer reads their own piece --}}
             <div class="mt-6 rounded-2xl border-2 border-navy bg-sky-tint p-4">
-                <div class="mb-2 font-bold text-sky-night">🎙 লেখকের কণ্ঠে শুনুন</div>
+                @if ($post->audio_ai)
+                    {{-- D101: a machine voice is always labelled as one --}}
+                    <div class="mb-2 font-bold text-sky-night">🔊 পড়ে শোনানো হচ্ছে</div>
+                    <p class="-mt-1 mb-2 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ (এআই)</p>
+                @else
+                    <div class="mb-2 font-bold text-sky-night">🎙 লেখকের কণ্ঠে শুনুন</div>
+                @endif
                 <audio controls preload="none" src="{{ $post->audio_path }}" class="w-full"></audio>
             </div>
         @endif
 
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer) — the only raw output allowed. --}}
-        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
+        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6' }}{{ $post->isKids() ? ' kids-read' : '' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
+
+        @if ($post->isKids() && $post->glossaryRows())
+            {{-- D101: hard words, for children learning Bengali abroad --}}
+            <section class="mt-10 rounded-2xl border-2 border-navy bg-peach-light p-4 sm:p-5" aria-labelledby="glossary-h">
+                <h2 id="glossary-h" class="font-display text-2xl font-extrabold">শব্দের মানে <span class="text-base font-bold text-ink2" lang="en">(Word meanings)</span></h2>
+                <dl class="mt-3 divide-y divide-rule">
+                    @foreach ($post->glossaryRows() as $g)
+                        <div class="flex flex-wrap items-baseline gap-x-3 py-2">
+                            <dt class="text-xl font-bold">{{ $g['word'] }}</dt>
+                            <dd class="text-lg">@if (filled($g['bn'] ?? null)){{ $g['bn'] }}@endif @if (filled($g['en'] ?? null))<span class="text-ink2" lang="en">({{ $g['en'] }})</span>@endif</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </section>
+        @endif
 
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
         @foreach (\App\Models\Collection::forPost($post->id) as $col)
@@ -87,7 +109,9 @@
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
 
-        <x-ad-slot :slot="config('services.adsense.slot_article')" :height="250" />
+        @unless ($post->isKids())
+            <x-ad-slot :slot="config('services.adsense.slot_article')" :height="250" />
+        @endunless
 
         @foreach ($post->authors as $a)
             <x-author-card :author="$a" />
@@ -106,6 +130,8 @@
             </section>
         @endif
 
+        @unless ($post->isKids())
+        {{-- D101: no comments on children's pieces (children's privacy) --}}
         @php
             $writerUsers = $post->authors->pluck('user_id')->filter()->all();
             $me = auth()->user();
@@ -186,6 +212,7 @@
                 </div>
             </form>
         </section>
+        @endunless
 
         <x-newsletter-signup variant="card" />
     </article>
