@@ -46,16 +46,25 @@
                             <button class="flex min-h-11 w-full items-center rounded-xl px-3 text-left font-bold hover:bg-peach-light">শংসাপত্র চাই</button></form>
                     @endif
                 @endif
+                @if (in_array($p->status, ['pending', 'scheduled', 'confirm', 'published'], true))
+                    @include('account.partials.change-request', ['p' => $p])
+                @endif
                 {{-- D67: the writer's own reading --}}
                 <div class="mt-1 border-t border-rule px-3 pt-2 text-sm">
                     <div class="font-bold">নিজের কণ্ঠে পাঠ
                         @if ($p->audio_status === 'approved')<span class="font-normal text-sky-night">· লেখায় যোগ হয়েছে</span>
                         @elseif ($p->audio_status === 'pending')<span class="font-normal text-ink2">· অনুমোদনের অপেক্ষায়</span>@endif</div>
+                    @php $audioLocked = $p->status === 'published' && $p->audio_status === 'approved'; @endphp
                     @if ($p->audio_path)
                         <audio controls preload="none" src="{{ $p->audio_path }}" class="mt-2 w-full"></audio>
-                        <form method="POST" action="{{ Url::to('/account/audio/'.$p->id) }}" class="mt-1">@csrf<input type="hidden" name="remove" value="1">
-                            <button class="min-h-11 font-bold text-red underline">পাঠ সরান</button></form>
+                        @unless ($audioLocked)
+                            <form method="POST" action="{{ Url::to('/account/audio/'.$p->id) }}" class="mt-1">@csrf<input type="hidden" name="remove" value="1">
+                                <button class="min-h-11 font-bold text-red underline">পাঠ সরান</button></form>
+                        @endunless
                     @endif
+                    @if ($audioLocked)
+                        <p class="mt-1 text-xs text-ink2">প্রকাশিত পাঠ বদলাতে "বদল চাই" টিপে সম্পাদককে লিখুন।</p>
+                    @else
                     <form method="POST" action="{{ Url::to('/account/audio/'.$p->id) }}" enctype="multipart/form-data" class="mt-1">@csrf
                         <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-full border-2 border-navy px-4 font-bold">
                             {{ $p->audio_path ? 'নতুন পাঠ দিন' : 'পাঠ যোগ করুন' }}
@@ -63,6 +72,7 @@
                         </label>
                     </form>
                     <p class="mt-1 text-xs text-ink2">ফোনে রেকর্ড করা MP3/M4A, ২৫ MB পর্যন্ত।</p>
+                    @endif
                 </div>
             </div>
         </details>

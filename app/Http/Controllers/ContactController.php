@@ -91,15 +91,7 @@ class ContactController extends Controller
             'ip_hash' => hash_hmac('sha256', (string) $request->ip(), (string) config('app.key')),
         ]);
 
-        // A short notice to the admins: who and what about, never the visitor's text or links.
-        $admins = User::where('role', Role::Admin->value)->where('mail_opt_out', false)->get();
-        dispatch(function () use ($admins, $msg) {
-            foreach ($admins as $a) {
-                $a->notify(new \App\Notifications\WriterNote('হাতপাখা: নতুন বার্তা ('.$msg->topicLabel().')',
-                    'ওয়েবসাইটের '.($msg->kind === 'advertise' ? 'বিজ্ঞাপন' : 'যোগাযোগ').' ফর্মে নতুন বার্তা এসেছে। ডেস্কে "বার্তা" খুলে পড়ুন ও উত্তর দিন।',
-                    \App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index', panel: 'desk'), 'বার্তা দেখুন'));
-            }
-        })->afterResponse();
+        $msg->notifyAdmins();
 
         return redirect($back)->with('contact_sent', $kind === 'advertise'
             ? 'ধন্যবাদ! আপনার প্রস্তাব পৌঁছেছে। আমরা ই-মেলে যোগাযোগ করব।'

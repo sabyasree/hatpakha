@@ -6,7 +6,7 @@
 
 | Who | What they are good at | Their gap (our opening) |
 |---|---|---|
-| **Pratilipi** (Bengali among its biggest languages; millions of readers) | Huge free library, serial fiction, writer community, app | No editing, no curation, quality is a lottery; a reader complained of finding mostly Sarat Chandra and Tagore, little new literature; no ISSN prestige |
+| **Pratilipi** (Bengali among its biggest languages; millions of readers) | Anyone can publish instantly (self-publishing); huge free library, serial fiction, app; **writers can earn**: Golden Badge authors (200+ followers) lock premium chapters and are paid from the Premium subscription and Superfan subscriptions (owner correction, 2026-11-07) | No editor reads a piece before it goes up (no selection, no copy-editing), so quality is a lottery; earnings favour long serials with big followings, not poems or single stories; no ISSN or literary credential |
 | **Old webzines**: পরবাস (since 1997), কৌরব (poetry, since 1998), কল্পবিশ্ব (sci-fi) | Loyal readers, a clear identity, consistent quality | Slow, irregular, desktop-era design, little help for new writers, small social reach |
 | **Facebook groups and pages** (where many Bengali writers now publish) | Instant readers and comments; direct reader gratitude (the "পাঠক সম্মানী / Path Pronami" model in Bangladesh) | Noise, no editing, posts vanish in a week, no archive, no credential |
 | **Print annuals and little magazines** (শারদীয়া, বইমেলা লিটল ম্যাগ) | Prestige, festival rituals | Expensive and slow; reach ends with the print run |

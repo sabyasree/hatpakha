@@ -137,6 +137,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Marketing: one-tap share to Facebook, WhatsApp, Instagram (D87).
 - Share previews: 1200×630 picture for every piece, preview bots allowed on staging, clean title and description (D88).
 - Contact and advertising forms with a /desk inbox (বার্তা) instead of an e-mail address (D89).
+- Writers ask the editor ("বদল চাই") to change a submitted/published piece; live audio locked too (D94).
 - Renaming a published post's URL now leaves a 301 automatically (logged)
 - Read-only audit log ("কাজের খাতা", admin)
 - No English left in /desk: the 194 strings missing from Filament's Bengali pack are translated in `lang/vendor/*/bn/` (a test fails if a Filament update adds untranslated ones); Bengali month/day names in the date picker and Bengali digits on screen (`public/js/desk-bn.js`, display only); own labels de-Englished (ঠিকানা, গুগল, এআই, ইংরেজি…). Left as-is: names (Claude, OpenAI), example paths, typed values in inputs, and content titles

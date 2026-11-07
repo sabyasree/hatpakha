@@ -180,6 +180,10 @@ class AccountController extends Controller
     public function audio(Request $request, Post $post)
     {
         abort_unless($post->authors()->where('user_id', $request->user()->id)->exists() && $post->status !== 'rejected', 403);
+        // D94: once a reading is live on a published piece, only the editor changes it (the writer asks).
+        if ($post->status === 'published' && $post->audio_status === 'approved') {
+            return redirect(Url::to('/account/writings'))->with('status', 'প্রকাশিত লেখার পাঠ আর বদলানো যায় না। বদলাতে চাইলে "বদল চাই" টিপে সম্পাদককে লিখুন।');
+        }
         if ($request->boolean('remove')) {
             \App\Support\AudioReading::remove($post);
 
@@ -283,5 +287,38 @@ class AccountController extends Controller
     public static function verificationRequired(): bool
     {
         return ! in_array(config('mail.default'), ['log', 'array', null, ''], true);
+    }
+
+    /**
+     * D94 (owner): a submitted or published piece can't be changed by its writer; they ask the editor instead.
+     * The request lands in /desk → বার্তা with a link to the piece. At most 3 open requests per writer.
+     */
+    public function requestChange(Request $request, Post $post)
+    {
+        $user = $request->user();
+        abort_unless($post->authors()->where('user_id', $user->id)->exists() || $post->submitted_by === $user->id, 404);
+        $back = Url::to('/account/writings');
+        if (! in_array($post->status, ['pending', 'scheduled', 'confirm', 'published'], true)) {
+            return redirect($back)->with('status', 'এই লেখাটি আপনি নিজেই বদলাতে পারেন।');
+        }
+        $data = \Illuminate\Support\Facades\Validator::make($request->all(), ['what' => ['required', 'string', 'min:5', 'max:1500']],
+            ['what.required' => 'কী বদলাতে চান, লিখুন।', 'what.min' => 'কী বদলাতে চান, একটু বিশদে লিখুন।', 'what.max' => 'একটু ছোট করে লিখুন (১৫০০ অক্ষরের মধ্যে)।']);
+        if ($data->fails()) {
+            return redirect($back)->withErrors($data, 'change')->with('change_post', $post->id);
+        }
+        $open = \App\Models\ContactMessage::where('kind', 'change')->where('user_id', $user->id)->where('status', 'new')->count();
+        if ($open >= 3) {
+            return redirect($back)->with('status', 'আপনার আগের তিনটি অনুরোধ এখনও দেখা হয়নি। সম্পাদক সেগুলো দেখলে আবার পাঠাতে পারবেন।');
+        }
+        $msg = \App\Models\ContactMessage::create([
+            'kind' => 'change', 'topic' => 'piece', 'name' => $user->name, 'email' => $user->email, 'user_id' => $user->id,
+            'link' => $post->status === 'published' ? $post->url() : null,
+            'interests' => ['post_id' => $post->id, 'title' => $post->title],
+            'body' => trim(strip_tags(str_replace("\r\n", "\n", (string) $request->input('what')))),
+        ]);
+        \App\Models\AuditLog::record('post.change_requested', $post, ['message' => $msg->id]);
+        $msg->notifyAdmins();
+
+        return redirect($back)->with('status', 'অনুরোধ সম্পাদকের কাছে পৌঁছেছে। তিনি দেখে ঠিক করে দেবেন, দরকার হলে ই-মেলে জানাবেন।');
     }
 }

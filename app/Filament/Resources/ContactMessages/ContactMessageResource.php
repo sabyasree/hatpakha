@@ -63,7 +63,7 @@ class ContactMessageResource extends Resource
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(['new' => 'নতুন', 'replied' => 'উত্তর দেওয়া', 'closed' => 'হয়ে গেছে', 'spam' => 'স্প্যাম'][$state] ?? $state))
                     ->color(fn ($state) => ['new' => 'danger', 'replied' => 'success', 'spam' => 'gray'][$state] ?? 'info'),
-                TextColumn::make('kind')->label(__('ফর্ম'))->formatStateUsing(fn ($state) => __($state === 'advertise' ? 'বিজ্ঞাপন' : 'যোগাযোগ')),
+                TextColumn::make('kind')->label(__('ফর্ম'))->formatStateUsing(fn ($state) => __(['advertise' => 'বিজ্ঞাপন', 'change' => 'লেখায় বদল'][$state] ?? 'যোগাযোগ')),
                 TextColumn::make('topic')->label(__('বিষয়'))->formatStateUsing(fn ($state, ContactMessage $record) => __($record->topicLabel())),
                 TextColumn::make('name')->label(__('নাম'))->searchable()->description(fn (ContactMessage $record) => $record->organisation),
                 TextColumn::make('body')->label(__('বার্তা'))->limit(70)->searchable()->wrap(),
@@ -72,7 +72,7 @@ class ContactMessageResource extends Resource
             ->filters([
                 SelectFilter::make('status')->label(__('অবস্থা'))->default('new')
                     ->options(['new' => __('নতুন'), 'replied' => __('উত্তর দেওয়া'), 'closed' => __('হয়ে গেছে'), 'spam' => __('স্প্যাম')]),
-                SelectFilter::make('kind')->label(__('ফর্ম'))->options(['contact' => __('যোগাযোগ'), 'advertise' => __('বিজ্ঞাপন')]),
+                SelectFilter::make('kind')->label(__('ফর্ম'))->options(['contact' => __('যোগাযোগ'), 'advertise' => __('বিজ্ঞাপন'), 'change' => __('লেখায় বদল')]),
             ])
             ->recordAction('read')
             ->recordActions([
@@ -80,6 +80,9 @@ class ContactMessageResource extends Resource
                     ->modalHeading(fn (ContactMessage $record) => __($record->topicLabel()))
                     ->modalContent(fn (ContactMessage $record) => view('filament.partials.contact-message', ['m' => $record]))
                     ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ')),
+                Action::make('openPiece')->label(__('লেখাটি খুলুন'))->icon('heroicon-o-pencil-square')->color('gray')
+                    ->visible(fn (ContactMessage $record) => (bool) $record->post())
+                    ->url(fn (ContactMessage $record) => \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $record->post()])),
                 Action::make('reply')->label(__('ই-মেলে উত্তর'))->icon('heroicon-o-paper-airplane')->color('primary')
                     ->url(fn (ContactMessage $record) => 'mailto:'.rawurlencode($record->email).'?subject='.rawurlencode('Re: হাতপাখা — '.$record->topicLabel()), shouldOpenInNewTab: true),
                 $mark('replied', 'উত্তর দিয়েছি', 'heroicon-o-check', 'replied', 'success'),

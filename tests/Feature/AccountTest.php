@@ -168,4 +168,41 @@ class AccountTest extends TestCase
         $this->withSession(['view_as' => ['user' => $writer->id, 'by' => auth()->id(), 'at' => now()->timestamp]])
             ->get('/account/')->assertOk()->assertDontSee('চোখে দেখছেন');
     }
+
+    /** D94 (owner): once submitted or published, the writer can't change a piece; they ask the editor. */
+    public function test_published_piece_is_locked_and_the_writer_asks_the_editor(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $me = User::factory()->create(['role' => Role::Writer]);
+        $author = Author::create(['display_name' => 'Rina', 'slug' => 'rina', 'user_id' => $me->id]);
+        $post = $this->makePost(['status' => 'published', 'title' => 'মেঘ', 'slug' => 'megh', 'published_at' => now()->subDay(),
+            'submitted_by' => $me->id, 'audio_path' => '/media/audio/x.mp3', 'audio_status' => 'approved'], $author);
+        $this->actingAs($me);
+
+        // the text can't be changed
+        $this->post('/submit/'.$post->id.'/', ['title' => 'বদলানো', 'body' => 'নতুন'])->assertForbidden();
+        $this->postJson('/submit/'.$post->id.'/autosave/', ['title' => 'বদলানো'])->assertForbidden();
+        $this->assertSame('মেঘ', $post->fresh()->title);
+        // nor the live reading
+        $this->post('/account/audio/'.$post->id.'/', ['remove' => 1])->assertRedirect();
+        $this->assertSame('approved', $post->fresh()->audio_status);
+        $this->get('/account/writings/')->assertOk()->assertSee('বদল চাই')->assertDontSee('পাঠ সরান');
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('সম্পাদককে পাঠান');
+
+        // ask instead
+        $this->post('/account/change/'.$post->id.'/', ['what' => 'তৃতীয় লাইনে বানান ভুল'])->assertSessionHas('status');
+        $m = \App\Models\ContactMessage::sole();
+        $this->assertSame(['change', $me->id, $post->id], [$m->kind, $m->user_id, $m->post()?->id]);
+        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\WriterNote::class);
+        $this->post('/account/change/'.$post->id.'/', ['what' => ''])->assertSessionHasErrors('what', null, 'change');
+        foreach ([2, 3, 4] as $n) {
+            $this->post('/account/change/'.$post->id.'/', ['what' => 'আরেকটি অনুরোধ '.$n]);
+        }
+        $this->assertSame(3, \App\Models\ContactMessage::count(), 'At most three open requests');
+
+        // nobody else's piece
+        $this->actingAs(User::factory()->create(['role' => Role::Writer]));
+        $this->post('/account/change/'.$post->id.'/', ['what' => 'অন্যের লেখা বদলাও'])->assertNotFound();
+    }
 }

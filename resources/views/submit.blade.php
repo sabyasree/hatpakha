@@ -51,6 +51,9 @@
             <div class="mt-6 rounded-xl border-2 border-navy p-5">
                 <p class="font-bold">লেখাটি জমা পড়েছে; এখন আর বদলানো যায় না।</p>
                 <p class="mt-1 text-ink2">অবস্থা: {{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</p>
+                @if (in_array($post->status, ['pending', 'scheduled', 'confirm', 'published'], true))
+                    @include('account.partials.change-request', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light'])
+                @endif
             </div>
             @if ($post->featured_image_path)<img src="{{ asset($post->featured_image_path) }}" alt="" class="mt-6 w-full rounded-2xl">@endif
             <div class="{{ $post->format === 'poem' ? 'poem-bn text-center' : 'prose-bn' }} mt-6">{!! $post->body_html !!}</div>
