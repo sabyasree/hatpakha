@@ -26,6 +26,10 @@ class ListPosts extends ListRecords
                 ->badge(fn () => Post::where('status', 'pending')->whereNotNull('submitted_by')->count() ?: null)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNotNull('submitted_by')->reorder()->orderBy('submitted_at')),
             // The 424 old WordPress submissions, kept apart so they never bury new ones (tiers: D16, Phase 2).
+            // D104: old submissions whose writer said yes to the apology letter: these may be read and decided.
+            'backlog_yes' => Tab::make(__('পুরনো: লেখক রাজি'))
+                ->badge(fn () => Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->reorder()->orderBy('relaunch_answered_at')),
             'backlog' => Tab::make(__('পুরনো জমা'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->reorder()->orderBy('backlog_tier')->orderByDesc('submitted_at')),
             'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),

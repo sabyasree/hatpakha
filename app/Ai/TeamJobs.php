@@ -25,6 +25,7 @@ final class TeamJobs
         'editor' => [
             'inbox' => ['নতুন জমা লেখা, মন্তব্য আর ছবি এখনই দেখুক', null, 'posts'],
             'backlog' => ['পুরনো জমা থেকে আরও ১০টি লেখার রিপোর্ট', null, 'posts'],
+            'screen' => ['পুরনো জমা লেখা পড়ে বাছাই: লেখককে জিজ্ঞেস করার মতো কি না (২৫টি করে)', null, 'relaunch'],
             'review' => ['একটি লেখা আবার পড়ে রিপোর্ট দিক', 'post', 'post'],
             'issue' => ['পরের মাসের সংখ্যার প্রস্তাব ও সম্পাদকীয় খসড়া', null, 'issues'],
             'picks' => ['সম্পাদকের পছন্দ ও "এই দিনে"', null, 'today'],
@@ -227,6 +228,7 @@ final class TeamJobs
             'narrator.post' => $err(Narrator::forPost($post), 'পাঠ তৈরি: "'.$post?->title.'"; লেখার পাতায় শুনে অনুমোদন দিন।'),
             'narrator.samples' => $done(Narrator::makeSamples(), 'কণ্ঠের নমুনা তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় শুনে বেছে নিন।'),
             'narrator.revoice' => $done(Narrator::revoice(), 'নতুন কণ্ঠে পাঠ তৈরি; শুনে অনুমোদন দিন।'),
+            'editor.screen' => $done(\App\Ai\BacklogScreen::backlog(), 'পুরনো জমা লেখা পড়া হয়েছে; ডেস্ক → পুরনো লেখকদের চিঠি-তে বাছাই দেখুন।'),
             'designer.alphabet' => $done(KidsAlphabet::pictures(), 'বর্ণমালার ছবি তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখে অনুমোদন দিন।'),
             'archivist.themed' => (function () use ($topic) {
                 [$c, $e] = Archivist::themed($topic);

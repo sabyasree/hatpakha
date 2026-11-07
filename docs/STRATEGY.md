@@ -48,6 +48,36 @@ No competitor combines editing, speed, prestige and reach.
 
 **Targets for 90 days:** every backlog writer answered; 40+ new pieces published; 1,000 confirmed newsletter readers; 20% of visitors read a second piece; a successful Boimela issue and contest.
 
+## 3b. The relaunch: winning back trust (owner, 2026-11-07, D104)
+
+**What the data says.** 1,393 published pieces; peaks in 2015–17 and 2020–21, then 11 pieces in 2022, none in 2023, 16 in 2024. 1,728 accounts and 912 writers (267 published in 2020–24; 145 have three or more pieces). 424 submissions, mostly sent in 2016–18, were never answered. People remember Hatpakha but think it has stopped. The relaunch must rebuild **trust**, not add features.
+
+**What we do, in order**
+
+1. **Own the silence.** The "we're back" letter says plainly that Hatpakha went quiet, apologises, and says what is different now. Revived magazines that did this kept their communities.
+2. **Old submissions first, and only the good ones (owner).** None of the 424 is published as it is.
+   - The AI editor reads each once and suggests "worth asking" or "too weak", with a score and a one-line reason for the owner only. The owner can change any of them (/desk → পুরনো লেখকদের চিঠি).
+   - After the move to hatpakha.com, writers of "worth asking" pieces get **one** letter, sent automatically: an apology, the reason (Hatpakha was almost closed for some years, so nobody could read and answer), and the question "do you still want it published?". Writers whose pieces are all weak get no letter.
+   - The letter's text needs the owner's approval once. Sending is 20 an hour, newest submissions first, so old dead addresses don't harm the site's mail reputation.
+   - The writer answers per piece from a signed link: publish / don't publish / already published elsewhere. A "yes" puts the piece in "পুরনো: লেখক রাজি" for the owner to read and decide. A "no" or no answer means it is never published (the site refuses to publish an old submission without the writer's yes).
+3. **Prove we're alive before inviting anyone.** 4–6 weeks of pieces scheduled before any announcement (three a week). The schedule must not slip in the first months.
+4. **The core writers, personally.** The owner messages the 145 regular writers (WhatsApp or personal mail) and invites them to a **ফিরে আসা সংখ্যা**, the first issue after the return.
+5. **The old list, gently.** The "we're back" letter to all accounts goes in small batches, recent writers (2020–24) first; bounced addresses are removed. Easy unsubscribe in every letter.
+6. **Google: keep and watch.** Same domain and every old URL, so no change-of-address is needed. Verify Search Console, submit the sitemap on launch day, check "not found" weekly for a few months.
+7. **WhatsApp Channel and the Facebook page.** WhatsApp Channels reach followers without an algorithm in between; revive the Facebook page with the same message.
+8. **Protect the owner's time.** One or two trusted volunteer editors (editor role). A pace that can be kept: three pieces a week, not daily.
+
+**Timeline**
+
+| When | What |
+|---|---|
+| Now to mid-December | Launch blockers. AI reads the 424 old pieces; owner checks the list and approves the letter. Message the core writers. Build a 6-week schedule. |
+| Late December | Move to hatpakha.com (quiet launch). The apology letters start by themselves. |
+| Early January | "We're back" letter in batches, Facebook, WhatsApp Channel, the ফিরে আসা সংখ্যা. |
+| Late January | Boimela issue and contest (section 3). |
+
+Research behind this (2026-11-07): e-mail re-engagement guidance (Suped, Customer.io), relaunched magazines (The Writer 2025, Blydyn Square Review, The Northwest Review), Google's Change of Address help, Nieman Lab and Deccan Herald on WhatsApp Channels.
+
 ## 4. Is everything ready to run the magazine? (checklist)
 
 **Ready now**: submissions with editing, review, decisions and notes; issues and editorials; publishing slots; comments with AI pre-screening; covers (writer upload or AI); SEO; newsletter (sign-up, letters to readers and writers); marketing posts and cards; contests; certificates; archive and collections; reader analytics; AI team with plan and monitoring; accounts with verification and optional 2FA; Bengali/English desk.

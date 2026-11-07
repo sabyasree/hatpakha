@@ -166,6 +166,9 @@ Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $reques
 // D89: contact and advertising forms (instead of an e-mail address)
 Route::post('/contact/{kind}', [\App\Http\Controllers\ContactController::class, 'store'])->whereIn('kind', ['contact', 'advertise'])->middleware('throttle:5,1')->name('contact.store');
 Route::post('/newsletter/subscribe', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->middleware('throttle:6,1')->name('newsletter.subscribe');
+// D104: a writer answers the apology letter about an old submission (signed link, no sign-in).
+Route::get('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'show'])->middleware(['signed', 'throttle:20,1'])->name('relaunch.reply');
+Route::post('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'store'])->middleware(['signed', 'throttle:10,1'])->name('relaunch.answer');
 Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
 Route::get('/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
 Route::get('/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {

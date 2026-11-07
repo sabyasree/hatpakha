@@ -119,4 +119,7 @@ return [
     // Newsletters (D58): letters sent per minute by the scheduler. Shared hosting allows only so many per hour.
     'batch' => (int) env('MAIL_BATCH', 30),
 
+    // D104: apology letters to old writers, per hour (old addresses: go slowly so bounces don't hurt the site's mail).
+    'relaunch_per_hour' => (int) env('MAIL_RELAUNCH_PER_HOUR', 20),
+
 ];

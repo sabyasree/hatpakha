@@ -35,6 +35,9 @@ class Post extends Model
             'ai_drafted_at' => 'datetime',
             'glossary' => 'array',
             'audio_ai' => 'boolean',
+            'relaunch_answered_at' => 'datetime',
+            'relaunch_elsewhere' => 'boolean',
+            'relaunch_worth_by_owner' => 'boolean',
             'image_is_ai' => 'boolean',
             'related_ids' => 'array',
             'seo_proposal' => 'array',
@@ -46,9 +49,25 @@ class Post extends Model
         ];
     }
 
+    /** Only the WordPress import may move an old submission straight to published (D104). */
+    public static bool $allowLegacyPublish = false;
+
+    /** An old WordPress submission (before the relaunch) that nobody answered. */
+    public function isLegacyPending(): bool
+    {
+        return $this->getOriginal('status') === 'pending' && $this->submitted_by === null && $this->legacy_wp_id !== null;
+    }
+
     protected static function booted(): void
     {
         static::saving(function (self $post) {
+            // D104 (owner): the old unanswered submissions are never published unless their writer said yes to the apology letter.
+            if ($post->exists && $post->isDirty('status') && in_array($post->status, ['published', 'scheduled'], true)
+                && $post->isLegacyPending() && $post->relaunch_status !== 'yes' && ! self::$allowLegacyPublish) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'status' => 'এটি পুরনো জমা লেখা। লেখক চিঠির উত্তরে রাজি না হলে প্রকাশ করা যাবে না।',
+                ]);
+            }
             // Security: body is sanitised on every save, whatever the source (docs/SECURITY.md §4).
             if ($post->isDirty('body_html')) {
                 // Then tidy structure only (never words): docs/DECISIONS.md D23.

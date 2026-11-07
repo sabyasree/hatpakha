@@ -178,3 +178,11 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: make voice samples, choose voices by ear, then run the four jobs in /desk → ছোটদের হাতপাখা and approve pictures/voices
 - [ ] Owner: check and publish the classics; পিঁপড়ে আর পিঁপড়ীর কথা has a suspected caption line inside the text
 - [ ] Later: invite parents and writers to send children's pieces; a native copy editor checks the alphabet words
+
+## Relaunch (D104), 2026-11-07
+- [x] Relaunch plan in docs/STRATEGY.md §3b
+- [x] Old submissions: AI reads each once (worth asking / too weak); owner can change; never published without the writer's yes
+- [x] Apology letters start by themselves on hatpakha.com after the owner approves the text; writer answers per piece from a signed link
+- [ ] Owner: check the AI's list and the letter text (/desk → পুরনো লেখকদের চিঠি), then approve
+- [ ] Owner: message the 145 core writers; plan the ফিরে আসা সংখ্যা; 6-week schedule before announcing
+- [ ] Later: automatic bounce handling for the "we're back" letter

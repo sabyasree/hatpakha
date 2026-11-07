@@ -104,14 +104,17 @@ class AiShift extends Command
     {
         $done = AiReview::where('status', 'done')->whereNull('blind_run')->where('report', 'like', '%"edits"%')->select('post_id');
         $tried = AiReview::whereIn('status', ['failed', 'skipped'])->where('created_at', '>=', now()->subDays(7))->select('post_id');
-        foreach (Post::where('status', 'pending')->whereNull('submitted_by')->whereNotIn('id', $done)->whereNotIn('id', $tried)
+        // D104: old submissions are read only after their writer answered "yes" to the apology letter (no AI spent on the rest).
+        foreach (Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->whereNotIn('id', $done)->whereNotIn('id', $tried)
             ->orderBy('backlog_tier')->orderByDesc('submitted_at')->limit(10)->get() as $p) {
             $service->run($p, null, 'editor');
         }
         // Proofreader (D50): 10 unpublished old pieces an hour (published pieces are never proofread).
-        foreach (Post::where('status', 'pending')->whereNull('proof_at')->orderBy('backlog_tier')->limit(10)->get() as $p) {
+        foreach (Post::where('status', 'pending')->whereNull('proof_at')->where(fn ($q) => $q->whereNotNull('submitted_by')->orWhere('relaunch_status', 'yes'))->orderBy('backlog_tier')->limit(10)->get() as $p) {
             \App\Ai\Proofreader::run($p);
         }
+        // D104: read the old submissions once (worth asking the writer, or too weak), 25 an hour until all are read.
+        \App\Ai\BacklogScreen::backlog(25);
         // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
         foreach (Post::published()->whereNull('seo_done_at')->orderByDesc('published_at')->limit(10)->get() as $p) {
             \App\Ai\SeoExpert::run($p, onlyMissing: true);

@@ -64,6 +64,7 @@ class ImportWordPress extends Command
 
     public function handle(): int
     {
+        \App\Models\Post::$allowLegacyPublish = true;   // D104: the import mirrors WordPress as it is
         $this->wp = DB::connection($this->option('connection'));
         $this->call('db:seed', ['--force' => true]);
         $this->sectionId = Section::pluck('id', 'slug')->all();
