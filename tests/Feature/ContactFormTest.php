@@ -87,8 +87,8 @@ class ContactFormTest extends TestCase
         $this->travel(2)->minutes();
 
         // Turnstile, once switched on, must pass for this form's own action
-        config(['services.turnstile.site_key' => 'site', 'services.turnstile.secret' => 'secret']);
-        $host = parse_url(config('app.url'), PHP_URL_HOST);
+        config(['services.turnstile' => ['site_key' => 'site', 'secret' => 'secret', 'hostnames' => 'new.hatpakha.com']]);   // as TurnstileTest: never rely on .env
+        $host = 'new.hatpakha.com';
         Http::fake(['challenges.cloudflare.com/*' => Http::sequence()
             ->push(['success' => true, 'action' => 'comment', 'hostname' => $host])
             ->push(['success' => true, 'action' => 'contact', 'hostname' => $host])]);
