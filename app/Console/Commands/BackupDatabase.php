@@ -27,10 +27,15 @@ class BackupDatabase extends Command
         }
         $dir = storage_path('app/private/backups');
         @mkdir($dir, 0700, true);
+        if (! is_dir($dir) || ! is_writable($dir)) {
+            $this->error("Cannot write to {$dir}");
+
+            return self::FAILURE;
+        }
         $label = preg_replace('/[^a-z0-9-]/', '', strtolower((string) $this->option('label'))) ?: 'manual';
         $file = $dir.'/db-'.now()->format('Ymd-His').'-'.$label.'.sql.gz';
         $tmp = $file.'.part';
-        $gz = gzopen($tmp, 'wb6');
+        $gz = @gzopen($tmp, 'wb6');
         if (! $gz) {
             $this->error("Cannot write {$tmp}");
 
