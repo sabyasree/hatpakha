@@ -108,24 +108,73 @@ Staging then stays for development with AI switched off.
 
 1. **Back up staging** (database + `public/media` + `public/wp-content/uploads`). Keep the copy off the server.
 2. **Database:** create the production database on Hostinger and import a dump of the staging database into it.
-3. **Files:** copy `public/media/` (covers, share pictures) and `public/wp-content/uploads/` from staging to the
-   production folder (the deploy never touches these, D47).
-4. **Production `ENV_FILE`** (GitHub Environment `production`), differences from staging:
+3. **Production folder layout: the app lives outside `public_html`, like staging** (owner, D91):
+   ```
+   ~/apps/hatpakha-production/            ← production DEPLOY_PATH (Laravel root, .env lives here)
+   ~/apps/hatpakha-production/public/     ← the only web-visible folder
+   ~/domains/hatpakha.com/public_html/    ← stays a REAL folder, holding only:
+       .htaccess                          ← sends hatpakha.com to site/ (below)
+       site → symlink to ~/apps/hatpakha-production/public
+       new  → symlink to ~/apps/hatpakha-staging/public   (staging, unchanged)
+   ```
+   Why not make `public_html` itself a symlink: staging's `new` folder sits inside it and would then be reached
+   through two symlinks, which this server does not follow (the picture 404s, D47). This way each site is one
+   symlink deep and staging is not touched.
+
+   Over SSH (WordPress is already stopped; its files are moved to a backup, not deleted):
+   ```bash
+   mkdir -p ~/apps/hatpakha-production/public ~/backups/wordpress-public_html
+   cd ~/domains/hatpakha.com/public_html
+   ls -la                                             # check what is there first
+   find . -mindepth 1 -maxdepth 1 ! -name new -exec mv {} ~/backups/wordpress-public_html/ \;
+   ln -s ~/apps/hatpakha-production/public site
+   ls -la                                             # only: new -> staging, site -> production
+   ```
+   Then create `~/domains/hatpakha.com/public_html/.htaccess`:
+   ```apache
+   Options +FollowSymLinks -Indexes
+   RewriteEngine On
+   # Nobody reaches the site through /site/… directly (one address per page)
+   RewriteCond %{ENV:REDIRECT_STATUS} ^$
+   RewriteRule ^site(/(.*))?$ /$2 [R=301,L]
+   # hatpakha.com and www → the Laravel public folder; new.hatpakha.com is not affected
+   RewriteCond %{HTTP_HOST} ^(www\.)?hatpakha\.com$ [NC]
+   RewriteCond %{REQUEST_URI} !^/site/
+   RewriteRule ^(.*)$ site/$1 [L]
+   ```
+   This also closes the old side effect: `hatpakha.com/new/` now goes to the production app (404), never to staging.
+   GitHub → Environments → `production`: `DEPLOY_PATH` = `/home/<user>/apps/hatpakha-production` (the deploy
+   refuses any path inside `public_html`) and the same SSH secrets as staging.
+
+   **Check before switching Cloudflare/DNS:**
+   ```bash
+   curl -sI https://hatpakha.com/ | head -1                 # 200, from Laravel
+   curl -sI https://hatpakha.com/site/ | grep -i location   # → https://hatpakha.com/
+   curl -sI https://hatpakha.com/.env | head -1             # 404
+   curl -sI https://hatpakha.com/new/ | head -1             # 404 (not staging)
+   curl -sI https://new.hatpakha.com/ | head -1             # staging still 200
+   ```
+   If the main domain shows a 500 or Hostinger's default page, the fallback is hPanel → Websites → hatpakha.com →
+   change the website's root folder to `public_html/site` (if the plan offers it) and remove the two rewrite blocks.
+4. **Files:** copy `public/media/` (covers, share pictures) and `public/wp-content/uploads/` from staging to
+   `~/apps/hatpakha-production/public/` (the deploy never touches these, D47):
+   `rsync -a ~/apps/hatpakha-staging/public/media ~/apps/hatpakha-staging/public/wp-content ~/apps/hatpakha-production/public/`
+5. **Production `ENV_FILE`** (GitHub Environment `production`), differences from staging:
    - `APP_URL=https://hatpakha.com`
    - **`APP_KEY` = exactly the staging key.** Two-step-verification secrets and recovery codes are stored
      encrypted with it; a new key would lock every 2FA user (owner included) out of /desk.
    - `DB_*` = the new production database; `SEO_INDEXABLE=true`; `TURNSTILE_HOSTNAMES=hatpakha.com`
    - real SMTP (`MAIL_*`); AI keys and `AI_ENABLED=true`; Turnstile keys for the hatpakha.com widget
-5. **Deploy** `main` to production (owner merges the branch into `main`), then on the server:
+6. **Deploy** `main` to production (owner merges the branch into `main`), then on the server:
    - `php artisan migrate --force`
    - `php artisan hatpakha:move-host --dry` (see what still says `new.hatpakha.com`), then `php artisan hatpakha:move-host`
    - `php artisan optimize:clear`
-6. **Cron** on production: `* * * * * php artisan schedule:run`.
-7. **Cloudflare:** point hatpakha.com at production; cache rules (guest HTML; bypass `/desk*`, `/livewire*`,
+7. **Cron** on production (hPanel → Cron Jobs, every minute, full paths): `cd /home/<user>/apps/hatpakha-production && php artisan schedule:run`.
+8. **Cloudflare:** point hatpakha.com at production; cache rules (guest HTML; bypass `/desk*`, `/livewire*`,
    `/submit*`, `/account*` and requests with the session cookie). Re-check the Turnstile widget's hostnames.
-8. **Check:** `php artisan hatpakha:url-audit --base=https://hatpakha.com …` (old URLs 200/301), log in to /desk
+9. **Check:** `php artisan hatpakha:url-audit --base=https://hatpakha.com …` (old URLs 200/301), log in to /desk
    with 2FA, send a test contact message, share a piece on WhatsApp. Submit the sitemap in Search Console.
-9. **Clean test leftovers** in production /desk (test accounts, test messages).
-10. **Staging afterwards:** keep `AI_ENABLED=false` and `MAIL_MAILER=log` in the staging `ENV_FILE`. Staging holds
+10. **Clean test leftovers** in production /desk (test accounts, test messages).
+11. **Staging afterwards:** keep `AI_ENABLED=false` and `MAIL_MAILER=log` in the staging `ENV_FILE`. Staging holds
    real writers' accounts and e-mails, so it must never send mail or run paid AI jobs. Its data is a snapshot from
    launch day; new content lives on production only.
