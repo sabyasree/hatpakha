@@ -124,4 +124,14 @@ class CollectionsTest extends TestCase
         $this->assertSame('proposed', Collection::where('slug', 'shiter-lekha')->value('status'));
         $this->assertSame(0, Collection::where('status', 'approved')->count(), 'Only proposals; the owner publishes');
     }
+
+    /** D99 (owner): the archive page shows collections as compact cards, not every piece. */
+    public function test_archive_page_shows_collections_as_compact_cards(): void
+    {
+        Collection::create(['kind' => 'theme', 'title' => 'শীতের লেখা', 'slug' => 'shiter-lekha', 'intro' => 'শীতের ভূমিকা।', 'status' => 'approved', 'approved_at' => now(),
+            'post_ids' => array_map(fn ($p) => $p->id, array_slice($this->posts, 0, 5))]);
+        $this->get('/archive/')->assertOk()->assertSee('শীতের লেখা')->assertSee('সব সংকলন')->assertSee('৫টি লেখা')
+            ->assertSee('শীতের সকাল')->assertDontSee('শীত এল')->assertDontSee('হেমন্তের শেষে');
+        $this->get('/sonkolon/')->assertOk()->assertSee('৫টি লেখা')->assertDontSee('হেমন্তের শেষে');
+    }
 }

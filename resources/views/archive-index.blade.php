@@ -17,22 +17,20 @@
         </div>
     </section>
 
-    @foreach ($collections as $collection)
-        {{-- Archivist's collection (D55), approved by the owner. --}}
-        <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="col-{{ $collection->id }}">
-            <div class="font-hand text-xl text-red">সংকলন</div>
-            <h2 id="col-{{ $collection->id }}" class="font-display text-2xl font-extrabold">@if ($collection->slug)<a href="{{ $collection->url() }}" class="hover:text-red">{{ $collection->title }} →</a>@else{{ $collection->title }}@endif</h2>
-            @if ($collection->intro)<p class="mt-2 max-w-[65ch] font-serif text-ink2">{{ $collection->intro }}</p>@endif
-            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
-                @foreach ($collection->posts() as $p)
-                    <li><a href="{{ $p->url() }}" class="lift block rounded-xl border-2 border-navy bg-paper p-3 hover:bg-peach-light">
-                        <span class="block font-display text-lg font-bold">{{ $p->title }}</span>
-                        <span class="text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }}</span>
-                    </a></li>
+    @if ($collections->isNotEmpty())
+        {{-- D99 (owner): collections as compact cards, not every piece of every collection --}}
+        <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="collections-h">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <h2 id="collections-h" class="font-display text-2xl font-extrabold">সংকলন</h2>
+                <a href="{{ \App\Support\Url::to('/sonkolon') }}" class="inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব সংকলন →</a>
+            </div>
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($collections as $collection)
+                    <li><x-collection-card :collection="$collection" /></li>
                 @endforeach
             </ul>
         </section>
-    @endforeach
+    @endif
 
     @if ($issues->isNotEmpty())
         <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="issues">
