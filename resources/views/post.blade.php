@@ -47,7 +47,7 @@
                 @if ($post->audio_ai)
                     {{-- D101: a machine voice is always labelled as one --}}
                     <div class="mb-2 font-bold text-sky-night">🔊 পড়ে শোনানো হচ্ছে</div>
-                    <p class="-mt-1 mb-2 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ (এআই)</p>
+                    <p class="-mt-1 mb-2 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ</p>
                 @else
                     <div class="mb-2 font-bold text-sky-night">🎙 লেখকের কণ্ঠে শুনুন</div>
                 @endif

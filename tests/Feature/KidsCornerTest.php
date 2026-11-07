@@ -88,7 +88,7 @@ class KidsCornerTest extends TestCase
     public function test_ai_voice_is_always_labelled(): void
     {
         $post = $this->kidsPost(['audio_path' => '/media/audio/x.mp3', 'audio_status' => 'approved', 'audio_ai' => true]);
-        $this->get($post->url())->assertSee('কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ (এআই)')->assertDontSee('লেখকের কণ্ঠে শুনুন');
+        $this->get($post->url())->assertSee('কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ</p>', false)->assertDontSee('লেখকের কণ্ঠে শুনুন');
     }
 
     public function test_teacher_sets_age_and_only_real_words(): void
@@ -142,7 +142,7 @@ class KidsCornerTest extends TestCase
         $this->assertNotNull($page[0]['audio']);
         $this->assertNull($page[1]['audio']);
         $this->assertNull($page[2]['audio']);
-        $this->get('/bornomala/')->assertSee('data-say="'.$state[0]['audio'].'"', false)->assertSee('যন্ত্রকণ্ঠ (এআই)');
+        $this->get('/bornomala/')->assertSee('data-say="'.$state[0]['audio'].'"', false)->assertSee('হাতপাখার যন্ত্রকণ্ঠ');
 
         Livewire::actingAs($admin)->test(KidsCorner::class)->call('approveAll', 'audio');
         $this->assertFalse(EditorTask::open('kids_alphabet')->exists() && collect(KidsAlphabet::state())->contains(fn ($s) => ! empty($s['audio']) && empty($s['audio_ok'])));

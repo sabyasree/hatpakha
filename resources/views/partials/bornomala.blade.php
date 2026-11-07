@@ -25,7 +25,7 @@
     </section>
 @endforeach
 @if ($letters->whereNotNull('audio')->isNotEmpty())
-    <p class="mt-6 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ (এআই)@if ($letters->whereNotNull('pic')->isNotEmpty()) · ছবি: এআই-এর সাহায্যে আঁকা@endif</p>
+    <p class="mt-6 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ@if ($letters->whereNotNull('pic')->isNotEmpty()) · ছবি: এআই-এর সাহায্যে আঁকা@endif</p>
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         (() => {
             const player = new Audio();
