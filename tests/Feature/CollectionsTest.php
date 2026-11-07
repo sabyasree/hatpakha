@@ -134,4 +134,20 @@ class CollectionsTest extends TestCase
             ->assertSee('শীতের সকাল')->assertDontSee('শীত এল')->assertDontSee('হেমন্তের শেষে');
         $this->get('/sonkolon/')->assertOk()->assertSee('৫টি লেখা')->assertDontSee('হেমন্তের শেষে');
     }
+
+    /** D100 (owner): in season first, then by how soon the season starts, then year-round; ties newest first. */
+    public function test_cards_are_ordered_in_season_first(): void
+    {
+        $make = fn (string $slug, array $months, int $daysAgo) => Collection::create(['kind' => 'theme', 'title' => $slug, 'slug' => $slug, 'months' => $months,
+            'post_ids' => [$this->posts[0]->id], 'status' => 'approved', 'approved_at' => now()->subDays($daysAgo)]);
+        $make('premer-kobita', [2], 1);
+        $make('chhelebela', [], 0);
+        $make('shiter-lekha', [11, 12, 1], 5);
+        $make('pujor-golpo', [9, 10], 2);
+        $make('mayer-jonno-kobita', [5], 3);
+
+        $order = fn (int $month) => Collection::seasonOrder(Collection::all(), \Illuminate\Support\Carbon::create(2027, $month, 10))->pluck('slug')->all();
+        $this->assertSame(['shiter-lekha', 'premer-kobita', 'mayer-jonno-kobita', 'pujor-golpo', 'chhelebela'], $order(12), 'December: winter first');
+        $this->assertSame(['mayer-jonno-kobita', 'pujor-golpo', 'shiter-lekha', 'premer-kobita', 'chhelebela'], $order(5), 'May: mother first');
+    }
 }

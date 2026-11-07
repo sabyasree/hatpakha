@@ -14,7 +14,7 @@ class CollectionController extends Controller
 {
     public function index()
     {
-        $collections = Collection::where('status', 'approved')->whereNotNull('slug')->latest('approved_at')->get();
+        $collections = Collection::seasonOrder(Collection::where('status', 'approved')->whereNotNull('slug')->get());   // D100: in season first
         $seo = new Seo(title: 'সংকলন', description: 'হাতপাখার চোদ্দো বছরের লেখা থেকে বিষয় ধরে বাছাই করা সংকলন: ঋতু, উৎসব, মা-বাবা, প্রেম, ছেলেবেলা।',
             canonical: Url::to('/sonkolon'), noindex: $collections->isEmpty(),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['সংকলন', Url::to('/sonkolon')]])]);

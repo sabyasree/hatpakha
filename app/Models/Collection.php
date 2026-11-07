@@ -50,6 +50,27 @@ class Collection extends Model
             ->map(fn (self $c) => ['id' => $c->id, 'slug' => $c->slug, 'title' => $c->title, 'ids' => array_map('intval', (array) $c->post_ids), 'months' => array_map('intval', (array) $c->months)])->all());
     }
 
+    /**
+     * D100 (owner): in season first, then by how soon their season starts, then year-round ones; ties: newest.
+     *
+     * @param  \Illuminate\Support\Collection<int, self>  $items
+     */
+    public static function seasonOrder(\Illuminate\Support\Collection $items, ?\Carbon\CarbonInterface $today = null): \Illuminate\Support\Collection
+    {
+        $month = ($today ?? now('Asia/Kolkata'))->month;
+        // 0 = in season now; 1-11 = months until the season starts; 12 = year-round (no months)
+        $wait = function (self $c) use ($month) {
+            $months = array_map('intval', (array) $c->months);
+            if (! $months) {
+                return 12;
+            }
+
+            return min(array_map(fn ($m) => ($m - $month + 12) % 12, $months));
+        };
+
+        return $items->sortBy([fn ($a, $b) => $wait($a) <=> $wait($b), fn ($a, $b) => ($b->approved_at?->timestamp ?? 0) <=> ($a->approved_at?->timestamp ?? 0)])->values();
+    }
+
     /** The collection for the home shelf: one in season (Kolkata month), else the latest approved. */
     public static function featured(): ?self
     {

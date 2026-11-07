@@ -87,7 +87,7 @@ class ArchiveController extends Controller
         );
 
         // The archivist's approved themed collections (D55), newest first.
-        $collections = \App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->latest('approved_at')->limit(6)->get();
+        $collections = \App\Models\Collection::seasonOrder(\App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->get())->take(6);   // D100
 
         return view('archive-index', compact('years', 'issues', 'sections', 'total', 'seo', 'collections'));
     }
