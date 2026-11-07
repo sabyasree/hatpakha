@@ -176,7 +176,7 @@ class AiShift extends Command
         \App\Ai\Honours::proposeWriterOfMonth();   // D66: the owner approves before anything shows
         \App\Ai\Strategist::monthly();   // D63: after the analyst, so the memo sees last month's numbers
         \App\Ai\Chief::teamReview();
-        \App\Ai\Archivist::collection();
+        \App\Ai\Archivist::seasonal();   // D98: the seasonal calendar (replaces the old random monthly collection)
         \App\Ai\Archivist::tags();
         if (now('Asia/Kolkata')->month === 1) {
             \App\Ai\Archivist::anthology();

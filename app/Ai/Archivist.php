@@ -117,6 +117,31 @@ final class Archivist
         });
     }
 
+    /** D98: year-round collections (no season) are refreshed in this quiet month. */
+    public const YEAR_ROUND_MONTH = 3;
+
+    /**
+     * D98 (owner): the seasonal calendar. Run once a month: every seed collection whose season STARTS next month
+     * (the first month in its `months`) is prepared now, so it is ready a month ahead. New ones become proposals;
+     * published ones only get "new pieces to add" suggestions. Year-round ones are refreshed in March.
+     * Nothing is published without the owner. Returns the slugs it worked on.
+     */
+    public static function seasonal(?\Carbon\CarbonInterface $today = null): array
+    {
+        return array_values(array_filter(self::due($today), fn ($slug) => (bool) self::themed($slug)[0]));
+    }
+
+    /** The seed collections due this month (their season starts next month; year-round ones in March). */
+    public static function due(?\Carbon\CarbonInterface $today = null): array
+    {
+        $today ??= now('Asia/Kolkata');
+        $next = $today->copy()->startOfMonth()->addMonth()->month;
+
+        return collect(require database_path('content/collection-seeds.php'))
+            ->filter(fn ($seed) => ($m = array_values((array) $seed['months'])) ? $m[0] === $next : $today->month === self::YEAR_ROUND_MONTH)
+            ->keys()->values()->all();
+    }
+
     /**
      * D97: a themed collection from the WHOLE archive. $topic is a seed slug (database/content/collection-seeds.php),
      * a seed title, or a free theme. Candidates are found by the theme's words in titles and texts, ranked by how

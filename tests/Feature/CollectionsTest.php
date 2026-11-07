@@ -102,4 +102,26 @@ class CollectionsTest extends TestCase
         $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', (string) $c->fresh()->slug);
         $this->get($c->fresh()->url())->assertOk();
     }
+
+    /** D98: each collection is prepared a month before its season starts; nothing is published by itself. */
+    public function test_seasonal_calendar_prepares_each_collection_a_month_ahead(): void
+    {
+        $ids = array_map(fn ($p) => $p->id, array_slice($this->posts, 0, 5));
+        Claude::$fake = fn () => ['intro' => 'ভূমিকা।', 'ids' => $ids];
+        $at = fn (int $month) => \Illuminate\Support\Carbon::create(2027, $month, 1, 9, 0, 0, 'Asia/Kolkata');
+
+        $this->assertSame(['shiter-lekha'], Archivist::due($at(10)), 'October prepares winter (starts in November)');
+        $this->assertSame(['premer-kobita'], Archivist::due($at(1)), 'January prepares love poems (February)');
+        $this->assertSame(['mayer-jonno-kobita'], Archivist::due($at(4)));
+        $this->assertSame(['babake-mone-pore', 'barshar-kobita-o-golpo'], Archivist::due($at(5)));
+        $this->assertSame(['pujor-golpo'], Archivist::due($at(8)));
+        $this->assertSame(['bhooter-golpo'], Archivist::due($at(9)));
+        $this->assertSame(['chhelebela-o-smriti'], Archivist::due($at(3)), 'Year-round ones in March');
+        $this->assertSame([], Archivist::due($at(7)));
+
+        // end to end for October: winter is proposed, and only proposed
+        $this->assertSame(['shiter-lekha'], Archivist::seasonal($at(10)));
+        $this->assertSame('proposed', Collection::where('slug', 'shiter-lekha')->value('status'));
+        $this->assertSame(0, Collection::where('status', 'approved')->count(), 'Only proposals; the owner publishes');
+    }
 }
