@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Ai\KidsAlphabet;
+use App\Ai\Narrator;
 use App\Ai\TeamJobs;
 use App\Enums\Role;
 use App\Models\EditorTask;
@@ -62,6 +63,25 @@ class KidsCorner extends Page
         ];
     }
 
+    /** D102: the owner picks the voice by ear. */
+    public function chooseVoice(string $use, string $voice): void
+    {
+        Narrator::setVoice($use, $voice);
+        Notification::make()->title(__('কণ্ঠ বাছা হয়েছে'))->body(__('এখন থেকে নতুন পাঠ এই কণ্ঠে হবে।'))->success()->send();
+    }
+
+    public function makeSamples(): void
+    {
+        TeamJobs::queue('narrator', 'samples');
+        Notification::make()->title(__('এআই দল কাজটি নিয়েছে'))->body(__('কয়েক মিনিটে এখানে দেখা যাবে।'))->success()->send();
+    }
+
+    public function revoice(): void
+    {
+        TeamJobs::queue('narrator', 'revoice');
+        Notification::make()->title(__('এআই দল কাজটি নিয়েছে'))->body(__('কয়েক মিনিটে এখানে দেখা যাবে।'))->success()->send();
+    }
+
     public function decide(int $i, string $what, bool $ok): void
     {
         abort_unless(in_array($what, ['pic', 'audio'], true), 422);
@@ -90,6 +110,11 @@ class KidsCorner extends Page
             'letters' => KidsAlphabet::letters(),
             'state' => KidsAlphabet::state(),
             'section' => $sec,
+            'voices' => Narrator::VOICES,
+            'uses' => Narrator::USES,
+            'samples' => Narrator::samples(),
+            'chosen' => ['alphabet' => Narrator::voice('alphabet'), 'stories' => Narrator::voice('stories')],
+            'outdated' => Narrator::outdated(),
             'pieces' => $sec ? Post::with('authors')->where('section_id', $sec->id)->whereIn('status', ['draft', 'pending', 'scheduled', 'published'])->orderByRaw("status = 'published'")->latest('updated_at')->get() : collect(),
         ];
     }

@@ -23,6 +23,45 @@
         </ul>
     </x-filament::section>
 
+    {{-- D102: choose the voice by ear, separately for the alphabet and for rhymes and stories --}}
+    <x-filament::section icon="heroicon-o-speaker-wave">
+        <x-slot name="heading">{{ __('কণ্ঠ বাছাই') }}</x-slot>
+        <x-slot name="description">{{ __('প্রতিটি কণ্ঠে একই লাইন শুনে বেছে নিন। বাছাইয়ের পরে নতুন পাঠ সেই কণ্ঠে হবে।') }}</x-slot>
+        <x-slot name="afterHeader">
+            <x-filament::button size="sm" color="gray" icon="heroicon-o-play" wire:click="makeSamples">{{ __('কণ্ঠের নমুনা তৈরি করুন') }}</x-filament::button>
+        </x-slot>
+        <div style="display:grid;gap:1.2rem;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">
+            @foreach ($d['uses'] as $use => [$useLabel, $line])
+                <div>
+                    <div style="font-weight:700">{{ __($useLabel) }}: <span class="hp-muted">{{ __('এখন') }} “{{ $d['chosen'][$use] }}”</span></div>
+                    <div class="hp-muted" style="margin:.2rem 0 .5rem;white-space:pre-line">{{ $line }}</div>
+                    <table class="hp-k-table" style="width:100%;border-collapse:collapse;font-size:.92rem">
+                        @foreach ($d['voices'] as $voice)
+                            <tr wire:key="v-{{ $use }}-{{ $voice }}">
+                                <td style="width:5.5rem;font-weight:600">{{ $voice }}</td>
+                                <td>@if (! empty($d['samples'][$use][$voice]))<audio controls preload="none" src="{{ $d['samples'][$use][$voice] }}" style="width:100%;height:2.2rem"></audio>@else<span class="hp-muted">{{ __('নমুনা নেই') }}</span>@endif</td>
+                                <td style="width:7rem;text-align:right">
+                                    @if ($d['chosen'][$use] === $voice)
+                                        <span style="font-weight:700">✓ {{ __('বাছা') }}</span>
+                                    @else
+                                        <x-filament::button size="xs" color="gray" wire:click="chooseVoice('{{ $use }}', '{{ $voice }}')">{{ __('এটি নিন') }}</x-filament::button>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            @endforeach
+        </div>
+        @if (array_sum($d['outdated']))
+            <div style="margin-top:1rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+                <span>{{ __('পুরনো কণ্ঠে করা পাঠ') }}: {{ __('বর্ণমালা') }} {{ \App\Support\Bn::num((string) $d['outdated']['alphabet']) }}, {{ __('ছড়া ও গল্প') }} {{ \App\Support\Bn::num((string) $d['outdated']['stories']) }}</span>
+                <x-filament::button size="sm" color="warning" wire:click="revoice"
+                    wire:confirm="{{ __('পুরনো কণ্ঠের পাঠ নতুন কণ্ঠে আবার করা হবে। প্রতিটি আবার আপনার অনুমোদনের অপেক্ষায় থাকবে, ততক্ষণ পাতায় সেই পাঠ দেখা যাবে না। এগোবেন?') }}">{{ __('নতুন কণ্ঠে আবার করুন') }}</x-filament::button>
+            </div>
+        @endif
+    </x-filament::section>
+
     <x-filament::section icon="heroicon-o-language">
         <x-slot name="heading">{{ __('বর্ণমালা') }}</x-slot>
         <x-slot name="afterHeader">

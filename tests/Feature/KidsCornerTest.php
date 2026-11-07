@@ -168,4 +168,41 @@ class KidsCornerTest extends TestCase
         $this->assertStringContainsString('wikisource.org', (string) $p->ai_note);
         $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $p->slug);
     }
+
+    public function test_owner_picks_voices_by_ear_and_can_redo_old_recordings(): void
+    {
+        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
+        $this->assertSame(2 * count(Narrator::VOICES), Narrator::makeSamples());
+        $samples = Narrator::samples();
+        $this->files = array_merge(array_values($samples['alphabet']), array_values($samples['stories']));
+        $this->assertSame(0, Narrator::makeSamples(), 'Samples are made once');
+
+        $post = $this->kidsPost(['status' => 'draft', 'published_at' => null]);
+        Narrator::forPost($post);
+        $this->files[] = $post->fresh()->audio_path;
+        $this->assertSame(config('ai.openai.tts_voice'), $post->fresh()->audio_voice);
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(KidsCorner::class)->assertSee('কণ্ঠ বাছাই')->assertSee($samples['stories']['nova'], false)
+            ->call('chooseVoice', 'stories', 'nova')->call('chooseVoice', 'alphabet', 'sage');
+        $this->assertSame('nova', Narrator::voice('stories'));
+        $this->assertSame('sage', Narrator::voice('alphabet'));
+        $this->assertSame(['alphabet' => 0, 'stories' => 1], Narrator::outdated());
+
+        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
+        Narrator::revoice();
+        $post->refresh();
+        $this->files[] = $post->audio_path;
+        $this->files = array_merge($this->files, array_column(KidsAlphabet::state(), 'audio'));
+        $this->assertSame('nova', $post->audio_voice);
+        $this->assertSame('pending', $post->audio_status, 'A redone reading waits for approval again');
+        Http::assertSent(fn ($r) => $r['voice'] === 'nova');
+        Http::assertSent(fn ($r) => $r['voice'] === 'sage' && str_contains($r['input'], 'অজগর'));
+        $this->assertSame(['alphabet' => 0, 'stories' => 0], Narrator::outdated());
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        Narrator::setVoice('stories', 'not-a-voice');
+    }
 }

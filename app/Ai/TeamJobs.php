@@ -78,6 +78,8 @@ final class TeamJobs
             'alphabet' => ['বর্ণমালার সব অক্ষর পড়ে শোনানো', null, 'kids'],
             'all' => ['ছোটদের লেখা পড়ে শোনানো (৫টি করে)', null, 'kids'],
             'post' => ['একটি লেখা পড়ে শোনানো', 'post', 'post'],
+            'samples' => ['প্রতিটি কণ্ঠে নমুনা (শুনে বাছার জন্য)', null, 'kids'],
+            'revoice' => ['নতুন বাছা কণ্ঠে আবার পড়া', null, 'kids'],
         ],
         'archivist' => [
             'collection' => ['এই মাসের সংকলন', null, 'today'],
@@ -223,6 +225,8 @@ final class TeamJobs
             'narrator.alphabet' => $done(Narrator::alphabet(), 'বর্ণমালার কণ্ঠ তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় শুনে অনুমোদন দিন।'),
             'narrator.all' => $done(Narrator::backlog(), 'পাঠ তৈরি; প্রতিটি লেখার পাতায় শুনে অনুমোদন দিন।'),
             'narrator.post' => $err(Narrator::forPost($post), 'পাঠ তৈরি: "'.$post?->title.'"; লেখার পাতায় শুনে অনুমোদন দিন।'),
+            'narrator.samples' => $done(Narrator::makeSamples(), 'কণ্ঠের নমুনা তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় শুনে বেছে নিন।'),
+            'narrator.revoice' => $done(Narrator::revoice(), 'নতুন কণ্ঠে পাঠ তৈরি; শুনে অনুমোদন দিন।'),
             'designer.alphabet' => $done(KidsAlphabet::pictures(), 'বর্ণমালার ছবি তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখে অনুমোদন দিন।'),
             'archivist.themed' => (function () use ($topic) {
                 [$c, $e] = Archivist::themed($topic);

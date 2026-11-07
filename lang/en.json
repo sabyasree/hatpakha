@@ -1237,5 +1237,20 @@
     "লেখা পড়ে শোনানো": "Read pieces aloud",
     "শিক্ষকের সতর্কতা: ": "Teacher's warning: ",
     "যন্ত্রকণ্ঠে পাঠ (এআই): ": "Machine-voice reading (AI): ",
-    "বর্ণমালার নতুন কণ্ঠ/ছবি অনুমোদনের অপেক্ষায়": "New alphabet voices/pictures waiting for approval"
+    "বর্ণমালার নতুন কণ্ঠ/ছবি অনুমোদনের অপেক্ষায়": "New alphabet voices/pictures waiting for approval",
+    "কণ্ঠ বাছা হয়েছে": "Voice chosen",
+    "এখন থেকে নতুন পাঠ এই কণ্ঠে হবে।": "New readings will use this voice from now on.",
+    "কণ্ঠ বাছাই": "Choose the voice",
+    "প্রতিটি কণ্ঠে একই লাইন শুনে বেছে নিন। বাছাইয়ের পরে নতুন পাঠ সেই কণ্ঠে হবে।": "Listen to the same line in each voice and choose. New readings use the chosen voice.",
+    "কণ্ঠের নমুনা তৈরি করুন": "Make voice samples",
+    "এখন": "Now",
+    "নমুনা নেই": "No sample",
+    "বাছা": "Chosen",
+    "এটি নিন": "Use this",
+    "পুরনো কণ্ঠে করা পাঠ": "Readings in an old voice",
+    "ছড়া ও গল্প": "Rhymes and stories",
+    "পুরনো কণ্ঠের পাঠ নতুন কণ্ঠে আবার করা হবে। প্রতিটি আবার আপনার অনুমোদনের অপেক্ষায় থাকবে, ততক্ষণ পাতায় সেই পাঠ দেখা যাবে না। এগোবেন?": "Readings in the old voice will be redone in the new one. Each waits for your approval again and is hidden from the page until then. Go ahead?",
+    "নতুন কণ্ঠে আবার করুন": "Redo in the new voice",
+    "প্রতিটি কণ্ঠে নমুনা (শুনে বাছার জন্য)": "A sample in every voice (to choose by ear)",
+    "নতুন বাছা কণ্ঠে আবার পড়া": "Read again in the newly chosen voice"
 }

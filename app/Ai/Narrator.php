@@ -16,13 +16,101 @@ use Illuminate\Support\Str;
  */
 final class Narrator
 {
+    /** D102: OpenAI's voices (names as OpenAI gives them; the owner chooses by ear). */
+    public const VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'];
+
+    /** What each choice is for, and the line every voice reads as a sample (Sukumar Ray, public domain). */
+    public const USES = [
+        'alphabet' => ['বর্ণমালা', 'অ। অ-এ অজগর। আ। আ-এ আম।'],
+        'stories' => ['ছড়া ও গল্প', "হাঁস ছিল, সজারু, (ব্যাকরণ মানি না),\nহয়ে গেল “হাঁসজারু” কেমনে তা জানি না।"],
+    ];
+
+    /** The chosen voice for alphabet|stories: the owner's pick in /desk, else the server setting. */
+    public static function voice(string $use): string
+    {
+        $v = Setting::get('kids.voice.'.$use);
+
+        return in_array($v, self::VOICES, true) ? $v : (string) config('ai.openai.tts_voice');
+    }
+
+    public static function setVoice(string $use, string $voice): void
+    {
+        abort_unless(isset(self::USES[$use]) && in_array($voice, self::VOICES, true), 422);
+        Setting::put('kids.voice.'.$use, $voice);
+    }
+
+    /** @return array<string, array<string, string>> use => voice => sample path */
+    public static function samples(): array
+    {
+        return json_decode((string) Setting::get('kids.voice.samples'), true) ?: [];
+    }
+
+    /** Record the sample line in every voice still without one (22 short clips, well under a cent). */
+    public static function makeSamples(): int
+    {
+        $all = self::samples();
+        $done = 0;
+        foreach (self::USES as $use => [, $line]) {
+            foreach (self::VOICES as $voice) {
+                if (! empty($all[$use][$voice]) && is_file(public_path(ltrim($all[$use][$voice], '/')))) {
+                    continue;
+                }
+                [$mp3] = self::speak($line, null, $voice);
+                if ($mp3) {
+                    $rel = 'media/kids/voices/'.$use.'-'.$voice.'-'.Str::lower(Str::random(4)).'.mp3';
+                    @mkdir(public_path('media/kids/voices'), 0755, true);
+                    file_put_contents(public_path($rel), $mp3);
+                    $all[$use][$voice] = '/'.$rel;
+                    $done++;
+                }
+            }
+        }
+        Setting::put('kids.voice.samples', json_encode($all));
+
+        return $done;
+    }
+
+    /** Recordings made in a voice other than the chosen one. @return array{alphabet:int,stories:int} */
+    public static function outdated(): array
+    {
+        $sec = Section::where('slug', Section::KIDS)->value('id');
+
+        return [
+            'alphabet' => collect(KidsAlphabet::state())->filter(fn ($s) => ! empty($s['audio']) && ($s['voice'] ?? null) !== self::voice('alphabet'))->count(),
+            'stories' => Post::where('section_id', $sec)->where('audio_ai', true)->whereNotNull('audio_path')
+                ->where(fn ($q) => $q->whereNull('audio_voice')->orWhere('audio_voice', '!=', self::voice('stories')))->count(),
+        ];
+    }
+
+    /** Redo recordings made in an old voice. Each new one waits for approval again. */
+    public static function revoice(int $max = 5): int
+    {
+        $done = 0;
+        $state = KidsAlphabet::state();
+        foreach ($state as $i => $s) {
+            if (! empty($s['audio']) && ($s['voice'] ?? null) !== self::voice('alphabet')) {
+                @unlink(public_path(ltrim($s['audio'], '/')));
+                unset($state[$i]['audio'], $state[$i]['audio_ok'], $state[$i]['voice']);
+            }
+        }
+        KidsAlphabet::save($state);
+        $done += self::alphabet();
+        $sec = Section::where('slug', Section::KIDS)->value('id');
+        foreach (Post::where('section_id', $sec)->where('audio_ai', true)->whereNotNull('audio_path')
+            ->where(fn ($q) => $q->whereNull('audio_voice')->orWhere('audio_voice', '!=', self::voice('stories')))->limit($max)->get() as $p) {
+            $done += self::forPost($p) === null ? 1 : 0;
+        }
+
+        return $done;
+    }
+
     public static function blocked(): ?string
     {
         return Claude::blocked() ?? (blank(config('ai.openai.key')) ? 'No OpenAI key for the voice' : null);
     }
 
     /** Speak a text; long texts are read in parts and joined (MP3 frames join cleanly). @return array{0:?string,1:?string} */
-    public static function speak(string $text, ?int $postId = null): array
+    public static function speak(string $text, ?int $postId = null, ?string $voice = null): array
     {
         if ($why = self::blocked()) {
             return [null, $why];
@@ -32,7 +120,7 @@ final class Narrator
         foreach ($parts as $part) {
             $res = rescue(fn () => Http::withToken((string) config('ai.openai.key'))->timeout(180)
                 ->post(rtrim((string) config('ai.openai.base_url'), '/').'/audio/speech', [
-                    'model' => config('ai.openai.tts_model'), 'voice' => config('ai.openai.tts_voice'), 'input' => $part, 'response_format' => 'mp3',
+                    'model' => config('ai.openai.tts_model'), 'voice' => $voice ?? config('ai.openai.tts_voice'), 'input' => $part, 'response_format' => 'mp3',
                     'instructions' => 'Read in Bengali (Bangla) with natural Kolkata pronunciation, warmly and slowly, like a parent reading to a young child. '
                         .'For rhymes, keep the rhythm and pause at line ends.',
                 ]), null, false);
@@ -54,7 +142,7 @@ final class Narrator
             return 'লেখকের নিজের পাঠ আছে; যন্ত্রকণ্ঠ দেওয়া হয়নি।';
         }
         $text = $post->title."।\n\n".trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br />', '</p>'], ["\n", "\n", "\n\n"], (string) $post->body_html))));
-        [$mp3, $err] = self::speak($text, $post->id);
+        [$mp3, $err] = self::speak($text, $post->id, $voice = self::voice('stories'));
         if (! $mp3) {
             return $err;
         }
@@ -64,7 +152,7 @@ final class Narrator
         if ($post->audio_ai && $post->audio_path && is_file(public_path(ltrim($post->audio_path, '/')))) {
             @unlink(public_path(ltrim($post->audio_path, '/')));
         }
-        $post->forceFill(['audio_path' => '/'.$rel, 'audio_status' => 'pending', 'audio_ai' => true])->saveQuietly();
+        $post->forceFill(['audio_path' => '/'.$rel, 'audio_status' => 'pending', 'audio_ai' => true, 'audio_voice' => $voice])->saveQuietly();
         EditorTask::propose('audio', __('যন্ত্রকণ্ঠে পাঠ (এআই): ').$post->title, [], $post);
 
         return null;
@@ -91,12 +179,12 @@ final class Narrator
             if (! empty($state[$i]['audio'])) {
                 continue;
             }
-            [$mp3] = self::speak($letter.'। '.$letter.'-এ '.$word.'।');
+            [$mp3] = self::speak($letter.'। '.$letter.'-এ '.$word.'।', null, self::voice('alphabet'));
             if ($mp3) {
                 $rel = 'media/kids/bornomala/'.$i.'-'.Str::lower(Str::random(4)).'.mp3';
                 @mkdir(public_path('media/kids/bornomala'), 0755, true);
                 file_put_contents(public_path($rel), $mp3);
-                $state[$i] = array_merge($state[$i] ?? [], ['audio' => '/'.$rel, 'audio_ok' => false]);
+                $state[$i] = array_merge($state[$i] ?? [], ['audio' => '/'.$rel, 'audio_ok' => false, 'voice' => self::voice('alphabet')]);
                 $done++;
             }
         }
