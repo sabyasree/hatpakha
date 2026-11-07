@@ -1252,5 +1252,7 @@
     "পুরনো কণ্ঠের পাঠ নতুন কণ্ঠে আবার করা হবে। প্রতিটি আবার আপনার অনুমোদনের অপেক্ষায় থাকবে, ততক্ষণ পাতায় সেই পাঠ দেখা যাবে না। এগোবেন?": "Readings in the old voice will be redone in the new one. Each waits for your approval again and is hidden from the page until then. Go ahead?",
     "নতুন কণ্ঠে আবার করুন": "Redo in the new voice",
     "প্রতিটি কণ্ঠে নমুনা (শুনে বাছার জন্য)": "A sample in every voice (to choose by ear)",
-    "নতুন বাছা কণ্ঠে আবার পড়া": "Read again in the newly chosen voice"
+    "নতুন বাছা কণ্ঠে আবার পড়া": "Read again in the newly chosen voice",
+    "Google · বাংলা": "Google · Bengali",
+    "OpenAI · ইংরেজি-ভিত্তিক": "OpenAI · English-based"
 }

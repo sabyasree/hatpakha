@@ -173,6 +173,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] AI agents শিক্ষক (age + glossary) and কথক (OpenAI TTS); designer draws the alphabet; /desk → ছোটদের হাতপাখা for approvals
 - [x] 15 Wikisource classics imported as drafts (check against the source link, restore stanza breaks)
 - [x] Voice picker (D102): samples in every voice, separate choice for the alphabet and for stories, redo old recordings
+- [x] Google Bengali voices (D103), bn-IN-Standard-A by default
+- [ ] Owner: add GOOGLE_TTS_KEY to the ENV_FILE secret (staging, later production)
 - [ ] Owner: make voice samples, choose voices by ear, then run the four jobs in /desk → ছোটদের হাতপাখা and approve pictures/voices
 - [ ] Owner: check and publish the classics; পিঁপড়ে আর পিঁপড়ীর কথা has a suspected caption line inside the text
 - [ ] Later: invite parents and writers to send children's pieces; a native copy editor checks the alphabet words

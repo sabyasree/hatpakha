@@ -32,6 +32,14 @@ return [
         'tts_price_per_1k_chars' => (float) env('OPENAI_TTS_PRICE_1K', 0.015),   // estimate for the spend log
     ],
 
+    // D103: Google Cloud Text-to-Speech for real Bengali voices (bn-IN). An API key restricted to the Text-to-Speech API.
+    'google_tts' => [
+        'key' => env('GOOGLE_TTS_KEY'),
+        'url' => env('GOOGLE_TTS_URL', 'https://texttospeech.googleapis.com/v1/text:synthesize'),
+        'speaking_rate' => (float) env('GOOGLE_TTS_RATE', 0.85),   // a little slower, for children
+        'price_per_1k_chars' => ['Standard' => 0.004, 'Wavenet' => 0.016],   // USD estimate for the spend log
+    ],
+
     'min_words' => (int) env('AI_MIN_WORDS', 20),
 
     // USD per 1M tokens, for the spend log. Update when prices change (docs/AI.md).

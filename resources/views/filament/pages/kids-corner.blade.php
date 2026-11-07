@@ -38,7 +38,7 @@
                     <table class="hp-k-table" style="width:100%;border-collapse:collapse;font-size:.92rem">
                         @foreach ($d['voices'] as $voice)
                             <tr wire:key="v-{{ $use }}-{{ $voice }}">
-                                <td style="width:5.5rem;font-weight:600">{{ $voice }}</td>
+                                <td style="width:9.5rem;font-weight:600">{{ $voice }}<div class="hp-muted" style="font-weight:400">{{ \App\Ai\Narrator::isGoogle($voice) ? __('Google · বাংলা') : __('OpenAI · ইংরেজি-ভিত্তিক') }}</div></td>
                                 <td>@if (! empty($d['samples'][$use][$voice]))<audio controls preload="none" src="{{ $d['samples'][$use][$voice] }}" style="width:100%;height:2.2rem"></audio>@else<span class="hp-muted">{{ __('নমুনা নেই') }}</span>@endif</td>
                                 <td style="width:7rem;text-align:right">
                                     @if ($d['chosen'][$use] === $voice)

@@ -110,7 +110,7 @@ class KidsCorner extends Page
             'letters' => KidsAlphabet::letters(),
             'state' => KidsAlphabet::state(),
             'section' => $sec,
-            'voices' => Narrator::VOICES,
+            'voices' => Narrator::voices(),
             'uses' => Narrator::USES,
             'samples' => Narrator::samples(),
             'chosen' => ['alphabet' => Narrator::voice('alphabet'), 'stories' => Narrator::voice('stories')],

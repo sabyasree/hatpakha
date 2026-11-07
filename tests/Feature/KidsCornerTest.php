@@ -32,7 +32,8 @@ class KidsCornerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => 'o', 'ai.openai.base_url' => 'https://api.openai.test/v1']);
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => 'o', 'ai.openai.base_url' => 'https://api.openai.test/v1',
+            'ai.google_tts.key' => 'g', 'ai.google_tts.url' => 'https://tts.google.test/v1/text:synthesize']);
         $this->kids = Section::where('slug', Section::KIDS)->firstOrFail();   // made by the migration
     }
 
@@ -43,6 +44,14 @@ class KidsCornerTest extends TestCase
             @unlink(public_path(ltrim($f, '/')));
         }
         parent::tearDown();
+    }
+
+    private function fakeVoices(): void
+    {
+        Http::fake([
+            'api.openai.test/*' => Http::response('ID3fake-mp3', 200),
+            'tts.google.test/*' => Http::response(['audioContent' => base64_encode('ID3google-mp3')], 200),
+        ]);
     }
 
     private function kidsPost(array $attrs = []): Post
@@ -107,7 +116,7 @@ class KidsCornerTest extends TestCase
 
     public function test_narrator_makes_a_pending_labelled_reading_and_keeps_writer_audio(): void
     {
-        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
+        $this->fakeVoices();
         $post = $this->kidsPost(['status' => 'draft', 'published_at' => null]);
         $this->assertNull(Narrator::forPost($post));
         $post->refresh();
@@ -115,7 +124,10 @@ class KidsCornerTest extends TestCase
         $this->assertTrue($post->audio_ai);
         $this->assertSame('pending', $post->audio_status, 'The owner approves the reading');
         $this->assertFileExists(public_path(ltrim($post->audio_path, '/')));
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/audio/speech') && str_contains($r['input'], 'হাঁসজারু'));
+        $this->assertSame('bn-IN-Standard-A', $post->audio_voice, "The owner's choice of Bengali voice (D103) is the default");
+        $this->assertSame('ID3google-mp3', file_get_contents(public_path(ltrim($post->audio_path, '/'))));
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'tts.google.test') && $r->hasHeader('X-Goog-Api-Key', 'g') && ! str_contains($r->url(), 'key=')
+            && $r['voice']['name'] === 'bn-IN-Standard-A' && $r['voice']['languageCode'] === 'bn-IN' && str_contains($r['input']['text'], 'হাঁসজারু'));
 
         $own = $this->kidsPost(['slug' => 'own', 'audio_path' => '/media/audio/writer.mp3', 'audio_status' => 'approved', 'audio_ai' => false]);
         $this->assertNotNull(Narrator::forPost($own));
@@ -124,7 +136,7 @@ class KidsCornerTest extends TestCase
 
     public function test_alphabet_shows_only_what_the_owner_approved(): void
     {
-        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
+        $this->fakeVoices();
         $this->assertSame(count(KidsAlphabet::letters()), Narrator::alphabet());
         $state = KidsAlphabet::state();
         $this->files = array_column($state, 'audio');
@@ -171,8 +183,8 @@ class KidsCornerTest extends TestCase
 
     public function test_owner_picks_voices_by_ear_and_can_redo_old_recordings(): void
     {
-        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
-        $this->assertSame(2 * count(Narrator::VOICES), Narrator::makeSamples());
+        $this->fakeVoices();
+        $this->assertSame(2 * count(Narrator::voices()), Narrator::makeSamples());
         $samples = Narrator::samples();
         $this->files = array_merge(array_values($samples['alphabet']), array_values($samples['stories']));
         $this->assertSame(0, Narrator::makeSamples(), 'Samples are made once');
@@ -180,7 +192,7 @@ class KidsCornerTest extends TestCase
         $post = $this->kidsPost(['status' => 'draft', 'published_at' => null]);
         Narrator::forPost($post);
         $this->files[] = $post->fresh()->audio_path;
-        $this->assertSame(config('ai.openai.tts_voice'), $post->fresh()->audio_voice);
+        $this->assertSame('bn-IN-Standard-A', $post->fresh()->audio_voice);
 
         $admin = User::factory()->create(['role' => Role::Admin]);
         $this->actingAs($admin);
@@ -191,18 +203,32 @@ class KidsCornerTest extends TestCase
         $this->assertSame('sage', Narrator::voice('alphabet'));
         $this->assertSame(['alphabet' => 0, 'stories' => 1], Narrator::outdated());
 
-        Http::fake(['api.openai.test/*' => Http::response('ID3fake-mp3', 200)]);
+        $this->fakeVoices();
         Narrator::revoice();
         $post->refresh();
         $this->files[] = $post->audio_path;
         $this->files = array_merge($this->files, array_column(KidsAlphabet::state(), 'audio'));
         $this->assertSame('nova', $post->audio_voice);
         $this->assertSame('pending', $post->audio_status, 'A redone reading waits for approval again');
-        Http::assertSent(fn ($r) => $r['voice'] === 'nova');
-        Http::assertSent(fn ($r) => $r['voice'] === 'sage' && str_contains($r['input'], 'অজগর'));
+        Http::assertSent(fn ($r) => ($r['voice'] ?? null) === 'nova');
+        Http::assertSent(fn ($r) => ($r['voice'] ?? null) === 'sage' && str_contains($r['input'], 'অজগর'));
         $this->assertSame(['alphabet' => 0, 'stories' => 0], Narrator::outdated());
 
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         Narrator::setVoice('stories', 'not-a-voice');
+    }
+
+    public function test_long_text_is_split_within_googles_limit_and_missing_key_is_clear(): void
+    {
+        $this->fakeVoices();
+        $long = str_repeat('একটি বেশ লম্বা বাক্য যা বারবার আসে আর থামে না। ', 120);   // one long paragraph
+        [$mp3, $err] = Narrator::speak($long, null, 'bn-IN-Standard-A');
+        $this->assertNull($err);
+        $this->assertGreaterThan(1, count(Http::recorded()), 'Read in several parts');
+        Http::assertNotSent(fn ($r) => strlen($r['input']['text'] ?? '') > 5000);
+
+        config(['ai.google_tts.key' => null]);
+        [, $err] = Narrator::speak('অ।', null, 'bn-IN-Standard-A');
+        $this->assertStringContainsString('GOOGLE_TTS_KEY', $err);
     }
 }
