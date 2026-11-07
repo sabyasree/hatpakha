@@ -1295,5 +1295,9 @@
     "সাইট hatpakha.com-এ চালু হওয়ার অপেক্ষায় (স্টেজিং থেকে পাঠানো হয় না)": "Waiting for the site to run on hatpakha.com (never sent from staging)",
     "আসল ই-মেল (SMTP) চালু হওয়ার অপেক্ষায়": "Waiting for real e-mail (SMTP)",
     "পুরনো জমা লেখা পড়ে বাছাই: লেখককে জিজ্ঞেস করার মতো কি না (২৫টি করে)": "Read old submissions: worth asking the writer or not (25 at a time)",
-    "পুরনো জমা বাছাই": "Screening old submissions"
+    "পুরনো জমা বাছাই": "Screening old submissions",
+    "ছবি বদলান": "Replace picture",
+    "ছবি দিন": "Add a picture",
+    "JPG, PNG বা WebP, ৮ MB পর্যন্ত। চওড়া ছবি (অন্তত ১২০০ পিক্সেল) সবচেয়ে ভালো দেখায়। এখনকার ছবি রাখা থাকবে, \"আগের প্রচ্ছদে ফিরুন\" টিপে ফেরানো যাবে।": "JPG, PNG or WebP, up to 8 MB. Wide pictures (at least 1200 pixels) look best. The current picture is kept; \"Back to the previous cover\" restores it.",
+    "প্রচ্ছদ বদলানো হয়েছে": "Cover replaced"
 }

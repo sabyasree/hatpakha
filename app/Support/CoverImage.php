@@ -34,6 +34,17 @@ final class CoverImage
         $post->forceFill(['featured_image_path' => $saved['path'], 'featured_image_width' => $saved['width'], 'featured_image_height' => $saved['height'], 'image_is_ai' => false])->save();
     }
 
+    /** The editor replaces the cover with their own picture; the old one stays as the spare, so it can be put back (D70). */
+    public static function replaceByEditor(Post $post, string $file): void
+    {
+        $saved = self::store($file);
+        $old = $post->featured_image_path ? ['path' => $post->featured_image_path, 'width' => $post->featured_image_width, 'height' => $post->featured_image_height, 'ai' => (bool) $post->image_is_ai, 'kind' => 'previous'] : null;
+        $post->forceFill(['featured_image_path' => $saved['path'], 'featured_image_width' => $saved['width'], 'featured_image_height' => $saved['height'], 'image_is_ai' => false])->save();
+        if ($old) {
+            self::keepSpare($post, $old);
+        }
+    }
+
     /** AI illustration (D43): kept as a proposal until the owner approves it. */
     public static function propose(Post $post, string $file): void
     {

@@ -121,4 +121,33 @@ class CoverImageTest extends TestCase
         $this->assertSame($a['path'], $post->fresh()->featured_image_path, 'Back to the previous cover');
         $this->assertSame($b['path'], \App\Support\CoverImage::spare($post->fresh())['path'], 'And it can go forward again');
     }
+
+    public function test_every_cover_shows_on_the_piece_page_at_no_more_than_its_own_size(): void
+    {
+        // Owner (2026-11-07): covers under 1000px were hidden on 766 pieces.
+        foreach ([960 => true, 450 => true] as $width => $_) {
+            $post = $this->makePost(['slug' => 'cover-'.$width, 'format' => 'prose', 'featured_image_path' => 'wp-content/uploads/x-'.$width.'.jpg',
+                'featured_image_width' => $width, 'featured_image_height' => 600]);
+            $this->get($post->url())->assertOk()->assertSee('x-'.$width.'.jpg', false)->assertSee('max-w-full', false);
+        }
+        $this->assertTrue($this->makePost(['slug' => 'c600', 'featured_image_path' => 'a.jpg', 'featured_image_width' => 600])->hasCardImage());
+        $this->assertFalse($this->makePost(['slug' => 'c450', 'featured_image_path' => 'b.jpg', 'featured_image_width' => 450])->hasLargeImage(), 'Too small for a sharp share card');
+    }
+
+    public function test_editor_replaces_a_cover_and_can_put_the_old_one_back(): void
+    {
+        // Owner (2026-11-07): "need option to replace the cover".
+        $post = $this->makePost(['slug' => 'replace-cover', 'featured_image_path' => 'wp-content/uploads/old-cover.jpg', 'featured_image_width' => 960, 'featured_image_height' => 720]);
+        \App\Support\CoverImage::replaceByEditor($post, $this->jpeg()->getRealPath());
+        $post->refresh();
+        $this->assertStringStartsWith('media/covers/', $post->featured_image_path);
+        $this->assertFalse($post->image_is_ai);
+        $this->assertSame('wp-content/uploads/old-cover.jpg', \App\Support\CoverImage::spare($post)['path'], 'The old WordPress cover is kept, never deleted');
+        \App\Support\CoverImage::restoreSpare($post);
+        $this->assertSame('wp-content/uploads/old-cover.jpg', $post->fresh()->featured_image_path);
+
+        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->getRouteKey()])->assertSee('ছবি বদলান');
+    }
 }

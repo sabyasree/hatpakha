@@ -30,10 +30,11 @@
             </a>
         </div>
 
-        @if ($post->featured_image_path && ($post->featured_image_width ?? 0) >= 1000)
+        @if ($post->featured_image_path)
+            {{-- Every cover shows (owner, 2026-11-07): never larger than its own size, never taller than the screen. --}}
             <picture>
                 @if ($set = \App\Support\Images::srcset('/'.$post->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="(max-width: 760px) 100vw, 720px">@endif
-                <img src="{{ asset($post->featured_image_path) }}" alt="{{ $post->featured_image_alt }}" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mt-7 w-full rounded-2xl">
+                <img src="{{ asset($post->featured_image_path) }}" alt="{{ $post->featured_image_alt }}" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mx-auto mt-7 block h-auto max-h-[80vh] w-auto max-w-full rounded-2xl">
             </picture>
             @if ($post->image_is_ai)<p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>@endif
         @elseif (! $post->isPoem())

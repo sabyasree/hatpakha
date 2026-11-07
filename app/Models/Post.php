@@ -162,7 +162,7 @@ class Post extends Model
 
     public function hasCardImage(): bool
     {
-        return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 1000;
+        return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 600;   // cards are ~300px wide: sharp at 2x
     }
 
     public function metaTitle(): string { return $this->seo_title ?: $this->title; }
@@ -196,9 +196,9 @@ class Post extends Model
         return $by && ! str_contains($title, '|') && ! str_contains($title, $by) ? $title.' | '.$by : $title;
     }
 
-    /** Share/og image rule (docs/SEO.md §2): photos under 1200px are never the og:image. */
+    /** Share/og image rule (docs/SEO.md §2): a cover at least 600px wide (Facebook's large-preview minimum) is cropped into the share card. */
     public function hasLargeImage(): bool
     {
-        return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 1200;
+        return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 600;
     }
 }

@@ -67,6 +67,28 @@ class PostForm
                     Placeholder::make('cover_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(
                         view('filament.post-cover', ['post' => $record])->render())),
                 ])->footerActions([
+                    // Owner (2026-11-07): replace the cover with your own picture; the old one can be put back.
+                    \Filament\Actions\Action::make('uploadCover')->icon('heroicon-o-arrow-up-tray')->color('gray')->size('sm')
+                        ->label(fn (?Post $record) => $record?->featured_image_path ? __('ছবি বদলান') : __('ছবি দিন'))
+                        ->modalHeading(__('প্রচ্ছদের ছবি'))
+                        ->modalDescription(__('JPG, PNG বা WebP, ৮ MB পর্যন্ত। চওড়া ছবি (অন্তত ১২০০ পিক্সেল) সবচেয়ে ভালো দেখায়। এখনকার ছবি রাখা থাকবে, "আগের প্রচ্ছদে ফিরুন" টিপে ফেরানো যাবে।'))
+                        ->schema([
+                            \Filament\Forms\Components\FileUpload::make('cover')->hiddenLabel()->image()->required()
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])->maxSize(8192)
+                                ->disk('local')->directory('cover-uploads')->visibility('private'),
+                        ])
+                        ->action(function (Post $record, array $data, $livewire) {
+                            $disk = \Illuminate\Support\Facades\Storage::disk('local');
+                            $path = (string) $data['cover'];
+                            try {
+                                \App\Support\CoverImage::replaceByEditor($record, $disk->path($path));
+                            } finally {
+                                $disk->delete($path);
+                            }
+                            \App\Models\AuditLog::record('post.cover_replaced', $record);
+                            $livewire->refreshFormData(['featured_image_path']);
+                            \Filament\Notifications\Notification::make()->title(__('প্রচ্ছদ বদলানো হয়েছে'))->success()->send();
+                        }),
                     \Filament\Actions\Action::make('useDrawn')->label(__('এটা বসান'))->icon('heroicon-o-check')->color('success')->size('sm')
                         ->visible(fn (?Post $record) => (bool) $record?->proposed_image_path)
                         ->action(function (Post $record, $livewire) {
