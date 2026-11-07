@@ -42,10 +42,10 @@
                 <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
             @php $menu = \App\Models\Section::menu(); @endphp
-            {{-- D95 (UX review): big screens show the chosen sections, "সব বিভাগ" for the rest (grouped), and English on its own --}}
+            {{-- D95 (UX review): big screens show the chosen sections and "সব বিভাগ" for every section, grouped --}}
             <nav aria-label="প্রধান বিভাগ" class="hidden min-w-0 items-center gap-1 text-lg font-semibold lg:flex">
-                @foreach ($menu['top'] as [$name, $href])
-                    <a href="{{ $href }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
+                @foreach ($menu['top'] as [$name, $href, $lang])
+                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
                 <details class="relative" data-menu>
                     <summary class="flex h-11 cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-full px-3 hover:text-red [&::-webkit-details-marker]:hidden">সব বিভাগ <span aria-hidden="true">▾</span></summary>
@@ -53,9 +53,6 @@
                         <x-menu-panel :menu="$menu" :wide="true" />
                     </div>
                 </details>
-                @if ($menu['english'])
-                    <a href="{{ $menu['english'] }}" lang="en" class="ml-1 rounded-full border-2 border-navy px-3 py-1 text-base font-bold hover:bg-sky-tint">English</a>
-                @endif
             </nav>
             <div class="flex min-w-0 items-center gap-1 max-[359px]:gap-0 sm:gap-3">
                 {{-- Phones and tablets: every section, grouped, with English and the archive --}}

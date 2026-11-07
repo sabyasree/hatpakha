@@ -19,22 +19,23 @@ class SectionsMenuTest extends TestCase
         $poetry = Section::updateOrCreate(['slug' => 'poetry'], ['name_bn' => 'কবিতা', 'format' => 'poem', 'sort' => 10, 'nav_group' => 'literature', 'in_top_bar' => true]);
         $heritage = Section::updateOrCreate(['slug' => 'heritage'], ['name_bn' => 'ঐতিহ্য ও উৎসব', 'format' => 'prose', 'sort' => 45, 'nav_group' => 'life']);
         $kitchen = Section::updateOrCreate(['slug' => 'kitchen'], ['name_bn' => 'রান্নাঘরের গল্প', 'format' => 'prose', 'sort' => 46, 'nav_group' => 'life']);
-        $english = Section::updateOrCreate(['slug' => 'english'], ['name_bn' => 'English', 'format' => 'prose', 'sort' => 100, 'nav_group' => 'english']);
+        $english = Section::updateOrCreate(['slug' => 'english'], ['name_bn' => 'English', 'format' => 'prose', 'sort' => 100, 'nav_group' => 'other']);
         $this->makePost(['status' => 'published', 'section_id' => $poetry->id, 'published_at' => now()->subDay()]);
         $this->makePost(['status' => 'published', 'section_id' => $heritage->id, 'published_at' => now()->subDay()]);
         $this->makePost(['status' => 'published', 'section_id' => $english->id, 'language' => 'en', 'published_at' => now()->subDay()]);
         cache()->flush();
 
         $m = Section::menu();
-        $this->assertSame([['কবিতা', $poetry->url()]], $m['top']);
-        $this->assertSame(['সাহিত্য', 'জীবন ও সংস্কৃতি'], array_column($m['groups'], 'label'));
-        $this->assertSame($english->url(), $m['english']);
+        $this->assertSame([['কবিতা', $poetry->url(), 'bn']], $m['top']);
+        $this->assertSame(['সাহিত্য', 'জীবন ও সংস্কৃতি', 'আরও'], array_column($m['groups'], 'label'));
         $life = collect($m['groups'])->firstWhere('label', 'জীবন ও সংস্কৃতি')['links'];
-        $this->assertSame([['ঐতিহ্য ও উৎসব', $heritage->url()]], $life, 'A section with no published piece is not in the menu');
+        $this->assertSame([['ঐতিহ্য ও উৎসব', $heritage->url(), 'bn']], $life, 'A section with no published piece is not in the menu');
+        $this->assertSame([['English', $english->url(), 'en']], collect($m['groups'])->firstWhere('label', 'আরও')['links'], 'English is an ordinary section in আরও');
 
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('সব বিভাগ', $html);
         $this->assertStringContainsString('lang="en"', $html);
+        $this->assertStringNotContainsString('Hatpakha in English', $html);
         $this->assertStringContainsString($heritage->url(), $html);
         $this->assertStringNotContainsString($kitchen->url(), $html);
     }
