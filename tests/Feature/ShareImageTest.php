@@ -65,4 +65,38 @@ class ShareImageTest extends TestCase
         $this->assertStringContainsString("User-agent: WhatsApp\nAllow: /", $robots);
         $this->assertStringEndsWith("User-agent: *\nDisallow: /\n", $robots);
     }
+
+    public function test_picture_only_piece_still_has_a_description(): void
+    {
+        $writer = Author::create(['slug' => 'piyali', 'display_name' => 'পিয়ালী কর্মকার']);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'golap', 'title' => 'গোলাপ', 'published_at' => now(), 'excerpt' => null,
+            'body_html' => '<figure><img src="/media/inline/4-1.webp" alt="" width="623" height="687"></figure>'], $writer);
+        $this->assertSame('“গোলাপ”, পিয়ালী কর্মকার · কবিতা, হাতপাখা', $post->fresh()->metaDescription());
+    }
+
+    /** D93: pictures pasted as base64 in old WordPress pieces come back as safe WebP files, in order. */
+    public function test_pasted_pictures_are_recovered_from_the_old_database(): void
+    {
+        config(['database.connections.legacy' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']]);
+        \Illuminate\Support\Facades\Schema::connection('legacy')->create('posts', function ($t) {
+            $t->id('ID'); $t->string('post_type'); $t->longText('post_content');
+        });
+        $img = imagecreatetruecolor(40, 30);
+        ob_start(); imagepng($img); $png = base64_encode(ob_get_clean());
+        $id = \Illuminate\Support\Facades\DB::connection('legacy')->table('posts')->insertGetId(['post_type' => 'post',
+            'post_content' => '<img src="data:image/png;base64,'.$png.'" width="40" height="30" /> <img src="data:image/png;base64,'.$png.'" width="40" height="30" />']);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'scan', 'published_at' => now(), 'legacy_wp_id' => $id,
+            'body_html' => '<figure><img alt="" width="40" height="30"></figure><figure><img alt="" width="40" height="30"></figure>']);
+
+        $r = \App\Support\InlineImages::recover();
+        foreach ([1, 2] as $n) {
+            $this->made[] = public_path("media/inline/{$post->id}-{$n}.webp");
+        }
+        $this->assertSame(['posts' => 1, 'images' => 2, 'skipped' => null], $r);
+        $body = $post->fresh()->body_html;
+        $this->assertStringContainsString('src="/media/inline/'.$post->id.'-1.webp"', $body);
+        $this->assertStringContainsString('src="/media/inline/'.$post->id.'-2.webp"', $body);
+        $this->assertSame('image/webp', getimagesize(public_path("media/inline/{$post->id}-1.webp"))['mime']);
+        $this->assertSame(['posts' => 0, 'images' => 0, 'skipped' => null], \App\Support\InlineImages::recover(), 'Safe to run again');
+    }
 }

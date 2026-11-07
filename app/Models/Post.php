@@ -144,6 +144,13 @@ class Post extends Model
         $html = preg_replace(['~<br\s*/?>~i', '~</(p|div|li|h[1-6]|blockquote)>~i'], [' / ', ' '], (string) $this->body_html);
         $text = trim(preg_replace(['/\s+/u', '~(\s*/\s*)+~u'], [' ', ' / '], html_entity_decode(strip_tags($html))), " /\t\n");
 
+        if ($text === '') {
+            // A piece that is only a picture (an early scanned page, a painting) still gets a real description.
+            $by = $this->authors->reject(fn ($a) => $a->is_desk)->map(fn ($a) => $a->publicName())->filter()->implode(', ');
+
+            return '“'.$this->title.'”'.($by ? ', '.$by : '').' · '.($this->section?->name_bn ?? 'লেখা').', হাতপাখা';
+        }
+
         return mb_strlen($text) > 155 ? rtrim(mb_substr($text, 0, 154), " /,।").'…' : $text;
     }
 

@@ -56,6 +56,15 @@ Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+')
 Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
 Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
+// Old member-profile pages (Ultimate Member plugin: /user/{login}/?profiletab=…) → the writer's page (D93).
+// The profile slug was the WordPress login, which is also the writer page's slug; the old site account → desk byline.
+Route::get('/user/{slug?}', function (?string $slug = null) {
+    $slug = \App\Support\Slug::normalize(str_replace('.', '-', strtolower((string) $slug)));
+    $author = $slug === '' ? null : (\App\Models\Author::where('slug', $slug)->first()
+        ?? ($slug === 'hatpakha' ? \App\Models\Author::where('slug', 'hatpakha-desk')->first() : null));
+
+    return redirect($author && $author->posts()->published()->exists() ? $author->url() : url('/').'/', 301);
+})->where('slug', '[^/]+');
 Route::get('/{y}/{m?}/{d?}', [LegacyController::class, 'dateArchive'])->where(['y' => '(19|20)\d\d', 'm' => '\d{1,2}', 'd' => '\d{1,2}']);
 Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '(?!(desk|livewire|filament|storage|build)$)[^/]+');
 

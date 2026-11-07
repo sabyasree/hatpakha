@@ -116,4 +116,15 @@ class SeoUrlTest extends TestCase
 
         $this->get('/live-post/')->assertOk()->assertHeaderMissing('X-Robots-Tag');
     }
+
+    /** D93: old member-profile pages (/user/{login}/?profiletab=…) 301 to the writer's page, never 404. */
+    public function test_old_member_profile_urls_go_to_the_writer_page(): void
+    {
+        $author = \App\Models\Author::create(['slug' => 'shee-maitree9', 'display_name' => 'Maitree Shee']);
+        $this->makePost(['status' => 'published', 'published_at' => now()->subDay()], $author);
+        $this->get('/user/shee.maitree9/?profiletab=posts')->assertRedirect($author->url())->assertStatus(301);
+        $this->get('/user/Shee-Maitree9/')->assertRedirect($author->url());
+        $this->get('/user/nobody-here/?profiletab=main')->assertStatus(301)->assertRedirect(url('/').'/');
+        $this->get('/user/')->assertStatus(301);
+    }
 }
