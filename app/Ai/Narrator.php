@@ -45,7 +45,7 @@ final class Narrator
         return json_decode((string) Setting::get('kids.voice.samples'), true) ?: [];
     }
 
-    /** Record the sample line in every voice still without one (22 short clips, well under a cent). */
+    /** Record the sample line in every voice still without one (22 short clips, about 2 US cents). */
     public static function makeSamples(): int
     {
         $all = self::samples();
