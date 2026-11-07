@@ -22,9 +22,10 @@ class ArchiveController extends Controller
         }
         $posts = $section->posts()->published()->with('authors')->latest('published_at')->paginate(24);
 
-        return $this->list($request, $section->name_bn, "হাতপাখার {$section->name_bn} — সব লেখা।", $posts, [
+        // D96: an empty new section still has a page: its introduction and an invitation to write (kept out of Google until it has a piece).
+        return $this->list($request, $section->name_bn, $section->about ?: "হাতপাখার {$section->name_bn} — সব লেখা।", $posts, [
             JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], [$section->name_bn, $section->url()]]),
-        ], kicker: 'বিভাগ');
+        ], noindex: $posts->total() === 0, kicker: 'বিভাগ', section: $section);
     }
 
     public function tag(Request $request, string $slug)
@@ -134,7 +135,7 @@ class ArchiveController extends Controller
         return view('issue', compact('issue', 'posts', 'seo'));
     }
 
-    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '')
+    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null)
     {
         $seo = new Seo(
             title: $title.($posts->currentPage() > 1 ? " — পাতা {$posts->currentPage()}" : ''),
@@ -144,7 +145,7 @@ class ArchiveController extends Controller
             jsonLd: $jsonLd,
         );
 
-        return view('archive', compact('title', 'posts', 'seo', 'kicker'));
+        return view('archive', compact('title', 'posts', 'seo', 'kicker', 'section'));
     }
 
     /** The issue as a book (D68). Same text as the pieces' own pages, so noindex with the issue as canonical. */

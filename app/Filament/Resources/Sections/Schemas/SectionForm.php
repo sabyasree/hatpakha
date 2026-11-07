@@ -22,6 +22,8 @@ class SectionForm
         return $schema->components([
             TextInput::make('name_bn')->label(__('নাম (বাংলা)'))->required()->maxLength(80),
             TextInput::make('name_en')->label(__('নাম (ইংরেজি)'))->maxLength(80),
+            \Filament\Forms\Components\Textarea::make('about')->label(__('বিভাগের পরিচয়'))->rows(3)->maxLength(600)
+                ->helperText(__('বিভাগের পাতায় শিরোনামের নিচে দেখায়; বিভাগ খালি থাকলে লেখকদের লিখতে ডাকে।')),
             // Section URLs are old WordPress category URLs: never change them (docs/SEO.md §1).
             TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/category/')->suffix('/')->required()->maxLength(191)
                 ->regex('/^[a-z0-9-]+$/')->unique(ignoreRecord: true)->disabledOn('edit')

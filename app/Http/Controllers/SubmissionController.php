@@ -44,6 +44,10 @@ class SubmissionController extends Controller
 
     private function form(Request $request, Post $post)
     {
+        // D96: "এই বিভাগে লেখা পাঠান" opens a new piece with that section already chosen
+        if (! $post->exists && ($pick = self::sections()->firstWhere('slug', (string) $request->query('section')))) {
+            $post->section_id = $pick->id;
+        }
         return view('submit', [
             'seo' => new Seo(title: 'লেখা পাঠান', noindex: true),
             'post' => $post,

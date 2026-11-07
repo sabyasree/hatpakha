@@ -41,7 +41,7 @@ class Section extends Model
     /**
      * The site menu (D95, UX review): the top bar's chosen sections, and every section grouped by kind for the
      * "সব বিভাগ" panel and the phone menu. English is an ordinary section in "আরও" (owner, 2026-11-07).
-     * Only sections with at least one published piece are shown. Plain arrays, cached 10 minutes.
+     * Every active section is shown, new empty ones too: their page invites writers (owner, D96). Plain arrays, cached 10 minutes.
      * Each link is [name, url, lang].
      *
      * @return array{top: list<array{0:string,1:string,2:string}>, groups: list<array{label:string, links: list<array{0:string,1:string,2:string}>}>}
@@ -49,7 +49,7 @@ class Section extends Model
     public static function menu(): array
     {
         return \Illuminate\Support\Facades\Cache::remember('sections.menu', 600, function () {
-            $live = self::where('is_active', true)->whereHas('posts', fn ($q) => $q->published())->orderBy('sort')->get();
+            $live = self::where('is_active', true)->orderBy('sort')->get();
             $link = fn (self $s) => [$s->name_bn, $s->url(), $s->slug === 'english' ? 'en' : 'bn'];
             $groups = [];
             foreach (self::GROUPS as $key => $label) {

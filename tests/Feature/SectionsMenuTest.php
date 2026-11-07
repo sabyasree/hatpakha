@@ -29,7 +29,7 @@ class SectionsMenuTest extends TestCase
         $this->assertSame([['কবিতা', $poetry->url(), 'bn']], $m['top']);
         $this->assertSame(['সাহিত্য', 'জীবন ও সংস্কৃতি', 'আরও'], array_column($m['groups'], 'label'));
         $life = collect($m['groups'])->firstWhere('label', 'জীবন ও সংস্কৃতি')['links'];
-        $this->assertSame([['ঐতিহ্য ও উৎসব', $heritage->url(), 'bn']], $life, 'A section with no published piece is not in the menu');
+        $this->assertSame([['ঐতিহ্য ও উৎসব', $heritage->url(), 'bn'], ['রান্নাঘরের গল্প', $kitchen->url(), 'bn']], array_slice($life, 0, 2), 'New sections show even before their first piece (D96)');
         $this->assertSame([['English', $english->url(), 'en']], collect($m['groups'])->firstWhere('label', 'আরও')['links'], 'English is an ordinary section in আরও');
 
         $html = $this->get('/')->assertOk()->getContent();
@@ -37,7 +37,14 @@ class SectionsMenuTest extends TestCase
         $this->assertStringContainsString('lang="en"', $html);
         $this->assertStringNotContainsString('Hatpakha in English', $html);
         $this->assertStringContainsString($heritage->url(), $html);
-        $this->assertStringNotContainsString($kitchen->url(), $html);
+        $this->assertStringContainsString($kitchen->url(), $html);
+
+        // the empty section invites writers, stays out of Google, and pre-selects itself on the writing page
+        $page = $this->get('/category/kitchen/')->assertOk()->assertSee('এই বিভাগে প্রথম লেখাটি আপনার হোক')->assertSee('রেসিপির তালিকা নয়');
+        $this->assertStringContainsString('noindex', (string) $page->headers->get('X-Robots-Tag').$page->getContent());
+        $this->get('/category/heritage/')->assertOk()->assertDontSee('এই বিভাগে প্রথম লেখাটি');
+        $this->actingAs(User::factory()->create(['role' => Role::Writer, 'email_verified_at' => now()]));
+        $this->get('/submit/?section=kitchen')->assertOk()->assertSee('value="'.$kitchen->id.'" data-format="prose" class="peer sr-only" checked', false);
     }
 
     public function test_desk_draft_never_publishes_without_the_owner_checking_it(): void
