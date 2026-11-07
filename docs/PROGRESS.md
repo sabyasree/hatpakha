@@ -144,6 +144,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Checked in a real browser as editor and admin, including 2FA login
 
 ## Launch blockers (must be done before cutover)
+- Launch plan (D90): copy staging to production, same APP_KEY, `hatpakha:move-host`; steps in docs/DEPLOYMENT.md → Cutover
 - ~~Submission form (3b) and review queue (3c)~~ ✅
 - Final URL audit with a Search Console export
 - Cloudflare cache rules for production

@@ -101,5 +101,31 @@ New or edited pieces appear for guests within 5–10 minutes (the cache lifetime
 - Point the document root at the Laravel root.
 - Run `migrate:fresh` on the server.
 
-## Cutover (Phase 4, needs owner approval)
-Freeze WordPress → final dump + import → switch the domain → verify redirects and Search Console → keep the old site's DB backup offline.
+## Cutover (Phase 4): production is a copy of staging (D90, owner)
+The old WordPress production is already stopped. Everything done on staging (AI covers, SEO texts, desk edits,
+audit decisions, honours, certificates, accounts, settings) is kept by **copying staging to production**.
+Staging then stays for development with AI switched off.
+
+1. **Back up staging** (database + `public/media` + `public/wp-content/uploads`). Keep the copy off the server.
+2. **Database:** create the production database on Hostinger and import a dump of the staging database into it.
+3. **Files:** copy `public/media/` (covers, share pictures) and `public/wp-content/uploads/` from staging to the
+   production folder (the deploy never touches these, D47).
+4. **Production `ENV_FILE`** (GitHub Environment `production`), differences from staging:
+   - `APP_URL=https://hatpakha.com`
+   - **`APP_KEY` = exactly the staging key.** Two-step-verification secrets and recovery codes are stored
+     encrypted with it; a new key would lock every 2FA user (owner included) out of /desk.
+   - `DB_*` = the new production database; `SEO_INDEXABLE=true`; `TURNSTILE_HOSTNAMES=hatpakha.com`
+   - real SMTP (`MAIL_*`); AI keys and `AI_ENABLED=true`; Turnstile keys for the hatpakha.com widget
+5. **Deploy** `main` to production (owner merges the branch into `main`), then on the server:
+   - `php artisan migrate --force`
+   - `php artisan hatpakha:move-host --dry` (see what still says `new.hatpakha.com`), then `php artisan hatpakha:move-host`
+   - `php artisan optimize:clear`
+6. **Cron** on production: `* * * * * php artisan schedule:run`.
+7. **Cloudflare:** point hatpakha.com at production; cache rules (guest HTML; bypass `/desk*`, `/livewire*`,
+   `/submit*`, `/account*` and requests with the session cookie). Re-check the Turnstile widget's hostnames.
+8. **Check:** `php artisan hatpakha:url-audit --base=https://hatpakha.com …` (old URLs 200/301), log in to /desk
+   with 2FA, send a test contact message, share a piece on WhatsApp. Submit the sitemap in Search Console.
+9. **Clean test leftovers** in production /desk (test accounts, test messages).
+10. **Staging afterwards:** keep `AI_ENABLED=false` and `MAIL_MAILER=log` in the staging `ENV_FILE`. Staging holds
+   real writers' accounts and e-mails, so it must never send mail or run paid AI jobs. Its data is a snapshot from
+   launch day; new content lives on production only.

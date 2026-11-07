@@ -52,6 +52,7 @@ php artisan hatpakha:audit                        # content-audit + backlog-tier
 php artisan hatpakha:ai-blind-test                # Claude vs OpenAI blind test (docs/AI.md; costs money, asks first)
 php artisan hatpakha:ai-editor --backlog --images --dry   # AI editor batch: estimate first; prepares work, never publishes
 php artisan hatpakha:url-audit --base=https://new.hatpakha.com --sitemap=https://hatpakha.com/sitemap.xml
+php artisan hatpakha:move-host --dry                # launch: rewrite saved new.hatpakha.com → hatpakha.com (D90)
 php artisan test                          # must be green
 php artisan serve
 ```
