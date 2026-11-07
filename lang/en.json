@@ -1164,5 +1164,18 @@
     "বইপ্রকাশ বা অনুষ্ঠানের খবর": "Book launch or event news",
     "অন্য ধরনের সহযোগিতা": "Another kind of partnership",
     "লেখায় বদল": "Change to a piece",
-    "লেখায় বদল চাওয়া": "Change requested to a piece"
+    "লেখায় বদল চাওয়া": "Change requested to a piece",
+    "আগে লেখাটি নিজের ভাষায় বদলে \"সংরক্ষণ\" করুন আর নোটের তথ্যগুলো যাচাই করুন।": "First rewrite the piece in your own words and press \"Save\", and check the facts in the note.",
+    "আগে লেখাটি বদলে তথ্য যাচাই করুন।": "First edit the piece and check the facts.",
+    "আমার নামে (নিজে লিখে নিয়েছি)": "Under my name (I have rewritten it myself)",
+    "উপরের মেনু-বারে দেখাবে": "Show in the top menu bar",
+    "এআই খসড়ার নোট": "AI draft note",
+    "কার নামে": "Byline",
+    "বড় পর্দায় উপরে সরাসরি দেখায় (সবচেয়ে বেশি ৫টি)। বাকিগুলো \"সব বিভাগ\"-এ থাকে। কোনো লেখা প্রকাশ না হলে বিভাগটি মেনুতে আসে না।": "Shown directly in the top bar on large screens (at most 5). The rest are under \"All sections\". A section with no published piece is not shown in the menu.",
+    "মেনুতে কোন দলে": "Menu group",
+    "লেখাটি নিজের মতো করে লিখেছি আর নোটের সব তথ্য যাচাই করেছি": "I have rewritten the piece in my own way and checked every fact in the note",
+    "হাতপাখা ডেস্ক": "Hatpakha Desk",
+    "সাহিত্য": "Literature",
+    "জীবন ও সংস্কৃতি": "Life & culture",
+    "English": "English"
 }

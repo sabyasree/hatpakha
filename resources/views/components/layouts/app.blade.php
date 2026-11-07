@@ -41,23 +41,28 @@
                 <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto max-[359px]:h-7 md:h-12">
                 <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
-            <nav aria-label="বিভাগ" class="hidden gap-7 text-lg font-semibold lg:flex">
-                @foreach (\App\Models\Section::navLinks() as [$name, $href])
-                    <a href="{{ $href }}" class="hover:text-red">{{ $name }}</a>
+            @php $menu = \App\Models\Section::menu(); @endphp
+            {{-- D95 (UX review): big screens show the chosen sections, "সব বিভাগ" for the rest (grouped), and English on its own --}}
+            <nav aria-label="প্রধান বিভাগ" class="hidden min-w-0 items-center gap-1 text-lg font-semibold lg:flex">
+                @foreach ($menu['top'] as [$name, $href])
+                    <a href="{{ $href }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
-                <a href="{{ \App\Support\Url::to('/archive') }}" class="hover:text-red">আর্কাইভ</a>
+                <details class="relative" data-menu>
+                    <summary class="flex h-11 cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-full px-3 hover:text-red [&::-webkit-details-marker]:hidden">সব বিভাগ <span aria-hidden="true">▾</span></summary>
+                    <div class="absolute right-0 top-12 z-50 w-[36rem] rounded-2xl border-2 border-navy bg-paper p-4 text-base shadow-[4px_4px_0_#13212C]">
+                        <x-menu-panel :menu="$menu" :wide="true" />
+                    </div>
+                </details>
+                @if ($menu['english'])
+                    <a href="{{ $menu['english'] }}" lang="en" class="ml-1 rounded-full border-2 border-navy px-3 py-1 text-base font-bold hover:bg-sky-tint">English</a>
+                @endif
             </nav>
             <div class="flex min-w-0 items-center gap-1 max-[359px]:gap-0 sm:gap-3">
-                {{-- All sections on phones and tablets (the bottom bar has only two) --}}
-                <details class="relative lg:hidden">
+                {{-- Phones and tablets: every section, grouped, with English and the archive --}}
+                <details class="relative lg:hidden" data-menu>
                     <summary class="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full px-3 font-bold max-[359px]:px-2 hover:bg-peach-light [&::-webkit-details-marker]:hidden">বিভাগ <span aria-hidden="true">▾</span></summary>
-                    <div class="absolute right-0 top-12 z-50 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border-2 border-navy bg-paper p-3 shadow-[4px_4px_0_#13212C]">
-                        <nav aria-label="সব বিভাগ" class="grid grid-cols-2 gap-2">
-                            @foreach (\App\Models\Section::allLinks() as [$name, $href])
-                                <a href="{{ $href }}" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">{{ $name }}</a>
-                            @endforeach
-                            <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">আর্কাইভ</a>
-                        </nav>
+                    <div class="fixed inset-x-3 top-[4.75rem] z-50 max-h-[calc(100dvh-10.5rem)] overflow-y-auto rounded-2xl border-2 border-navy bg-paper p-3 shadow-[4px_4px_0_#13212C] sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[22rem]">
+                        <x-menu-panel :menu="$menu" />
                     </div>
                 </details>
                 <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-peach-light max-[359px]:w-10" aria-label="খুঁজুন" title="খুঁজুন">

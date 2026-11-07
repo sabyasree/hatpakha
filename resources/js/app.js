@@ -188,7 +188,7 @@ if (cards.length) {
 }
 // ⋯ menus: one at a time; tapping elsewhere closes them.
 document.addEventListener('click', (e) => {
-    document.querySelectorAll('details[data-row-menu][open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+    document.querySelectorAll('details[data-row-menu][open], details[data-menu][open]').forEach((d) => { if (!d.contains(e.target)) d.open = false; });
 });
 // Picking an audio file sends it straight away (no second button to find).
 document.querySelectorAll('input[data-auto-submit]').forEach((i) => i.addEventListener('change', () => { if (i.files?.length) i.form.requestSubmit ? i.form.requestSubmit() : i.form.submit(); }));
@@ -214,7 +214,7 @@ document.addEventListener('click', (e) => {
     if (c) { e.preventDefault(); c.closest('details').open = false; }
 });
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') document.querySelectorAll('details[data-row-menu][open]').forEach((d) => { d.open = false; });
+    if (e.key === 'Escape') document.querySelectorAll('details[data-row-menu][open], details[data-menu][open]').forEach((d) => { d.open = false; });
 });
 // One-tap remove with "ফিরিয়ে আনুন" (UX review): the row hides, a small message offers undo for a few seconds.
 document.querySelectorAll('form[data-undoable]').forEach((form) => {

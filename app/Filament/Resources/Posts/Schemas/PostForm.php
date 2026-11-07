@@ -32,6 +32,10 @@ class PostForm
                     ->formatStateUsing(fn (?string $state) => \App\Support\HtmlSanitizer::alignmentForEditor($state)),
             ]),
             Group::make()->columnSpan(1)->schema([
+                // D95: an AI draft's desk-only note (facts to check, photo ideas). Never shown to readers.
+                Section::make(__('এআই খসড়ার নোট'))->visible(fn (?Post $record) => filled($record?->ai_note))->schema([
+                    Placeholder::make('ai_note_text')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString('<div style="white-space:pre-wrap;line-height:1.7">'.e($record->ai_note).'</div>')),
+                ]),
                 // What an editor needs to decide on a form submission, without leaving the page.
                 Section::make(__('জমার তথ্য'))->visible(fn (?Post $record) => $record?->submitted_by !== null)->schema([
                     Placeholder::make('writer')->label(__('লেখক অ্যাকাউন্ট'))

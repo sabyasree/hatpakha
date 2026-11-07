@@ -68,10 +68,26 @@ class EditPost extends EditRecord
             // The AI editor's draft (e.g. the monthly editorial, D42): the owner edits above, then publishes.
             Action::make('publishDraft')->label(__('অনুমোদন ও প্রকাশ'))->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Post $record) => $record->ai_drafted_at !== null && $record->status === 'draft' && (auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false))
-                ->modalDescription(__('আগে লেখাটি পড়ে প্রয়োজনমতো বদলে "সংরক্ষণ" করুন। প্রকাশ হবে আপনার নামে।'))
-                ->schema([\Filament\Forms\Components\DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')])
+                ->modalDescription(fn (Post $record) => $record->ai_note
+                    ? __('আগে লেখাটি নিজের ভাষায় বদলে "সংরক্ষণ" করুন আর নোটের তথ্যগুলো যাচাই করুন।')
+                    : __('আগে লেখাটি পড়ে প্রয়োজনমতো বদলে "সংরক্ষণ" করুন। প্রকাশ হবে আপনার নামে।'))
+                ->schema(fn (Post $record) => array_filter([
+                    \Filament\Forms\Components\DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A'),
+                    // D95: a desk draft is published under the house byline or the owner's own name, never anyone else's
+                    $record->ai_note ? \Filament\Forms\Components\Radio::make('byline')->label(__('কার নামে'))->required()->default('desk')
+                        ->options(['desk' => __('হাতপাখা ডেস্ক'), 'me' => __('আমার নামে (নিজে লিখে নিয়েছি)')]) : null,
+                    $record->ai_note ? \Filament\Forms\Components\Checkbox::make('checked')->accepted()->validationMessages(['accepted' => __('আগে লেখাটি বদলে তথ্য যাচাই করুন।')])
+                        ->label(__('লেখাটি নিজের মতো করে লিখেছি আর নোটের সব তথ্য যাচাই করেছি')) : null,
+                ]))
                 ->action(function (Post $record, array $data) {
                     $at = \Illuminate\Support\Carbon::parse($data['at']);
+                    if ($record->ai_note && ($data['byline'] ?? 'desk') === 'me') {
+                        $mine = \App\Models\Author::where('user_id', auth()->id())->first() ?? \App\Models\Author::create(['user_id' => auth()->id(), 'display_name' => auth()->user()->name, 'slug' => 'editor-'.auth()->id()]);
+                        $record->authors()->sync([$mine->id => ['position' => 0]]);
+                    }
+                    if ($record->ai_note && str_starts_with((string) $record->slug, 'desk-')) {
+                        $record->slug = \App\Support\Review::uniqueSlug(\App\Support\Transliterate::slug($record->title) ?: 'lekha-'.$record->id, $record->id);   // readable address from the final title (D14)
+                    }
                     $record->forceFill(['status' => $at->isFuture() ? 'scheduled' : 'published', 'published_at' => $at, 'reviewed_by' => auth()->id(), 'reviewed_at' => now()])->save();
                     \App\Models\AuditLog::record('editorial.published', $record, ['by' => auth()->id()]);
                     \Filament\Notifications\Notification::make()->title(__('প্রকাশ করা হয়েছে'))->success()->send();

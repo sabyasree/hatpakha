@@ -30,6 +30,10 @@ class SectionForm
                 ->options(['poem' => __('কবিতা (স্তবক)'), 'prose' => __('গদ্য (অনুচ্ছেদ)')]),
             Select::make('color')->label(__('রং'))->required()->default('#CB1B32')->options(\App\Support\Lang::t(self::COLOURS)),
             TextInput::make('sort')->label(__('ক্রম'))->numeric()->required()->default(100)->helperText(__('ছোট সংখ্যা আগে দেখায়।')),
+            Select::make('nav_group')->label(__('মেনুতে কোন দলে'))->required()->default('literature')
+                ->options(\App\Support\Lang::t(\App\Models\Section::GROUPS)),
+            Toggle::make('in_top_bar')->label(__('উপরের মেনু-বারে দেখাবে'))
+                ->helperText(__('বড় পর্দায় উপরে সরাসরি দেখায় (সবচেয়ে বেশি ৫টি)। বাকিগুলো "সব বিভাগ"-এ থাকে। কোনো লেখা প্রকাশ না হলে বিভাগটি মেনুতে আসে না।')),
             Toggle::make('is_active')->label(__('সাইটে দেখাবে'))->default(true),
         ]);
     }

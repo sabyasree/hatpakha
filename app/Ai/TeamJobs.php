@@ -61,6 +61,9 @@ final class TeamJobs
             'newsletter' => ['পাঠকদের সাপ্তাহিক চিঠির খসড়া', null, 'letters'],
             'writers_letter' => ['লেখকদের মাসিক চিঠির খসড়া', null, 'letters'],
             'letter' => ['নিজের বিষয়ে একটি চিঠির খসড়া (সবাইকে)', 'topic', 'letters'],
+            // D95: drafts for the new sections until real writers join (house byline, never published by itself)
+            'heritage_piece' => ['ঐতিহ্য ও উৎসব: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
+            'kitchen_piece' => ['রান্নাঘরের গল্প: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
         ],
         'contest' => [
             'shortlist' => ['চলতি প্রতিযোগিতার বাছাই তালিকা', null, 'contests'],
@@ -193,6 +196,11 @@ final class TeamJobs
             'marketing.custom' => $done(Marketer::custom($topic), 'পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।', 'পোস্ট তৈরি হয়নি।'),
             'copywriter.newsletter' => $done(EditorJobs::newsletter($redo), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।'),
             'copywriter.writers_letter' => $done(EditorJobs::writersLetter($redo), 'লেখকদের চিঠির খসড়া তৈরি; চিঠি পাতায় দেখুন।'),
+            'copywriter.heritage_piece', 'copywriter.kitchen_piece' => (function () use ($job, $topic) {
+                [$p, $e] = DeskWriter::draft($job === 'heritage_piece' ? 'heritage' : 'kitchen', $topic);
+
+                return $p ? [true, 'খসড়া তৈরি: "'.$p->title.'" (লেখা → খসড়া)। নিজের মতো করে লিখে, তথ্য যাচাই করে তবেই প্রকাশ করুন।'] : [false, 'করা গেল না: '.$e];
+            })(),
             'copywriter.letter' => $done(EditorJobs::topicLetter($topic, 'both', $owner), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।', 'চিঠি তৈরি হয়নি।'),
             'contest.shortlist' => ($c = \App\Models\Contest::whereIn('status', ['open', 'judging'])->latest('id')->first())
                 ? $err(ContestManager::shortlist($c), 'বাছাই তালিকা তৈরি: '.$c->title.'। প্রতিযোগিতার পাতায় দেখুন।') : [false, 'চলতি কোনো প্রতিযোগিতা নেই।'],
