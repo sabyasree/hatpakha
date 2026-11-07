@@ -44,7 +44,11 @@ class MoveHost extends Command
 
         $total = 0;
         $rows = [];
+        $db = DB::getDatabaseName();
         foreach (Schema::getTables() as $t) {
+            if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true) && ($t['schema'] ?? $db) !== $db) {
+                continue;   // only this site's database, never others on the same server
+            }
             $table = $t['name'];
             if (in_array($table, self::SKIP, true)) {
                 continue;

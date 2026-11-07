@@ -178,3 +178,75 @@ Staging then stays for development with AI switched off.
 11. **Staging afterwards:** keep `AI_ENABLED=false` and `MAIL_MAILER=log` in the staging `ENV_FILE`. Staging holds
    real writers' accounts and e-mails, so it must never send mail or run paid AI jobs. Its data is a snapshot from
    launch day; new content lives on production only.
+
+## After launch: develop on staging, release to production (D92)
+
+### Two rules
+1. **Code moves up, data moves down.** Code goes feature branch → `staging` (new.hatpakha.com) → `main`
+   (hatpakha.com). Data only ever goes production → staging. After launch, never copy staging's database to production.
+2. **A change to production's data is code or a click on production.** Edits made in staging's /desk stay on staging.
+   If a release must change production data (page copy, settings, a fix to many rows), it ships as an idempotent
+   migration (as in D89). Otherwise the owner does it in production's /desk.
+
+### Everyday flow
+| Step | Who | Where |
+|---|---|---|
+| 1. Build the change on a branch, tests green (`php artisan test`) | Claude / developer | feature branch |
+| 2. Push to `staging` → CI + deploy (automatic backup first) | Claude / developer | new.hatpakha.com |
+| 3. Try it on staging: phone and desktop, "লেখকের চোখে দেখুন" for the writer's side | Owner | new.hatpakha.com |
+| 4. Release: GitHub → New pull request **`staging` → `main`**, title "Release YYYY-MM-DD", the list of changes; CI must be green | Owner opens/merges (Claude drafts the text when asked; never pushes to `main`) | GitHub |
+| 5. Merge → deploy runs: **backup** → maintenance page → `migrate` → `db:seed` → caches → site back | automatic | hatpakha.com |
+| 6. Check after release (5 minutes, list below) | Owner | hatpakha.com |
+
+Release about once a week, at a quiet hour (e.g. a weekday morning), never on an issue-launch or festival day.
+
+**Checks after every release:**
+- the home page, one piece, one writer page;
+- log in to /desk (2FA);
+- send a contact message;
+- `robots.txt` shows `Allow: /`;
+- no new errors in the log: over SSH, `tail -50 ~/apps/hatpakha-production/storage/logs/laravel.log`.
+
+### Writing migrations safely
+- **Add, don't remove**, in the same release: new columns are nullable or have a default. Rename or drop in a later
+  release, once nothing uses the old one. This way a code rollback never needs a database rollback.
+- **Data migrations are idempotent**: they check before changing, never overwrite what was edited in /desk, and are
+  skipped in tests (`app()->runningUnitTests()`).
+- Anything slow (thousands of rows, pictures, AI) is an artisan command run by hand, not a migration.
+
+### Urgent fix on production (hotfix)
+Branch from `main` → fix + test → pull request to `main` → merge (deploys) → then merge `main` back into `staging`
+so staging doesn't lose the fix.
+
+### If a release goes wrong
+- **Code:** GitHub → the merge commit on `main` → **Revert** → merge the revert PR; the deploy runs again.
+- **Data:** every deploy and every night writes a backup to `storage/app/private/backups/`
+  (`db-…-predeploy.sql.gz`, 10 kept; `db-…-nightly.sql.gz`, 7 kept). To restore one:
+  ```bash
+  cd ~/apps/hatpakha-production && php artisan down
+  gunzip < storage/app/private/backups/db-YYYYMMDD-HHMMSS-predeploy.sql.gz | mysql -u USER -p DATABASE
+  php artisan up
+  ```
+  (or hPanel → phpMyAdmin → Import). Backups live on the same server, so download one off the server now and then
+  (STRATEGY §5).
+
+### Refreshing staging with real data (monthly, or before a big feature)
+Staging's data is a launch-day snapshot. To bring it up to date:
+1. On production, run `php artisan hatpakha:backup-db --label=forstaging --keep=2`, or use the latest nightly backup.
+2. Copy that file to the staging folder and import it into the **staging** database:
+   `gunzip < db-…-forstaging.sql.gz | mysql -u STAGING_USER -p STAGING_DATABASE`.
+3. Optional, for new pictures: `rsync -a ~/apps/hatpakha-production/public/media/ ~/apps/hatpakha-staging/public/media/`.
+4. On staging, run these in order:
+   - `php artisan migrate --force` (staging's code may be ahead of production);
+   - `php artisan hatpakha:staging-scrub --force`, which replaces readers' and writers' e-mails with `userN@example.invalid`, empties contact messages and clears sessions and reset links (staff keep their e-mail to log in; "view as writer" still works);
+   - `php artisan optimize:clear`.
+
+   Staging content keeps production's `hatpakha.com` links. That is harmless, because staging is noindex.
+
+### Staging settings that never change
+- `AI_ENABLED=false`, `MAIL_MAILER=log`, `SEO_INDEXABLE=false`.
+- **To test an AI feature on staging:** use a separate, staging-only API key with a small monthly spend limit at the
+  provider. Switch it on, test, then switch it off again.
+- **After launch, give staging its own `APP_KEY`.** Production and staging should not share a secret. After each data
+  refresh, reset staff two-step verification on staging with `php artisan hatpakha:password you@example.com --reset-2fa`
+  (the copied 2FA secrets can't be read with staging's key).

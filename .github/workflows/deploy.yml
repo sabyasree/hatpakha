@@ -106,6 +106,7 @@ jobs:
             mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/app/public storage/app/private && \
             { [ -L public/storage ] || php artisan storage:link; } && \
             { php artisan db:show --json >/dev/null || { echo 'Cannot connect to the database: check DB_HOST/DB_DATABASE/DB_USERNAME/DB_PASSWORD in ENV_FILE. The "back soon" page stays up until this is fixed and redeployed.'; exit 1; }; } && \
+            { php artisan hatpakha:backup-db --label=predeploy --keep=10 || { echo 'Database backup failed: deploy stopped before any change.'; exit 1; }; } && \
             php artisan down --render=errors::503 --retry=30 --refresh=30 || true; \
             php artisan migrate --force && \
             php artisan db:seed --force && \

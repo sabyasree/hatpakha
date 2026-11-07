@@ -40,3 +40,7 @@ Schedule::call(function () {
     \App\Support\Milestones::detect();      // D78: once a day, writers' milestones for the owner to approve (no AI)
 })->name('follow notices')->everyTenMinutes()->withoutOverlapping(10);
 
+
+// D92: nightly database backup (plain PHP, no child process), kept 7 nights in storage/app/private/backups.
+Schedule::call(fn () => \Illuminate\Support\Facades\Artisan::call('hatpakha:backup-db', ['--label' => 'nightly', '--keep' => 7]))
+    ->name('nightly db backup')->dailyAt('02:40')->withoutOverlapping(60);
