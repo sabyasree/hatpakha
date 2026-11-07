@@ -165,6 +165,23 @@
 
     <x-ad-slot :slot="config('services.adsense.slot_home')" :height="100" />
 
+    @if ($collection && $collectionPosts->isNotEmpty())
+        {{-- D97: the collection in season --}}
+        <section class="border-y-2 border-navy bg-paper" aria-labelledby="col-h">
+            <div class="mx-auto max-w-[1100px] px-5 py-12">
+                <div class="font-hand text-2xl text-red">সংকলন</div>
+                <h2 id="col-h" class="font-display text-4xl font-extrabold leading-tight md:text-5xl"><a href="{{ $collection->url() }}" class="hover:text-red">{{ $collection->title }}</a></h2>
+                @if ($collection->intro)<p class="mt-3 line-clamp-2 max-w-[65ch] font-serif text-lg text-ink2 md:line-clamp-none">{{ \Illuminate\Support\Str::limit($collection->intro, 220) }}</p>@endif
+                <ul class="mt-5 divide-y divide-rule border-y border-rule bg-paper px-3 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0">
+                    @foreach ($collectionPosts as $p)
+                        <li class="sm:border-b sm:border-rule"><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->section ? ' · '.$p->section->name_bn : '')" /></li>
+                    @endforeach
+                </ul>
+                <a href="{{ $collection->url() }}" class="mt-5 inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">পুরো সংকলন ({{ \App\Support\Bn::num((string) count((array) $collection->post_ids)) }}টি লেখা) →</a>
+            </div>
+        </section>
+    @endif
+
     {{-- Reader letters (real comments, opt-out respected) --}}
     @if ($letters->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 py-16">
@@ -228,6 +245,7 @@
     @endif
 
     <div class="mx-auto max-w-[1320px] px-5 pb-6"><x-newsletter-signup variant="home" /></div>
+
 
     {{-- Travel stamps --}}
     @if ($travel->isNotEmpty())

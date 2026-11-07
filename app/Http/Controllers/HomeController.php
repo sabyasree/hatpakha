@@ -86,6 +86,9 @@ class HomeController extends Controller
             'spotlight' => $spot = $honoured->where('honoured_at', '>=', now()->subDays(45))->sortByDesc(fn ($a) => [str_starts_with((string) $a->honour_label, 'মাসের লেখক') ? 1 : 0, $a->honoured_at])->first(),
             'spotlightPost' => $spot ? (Post::published()->find($spot->honour_post_id) ?? $spot->posts()->published()->latest('published_at')->first()) : null,
             'milestones' => \App\Support\Milestones::forHome(),
+            // D97: the collection in season (else the newest)
+            'collection' => $col = \App\Models\Collection::featured(),
+            'collectionPosts' => $col ? $col->posts()->take(3) : collect(),
             'isPick' => (bool) $pickPost,
         ];
 

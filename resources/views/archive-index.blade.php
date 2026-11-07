@@ -21,7 +21,7 @@
         {{-- Archivist's collection (D55), approved by the owner. --}}
         <section class="mx-auto max-w-[1100px] px-5 py-6" aria-labelledby="col-{{ $collection->id }}">
             <div class="font-hand text-xl text-red">সংকলন</div>
-            <h2 id="col-{{ $collection->id }}" class="font-display text-2xl font-extrabold">{{ $collection->title }}</h2>
+            <h2 id="col-{{ $collection->id }}" class="font-display text-2xl font-extrabold">@if ($collection->slug)<a href="{{ $collection->url() }}" class="hover:text-red">{{ $collection->title }} →</a>@else{{ $collection->title }}@endif</h2>
             @if ($collection->intro)<p class="mt-2 max-w-[65ch] font-serif text-ink2">{{ $collection->intro }}</p>@endif
             <ul class="mt-4 grid gap-3 sm:grid-cols-2">
                 @foreach ($collection->posts() as $p)

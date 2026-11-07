@@ -120,7 +120,7 @@
                 <x-filament::section id="tasks" icon="heroicon-o-briefcase">
                     <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
                     <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
-                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'certificate_request' => __('লেখকের শংসাপত্রের অনুরোধ'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক'), 'audio' => __('লেখকের পাঠ (অডিও)')])
+                    @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'collection_add' => __('সংকলনে নতুন লেখা'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'certificate_request' => __('লেখকের শংসাপত্রের অনুরোধ'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক'), 'audio' => __('লেখকের পাঠ (অডিও)')])
                     @foreach ($t['tasks'] as $task)
                         <div class="hp-row" wire:key="task{{ $task->id }}">
                             <div style="min-width:0;flex:1 1 16rem">
@@ -135,7 +135,10 @@
                                 @if ($task->type === 'honour') {{ ($this->honourAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'certificates') {{ ($this->issueCertificatesAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'certificate_request') <x-filament::button tag="a" size="sm" icon="heroicon-o-academic-cap" :href="\App\Filament\Pages\Certificates::getUrl().'#requests'">{{ __('দেখে শংসাপত্র দিন') }}</x-filament::button> @endif
-                                @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }} @endif
+                                @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }}
+                                    @if ($task->subject) <x-filament::button tag="a" size="sm" color="gray" icon="heroicon-o-arrows-up-down" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl('edit', ['record' => $task->subject])">{{ __('সাজিয়ে দেখুন') }}</x-filament::button> @endif
+                                @endif
+                                @if ($task->type === 'collection_add' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-plus" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl()">{{ __('দেখে যোগ করুন') }}</x-filament::button> @endif
                                 @if ($task->type === 'tags') {{ ($this->mergeTagsAction)(['task' => $task->id]) }} @endif
                                 @if ($task->type === 'question') {{ ($this->replyQuestionAction)(['task' => $task->id]) }} @endif
                                 @if (in_array($task->type, ['report', 'health', 'alert', 'quality', 'plagiarism', 'insights', 'seo_refresh', 'team_review', 'strategy'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif

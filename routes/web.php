@@ -56,6 +56,10 @@ Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+')
 Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
 Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
+// D97: themed collections (সংকলন)
+Route::get('/sonkolon', [\App\Http\Controllers\CollectionController::class, 'index']);
+Route::get('/sonkolon/{slug}', [\App\Http\Controllers\CollectionController::class, 'show'])->where('slug', '[a-z0-9-]+');
+
 // Old member-profile pages (Ultimate Member plugin: /user/{login}/?profiletab=…) → the writer's page (D93).
 // The profile slug was the WordPress login, which is also the writer page's slug; the old site account → desk byline.
 Route::get('/user/{slug?}', function (?string $slug = null) {

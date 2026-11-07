@@ -52,6 +52,14 @@
         <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
 
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
+        @foreach (\App\Models\Collection::forPost($post->id) as $col)
+            {{-- D97 (UX review): right where the piece ends, the next piece of its collection --}}
+            @foreach ([\App\Models\Collection::nextAfter($col['ids'], $post->id)] as $nextPost)
+            <a href="{{ $nextPost ? $nextPost->url() : \App\Support\Url::to('/sonkolon/'.$col['slug']) }}" class="mb-8 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-sky-tint px-4 py-3 hover:bg-peach-light">
+                <span><span class="block text-sm font-bold text-ink2">“{{ $col['title'] }}” সংকলনের লেখা</span>
+                    <span class="block font-bold">{{ $nextPost ? 'পরেরটি: '.$nextPost->title : 'সংকলনের সব লেখা দেখুন' }}</span></span><span aria-hidden="true">→</span></a>
+            @endforeach
+        @endforeach
 
         {{-- Reactions (D64): like and save (signed-in readers), share. Work without JavaScript too. --}}
         @php
@@ -84,6 +92,7 @@
         @foreach ($post->authors as $a)
             <x-author-card :author="$a" />
         @endforeach
+
 
         @if ($related->isNotEmpty())
             {{-- "পরের লেখা" right after the writer (mobile UX review): compact rows, the same writer first. --}}

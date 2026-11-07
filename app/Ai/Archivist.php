@@ -117,6 +117,73 @@ final class Archivist
         });
     }
 
+    /**
+     * D97: a themed collection from the WHOLE archive. $topic is a seed slug (database/content/collection-seeds.php),
+     * a seed title, or a free theme. Candidates are found by the theme's words in titles and texts, ranked by how
+     * strongly they match and what readers read; the archivist then reads them and keeps the ones that truly fit.
+     */
+    public static function themed(string $topic): array
+    {
+        $seeds = require database_path('content/collection-seeds.php');
+        $key = collect($seeds)->search(fn ($s, $k) => $k === trim($topic) || $s['title'] === trim($topic));
+        $seed = $key !== false ? $seeds[$key] : ['title' => trim($topic), 'months' => [], 'words' => preg_split('/[\s,]+/u', trim($topic)), 'brief' => trim($topic)];
+        $words = array_values(array_filter(array_map('trim', (array) $seed['words']), fn ($w) => mb_strlen(trim($w)) >= 2));
+        if (! $words) {
+            return [null, 'বিষয়টি লিখে দিন।'];
+        }
+        $editorial = \App\Models\Section::where('slug', 'editorial')->value('id');
+        $views = DB::table('post_views')->groupBy('post_id')->selectRaw('post_id, SUM(views) v')->pluck('v', 'post_id');
+        $scored = Post::published()->where('language', 'bn')
+            ->when($editorial, fn ($q) => $q->where(fn ($w) => $w->whereNull('section_id')->orWhere('section_id', '!=', $editorial)))
+            ->where(fn ($q) => collect($words)->each(fn ($w) => $q->orWhere('title', 'like', '%'.$w.'%')->orWhere('body_html', 'like', '%'.$w.'%')))
+            ->with('authors', 'section')->get()
+            ->map(function (Post $p) use ($words, $views) {
+                $text = mb_strtolower(strip_tags((string) $p->body_html));
+                $score = 0;
+                foreach ($words as $w) {
+                    $score += 6 * mb_substr_count(mb_strtolower($p->title), mb_strtolower($w)) + min(8, mb_substr_count($text, mb_strtolower($w)));
+                }
+
+                return ['p' => $p, 'score' => $score + min(10, (int) (($views[$p->id] ?? 0) / 20)), 'text' => $text];
+            })->sortByDesc('score')->take(120)->values();
+        if ($scored->count() < 6) {
+            return [null, 'এই বিষয়ে যথেষ্ট লেখা পাওয়া যায়নি।'];
+        }
+        $list = $scored->map(fn ($x) => 'id '.$x['p']->id.' | '.$x['p']->section?->name_bn.' | '.$x['p']->title.' | '.($x['p']->authors->first()?->publicName() ?? '')
+            .' | '.mb_substr(preg_replace('/\s+/u', ' ', $x['text']), 0, 260))->implode("\n");
+        [$d, $err] = Claude::json('archive',
+            'You are the archivist of Hatpakha (হাতপাখা), a Bengali literary web magazine since 2012. Make a themed collection (সংকলন) from the archive list (DATA). '
+            .'Theme: '.$seed['title'].'. '.$seed['brief'].' Keep only pieces where the theme is truly at the heart of the piece, not a passing word. '
+            .'Pick 12-20 that read well together: the strongest writing first, a mix of sections and writers, at most 2 per writer, order them as a reader would enjoy them. '
+            .'Write a warm 3-4 sentence Bengali intro for the collection page (what binds these pieces, how the season or feeling lives in them). '
+            .'Do not invent facts about writers or pieces; do not quote lines. Use only ids given.',
+            "<archive>\n".e($list)."\n</archive>",
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['intro', 'ids'], 'properties' => [
+                'intro' => ['type' => 'string'], 'ids' => ['type' => 'array', 'items' => ['type' => 'integer']]]],
+            null, 3000);
+        $ids = array_values(array_unique(array_intersect(array_map('intval', (array) ($d['ids'] ?? [])), $scored->pluck('p.id')->all())));
+        if (! $d || count($ids) < 4) {
+            return [null, $err ?: 'যথেষ্ট লেখা বাছা যায়নি।'];
+        }
+        $slug = $key !== false ? $key : Collection::uniqueSlug($seed['title']);
+        $c = Collection::where('slug', $slug)->first();
+        if ($c && $c->status === 'approved') {
+            // Already published: suggest only the new pieces, never replace the owner's list.
+            $new = array_values(array_diff($ids, array_map('intval', (array) $c->post_ids)));
+            if ($new) {
+                EditorTask::propose('collection_add', __('সংকলনে নতুন লেখা যোগের প্রস্তাব: ').$c->title, ['add' => $new], $c);
+            }
+
+            return [$c, null];
+        }
+        $c ??= new Collection(['kind' => 'theme', 'slug' => $slug]);
+        $c->forceFill(['title' => $seed['title'], 'intro' => mb_substr(trim(strip_tags((string) $d['intro'])), 0, 1200), 'post_ids' => array_slice($ids, 0, 20),
+            'months' => $seed['months'], 'status' => 'proposed'])->save();
+        EditorTask::propose('collection', __('সংকলনের প্রস্তাব: ').$c->title, [], $c);
+
+        return [$c, null];
+    }
+
     private static function propose(string $kind, string $title, string $intro, array $ids): Collection
     {
         $c = Collection::create(['kind' => $kind, 'title' => mb_substr(trim(strip_tags($title)), 0, 150), 'intro' => mb_substr(trim(strip_tags($intro)), 0, 1200), 'post_ids' => $ids, 'status' => 'proposed']);

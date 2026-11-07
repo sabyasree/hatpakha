@@ -71,6 +71,8 @@ final class TeamJobs
         'archivist' => [
             'collection' => ['এই মাসের সংকলন', null, 'today'],
             'theme' => ['নিজের বিষয়ে একটি সংকলন', 'topic', 'today'],
+            // D97: a collection page from the whole archive (a seed such as "শীতের লেখা", or any theme)
+            'themed' => ['সংকলনের প্রস্তাব: পুরো আর্কাইভ থেকে (বিষয় লিখুন, যেমন "শীতের লেখা")', 'topic', 'today'],
             'tags' => ['ট্যাগ গোছানোর প্রস্তাব', null, 'today'],
         ],
         'strategist' => [
@@ -205,6 +207,11 @@ final class TeamJobs
             'contest.shortlist' => ($c = \App\Models\Contest::whereIn('status', ['open', 'judging'])->latest('id')->first())
                 ? $err(ContestManager::shortlist($c), 'বাছাই তালিকা তৈরি: '.$c->title.'। প্রতিযোগিতার পাতায় দেখুন।') : [false, 'চলতি কোনো প্রতিযোগিতা নেই।'],
             'archivist.collection' => $done(Archivist::collection(null, $redo), 'সংকলনের প্রস্তাব আজকের কাজে আছে।'),
+            'archivist.themed' => (function () use ($topic) {
+                [$c, $e] = Archivist::themed($topic);
+
+                return $c ? [true, 'সংকলনের প্রস্তাব তৈরি: "'.$c->title.'" ('.count((array) $c->post_ids).'টি লেখা)। ডেস্ক → সংকলন-এ দেখে, সাজিয়ে অনুমোদন করুন।'] : [false, 'করা গেল না: '.$e];
+            })(),
             'archivist.theme' => $done(Archivist::collection($topic, true), 'সংকলনের প্রস্তাব আজকের কাজে আছে।', 'সংকলন তৈরি হয়নি।'),
             'archivist.tags' => $done(Archivist::tags($redo), 'ট্যাগ গোছানোর প্রস্তাব আজকের কাজে আছে।'),
             'strategist.strategy' => $err(Strategist::run(), 'নতুন কৌশল তৈরি; এআই দল পাতায় "এই মাসের কৌশল" দেখুন।'),

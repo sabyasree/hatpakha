@@ -104,6 +104,24 @@ final class JsonLd
         ]);
     }
 
+    /** D97: a themed collection page: the pieces as an ordered list. */
+    public static function collection(\App\Models\Collection $c, \Illuminate\Support\Collection $posts): array
+    {
+        return array_filter([
+            '@type' => 'CollectionPage',
+            '@id' => $c->url().'#collection',
+            'name' => $c->title,
+            'description' => $c->intro,
+            'url' => $c->url(),
+            'isPartOf' => ['@id' => Url::to('/').'#website'],
+            'mainEntity' => [
+                '@type' => 'ItemList',
+                'numberOfItems' => $posts->count(),
+                'itemListElement' => $posts->values()->map(fn ($p, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'url' => $p->url(), 'name' => $p->title])->all(),
+            ],
+        ]);
+    }
+
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */
     public static function breadcrumbs(array $crumbs): array
     {

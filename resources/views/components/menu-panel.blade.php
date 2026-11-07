@@ -14,5 +14,8 @@
     @endforeach
 </nav>
 <div class="mt-3 flex flex-wrap gap-2 border-t-2 border-rule pt-3">
+    @if (\App\Models\Collection::live())
+        <a href="{{ \App\Support\Url::to('/sonkolon') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">সংকলন</a>
+    @endif
     <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">আর্কাইভ</a>
 </div>

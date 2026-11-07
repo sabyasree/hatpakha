@@ -30,7 +30,7 @@ const overlay = (name) => `${head}<body style="background:transparent;position:r
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1200, height: 630 } });
   const shot = async (html, file, transparent) => { await p.setContent(html, { waitUntil: 'networkidle' }); await p.evaluate(() => document.fonts.ready);
     await p.screenshot(transparent ? { path: out + file, omitBackground: true } : { path: out + file, type: 'jpeg', quality: 88 }); console.log(file); };
-  for (const s of [...sections, { slug: 'default', name_bn: '' }]) {
+  for (const s of [...sections, { slug: 'default', name_bn: '' }, { slug: 'collection', name_bn: 'সংকলন' }]) {
     await shot(card(s.name_bn || 'হাতপাখা'), `card-${s.slug}.jpg`);
     await shot(overlay(s.name_bn), `overlay-${s.slug}.png`, true);
   }
