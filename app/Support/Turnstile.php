@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class Turnstile
 {
     /** One stable action per protected form (also sent as data-action by the widget). */
-    public const ACTIONS = ['login', 'register', 'forgot', 'comment', 'newsletter'];
+    public const ACTIONS = ['login', 'register', 'forgot', 'comment', 'newsletter', 'contact', 'advertise'];
 
     public static function enabled(): bool
     {

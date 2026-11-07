@@ -70,6 +70,11 @@ class CommentController extends Controller
         return Crypt::encryptString((string) now()->timestamp);
     }
 
+    public static function humanSpeedPublic(string $started): bool
+    {
+        return self::humanSpeed($started);
+    }
+
     private static function humanSpeed(string $started): bool
     {
         try {

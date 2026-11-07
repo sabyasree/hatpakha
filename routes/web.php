@@ -149,6 +149,8 @@ Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $reques
 
 // Newsletter: one-click unsubscribe from the signed link in every issue (D48). Never emailed again.
 // Newsletter sign-up with double opt-in (D58).
+// D89: contact and advertising forms (instead of an e-mail address)
+Route::post('/contact/{kind}', [\App\Http\Controllers\ContactController::class, 'store'])->whereIn('kind', ['contact', 'advertise'])->middleware('throttle:5,1')->name('contact.store');
 Route::post('/newsletter/subscribe', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->middleware('throttle:6,1')->name('newsletter.subscribe');
 Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
 Route::get('/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
