@@ -78,6 +78,34 @@ No competitor combines editing, speed, prestige and reach.
 
 Research behind this (2026-11-07): e-mail re-engagement guidance (Suped, Customer.io), relaunched magazines (The Writer 2025, Blydyn Square Review, The Northwest Review), Google's Change of Address help, Nieman Lab and Deccan Herald on WhatsApp Channels.
 
+## 3c. New sections, written by the AI desk until writers come (proposal, 2026-11-08)
+
+**Rule for every new section:** it must be something Hatpakha can do *better* than the big portals (voice, story, community), it must be safe for the AI desk to draft *now* (no invented people, no reviews of things the AI has not read, no medical or legal advice), and it must be able to pass to human writers later.
+
+**What the research shows** (thin on hard numbers; treat as direction):
+- Mystery, paranormal and true-crime are among the biggest Bengali YouTube genres (channels of 400-700k subscribers), and Sunday Suspense proves the appetite for ghost and detective stories. AI-written "true crime" has already been exposed as fabricated elsewhere, so real crimes are off limits.
+- For Bengalis abroad, Durga Puja and food are identity anchors, and the second generation acts as "cultural translators" between two cultures. Readers abroad also pay the best ad rates.
+- Book-fair recommendation lists and proverb/idiom books get regular press attention (Daily Star's Boi Mela picks, "Curious reads").
+- Google: AI writing is allowed when it adds value; mass-producing pages to rank is "scaled content abuse" and is being enforced. So: few, edited, original pieces, never a flood.
+
+**Proposed sections**
+
+| Phase | Section | What it is | Why it is worth it | Why the AI desk can draft it now |
+|---|---|---|---|---|
+| 1 | **ফিরে পড়া, ফিরে দেখা** (literature group) | Essays on classic Bengali books and films: Bibhutibhushan, Tagore, Ray, Ritwik, Uttam-Suchitra | Searchable (people look up these titles), shareable, fits a literary magazine exactly | The AI knows the classics well; facts go to the check list. New releases are human-only (the AI has not read them) |
+| 1 | **জনপদের গল্প** (life group) | One town, village, street or river of Bengal per piece: its past, its people, its smell and sound | Each piece is shared in that place's own WhatsApp and Facebook groups; place names are searched; nobody does this with a writer's voice | Literary essay rules (D106) plus the fact-check list; never a drawing of a real monument |
+| 1 | **রহস্যময় বাংলা** (literature group) | Legends, ghost lore and folk tales of Bengal's places, retold as stories | The biggest Bengali video genre, in reading form; pairs with the অলৌকিক serial | Folklore and public-domain tales; clearly told as legend, never as real crime |
+| 2 | **প্রবাসের কথা** (life group) | Bengali life abroad: Puja in a rented hall, a child answering in English, the first winter | Unique, matches ছোটদের হাতপাখা, readers abroad earn the most | AI drafts only general essays (no invented "I"); real stories invited from readers abroad first |
+| 2 | **শব্দের গল্প** (literature group) | Where a Bengali word, proverb or idiom comes from, and how it is used | Language lovers, students, parents abroad; short and shareable | Only with dictionary sources in the check list; doubtful origins stay vague |
+| 2 | **মাঠের গল্প** (life group) | Football and cricket memory: the derby, the radio commentary, the para field | A Bengali passion; strong sharing | History essays with fact check; no current sports news |
+| Later, humans only | নতুন বইয়ের আলোচনা, মা হওয়ার গল্প | New book reviews; mothers' own writing | Real readers' voices | **Not AI**: a review needs someone who read the book, a memoir needs the person who lived it |
+
+**How the AI desk works for these** (same as ঐতিহ্য and রান্নাঘর, D95-D107):
+- Drafts only, under "হাতপাখা ডেস্ক", with a plan, facts to check, a cover proposal; nothing is published without the owner.
+- **Slow and steady:** at most one new piece per section per week (Phase 1: about 3 a week in total, on top of the serials). Google rewards consistency, not volume.
+- Each section page always says "এই বিভাগে লিখুন", and every new writer in a section is answered first. Goal: by month 3, at least one human piece per section per month.
+- After 8 weeks, keep the sections readers read and share, merge or close the rest (owner decides).
+
 ## 4. Is everything ready to run the magazine? (checklist)
 
 **Ready now**: submissions with editing, review, decisions and notes; issues and editorials; publishing slots; comments with AI pre-screening; covers (writer upload or AI); SEO; newsletter (sign-up, letters to readers and writers); marketing posts and cards; contests; certificates; archive and collections; reader analytics; AI team with plan and monitoring; accounts with verification and optional 2FA; Bengali/English desk.
