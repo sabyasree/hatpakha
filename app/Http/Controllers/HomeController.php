@@ -39,8 +39,6 @@ class HomeController extends Controller
             return [
                 // Poem of the day: deterministic per date, so the cached page and share cards agree.
                 'poemOfDay' => $poemIds->isEmpty() ? null : $poemIds[crc32(now()->toDateString()) % $poemIds->count()],
-                'stories' => $base()->whereHas('section', fn ($q) => $q->where('slug', 'short-stories'))->limit(4)->pluck('id')->all(),
-                'travel' => $base()->whereHas('section', fn ($q) => $q->where('slug', 'travel'))->limit(5)->pluck('id')->all(),
                 // "এই দিনে": a piece published this calendar week in an earlier year.
                 'onThisDay' => Post::published()->whereYear('published_at', '<', now()->year)
                     ->whereMonth('published_at', now()->month)->get(['id', 'slug', 'published_at'])
@@ -75,8 +73,10 @@ class HomeController extends Controller
         $data = [
             'pickNote' => $pickPost ? ($pick['note'] ?? null) : null,
             'poemOfDay' => $ids['poemOfDay'] ? Post::with('authors')->find($ids['poemOfDay']) : null,
-            'stories' => $load($ids['stories']),
-            'travel' => $load($ids['travel']),
+            // Owner (2026-11-08): new pieces first, then archive pieces that change daily (+ spares for read ones).
+            'stories' => $load(($rot = \App\Support\HomeRotation::today())['stories']),
+            'travel' => $load($rot['travel']),
+            'freshIds' => $rot['fresh'],
             'onThisDay' => $ids['onThisDay'] ? Post::with('authors')->find($ids['onThisDay']) : null,
             'letters' => Comment::with('post')->whereKey($ids['letters'])->get(),
             'counts' => $ids['counts'],

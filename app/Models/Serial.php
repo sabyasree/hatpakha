@@ -28,6 +28,11 @@ class Serial extends Model
         return $this->episodes()->published();
     }
 
+    public function latestEpisode(): ?Post
+    {
+        return $this->episodes()->published()->reorder()->latest('published_at')->first();
+    }
+
     public function url(): string
     {
         return Url::to('/dharabahik/'.$this->slug);

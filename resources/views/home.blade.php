@@ -51,6 +51,40 @@
     </section>
     @endif
 
+    @if ($serials->isNotEmpty())
+        {{-- D108 (owner): ধারাবাহিক near the top, each card straight to its newest episode --}}
+        <section class="border-b-2 border-navy bg-paper" aria-labelledby="serials-h">
+            <div class="mx-auto max-w-[1320px] px-5 py-12">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div><div class="font-hand text-2xl text-red">সপ্তাহে একটি করে পর্ব</div>
+                        <h2 id="serials-h" class="font-display text-5xl font-extrabold leading-none md:text-6xl" style="font-stretch: 78%">ধারাবাহিক</h2></div>
+                    <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="border-b-[3px] border-red text-lg font-bold">সব ধারাবাহিক</a>
+                </div>
+                <ul class="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach ($serials as $s)
+                        @foreach ([$s->latestEpisode()] as $ep)
+                            <li class="lift flex flex-col overflow-hidden rounded-2xl border-2 border-navy bg-white shadow-[5px_5px_0_#13212C]">
+                                <a href="{{ $s->url() }}" class="relative block">
+                                    @if ($s->cover_path)<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover">@endif
+                                    @if ($ep && $ep->published_at->gt(now()->subDays(7)))<span class="absolute left-3 top-3 rounded-full bg-red px-3 py-1 text-sm font-extrabold text-white">নতুন পর্ব</span>@endif
+                                </a>
+                                <div class="flex flex-1 flex-col p-4">
+                                    <span class="text-sm font-bold text-red">{{ $s->genre }} · প্রতি {{ $s->dayName() }}</span>
+                                    <a href="{{ $s->url() }}" class="mt-1 font-display text-2xl font-extrabold leading-tight hover:text-red">{{ $s->title }}</a>
+                                    @if ($s->logline)<p class="mt-1 line-clamp-2 font-serif text-ink2">{{ $s->logline }}</p>@endif
+                                    @if ($ep)
+                                        <a href="{{ $ep->url() }}" class="mt-auto flex min-h-12 items-center justify-between gap-2 pt-3 font-bold text-sky-deep hover:text-red">
+                                            <span class="line-clamp-1">{{ $ep->episodeLabel() }}</span><span aria-hidden="true">→</span></a>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
+
     @if ($spotlight)
         {{-- D78: the writer of the month (or the latest honour). Reviewed by a UX pass: one link into the piece, praise set as a quote. --}}
         @php
@@ -133,7 +167,7 @@
         </section>
     @endif
 
-    {{-- Stories: taped pages --}}
+    {{-- Stories: taped pages. Owner (2026-11-08): new first, then archive pieces that change daily; read ones swapped out. --}}
     @if ($stories->isNotEmpty())
     <section class="border-y-2 border-navy bg-peach-light">
         <div class="mx-auto max-w-[1320px] px-5 py-16">
@@ -141,10 +175,11 @@
                 <h2 class="font-display text-6xl font-extrabold leading-none md:text-7xl" style="font-stretch: 78%">গল্পের পাতা</h2>
                 <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="border-b-[3px] border-red text-lg font-bold">সব গল্প</a>
             </div>
-            <div class="mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="hp-first-only mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4" data-rotate="4">
                 @foreach ($stories as $i => $story)
-                    <a href="{{ $story->url() }}" class="lift relative {{ $i > 0 ? 'hidden sm:flex' : 'flex' }} flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
+                    <a href="{{ $story->url() }}" data-pid="{{ $story->id }}" @if ($i === 0) data-first @endif @if ($i >= 4) hidden @endif class="lift relative flex flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                         <span class="absolute -top-3 left-6 h-5 w-20 -rotate-6 bg-peach/90" aria-hidden="true"></span>
+                        @include('partials.shelf-badge', ['p' => $story])
                         <x-title-card :post="$story" class="!rounded-none border-2 border-navy" />
                         @if ($story->hasCardImage())<span class="font-serif text-xl font-bold leading-snug">{{ $story->title }}</span>@endif
                         <span class="flex justify-between text-sm font-semibold"><span>{{ $story->authors->first()?->publicName() }}</span><span class="text-red">{{ \App\Support\Bn::num($story->reading_minutes) }} মিনিট</span></span>
@@ -153,9 +188,9 @@
             </div>
             {{-- Phones: one taped card, then compact rows (mobile UX review); wider screens: four cards. --}}
             @if ($stories->count() > 1)
-                <ul class="mt-6 divide-y divide-rule border-y border-navy/20 sm:hidden">
-                    @foreach ($stories->slice(1) as $story)
-                        <li><x-post-row :post="$story" /></li>
+                <ul class="mt-6 divide-y divide-rule border-y border-navy/20 sm:hidden" data-rotate="3" data-skip-first>
+                    @foreach ($stories as $i => $story)
+                        <li data-pid="{{ $story->id }}" @if ($i === 0 || $i > 3) hidden @endif><x-post-row :post="$story" /></li>
                     @endforeach
                 </ul>
             @endif
@@ -178,28 +213,6 @@
                     @endforeach
                 </ul>
                 <a href="{{ $collection->url() }}" class="mt-5 inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">পুরো সংকলন ({{ \App\Support\Bn::num((string) count((array) $collection->post_ids)) }}টি লেখা) →</a>
-            </div>
-        </section>
-    @endif
-
-    @if ($serials->isNotEmpty())
-        {{-- D108: ধারাবাহিক, so readers find the next episode from the front page --}}
-        <section class="border-b-2 border-navy bg-navy text-paper" aria-labelledby="serials-h">
-            <div class="mx-auto max-w-[1100px] px-5 py-12">
-                <div class="flex flex-wrap items-end justify-between gap-3">
-                    <div><div class="font-hand text-2xl text-peach">সপ্তাহে একটি করে পর্ব</div>
-                        <h2 id="serials-h" class="font-display text-4xl font-extrabold md:text-5xl">ধারাবাহিক</h2></div>
-                    <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="inline-flex min-h-11 items-center font-bold text-peach underline">সব ধারাবাহিক →</a>
-                </div>
-                <ul class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($serials as $s)
-                        <li><a href="{{ $s->url() }}" class="lift block overflow-hidden rounded-2xl border-2 border-paper bg-paper text-navy">
-                            @if ($s->cover_path)<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover">@endif
-                            <span class="block p-4"><span class="text-sm font-bold text-red">{{ $s->genre }} · প্রতি {{ $s->dayName() }}</span>
-                                <span class="mt-1 block font-display text-2xl font-extrabold leading-tight">{{ $s->title }}</span>
-                                @if ($s->logline)<span class="mt-1 line-clamp-2 block font-serif text-ink2">{{ $s->logline }}</span>@endif</span></a></li>
-                    @endforeach
-                </ul>
             </div>
         </section>
     @endif
@@ -293,13 +306,14 @@
     <div class="mx-auto max-w-[1320px] px-5 pb-6"><x-newsletter-signup variant="home" /></div>
 
 
-    {{-- Travel stamps --}}
+    {{-- Travel stamps. Owner (2026-11-08): new first, then archive pieces that change daily; read ones swapped out. --}}
     @if ($travel->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 pb-12">
         <h2 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">ভ্রমণের ডাকটিকিট</h2>
-        <div class="mt-6 flex snap-x gap-6 overflow-x-auto pb-4 pt-4">
+        <div class="mt-6 flex snap-x gap-6 overflow-x-auto pb-4 pt-4" data-rotate="5">
             @foreach ($travel as $i => $t)
-                <a href="{{ $t->url() }}" class="lift flex h-[300px] w-[240px] flex-none snap-start flex-col bg-white p-3 outline-4 outline-dotted outline-navy {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
+                <a href="{{ $t->url() }}" data-pid="{{ $t->id }}" @if ($i >= 5) hidden @endif class="lift relative flex h-[300px] w-[240px] flex-none snap-start flex-col bg-white p-3 outline-4 outline-dotted outline-navy {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
+                    @include('partials.shelf-badge', ['p' => $t])
                     @if ($t->hasCardImage())
                         {{-- The cover as the stamp's picture, the title on a coloured strip (white text only on red/navy). --}}
                         <span class="flex flex-1 flex-col overflow-hidden border-2 border-navy">

@@ -131,5 +131,29 @@
         @endforeach
     </nav>
     @endunless
+    {{-- Owner (2026-11-08): remember pieces this reader opened (in their own browser only) and swap them out of the home shelves. --}}
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+        (() => {
+            let read = [];
+            try { read = JSON.parse(localStorage.getItem('hp.read') || '[]'); } catch (e) {}
+            const art = document.querySelector('article[data-view]');
+            if (art) {
+                const id = art.dataset.view;
+                read = [id, ...read.filter((x) => x !== id)].slice(0, 400);
+                try { localStorage.setItem('hp.read', JSON.stringify(read)); } catch (e) {}
+                return;
+            }
+            const seen = new Set(read);
+            document.querySelectorAll('[data-rotate]').forEach((box) => {
+                const max = parseInt(box.dataset.rotate, 10) || 4;
+                const items = [...box.querySelectorAll(':scope > [data-pid]')];
+                const order = [...items.filter((el) => !seen.has(el.dataset.pid)), ...items.filter((el) => seen.has(el.dataset.pid))];
+                const skip = box.hasAttribute('data-skip-first') ? 1 : 0;
+                items.forEach((el) => { el.hidden = true; el.removeAttribute('data-first'); });
+                order.slice(skip, skip + max).forEach((el, i) => { el.hidden = false; if (i === 0) el.setAttribute('data-first', ''); });
+                order.forEach((el) => box.appendChild(el));
+            });
+        })();
+    </script>
 </body>
 </html>

@@ -121,3 +121,6 @@
 .book-pages.paged img { max-height: 55vh; break-inside: avoid; }
 @media (min-width: 768px) { .book { padding: 2.5rem 3rem; } }
 [data-progress] { transition: transform .1s linear; }
+
+/* Home stories shelf on phones: only the first (unread) taped card; the rest are in the list below (owner, 2026-11-08). */
+@media (max-width: 639px) { .hp-first-only > [data-pid]:not([data-first]) { display: none; } }
