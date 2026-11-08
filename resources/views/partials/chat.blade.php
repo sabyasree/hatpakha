@@ -18,5 +18,5 @@
         <p class="px-3 pb-2 text-xs text-ink2">এআই সহায়ক; ভুল হতে পারে। কোনো কিছু বদলাতে বা প্রকাশ করতে পারে না।</p>
     </div>
 </div>
-<script src="{{ asset('js/hp-chat.js') }}?v=3" defer></script>
+<script src="{{ asset('js/hp-chat.js') }}?v=4" defer></script>
 @endif

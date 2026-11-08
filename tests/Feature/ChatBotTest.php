@@ -92,4 +92,26 @@ class ChatBotTest extends TestCase
         $this->assertStringContainsString('শংসাপত্র চাই', $this->seen);
         $this->assertStringContainsString('পুরনো প্রকাশিত লেখা', $this->seen);
     }
+
+    public function test_helper_is_told_to_answer_in_plain_numbered_steps_starting_with_the_writers_own_situation(): void
+    {
+        // Owner (2026-11-08): answers must be easy for anyone to follow.
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $seen = null;
+        \App\Ai\Claude::$fake = function ($purpose, $user) use (&$seen) {
+            $seen = $user;
+
+            return ['answer' => "আপনার কোনো লেখা এখনও প্রকাশিত হয়নি।\n1. উপরে ডান দিকে গোল বোতাম টিপুন।", 'escalate' => false];
+        };
+        $u = \App\Models\User::factory()->create();
+        $r = \App\Ai\ChatBot::answer($u, 'How to get certificate?');
+        \App\Ai\Claude::$fake = null;
+        $this->assertStringContainsString("\n1.", $r['answer'], 'Line breaks are kept for the steps');
+        $this->assertStringContainsString('tap the tab &quot;লেখা&quot;', $seen, 'The guide gives the steps, button by button');
+        $this->assertStringContainsString('top right', $seen);
+        $ref = new \ReflectionMethod(\App\Ai\ChatBot::class, 'answer');
+        $src = implode('', array_slice(file($ref->getFileName()), $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
+        $this->assertStringContainsString('numbered steps', $src);
+        $this->assertStringContainsString('direct answer for THIS person', $src);
+    }
 }

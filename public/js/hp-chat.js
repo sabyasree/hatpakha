@@ -9,6 +9,7 @@
         const p = document.createElement('p');
         p.className = mine ? 'ml-8 rounded-xl bg-peach-light p-2.5' : 'mr-8 rounded-xl bg-sky-tint p-2.5 text-sky-night';
         p.textContent = text;
+        p.style.whiteSpace = 'pre-line';   // numbered steps stay on their own lines
         log.appendChild(p);
         log.scrollTop = log.scrollHeight;
         return p;
