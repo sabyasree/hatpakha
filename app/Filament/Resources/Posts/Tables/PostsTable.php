@@ -44,7 +44,8 @@ class PostsTable
             ->defaultSort('published_at', 'desc')
             ->columns([
                 TextColumn::make('title')->label(__('শিরোনাম'))->searchable()->wrap()->limit(80)
-                    ->description(fn (Post $p) => trim(($p->authors->first()?->publicName() ?? '').' · '.($p->section?->name_bn ?? ''), ' ·')),
+                    ->description(fn (Post $p) => trim(($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
+                        .($p->authors->first()?->publicName() ?? '').' · '.($p->section?->name_bn ?? ''), ' ·')),
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(self::STATUS[$state] ?? $state))
                     ->color(fn ($state) => match ($state) { 'published' => 'success', 'pending' => 'warning', 'archived', 'rejected' => 'gray', default => 'info' }),

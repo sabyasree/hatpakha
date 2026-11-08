@@ -32,6 +32,10 @@ class ListPosts extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->reorder()->orderBy('relaunch_answered_at')),
             'backlog' => Tab::make(__('পুরনো জমা'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->reorder()->orderBy('backlog_tier')->orderByDesc('submitted_at')),
+            // Owner (2026-11-08): drafts had no tab; the AI desk drafts (D95) and classics (D101) land here, newest first.
+            'drafts' => Tab::make(__('খসড়া'))
+                ->badge(fn () => Post::where('status', 'draft')->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->reorder()->orderByDesc('updated_at')),
             'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
             'published' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ['published', 'scheduled'])),
             'all' => Tab::make(__('সব')),

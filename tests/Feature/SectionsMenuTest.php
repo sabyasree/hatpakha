@@ -78,6 +78,9 @@ class SectionsMenuTest extends TestCase
 
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        // Owner (2026-11-08): drafts have their own tab, AI drafts marked.
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class)->set('activeTab', 'drafts')
+            ->assertCanSeeTableRecords([$post])->assertSee('এআই খসড়া');
         $page = \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->getRouteKey()]);
         $page->callAction('publishDraft', ['at' => now()->subMinute()->format('Y-m-d H:i'), 'byline' => 'desk', 'checked' => false])->assertHasActionErrors(['checked']);
         $this->assertSame('draft', $post->fresh()->status);
