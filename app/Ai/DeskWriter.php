@@ -55,7 +55,7 @@ final class DeskWriter
                 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'facts_to_check' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'photo_ideas' => ['type' => 'array', 'items' => ['type' => 'string']],
-            ]], (string) config('ai.anthropic.writer_model'), 12000);   // Bengali takes many tokens
+            ]], (string) config('ai.anthropic.writer_model'), 48000);   // thinking + Bengali prose; streamed
         if (! is_array($d) || empty($d['paragraphs'])) {
             return [null, $err ?: 'খসড়া তৈরি হয়নি।'];
         }

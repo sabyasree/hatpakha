@@ -61,7 +61,7 @@ final class SerialWriter
                 'episodes' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'beat'], 'properties' => [
                     'title' => ['type' => 'string'], 'beat' => ['type' => 'string']]]],
                 'cover_prompt' => ['type' => 'string'],
-            ]], (string) config('ai.anthropic.writer_model'), 8000);
+            ]], (string) config('ai.anthropic.writer_model'), 32000);   // thinking counts toward the limit (always on)
         if (! is_array($d) || empty($d['episodes'])) {
             return [null, $err ?: 'পরিকল্পনা তৈরি হয়নি।'];
         }
@@ -103,7 +103,7 @@ final class SerialWriter
             ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))
             .' Also give its private summary and an image_prompt.',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
-            (string) config('ai.anthropic.writer_model'), 16000);   // Bengali takes many tokens: room for 1800 words + summary
+            (string) config('ai.anthropic.writer_model'), 64000);   // thinking + up to 1800 Bengali words; streamed
         if (! is_array($d) || empty($d['episode']['paragraphs'])) {
             return [null, $err ?: 'পর্ব তৈরি হয়নি।'];
         }

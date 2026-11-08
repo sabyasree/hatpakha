@@ -42,6 +42,11 @@ final class Claude
             ? [['type' => 'text', 'text' => trim(Knowledge::BRIEF), 'cacheControl' => ['type' => 'ephemeral']],
                 ['type' => 'text', 'text' => $system.(in_array($purpose, Knowledge::TRENDS_FOR, true) ? substr(Knowledge::forPurpose($purpose), strlen("\n\n".Knowledge::BRIEF)) : '')]]
             : [['type' => 'text', 'text' => $system, 'cacheControl' => ['type' => 'ephemeral']]];
+        // Long answers (the literary writers) are streamed: thinking is always on and counts toward maxTokens, so they
+        // need a large limit, and a large non-streamed request times out (2026-11-08: serial plans were cut off).
+        if ($maxTokens > 16000) {
+            return self::jsonStreamed($purpose, $blocks, $user, $schema, $model, $maxTokens, $postId);
+        }
         try {
             $message = (new Client(apiKey: (string) config('ai.anthropic.key')))->beta->messages->create(
                 model: $model,
@@ -72,6 +77,48 @@ final class Claude
         }
 
         return [null, 'no text'];
+    }
+
+    /** The same as json(), streamed: the text is gathered as it arrives; the stop reason and usage come at the end. */
+    private static function jsonStreamed(string $purpose, array $blocks, string $user, array $schema, string $model, int $maxTokens, ?int $postId): array
+    {
+        $text = '';
+        $stop = null;
+        $in = $out = $cacheRead = $cacheWrite = 0;
+        try {
+            $stream = (new Client(apiKey: (string) config('ai.anthropic.key')))->beta->messages->createStream(
+                model: $model,
+                maxTokens: $maxTokens,
+                system: $blocks,
+                messages: [['role' => 'user', 'content' => $user]],
+                outputConfig: ['format' => ['type' => 'json_schema', 'schema' => $schema]],
+                fallbacks: 'default',
+                betas: ['server-side-fallback-2026-07-01'],
+            );
+            foreach ($stream as $event) {
+                if ($event instanceof \Anthropic\Beta\Messages\BetaRawMessageStartEvent) {
+                    $u = $event->message->usage;
+                    [$in, $cacheRead, $cacheWrite] = [(int) $u->inputTokens, (int) $u->cacheReadInputTokens, (int) $u->cacheCreationInputTokens];
+                } elseif ($event instanceof \Anthropic\Beta\Messages\BetaRawContentBlockDeltaEvent && $event->delta instanceof \Anthropic\Beta\Messages\BetaTextDelta) {
+                    $text .= $event->delta->text;
+                } elseif ($event instanceof \Anthropic\Beta\Messages\BetaRawMessageDeltaEvent) {
+                    $stop = $event->delta->stopReason ?? $stop;
+                    $out = (int) $event->usage->outputTokens;
+                }
+            }
+        } catch (\Throwable $e) {
+            return [null, mb_substr($e->getMessage(), 0, 200)];
+        }
+        self::log('anthropic', $model, $purpose, $postId, ['in' => $in, 'out' => $out, 'cache_read' => $cacheRead, 'cache_write' => $cacheWrite]);
+        if ($stop === 'refusal') {
+            return [null, 'refusal'];
+        }
+        if ($stop === 'max_tokens') {
+            return [null, 'the answer was too long and got cut off (max_tokens)'];
+        }
+        $data = json_decode($text, true);
+
+        return is_array($data) ? [$data, null] : [null, 'invalid JSON'];
     }
 
     /**
