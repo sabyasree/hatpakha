@@ -69,9 +69,11 @@ class SectionsMenuTest extends TestCase
         $this->assertStringContainsString('সংক্রান্তির তারিখ', $post->ai_note);
         $this->assertContains('plan', $schema['required'], 'D106: the writer plans one moment, a feeling and a closing image first');
         $this->assertStringContainsString('শেষের ছবি: ঠান্ডা পাটালি', $post->ai_note);
-        $src = file_get_contents(app_path('Ai/DeskWriter.php'));
-        $this->assertStringContainsString('Show, do not explain', $src);
-        $this->assertStringContainsString('never a summary, a moral, a question to the reader', $src);
+        $this->assertStringContainsString('Show, do not explain', \App\Ai\Prompt::LITERARY);
+        foreach (['DeskWriter', 'EditorialWriter'] as $writer) {
+            $this->assertStringContainsString('Prompt::LITERARY', file_get_contents(app_path("Ai/{$writer}.php")), "D107: {$writer} uses the shared literary rules");
+        }
+        $this->assertStringContainsString('not a marketing e-mail', file_get_contents(app_path('Ai/Copywriter.php')));
         $this->get('/'.$post->slug.'/')->assertNotFound();
 
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));

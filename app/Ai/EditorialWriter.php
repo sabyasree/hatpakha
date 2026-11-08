@@ -28,13 +28,17 @@ final class EditorialWriter
 
         [$data] = Claude::json('editorial_draft',
             "You draft the monthly editorial (সম্পাদকীয়) of Hatpakha (হাতপাখা), a Bengali literary web magazine, for the owner-editor "
-            ."{$owner->name}, who will edit it and publish it under their own name. Write in warm, simple, literary Bengali, 350-550 words, "
-            .'first person plural (আমরা) as the magazine. Mention the season or festival, introduce the issue and a few pieces by title and writer, '
-            .'thank readers and writers, invite new writing. Do not invent facts, events, quotes or numbers. Past editorials (if any) show the voice.',
+            ."{$owner->name}, who will edit it and publish it under their own name, first person plural (আমরা) as the magazine. "
+            .Prompt::LITERARY.' '
+            // D107 (owner): a literary editorial, not an issue announcement.
+            .'An editorial in the tradition of Bengali little magazines: begin from one small, exact image of this month (the light, a sound in the lane, the first cold) and let it lead, '
+            .'without a jump, to what this issue is about. Do not list the contents: choose two or three pieces and say in a line each what stays with you, quoting nothing you were not given '
+            .'(title and writer only, no invented lines from the pieces). Thank readers and writers in one sentence, plainly, and invite new writing once, briefly, without slogans. '
+            .'300-450 words. Do not invent facts, events, quotes or numbers. If past editorials are given, keep their voice but do not repeat their openings.',
             "Issue: {$issue->title}\nEditor's brief: ".($issue->ai_plan['editorial_brief'] ?? '')."\nPieces:\n{$pieces}\n\nPast editorials:\n".($past ?: '(none)'),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs'], 'properties' => [
                 'title' => ['type' => 'string'], 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
-            ]], null, 6000);
+            ]], (string) config('ai.anthropic.writer_model'), 6000);
         if (! is_array($data) || empty($data['paragraphs'])) {
             return null;
         }
