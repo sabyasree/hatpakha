@@ -12,5 +12,6 @@
                 <li class="flex gap-4 py-3"><span class="w-8 flex-none pt-1 text-ink2">{{ \App\Support\Bn::num($i + 1) }}</span><a href="{{ $p->url() }}" class="min-w-0 flex-1"><span class="block font-serif text-xl font-bold leading-snug">{{ $p->title }}</span><span class="mt-0.5 block text-sm text-ink2">{{ $p->authors->first()?->publicName() }}</span></a></li>
             @endforeach
         </ol>
+        @if ($posts->count() >= 4)<x-ad-slot spot="list" :height="250" />@endif
     </section>
 </x-layouts.app>

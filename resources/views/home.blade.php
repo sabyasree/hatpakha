@@ -198,7 +198,7 @@
     </section>
     @endif
 
-    <x-ad-slot :slot="config('services.adsense.slot_home')" :height="100" />
+    <x-ad-slot spot="home" :height="250" class="mx-auto max-w-[1100px] px-5" />
 
     @if ($collection && $collectionPosts->isNotEmpty())
         {{-- D97: the collection in season --}}
@@ -332,4 +332,6 @@
         </div>
     </section>
     @endif
+    {{-- D111: the second home ad, after the travel stamps, before the footer --}}
+    <x-ad-slot spot="home_2" :height="250" class="mx-auto max-w-[1100px] px-5" />
 </x-layouts.app>

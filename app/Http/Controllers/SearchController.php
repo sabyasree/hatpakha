@@ -40,6 +40,10 @@ class SearchController extends Controller
         }
         $seo = new Seo(title: $q !== '' ? 'খুঁজুন: '.$q : 'খুঁজুন', canonical: Url::to('/search'), noindex: true);
 
+        if ($posts instanceof \Illuminate\Contracts\Pagination\Paginator && $posts->count() >= 5) {
+            \App\Support\Ads::allow();   // D111: only a real results page
+        }
+
         return view('search', compact('q', 'posts', 'authors', 'seo'));
     }
 }

@@ -115,6 +115,7 @@
                 <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></a>
             @endforeach
         </div>
+        @if ($posts->count() >= 6)<x-ad-slot spot="list" :height="250" />@endif
         <div class="mt-10">{{ $posts->links('pagination.hatpakha') }}</div>
     </section>
 </x-layouts.app>

@@ -11,10 +11,18 @@ return [
         'hostnames' => env('TURNSTILE_HOSTNAMES', parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: ''),
     ],
 
+    // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
     'adsense' => [
-        'client' => env('ADSENSE_CLIENT'),
-        'slot_article' => env('ADSENSE_SLOT_ARTICLE'),
-        'slot_home' => env('ADSENSE_SLOT_HOME'),
+        'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),
+        'force' => (bool) env('ADSENSE_FORCE', false),   // show ads off the live site (testing only)
+        'slots' => [
+            'home' => env('ADSENSE_SLOT_HOME'),
+            'home_2' => env('ADSENSE_SLOT_HOME_2'),
+            'article' => env('ADSENSE_SLOT_ARTICLE'),
+            'article_2' => env('ADSENSE_SLOT_ARTICLE_2'),
+            'sidebar' => env('ADSENSE_SLOT_SIDEBAR'),
+            'list' => env('ADSENSE_SLOT_LIST'),
+        ],
     ],
 
     /*

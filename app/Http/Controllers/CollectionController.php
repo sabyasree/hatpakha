@@ -39,6 +39,10 @@ class CollectionController extends Controller
             shareTitle: $c->title.' | হাতপাখার সংকলন',
         );
 
+        if (! $preview) {
+            \App\Support\Ads::allow();   // D111
+        }
+
         return view('collection', compact('c', 'posts', 'others', 'seo', 'preview'));
     }
 }

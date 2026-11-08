@@ -2,7 +2,11 @@
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
-    <article class="mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif>
+    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif>
+        {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text --}}
+        <div class="absolute left-full top-[85vh] ml-10 hidden h-[calc(100%-85vh)] w-[300px] min-[1440px]:block">
+            <div class="sticky top-24"><x-ad-slot spot="sidebar" :height="600" class="!my-0" /></div>
+        </div>
         <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-sm text-ink2">
             @foreach (array_slice($crumbs, 0, -1) as $c)
                 @if (! $loop->first)<span class="px-1" aria-hidden="true">›</span>@endif
@@ -131,7 +135,7 @@
         </div>
 
         @unless ($post->isKids())
-            <x-ad-slot :slot="config('services.adsense.slot_article')" :height="250" />
+            <x-ad-slot spot="article" :height="250" />
         @endunless
 
         @foreach ($post->authors as $a)
@@ -151,6 +155,8 @@
             </section>
         @endif
 
+        {{-- D111: the second ad, between "পরের লেখা" and the comments --}}
+        <x-ad-slot spot="article_2" :height="250" />
         @unless ($post->isKids())
         {{-- D101: no comments on children's pieces (children's privacy) --}}
         @php

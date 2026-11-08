@@ -38,6 +38,7 @@ class Post extends Model
             'relaunch_answered_at' => 'datetime',
             'relaunch_elsewhere' => 'boolean',
             'relaunch_worth_by_owner' => 'boolean',
+            'no_ads' => 'boolean',
             'image_is_ai' => 'boolean',
             'related_ids' => 'array',
             'seo_proposal' => 'array',

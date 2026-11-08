@@ -72,6 +72,10 @@ class ArchiveController extends Controller
         $since = $all()->min('posts.published_at');
         $isOwner = $author->user_id && $request->user()?->id === $author->user_id;
 
+        if ($posts->total() > 0) {
+            \App\Support\Ads::allow();   // D111
+        }
+
         return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner'));
     }
 
@@ -138,6 +142,8 @@ class ArchiveController extends Controller
         $posts = $issue->posts()->published()->with(['authors', 'section'])->orderBy('section_id')->get();
         $seo = new Seo(title: $issue->title, description: $issue->editor_note ?? $issue->title, canonical: $issue->url(), jsonLd: [JsonLd::issue($issue)]);
 
+        \App\Support\Ads::allow();   // D111
+
         return view('issue', compact('issue', 'posts', 'seo'));
     }
 
@@ -150,6 +156,11 @@ class ArchiveController extends Controller
             noindex: $noindex || $posts->currentPage() > 1,
             jsonLd: $jsonLd,
         );
+
+        // D111: lists with pieces carry ads; never the children's section or an empty page
+        if ($posts->total() > 0 && $section?->slug !== Section::KIDS) {
+            \App\Support\Ads::allow();
+        }
 
         return view('archive', compact('title', 'posts', 'seo', 'kicker', 'section', 'age'));
     }

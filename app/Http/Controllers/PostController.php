@@ -62,6 +62,8 @@ class PostController extends Controller
 
         if ($post->isKids()) {
             request()->attributes->set('hp.no_ads', true);   // D101: no ads around children's pieces
+        } elseif (! $post->no_ads && $post->isLive()) {
+            \App\Support\Ads::allow();   // D111
         }
 
         return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));

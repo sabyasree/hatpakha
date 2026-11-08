@@ -24,6 +24,7 @@
                 </li>
             @endforeach
         </ol>
+        <x-ad-slot spot="list" :height="250" />
 
         <div class="mt-8 flex flex-wrap gap-3">
             <a href="https://wa.me/?text={{ rawurlencode($c->title.' — হাতপাখার সংকলন '.$c->url()) }}" target="_blank" rel="noopener" class="inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">হোয়াটসঅ্যাপে পাঠান</a>

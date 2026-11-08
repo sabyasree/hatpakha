@@ -70,7 +70,7 @@ class KidsCornerTest extends TestCase
 
     public function test_children_pieces_have_age_glossary_no_comments_and_no_ads(): void
     {
-        config(['services.adsense.client' => 'ca-pub-1', 'services.adsense.slot_article' => '123']);
+        config(['services.adsense.force' => true, 'services.adsense.slots.article' => '123']);
         $post = $this->kidsPost(['age_band' => '6-8', 'glossary' => [['word' => 'সজারু', 'bn' => 'কাঁটাওয়ালা প্রাণী', 'en' => 'porcupine'], ['word' => '', 'bn' => 'x']]]);
         $html = $this->get($post->url())->assertOk()->getContent();
         $this->assertStringContainsString('বয়স ৬–৮ বছর', $html);

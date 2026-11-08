@@ -39,6 +39,9 @@ class SerialController extends Controller
             shareTitle: $serial->title.' | হাতপাখার ধারাবাহিক',
         );
         $following = $serial->isFollowedBy($request->user());
+        if ($serial->isPublic() && $episodes->isNotEmpty()) {
+            \App\Support\Ads::allow();   // D111
+        }
 
         return view('serial', compact('serial', 'episodes', 'seo', 'following'));
     }

@@ -44,6 +44,7 @@
             @if ($serial->status === 'active')
                 <p class="mt-3 font-bold text-ink2">পরের পর্ব আসবে {{ $serial->dayName() }}।</p>
             @endif
+            <x-ad-slot spot="list" :height="250" />
         @endif
     </article>
 </x-layouts.app>

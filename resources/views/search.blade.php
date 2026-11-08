@@ -37,6 +37,7 @@
             @empty
                 <p class="mt-4 rounded-2xl border-2 border-dashed border-navy p-6 text-center">"{{ $q }}" দিয়ে কিছু পাওয়া গেল না। অন্য বানানে বা ছোট করে খুঁজে দেখুন।</p>
             @endforelse
+            @if ($posts->count() >= 5)<x-ad-slot spot="list" :height="250" />@endif
             <div class="mt-8">{{ $posts->links('pagination.hatpakha') }}</div>
         @else
             {{-- Not a dead end (mobile UX review): ideas to search, and every section. --}}

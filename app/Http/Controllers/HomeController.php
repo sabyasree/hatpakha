@@ -103,6 +103,8 @@ class HomeController extends Controller
             jsonLd: [JsonLd::organization(), JsonLd::website(), JsonLd::periodical()],
         );
 
+        \App\Support\Ads::allow();   // D111
+
         return view('home', $data + ['seo' => $seo]);
     }
 }

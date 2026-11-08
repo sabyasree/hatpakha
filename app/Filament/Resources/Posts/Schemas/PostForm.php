@@ -155,6 +155,8 @@ class PostForm
                 TextInput::make('seo_title')->label(__('গুগলের জন্য শিরোনাম'))->maxLength(70),
                 Textarea::make('seo_description')->label(__('গুগলের জন্য বিবরণ'))->maxLength(160)->rows(2),
                 Toggle::make('noindex')->label(__('গুগলে দেখাবে না')),
+                // D111: no ads on a piece where they would feel wrong (grief, a death, a tragedy).
+                Toggle::make('no_ads')->label(__('এই লেখায় বিজ্ঞাপন নয়'))->helperText(__('শোক, মৃত্যু বা দুর্ঘটনার লেখায় বিজ্ঞাপন বেমানান লাগলে চালু করুন।')),
                 TextInput::make('seo_keyphrase')->label(__('মূল শব্দগুচ্ছ'))->maxLength(120),
                 Textarea::make('share_text')->label(__('হোয়াটসঅ্যাপ / ফেসবুকের লেখা'))->maxLength(300)->rows(2),
                 TextInput::make('featured_image_alt')->label(__('ছবির বর্ণনা (চোখে দেখতে না পাওয়া পাঠকের জন্য)'))->maxLength(200),

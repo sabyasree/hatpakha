@@ -12,8 +12,9 @@
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if (config('services.adsense.client') && ! request()->attributes->get('hp.no_ads'))
-        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>
+    @if (\App\Support\Ads::on())
+        {{-- D111: only on page types that allow ads, on the live site --}}
+        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ \App\Support\Ads::client() }}" crossorigin="anonymous"></script>
     @endif
 </head>
 <body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
@@ -131,6 +132,18 @@
         @endforeach
     </nav>
     @endunless
+    @if (\App\Support\Ads::on())
+        {{-- D111: request each ad only when the reader scrolls near it; hidden spots (e.g. the side ad on smaller screens) are never requested --}}
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            (() => {
+                const fill = (el) => { el.className = 'adsbygoogle'; try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {} };
+                const spots = document.querySelectorAll('ins.hp-ad-pending');
+                if (!('IntersectionObserver' in window)) { spots.forEach(fill); return; }
+                const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); } }), { rootMargin: '400px 0px' });
+                spots.forEach((el) => io.observe(el));
+            })();
+        </script>
+    @endif
     {{-- Owner (2026-11-08): remember pieces this reader opened (in their own browser only) and swap them out of the home shelves. --}}
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         (() => {

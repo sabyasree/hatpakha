@@ -20,7 +20,7 @@ class SecurityHeaders
         // The admin panel (Livewire/Alpine) needs eval; the public site gets the strict, nonce-based policy.
         $script = $isAdmin
             ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-            : "script-src 'self' 'nonce-{$nonce}' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://challenges.cloudflare.com https://www.googletagmanager.com";
+            : "script-src 'self' 'nonce-{$nonce}' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://challenges.cloudflare.com https://www.googletagmanager.com";   // D111: AdSense + its consent message
 
         $csp = implode('; ', [
             "default-src 'self'",
@@ -28,8 +28,8 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self' data:",
             "img-src 'self' data: https:",
-            "connect-src 'self' https://*.google.com https://*.googlesyndication.com",
-            'frame-src https://googleads.g.doubleclick.net https://*.googlesyndication.com https://challenges.cloudflare.com https://www.youtube-nocookie.com',
+            "connect-src 'self' https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google",
+            'frame-src https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.google.com https://*.adtrafficquality.google https://challenges.cloudflare.com https://www.youtube-nocookie.com',
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
