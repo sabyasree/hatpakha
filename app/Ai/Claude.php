@@ -60,6 +60,9 @@ final class Claude
         if ($message->stopReason === 'refusal') {
             return [null, 'refusal'];
         }
+        if ($message->stopReason === 'max_tokens') {
+            return [null, 'the answer was too long and got cut off (max_tokens)'];   // clearer than "invalid JSON"
+        }
         foreach ($message->content as $block) {
             if ($block->type === 'text') {
                 $data = json_decode($block->text, true);

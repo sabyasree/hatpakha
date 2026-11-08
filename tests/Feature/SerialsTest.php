@@ -38,7 +38,7 @@ class SerialsTest extends TestCase
                 ? ['title' => 'ছায়ার বাড়ি', 'logline' => 'পুরনো বাড়ির দরজায় রোজ রাতে টোকা পড়ে।', 'setting' => 'উত্তর কলকাতা',
                     'characters' => [['name' => 'অমল', 'role' => 'ভাড়াটে']], 'episodes' => [['title' => 'বন্ধ দরজা', 'beat' => 'চিঠি'], ['title' => 'দ্বিতীয় রাত', 'beat' => 'ছায়া']],
                     'episode' => $ep, 'cover_prompt' => 'a dark old house']
-                : ['episode' => ['title' => 'দ্বিতীয় রাত'] + $ep];
+                : ['episode' => ['title' => str_contains($user, 'Write episode 1,') ? 'বন্ধ দরজা' : 'দ্বিতীয় রাত'] + $ep];
         };
     }
 
@@ -68,7 +68,8 @@ class SerialsTest extends TestCase
         $this->assertSame(1, SerialWriter::keepAhead());
         $ep2 = $serial->episodes()->where('episode_no', 2)->first();
         $this->assertSame('draft', $ep2->status);
-        $this->assertStringContainsString('অমল রাতে একটি চিঠি পায়', $this->seen[1][1], 'The story so far is given, for continuity');
+        $this->assertCount(3, $this->seen, 'Plan, episode 1, episode 2: separate requests so none is cut off');
+        $this->assertStringContainsString('অমল রাতে একটি চিঠি পায়', $this->seen[2][1], 'The story so far is given, for continuity');
     }
 
     public function test_publishing_the_first_episode_starts_the_serial_and_readers_can_follow_it(): void

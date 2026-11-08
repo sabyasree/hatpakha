@@ -38,7 +38,7 @@ final class EditorialWriter
             "Issue: {$issue->title}\nEditor's brief: ".($issue->ai_plan['editorial_brief'] ?? '')."\nPieces:\n{$pieces}\n\nPast editorials:\n".($past ?: '(none)'),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs'], 'properties' => [
                 'title' => ['type' => 'string'], 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
-            ]], (string) config('ai.anthropic.writer_model'), 6000);
+            ]], (string) config('ai.anthropic.writer_model'), 10000);
         if (! is_array($data) || empty($data['paragraphs'])) {
             return null;
         }

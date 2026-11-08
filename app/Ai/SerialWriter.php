@@ -39,7 +39,10 @@ final class SerialWriter
         .'never on a melodramatic question to the reader like "কী হবে এবার?". The final episode resolves the story honestly and leaves one quiet image. '
         .'Keep every name, place, date and fact consistent with the story so far.';
 
-    /** Plan a new serial and draft its first episode (owner's click or the queued job). */
+    /**
+     * Plan a new serial, then draft its first episode. Two separate requests: a plan plus a full Bengali episode in one
+     * answer is too long and gets cut off (owner's screenshot, 2026-11-08: "invalid JSON").
+     */
     public static function start(string $writer, string $idea = ''): array
     {
         if (! isset(self::WRITERS[$writer])) {
@@ -47,22 +50,20 @@ final class SerialWriter
         }
         [$genre, $brief] = self::WRITERS[$writer];
         [$d, $err] = Claude::json('serial', self::CRAFT.' '.$brief.' '
-            .'First plan the whole serial: a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
-            .'the setting, 3-6 characters (each with what they want and what they hide), and 10-12 episodes, each a title and one line of what happens and how it ends. '
-            .'Then write episode 1 in full. Also give a private summary of episode 1 (4-6 lines, every fact a later episode must remember), '
-            .'and two picture ideas in English: cover_prompt for the serial and image_prompt for episode 1.',
+            .'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
+            .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens and how it ends. '
+            .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
             '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>',
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'episode', 'cover_prompt'], 'properties' => [
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt'], 'properties' => [
                 'title' => ['type' => 'string'], 'logline' => ['type' => 'string'], 'setting' => ['type' => 'string'],
                 'characters' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['name', 'role'], 'properties' => [
                     'name' => ['type' => 'string'], 'role' => ['type' => 'string']]]],
                 'episodes' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'beat'], 'properties' => [
                     'title' => ['type' => 'string'], 'beat' => ['type' => 'string']]]],
-                'episode' => self::episodeSchema(),
                 'cover_prompt' => ['type' => 'string'],
-            ]], (string) config('ai.anthropic.writer_model'), 12000);
-        if (! is_array($d) || empty($d['episode']['paragraphs'])) {
-            return [null, $err ?: 'খসড়া তৈরি হয়নি।'];
+            ]], (string) config('ai.anthropic.writer_model'), 8000);
+        if (! is_array($d) || empty($d['episodes'])) {
+            return [null, $err ?: 'পরিকল্পনা তৈরি হয়নি।'];
         }
         $serial = Serial::create([
             'title' => mb_substr(trim((string) $d['title']), 0, 200), 'logline' => mb_substr(trim((string) $d['logline']), 0, 400),
@@ -70,9 +71,10 @@ final class SerialWriter
             'bible' => ['setting' => (string) $d['setting'], 'characters' => array_values((array) $d['characters']), 'episodes' => array_values((array) $d['episodes'])],
         ]);
         self::cover($serial, (string) $d['cover_prompt']);
-        $post = self::saveEpisode($serial, 1, (array) $d['episode']);
         EditorTask::propose('serial', __('নতুন ধারাবাহিকের প্রস্তাব: ').$serial->title, [], $serial);
-        AuditLog::record('serial.proposed', $post, ['serial' => $serial->id, 'writer' => $writer]);
+        AuditLog::record('serial.proposed', null, ['serial' => $serial->id, 'writer' => $writer]);
+        // The plan is kept even if episode 1 fails; "পরের পর্ব লেখান" on the serial tries again.
+        self::next($serial);
 
         return [$serial, null];
     }
@@ -98,10 +100,10 @@ final class SerialWriter
             ."\n<plan>".e(collect($plan)->map(fn ($e, $i) => 'পর্ব '.($i + 1).' '.($e['title'] ?? '').': '.($e['beat'] ?? ''))->implode("\n")).'</plan>'
             ."\n<so_far>".e($story).'</so_far>'
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
-            ."\nWrite episode {$n}".($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.')
+            ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))
             .' Also give its private summary and an image_prompt.',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
-            (string) config('ai.anthropic.writer_model'), 9000);
+            (string) config('ai.anthropic.writer_model'), 16000);   // Bengali takes many tokens: room for 1800 words + summary
         if (! is_array($d) || empty($d['episode']['paragraphs'])) {
             return [null, $err ?: 'পর্ব তৈরি হয়নি।'];
         }

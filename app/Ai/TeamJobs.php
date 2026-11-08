@@ -244,7 +244,13 @@ final class TeamJobs
             'serial_mystery.start', 'serial_ghost.start', 'serial_family.start' => (function () use ($agent, $topic) {
                 [$serial, $e] = \App\Ai\SerialWriter::start($agent, (string) $topic);
 
-                return $serial ? [true, 'নতুন ধারাবাহিক: "'.$serial->title.'"। প্রথম পর্ব খসড়ায়; ডেস্ক → ধারাবাহিক-এ দেখুন।'] : [false, (string) $e];
+                if (! $serial) {
+                    return [false, (string) $e];
+                }
+
+                return $serial->episodes()->exists()
+                    ? [true, 'নতুন ধারাবাহিক: "'.$serial->title.'"। প্রথম পর্ব খসড়ায়; ডেস্ক → ধারাবাহিক-এ দেখুন।']
+                    : [true, 'ধারাবাহিকের পরিকল্পনা তৈরি: "'.$serial->title.'"। প্রথম পর্ব হয়নি; ধারাবাহিকের পাতায় "পরের পর্ব লেখান" টিপুন।'];
             })(),
             'serial_mystery.next', 'serial_ghost.next', 'serial_family.next' => (function () use ($agent) {
                 $serial = \App\Models\Serial::where('writer', $agent)->whereIn('status', ['active', 'proposed'])->latest('id')->first();
