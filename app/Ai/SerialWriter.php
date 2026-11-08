@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Ai;
+
+use App\Models\AuditLog;
+use App\Models\Author;
+use App\Models\EditorTask;
+use App\Models\Post;
+use App\Models\Section;
+use App\Models\Serial;
+use App\Support\CoverImage;
+use Illuminate\Support\Str;
+
+/**
+ * D108 (owner): three AI serial writers, one genre each, draft a weekly ধারাবাহিক. They plan the whole story first
+ * (setting, characters, 10-12 episodes), then write one episode at a time, always one week ahead, each ending so
+ * that the reader wants the next. Every episode is a DRAFT under "হাতপাখা ডেস্ক" (never a made-up author, D95) with
+ * a proposed picture; the owner edits, approves the picture and publishes. Nothing goes out by itself (D42).
+ */
+final class SerialWriter
+{
+    public const WRITERS = [
+        'serial_mystery' => ['রহস্য', 'A mystery-thriller (রহস্য-রোমাঞ্চ) set in today\'s Kolkata or a small Bengal town. An original detective or an ordinary person drawn in by chance; '
+            .'clues are fair to the reader, suspicion moves between characters, and each episode uncovers one real piece of the puzzle. '
+            .'Do not borrow Feluda, Byomkesh, Kiriti or any existing detective, character or plot.'],
+        'serial_ghost' => ['অলৌকিক', 'An uncanny, supernatural story (অলৌকিক / ভূতের গল্প) in the Bengali tradition: an old house, a railway quarter, a river village, a hill bungalow. '
+            .'Dread that builds slowly through small wrong details; atmosphere and the unexplained over gore; never gratuitous violence. Ordinary people, believable lives.'],
+        'serial_family' => ['সম্পর্ক', 'A family and relationship story (সম্পর্কের গল্প) across generations: for example a North Kolkata joint-family house about to be sold, '
+            .'a box of old letters, two siblings who have not spoken in years. Each episode reveals one secret or turns one relationship; warmth, humour and ache together.'],
+    ];
+
+    /** How a serial episode is written: literature first, and an ending that brings readers back. */
+    private const CRAFT = 'You write for Hatpakha (হাতপাখা), a Bengali literary web magazine, a weekly serial (ধারাবাহিক) that readers follow episode by episode. '
+        .Prompt::LITERARY.' '
+        .'This is fiction: invent ordinary Bengali characters freely, but never a real, living person, a real crime or a real family. '
+        .'Each episode: 1200-1800 words of scenes, not summary; dialogue that sounds like people talk in Kolkata or the district (চলিত, a little dialect where it fits); '
+        .'one clear movement in the story; a recurring detail or motif readers will recognise. '
+        .'For a serial, the ending is different from an essay: close each episode on a hook that comes out of the story itself (a discovery, a line of dialogue, a door that should be locked and is not), '
+        .'never on a melodramatic question to the reader like "কী হবে এবার?". The final episode resolves the story honestly and leaves one quiet image. '
+        .'Keep every name, place, date and fact consistent with the story so far.';
+
+    /** Plan a new serial and draft its first episode (owner's click or the queued job). */
+    public static function start(string $writer, string $idea = ''): array
+    {
+        if (! isset(self::WRITERS[$writer])) {
+            return [null, 'লেখক পাওয়া যায়নি।'];
+        }
+        [$genre, $brief] = self::WRITERS[$writer];
+        [$d, $err] = Claude::json('serial', self::CRAFT.' '.$brief.' '
+            .'First plan the whole serial: a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
+            .'the setting, 3-6 characters (each with what they want and what they hide), and 10-12 episodes, each a title and one line of what happens and how it ends. '
+            .'Then write episode 1 in full. Also give a private summary of episode 1 (4-6 lines, every fact a later episode must remember), '
+            .'and two picture ideas in English: cover_prompt for the serial and image_prompt for episode 1.',
+            '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'episode', 'cover_prompt'], 'properties' => [
+                'title' => ['type' => 'string'], 'logline' => ['type' => 'string'], 'setting' => ['type' => 'string'],
+                'characters' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['name', 'role'], 'properties' => [
+                    'name' => ['type' => 'string'], 'role' => ['type' => 'string']]]],
+                'episodes' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'beat'], 'properties' => [
+                    'title' => ['type' => 'string'], 'beat' => ['type' => 'string']]]],
+                'episode' => self::episodeSchema(),
+                'cover_prompt' => ['type' => 'string'],
+            ]], (string) config('ai.anthropic.writer_model'), 12000);
+        if (! is_array($d) || empty($d['episode']['paragraphs'])) {
+            return [null, $err ?: 'খসড়া তৈরি হয়নি।'];
+        }
+        $serial = Serial::create([
+            'title' => mb_substr(trim((string) $d['title']), 0, 200), 'logline' => mb_substr(trim((string) $d['logline']), 0, 400),
+            'genre' => $genre, 'writer' => $writer, 'status' => 'proposed', 'day' => 6,
+            'bible' => ['setting' => (string) $d['setting'], 'characters' => array_values((array) $d['characters']), 'episodes' => array_values((array) $d['episodes'])],
+        ]);
+        self::cover($serial, (string) $d['cover_prompt']);
+        $post = self::saveEpisode($serial, 1, (array) $d['episode']);
+        EditorTask::propose('serial', __('নতুন ধারাবাহিকের প্রস্তাব: ').$serial->title, [], $serial);
+        AuditLog::record('serial.proposed', $post, ['serial' => $serial->id, 'writer' => $writer]);
+
+        return [$serial, null];
+    }
+
+    /** The next episode, from the plan and everything written so far. */
+    public static function next(Serial $serial): array
+    {
+        if (! in_array($serial->status, ['proposed', 'active'], true)) {
+            return [null, 'ধারাবাহিকটি এখন বন্ধ।'];
+        }
+        $n = $serial->nextEpisodeNo();
+        $plan = (array) ($serial->bible['episodes'] ?? []);
+        if ($n > max(count($plan), 1) + 2) {
+            return [null, 'পরিকল্পনার সব পর্ব লেখা হয়ে গেছে।'];
+        }
+        $last = $n >= count($plan);
+        $before = $serial->episodes()->get();
+        $story = $before->map(fn (Post $p) => 'পর্ব '.$p->episode_no.' "'.$p->title.'": '.($p->episode_summary ?: mb_substr(strip_tags((string) $p->body_html), 0, 400)))->implode("\n");
+        $tail = mb_substr(trim(html_entity_decode(strip_tags(str_replace('</p>', "\n", (string) $before->last()?->body_html)))), -2500);
+        [$d, $err] = Claude::json('serial', self::CRAFT.' '.(self::WRITERS[$serial->writer][1] ?? ''),
+            '<serial><title>'.e($serial->title).'</title><setting>'.e((string) ($serial->bible['setting'] ?? '')).'</setting>'
+            ."\n<characters>".e(collect((array) ($serial->bible['characters'] ?? []))->map(fn ($c) => ($c['name'] ?? '').': '.($c['role'] ?? ''))->implode("\n")).'</characters>'
+            ."\n<plan>".e(collect($plan)->map(fn ($e, $i) => 'পর্ব '.($i + 1).' '.($e['title'] ?? '').': '.($e['beat'] ?? ''))->implode("\n")).'</plan>'
+            ."\n<so_far>".e($story).'</so_far>'
+            ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
+            ."\nWrite episode {$n}".($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.')
+            .' Also give its private summary and an image_prompt.',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
+            (string) config('ai.anthropic.writer_model'), 9000);
+        if (! is_array($d) || empty($d['episode']['paragraphs'])) {
+            return [null, $err ?: 'পর্ব তৈরি হয়নি।'];
+        }
+
+        return [self::saveEpisode($serial, $n, (array) $d['episode']), null];
+    }
+
+    /** Daily: every running serial keeps exactly one unpublished episode ready (one week ahead). */
+    public static function keepAhead(): int
+    {
+        $done = 0;
+        foreach (Serial::where('status', 'active')->get() as $s) {
+            if (! $s->episodes()->whereIn('status', ['draft', 'pending', 'scheduled'])->exists()) {
+                [$p] = self::next($s);
+                $done += $p ? 1 : 0;
+            }
+        }
+
+        return $done;
+    }
+
+    private static function episodeSchema(): array
+    {
+        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs', 'summary', 'image_prompt'], 'properties' => [
+            'title' => ['type' => 'string'], 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'summary' => ['type' => 'string'], 'image_prompt' => ['type' => 'string'],
+        ]];
+    }
+
+    private static function saveEpisode(Serial $serial, int $n, array $e): Post
+    {
+        $sec = Section::where('slug', 'dharabahik')->first();
+        $desk = Author::where('slug', 'hatpakha-desk')->first();
+        $post = new Post;
+        $post->forceFill([
+            'title' => mb_substr($serial->title.' (পর্ব '.\App\Support\Bn::num((string) $n).'): '.trim((string) $e['title']), 0, 200),
+            'excerpt' => mb_substr($serial->logline ?? '', 0, 300),
+            'body_html' => collect((array) $e['paragraphs'])->map(fn ($p) => '<p>'.e(trim((string) $p)).'</p>')->implode(''),
+            'section_id' => $sec?->id, 'serial_id' => $serial->id, 'episode_no' => $n, 'episode_summary' => mb_substr(trim((string) $e['summary']), 0, 2000),
+            'format' => 'prose', 'language' => 'bn', 'status' => 'draft',
+            'slug' => 'desk-serial-'.$serial->id.'-'.$n.'-'.Str::lower(Str::random(4)),
+            'ai_drafted_at' => now(),
+            'ai_note' => "এআই ধারাবাহিক (হাতপাখা ডেস্ক), পর্ব {$n}। প্রকাশের আগে নিজের মতো করে ঘষেমেজে নিন; ছবিটি দেখে বসান।",
+        ])->save();
+        if ($desk) {
+            $post->authors()->sync([$desk->id => ['position' => 0]]);
+        }
+        self::picture($post, (string) $e['image_prompt']);
+        EditorTask::propose('serial_episode', __('ধারাবাহিকের নতুন পর্ব: ').$post->title, [], $post);
+
+        return $post;
+    }
+
+    /** Eye-catching, but never a real person and never written words in the picture. */
+    public const STYLE = 'Striking cinematic illustration for a Bengali serial story, like a contemporary book or web-series poster: '
+        .'bold composition with one strong focal point, dramatic light, rich deep colours, a sense of mystery and story; '
+        .'Bengali setting, clothes and architecture drawn accurately. No text, letters, numbers or logos anywhere. No real or famous person. No gore.';
+
+    private static function picture(Post $post, string $prompt): void
+    {
+        if (Illustrator::blocked() || blank($prompt)) {
+            return;
+        }
+        [$bytes] = Illustrator::paint(self::STYLE.' Scene: '.mb_substr(trim($prompt), 0, 700), $post->id);
+        if ($bytes) {
+            $tmp = tempnam(sys_get_temp_dir(), 'ser');
+            file_put_contents($tmp, $bytes);
+            rescue(fn () => CoverImage::propose($post, $tmp), null, false);   // the owner approves it on the edit page
+            @unlink($tmp);
+        }
+    }
+
+    public static function cover(Serial $serial, string $prompt): void
+    {
+        if (Illustrator::blocked() || blank($prompt)) {
+            return;
+        }
+        [$bytes] = Illustrator::paint(self::STYLE.' Poster for the whole serial. Scene: '.mb_substr(trim($prompt), 0, 700));
+        if ($bytes) {
+            $tmp = tempnam(sys_get_temp_dir(), 'ser');
+            file_put_contents($tmp, $bytes);
+            $saved = rescue(fn () => CoverImage::store($tmp), null, false);
+            @unlink($tmp);
+            if ($saved) {
+                $serial->forceFill(['cover_path' => $saved['path'], 'cover_width' => $saved['width'], 'cover_height' => $saved['height']])->save();
+            }
+        }
+    }
+}

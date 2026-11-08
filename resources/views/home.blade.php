@@ -182,6 +182,28 @@
         </section>
     @endif
 
+    @if ($serials->isNotEmpty())
+        {{-- D108: ধারাবাহিক, so readers find the next episode from the front page --}}
+        <section class="border-b-2 border-navy bg-navy text-paper" aria-labelledby="serials-h">
+            <div class="mx-auto max-w-[1100px] px-5 py-12">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div><div class="font-hand text-2xl text-peach">সপ্তাহে একটি করে পর্ব</div>
+                        <h2 id="serials-h" class="font-display text-4xl font-extrabold md:text-5xl">ধারাবাহিক</h2></div>
+                    <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="inline-flex min-h-11 items-center font-bold text-peach underline">সব ধারাবাহিক →</a>
+                </div>
+                <ul class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach ($serials as $s)
+                        <li><a href="{{ $s->url() }}" class="lift block overflow-hidden rounded-2xl border-2 border-paper bg-paper text-navy">
+                            @if ($s->cover_path)<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover">@endif
+                            <span class="block p-4"><span class="text-sm font-bold text-red">{{ $s->genre }} · প্রতি {{ $s->dayName() }}</span>
+                                <span class="mt-1 block font-display text-2xl font-extrabold leading-tight">{{ $s->title }}</span>
+                                @if ($s->logline)<span class="mt-1 line-clamp-2 block font-serif text-ink2">{{ $s->logline }}</span>@endif</span></a></li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
+
     @if ($kids)
         {{-- D101: ছোটদের হাতপাখা --}}
         <section class="border-b-2 border-navy bg-sky-tint" aria-labelledby="kids-h">

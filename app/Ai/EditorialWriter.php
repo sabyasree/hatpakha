@@ -60,6 +60,10 @@ final class EditorialWriter
         $post->authors()->sync([$author->id => ['position' => 0]]);
         $issue->forceFill(['editorial_post_id' => $post->id])->save();
         \App\Models\AuditLog::record('editorial.drafted', $post, ['issue' => $issue->slug]);
+        // Owner (2026-11-08): the AI-written editorial also gets a cover from the designer, for the owner to approve.
+        if (! $post->featured_image_path && ! $post->proposed_image_path) {
+            Illustrator::queue($post, 'The mood of this month and season in Bengal, symbolic and calm.');
+        }
 
         return $post;
     }

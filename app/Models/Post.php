@@ -80,6 +80,10 @@ class Post extends Model
         });
         // Never break an old URL (CLAUDE.md §2): renaming a live post leaves a 301 behind.
         static::updated(function (self $post) {
+            // D108: publishing the first episode of a proposed serial starts the serial.
+            if ($post->wasChanged('status') && in_array($post->status, ['published', 'scheduled'], true) && $post->serial_id && $post->serial?->status === 'proposed') {
+                $post->serial->activate();
+            }
             if ($post->wasChanged('slug') && $post->getOriginal('status') === 'published' && filled($post->getOriginal('slug'))) {
                 $from = '/'.$post->getOriginal('slug').'/';
                 $to = '/'.$post->slug.'/';
@@ -132,6 +136,27 @@ class Post extends Model
     }
 
     public function isPoem(): bool { return $this->format === 'poem'; }
+
+    public function serial(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(Serial::class); }
+
+    /** D108: the episode before / after this one (published only). */
+    public function episodeSibling(int $step): ?self
+    {
+        return $this->serial_id ? self::published()->where('serial_id', $this->serial_id)->where('episode_no', $this->episode_no + $step)->first() : null;
+    }
+
+    /** "পর্ব ৩: ভাঙা আয়না" from the stored "Serial (পর্ব ৩): ভাঙা আয়না". */
+    public function episodeLabel(): string
+    {
+        $own = str_contains((string) $this->title, '): ') ? trim(\Illuminate\Support\Str::after($this->title, '): ')) : (string) $this->title;
+
+        return 'পর্ব '.\App\Support\Bn::num((string) $this->episode_no).($own !== '' ? ': '.$own : '');
+    }
+
+    public function isLastEpisode(): bool
+    {
+        return $this->serial && ($this->serial->status === 'finished' && $this->episode_no >= (int) $this->serial->episodes()->max('episode_no'));
+    }
 
     /** D101: a piece in ছোটদের হাতপাখা (no comments, no ads, age badge, glossary). */
     public function isKids(): bool { return $this->section?->slug === \App\Models\Section::KIDS; }

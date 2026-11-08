@@ -143,6 +143,8 @@ class AiShift extends Command
     private function daily(): int
     {
         $this->line('Follow-ups proposed: '.\App\Ai\EditorJobs::followups());
+        // D108: every running serial keeps its next episode drafted, one week ahead.
+        $this->line('Serial episodes drafted: '.\App\Ai\SerialWriter::keepAhead());
         \App\Ai\Marketer::daily();
         if (now('Asia/Kolkata')->day >= 21) {
             \App\Ai\EditorJobs::writersLetter();   // D58: monthly letter to writers, a draft for the owner

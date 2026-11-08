@@ -186,3 +186,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: check the AI's list and the letter text (/desk → পুরনো লেখকদের চিঠি), then approve
 - [ ] Owner: message the 145 core writers; plan the ফিরে আসা সংখ্যা; 6-week schedule before announcing
 - [ ] Later: automatic bounce handling for the "we're back" letter
+
+## ধারাবাহিক (D108), 2026-11-08
+- [x] Three AI serial writers (রহস্য, অলৌকিক, সম্পর্ক): story plan, weekly episode drafts with pictures, one week ahead
+- [x] /dharabahik/ pages, "ক্রমশ…" and next/previous episode, follow a serial for new-episode e-mails, home shelf
+- [x] Every AI-written piece gets a designer cover proposal
+- [ ] Owner: read the three proposals in /desk → ধারাবাহিক, edit episode 1, approve its picture, publish (that starts the serial)
+- [ ] Next: "আপনার বই" (book-making for writers), plan agreed first

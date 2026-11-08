@@ -57,6 +57,10 @@ Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where
 Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
+// D108: serial stories
+Route::get('/dharabahik', [\App\Http\Controllers\SerialController::class, 'index']);
+Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class, 'show'])->where('slug', '[a-z0-9-]+');
+Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');
 Route::get('/sonkolon', [\App\Http\Controllers\CollectionController::class, 'index']);
 Route::get('/sonkolon/{slug}', [\App\Http\Controllers\CollectionController::class, 'show'])->where('slug', '[a-z0-9-]+');
 
@@ -128,6 +132,14 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class, 'thr
     Route::post('/save/{post}', [\App\Http\Controllers\ReaderController::class, 'save'])->whereNumber('post')->name('save');
     Route::post('/follow/{author}', [\App\Http\Controllers\ReaderController::class, 'follow'])->whereNumber('author')->name('follow');
 });
+
+// D108: one-click stop for a serial's new-episode e-mails, no sign-in needed.
+Route::get('/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Serial $serial, \App\Models\User $user) {
+    \Illuminate\Support\Facades\DB::table('serial_follows')->where(['serial_id' => $serial->id, 'user_id' => $user->id])->delete();
+
+    return response()->view('newsletter-message', ['seo' => new \App\Seo\Seo(title: 'খবর বন্ধ হয়েছে', noindex: true),
+        'title' => 'খবর বন্ধ হয়েছে', 'text' => '"'.$serial->title.'"-এর নতুন পর্বের ই-মেল আর পাঠানো হবে না।']);
+})->middleware(['signed', 'throttle:20,1'])->name('serial.unfollow');
 
 // One-click unfollow from the e-mail (D64), no sign-in needed.
 Route::get('/newsletter/unsubscribe/f/{author}/{user}', function (\App\Models\Author $author, \App\Models\User $user) {

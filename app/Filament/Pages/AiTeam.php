@@ -158,6 +158,7 @@ class AiTeam extends Page
             'honours' => [__('সম্মানিত লেখক'), Honours::getUrl()],
             'kids' => [__('ছোটদের হাতপাখা'), KidsCorner::getUrl()],
             'relaunch' => [__('পুরনো লেখকদের চিঠি'), RelaunchLetters::getUrl()],
+            'serials' => [__('ধারাবাহিক'), \App\Filament\Resources\Serials\SerialResource::getUrl()],
             default => null,
         };
     }

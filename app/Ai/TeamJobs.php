@@ -82,6 +82,18 @@ final class TeamJobs
             'samples' => ['প্রতিটি কণ্ঠে নমুনা (শুনে বাছার জন্য)', null, 'kids'],
             'revoice' => ['নতুন বাছা কণ্ঠে আবার পড়া', null, 'kids'],
         ],
+        'serial_mystery' => [
+            'start' => ['নতুন ধারাবাহিক শুরু: পুরো গল্পের পরিকল্পনা আর প্রথম পর্ব (চাইলে ভাবনা লিখুন)', null, 'serials'],
+            'next' => ['চলতি ধারাবাহিকের পরের পর্ব', null, 'serials'],
+        ],
+        'serial_ghost' => [
+            'start' => ['নতুন ধারাবাহিক শুরু: পুরো গল্পের পরিকল্পনা আর প্রথম পর্ব (চাইলে ভাবনা লিখুন)', null, 'serials'],
+            'next' => ['চলতি ধারাবাহিকের পরের পর্ব', null, 'serials'],
+        ],
+        'serial_family' => [
+            'start' => ['নতুন ধারাবাহিক শুরু: পুরো গল্পের পরিকল্পনা আর প্রথম পর্ব (চাইলে ভাবনা লিখুন)', null, 'serials'],
+            'next' => ['চলতি ধারাবাহিকের পরের পর্ব', null, 'serials'],
+        ],
         'archivist' => [
             'collection' => ['এই মাসের সংকলন', null, 'today'],
             'theme' => ['নিজের বিষয়ে একটি সংকলন', 'topic', 'today'],
@@ -229,6 +241,20 @@ final class TeamJobs
             'narrator.samples' => $done(Narrator::makeSamples(), 'কণ্ঠের নমুনা তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় শুনে বেছে নিন।'),
             'narrator.revoice' => $done(Narrator::revoice(), 'নতুন কণ্ঠে পাঠ তৈরি; শুনে অনুমোদন দিন।'),
             'editor.screen' => $done(\App\Ai\BacklogScreen::backlog(), 'পুরনো জমা লেখা পড়া হয়েছে; ডেস্ক → পুরনো লেখকদের চিঠি-তে বাছাই দেখুন।'),
+            'serial_mystery.start', 'serial_ghost.start', 'serial_family.start' => (function () use ($agent, $topic) {
+                [$serial, $e] = \App\Ai\SerialWriter::start($agent, (string) $topic);
+
+                return $serial ? [true, 'নতুন ধারাবাহিক: "'.$serial->title.'"। প্রথম পর্ব খসড়ায়; ডেস্ক → ধারাবাহিক-এ দেখুন।'] : [false, (string) $e];
+            })(),
+            'serial_mystery.next', 'serial_ghost.next', 'serial_family.next' => (function () use ($agent) {
+                $serial = \App\Models\Serial::where('writer', $agent)->whereIn('status', ['active', 'proposed'])->latest('id')->first();
+                if (! $serial) {
+                    return [false, 'এই লেখকের কোনো চলতি ধারাবাহিক নেই। আগে "নতুন ধারাবাহিক শুরু" দিন।'];
+                }
+                [$p, $e] = \App\Ai\SerialWriter::next($serial);
+
+                return $p ? [true, 'নতুন পর্বের খসড়া: "'.$p->title.'"'] : [false, (string) $e];
+            })(),
             'designer.alphabet' => $done(KidsAlphabet::pictures(), 'বর্ণমালার ছবি তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখে অনুমোদন দিন।'),
             'archivist.themed' => (function () use ($topic) {
                 [$c, $e] = Archivist::themed($topic);

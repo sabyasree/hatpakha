@@ -67,6 +67,11 @@ final class DeskWriter
                 ."\n• অনুভব: ".trim((string) ($plan['feeling'] ?? ''))."\n• শেষের ছবি: ".trim((string) ($plan['closing_image'] ?? ''))])->saveQuietly();
         }
 
+        // Owner (2026-11-08): every AI-written piece gets a meaningful cover from the designer (a proposal the owner approves).
+        Illustrator::queue($post, $section === 'heritage'
+            ? 'A symbolic or everyday scene from the piece (people, light, season, objects); never a drawing of a specific real temple, monument or place.'
+            : 'The dish or ingredient in its kitchen moment: warm light, hands at work, the season; appetising and real.');
+
         return [$post, null];
     }
 

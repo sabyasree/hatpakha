@@ -20,6 +20,9 @@ class ArchiveController extends Controller
         if (! $section) {
             return app(LegacyController::class)->fallback($request);  // merged old categories → 301
         }
+        if ($section->slug === 'dharabahik') {
+            return redirect()->to(\App\Support\Url::to('/dharabahik'), 301);   // D108: serials have their own page
+        }
         // D101: the children's section can be narrowed by age (?age=6-8); filtered lists stay out of Google.
         $age = $section->slug === Section::KIDS && array_key_exists((string) $request->query('age'), \App\Ai\KidsTeacher::AGES) ? (string) $request->query('age') : null;
         $posts = $section->posts()->published()->with('authors')->when($age, fn ($q) => $q->where('age_band', $age))

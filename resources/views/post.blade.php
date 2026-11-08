@@ -12,6 +12,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
             @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
+            @if ($post->serial_id && $post->serial?->isPublic())<a href="{{ $post->serial->url() }}" class="rounded-full border-2 border-navy px-3 py-0.5 font-bold hover:bg-peach-light">{{ $post->serial->title }} · পর্ব {{ \App\Support\Bn::num((string) $post->episode_no) }}</a>@endif
             @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
@@ -74,7 +75,26 @@
             </section>
         @endif
 
+        @if ($post->serial_id && $post->serial?->isPublic())
+            {{-- D108: a serial episode ends with "ক্রমশ" (to be continued), as Bengali magazines always printed it --}}
+            <div class="my-10 text-center font-hand text-3xl text-red">{{ $post->isLastEpisode() ? 'সমাপ্ত' : 'ক্রমশ…' }}</div>
+            <nav class="mb-8 rounded-2xl border-2 border-navy bg-sky-tint p-4" aria-label="ধারাবাহিকের পর্ব">
+                <div class="text-sm font-bold text-ink2">ধারাবাহিক: <a href="{{ $post->serial->url() }}" class="underline">{{ $post->serial->title }}</a></div>
+                @if ($post->episodeSibling(1))
+                    <a href="{{ $post->episodeSibling(1)->url() }}" class="mt-2 flex min-h-14 items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 font-bold text-white">
+                        <span>পরের পর্ব: {{ $post->episodeSibling(1)->episodeLabel() }}</span><span aria-hidden="true">→</span></a>
+                @elseif (! $post->isLastEpisode())
+                    <p class="mt-2 font-serif text-lg">পরের পর্ব আসবে {{ $post->serial->dayName() }}।</p>
+                    <div class="mt-3">@include('serial-follow', ['serial' => $post->serial, 'following' => $post->serial->isFollowedBy(auth()->user())])</div>
+                @endif
+                <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-bold">
+                    @if ($post->episodeSibling(-1))<a href="{{ $post->episodeSibling(-1)->url() }}" class="inline-flex min-h-11 items-center underline">← আগের পর্ব</a>@endif
+                    <a href="{{ $post->serial->url() }}" class="inline-flex min-h-11 items-center underline">সব পর্ব</a>
+                </div>
+            </nav>
+        @else
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
+        @endif
         @foreach (\App\Models\Collection::forPost($post->id) as $col)
             {{-- D97 (UX review): right where the piece ends, the next piece of its collection --}}
             @foreach ([\App\Models\Collection::nextAfter($col['ids'], $post->id)] as $nextPost)

@@ -90,6 +90,8 @@ class HomeController extends Controller
             'collection' => $col = \App\Models\Collection::featured(),
             'collectionPosts' => $col ? $col->posts()->take(3) : collect(),
             'isPick' => (bool) $pickPost,
+            // D108: running serials, the one with the newest episode first
+            'serials' => \App\Models\Serial::live()->limit(3)->get(),
             // D101: ছোটদের হাতপাখা — the alphabet and the newest children's piece
             'kids' => $kids = \App\Models\Section::where('slug', \App\Models\Section::KIDS)->where('is_active', true)->first(),
             'kidsPosts' => $kids ? $kids->posts()->published()->with('authors')->latest('published_at')->limit(2)->get() : collect(),

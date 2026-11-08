@@ -53,7 +53,7 @@ class Section extends Model
     {
         return \Illuminate\Support\Facades\Cache::remember('sections.menu', 600, function () {
             $live = self::where('is_active', true)->orderBy('sort')->get();
-            $link = fn (self $s) => [$s->name_bn, $s->url(), $s->slug === 'english' ? 'en' : 'bn'];
+            $link = fn (self $s) => [$s->name_bn, $s->slug === 'dharabahik' ? \App\Support\Url::to('/dharabahik') : $s->url(), $s->slug === 'english' ? 'en' : 'bn'];   // D108
             $groups = [];
             foreach (self::GROUPS as $key => $label) {
                 $links = $live->where('nav_group', $key)->map($link)->values()->all();
