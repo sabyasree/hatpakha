@@ -53,14 +53,25 @@ class SectionsMenuTest extends TestCase
         $sec = Section::updateOrCreate(['slug' => 'kitchen'], ['name_bn' => 'রান্নাঘরের গল্প', 'format' => 'prose', 'sort' => 46, 'nav_group' => 'life']);
         Author::create(['slug' => 'hatpakha-desk', 'display_name' => 'হাতপাখা ডেস্ক', 'is_desk' => true]);
         config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
-        \App\Ai\Claude::$fake = fn () => ['title' => 'নতুন গুড়', 'excerpt' => 'শীতের গুড়।', 'paragraphs' => ['প্রথম অনুচ্ছেদ।', 'দ্বিতীয় অনুচ্ছেদ।'],
-            'facts_to_check' => ['সংক্রান্তির তারিখ'], 'photo_ideas' => ['গুড় জ্বাল দেওয়া']];
+        $schema = null;
+        \App\Ai\Claude::$fake = function ($purpose, $user, $sch) use (&$schema) {
+            $schema = $sch;
+
+            return ['plan' => ['moment' => 'ভোরের কড়াই', 'feeling' => 'অপেক্ষা', 'details' => ['ধোঁয়া'], 'closing_image' => 'ঠান্ডা পাটালি'],
+                'title' => 'নতুন গুড়', 'excerpt' => 'শীতের গুড়।', 'paragraphs' => ['প্রথম অনুচ্ছেদ।', 'দ্বিতীয় অনুচ্ছেদ।'],
+                'facts_to_check' => ['সংক্রান্তির তারিখ'], 'photo_ideas' => ['গুড় জ্বাল দেওয়া']];
+        };
         [$post] = \App\Ai\DeskWriter::draft('kitchen', 'নলেন গুড়');
         \App\Ai\Claude::$fake = null;
 
         $this->assertSame('draft', $post->status);
         $this->assertSame(['hatpakha-desk'], $post->authors->pluck('slug')->all(), 'House byline, never a made-up person');
         $this->assertStringContainsString('সংক্রান্তির তারিখ', $post->ai_note);
+        $this->assertContains('plan', $schema['required'], 'D106: the writer plans one moment, a feeling and a closing image first');
+        $this->assertStringContainsString('শেষের ছবি: ঠান্ডা পাটালি', $post->ai_note);
+        $src = file_get_contents(app_path('Ai/DeskWriter.php'));
+        $this->assertStringContainsString('Show, do not explain', $src);
+        $this->assertStringContainsString('never a summary, a moral, a question to the reader', $src);
         $this->get('/'.$post->slug.'/')->assertNotFound();
 
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));

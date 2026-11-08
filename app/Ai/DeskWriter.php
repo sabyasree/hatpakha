@@ -17,12 +17,14 @@ use Illuminate\Support\Str;
 final class DeskWriter
 {
     public const SECTIONS = [
-        'heritage' => 'A heritage or festival piece: a place, a craft, a ritual or a festival of Bengal (both Bengals). '
-            .'Ground it in what a visitor or participant actually sees, hears and does; then the history in plain words; then how it lives today. '
-            .'Only facts that are widely documented. Dates and names you are not fully sure of go in facts_to_check, and are written cautiously in the text ("সপ্তদশ শতকে", not an exact year).',
-        'kitchen' => 'A food piece in the "কিচেন স্টোরি" spirit: one dish, ingredient or kitchen custom of Bengal, as culture and memory of a people, '
-            .'not a recipe card. When and why it is cooked, how it changes between regions and households (ঘটি-বাঙাল, দুই বাংলা), the season and festival around it, '
-            .'how it is made described in flowing prose. No invented family memories or invented people: write about how it is done "in many homes", not "my grandmother".',
+        // D106 (owner): literary essays, not information. One moment, seen closely; the facts stay in the background.
+        'heritage' => 'A literary essay (রম্যরচনা / স্মৃতিগদ্যের ধাঁচ) about one place, craft, ritual or festival of Bengal. '
+            .'Do not survey its history, regions or variations. Choose ONE moment of it (an hour, a sound, a gesture, the light) and stay there; '
+            .'let at most two or three facts arrive inside the scene, the way a person who was there would mention them, never as explanation.',
+        'kitchen' => 'A literary essay about one dish, ingredient or kitchen custom of Bengal, in the spirit of Bengali food writing that is really about time, '
+            .'season, people and longing (the tradition of Buddhadeva Bose\'s "ভোজনশিল্পী বাঙালী" or Leela Majumdar\'s kitchen prose; never copy them). '
+            .'Not a recipe, not a catalogue of varieties or regions: no lists of dish names, no "in East Bengal… in West Bengal…" survey. '
+            .'Stay with one kitchen-moment (the smell reaching the stairs, the waiting, the first bite in the cold) and let the method appear only through it.',
     ];
 
     public static function draft(string $section, string $topic): array
@@ -34,24 +36,42 @@ final class DeskWriter
         }
         $system = 'You write for Hatpakha (হাতপাখা), a Bengali literary web magazine, as its editorial desk (byline: হাতপাখা ডেস্ক). '
             .self::SECTIONS[$section].' '
-            .'Write the way a good Bengali magazine essayist writes: standard, simple চলিত বাংলা; concrete nouns and real detail over adjectives; '
-            .'sentences of different lengths; a specific opening scene or fact, never a general statement about Bengal or culture; no headings, no bullet lists, no summary paragraph at the end; '
-            .'no stock phrases such as "বলা বাহুল্য", "সব মিলিয়ে", "এক কথায়", "অপরিসীম", "অবিচ্ছেদ্য অংশ", "আজও অমলিন", "সমৃদ্ধ ঐতিহ্য". '
-            .'Never invent people, quotes, statistics, personal memories or events. 600-850 words. '
-            .'Return: title (short, evocative, Bengali), excerpt (one sentence), paragraphs, facts_to_check (each specific claim, date or name the editor should verify, with where to check), '
-            .'photo_ideas (2-3 real photos the editor could take or license; no AI pictures of real monuments).';
+            // What makes it literature rather than information (owner, 2026-11-08).
+            .'Write as a Bengali essayist writes, not as an encyclopedia or a feature writer. '
+            .'Show, do not explain: a scene in present tense or a remembered "সেই সময়" in the plural ("আমরা", "পাড়ায়"), with the senses (smell, sound, cold, light, texture) doing the work. '
+            .'Choose few details and make them exact; leave out most of what you know. One feeling should run under the whole piece (longing, patience, the passing of a season, a household\'s small ceremony), never named outright. '
+            .'Let the piece turn once (a small surprise, a shift from then to now, from the many to the one) and end on an image or a quiet line, never a summary, a moral, a question to the reader or an invitation to write in. '
+            .'Prose: standard, natural চলিত বাংলা with its own rhythm: short and long sentences, the occasional sentence fragment, a fresh image in place of an adjective. Bengali idiom, not translated English. '
+            .'Avoid everything that sounds machine-made: no general opening about Bengal, Bengalis or culture; no "বাঙালির কাছে … মানেই …"; no lists of three; no rhetorical questions; no explaining what a detail means; '
+            .'no headings, no bullet lists, no closing paragraph that sums up or looks to the future; no stock phrases such as "বলা বাহুল্য", "সব মিলিয়ে", "এক কথায়", "অপরিসীম", "অবিচ্ছেদ্য অংশ", "আজও অমলিন", "সমৃদ্ধ ঐতিহ্য", "এক অদ্ভুত", "ভোলা যায় না". '
+            .'Honesty: never invent named people, quotes, statistics, dates or events, and never claim a personal memory as a real fact ("আমার ঠাকুমা"). '
+            .'Unnamed, typical scenes ("কোনো এক উঠোনে", "পাড়ার মোড়ের দোকানে") are fine; every factual claim must be widely documented, and anything you are not sure of goes in facts_to_check and is left vague in the text. '
+            .'450-750 words. First fill plan (the one moment, the feeling under it, the 4-6 exact details you chose, the closing image), then write. '
+            .'Return: plan, title (short, evocative, not a label; Bengali), excerpt (one line that makes a reader want to read, not a summary), paragraphs, '
+            .'facts_to_check (each specific claim, date or name the editor should verify, with where to check), photo_ideas (2-3 real photos the editor could take or license; no AI pictures of real monuments).';
         [$d, $err] = Claude::json('copy', $system, "<topic>\n".e($topic)."\n</topic>",
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'excerpt', 'paragraphs', 'facts_to_check', 'photo_ideas'], 'properties' => [
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['plan', 'title', 'excerpt', 'paragraphs', 'facts_to_check', 'photo_ideas'], 'properties' => [
+                'plan' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['moment', 'feeling', 'details', 'closing_image'], 'properties' => [
+                    'moment' => ['type' => 'string'], 'feeling' => ['type' => 'string'],
+                    'details' => ['type' => 'array', 'items' => ['type' => 'string']], 'closing_image' => ['type' => 'string'],
+                ]],
                 'title' => ['type' => 'string'], 'excerpt' => ['type' => 'string'],
                 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'facts_to_check' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'photo_ideas' => ['type' => 'array', 'items' => ['type' => 'string']],
-            ]], null, 6000);
+            ]], (string) config('ai.anthropic.writer_model'), 7000);
         if (! is_array($d) || empty($d['paragraphs'])) {
             return [null, $err ?: 'খসড়া তৈরি হয়নি।'];
         }
 
-        return [self::save($sec, $desk, (string) $d['title'], (string) $d['excerpt'], (array) $d['paragraphs'], (array) $d['facts_to_check'], (array) $d['photo_ideas']), null];
+        $post = self::save($sec, $desk, (string) $d['title'], (string) $d['excerpt'], (array) $d['paragraphs'], (array) $d['facts_to_check'], (array) $d['photo_ideas']);
+        if (is_array($plan = $d['plan'] ?? null)) {
+            // D106: what the writer aimed for, so the owner can judge and rewrite with it in mind.
+            $post->forceFill(['ai_note' => $post->ai_note."\n\nলেখার ভাবনা:\n• মুহূর্ত: ".trim((string) ($plan['moment'] ?? ''))
+                ."\n• অনুভব: ".trim((string) ($plan['feeling'] ?? ''))."\n• শেষের ছবি: ".trim((string) ($plan['closing_image'] ?? ''))])->saveQuietly();
+        }
+
+        return [$post, null];
     }
 
     /** Store a desk draft (also used for the example pieces). */

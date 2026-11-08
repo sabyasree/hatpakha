@@ -14,6 +14,8 @@ return [
         // Owner-approved plan: mid tier for submission reviews, small tier for tags/SEO.
         'review_model' => env('ANTHROPIC_REVIEW_MODEL', 'claude-sonnet-5-5'),
         'tags_model' => env('ANTHROPIC_TAGS_MODEL', 'claude-haiku-5-5'),
+        // D106: literary desk drafts need the strongest writer (a few cents a piece).
+        'writer_model' => env('ANTHROPIC_WRITER_MODEL', 'claude-opus-5-5'),
         'effort' => env('ANTHROPIC_REVIEW_EFFORT', 'medium'),
     ],
     'openai' => [
