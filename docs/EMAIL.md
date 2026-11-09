@@ -2,6 +2,8 @@
 
 Two senders, one address: every e-mail comes **from `chithi@hatpakha.com`**.
 
+> **An existing mailbox works too** (owner has `editor@hatpakha.com`): use it everywhere this guide says `chithi@hatpakha.com` and skip creating a new mailbox in step 1. Amazon SES verifies the whole domain, so any `@hatpakha.com` address can send. If you later change that mailbox's password in Hostinger, update `MAIL_PASSWORD` in ENV_FILE the same day, or account e-mails stop.
+
 | What | Sent through | Why |
 |---|---|---|
 | Sign-up confirmation, password reset, login codes, the editor's decisions, notes to a writer | **Hostinger email** (`MAIL_*`) | Few e-mails; part of the Hostinger plan already |
