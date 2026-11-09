@@ -12,7 +12,7 @@ class EditPage extends EditRecord
     // No delete button: pages are unpublished (খসড়া) instead; deleting content needs the owner (CLAUDE.md §3).
     protected function getHeaderActions(): array
     {
-        return [];
+        return [\App\Filament\Support\Deleting::page(static::$resource)];
     }
 
     /** Marks the page as edited here, so a refresh from database/content/pages never overwrites it. */

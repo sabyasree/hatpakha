@@ -29,6 +29,8 @@ class SectionsTable
             ->recordActions([
                 Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Section $record) => $record->url())->openUrlInNewTab(),
                 EditAction::make(),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Section::class)])]);
     }
 }

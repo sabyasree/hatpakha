@@ -97,7 +97,8 @@ class NewsletterResource extends Resource
                 TextColumn::make('sent')->label(__('পাঠানো'))->formatStateUsing(fn ($state, Newsletter $record) => $record->recipients ? \App\Support\Bn::num($state.' / '.$record->recipients) : '—'),
                 TextColumn::make('updated_at')->label(__('শেষ বদল'))->since(),
             ])
-            ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন'))]);
+            ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন')), \App\Filament\Support\Deleting::row()])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Newsletter::class)])]);
     }
 
     public static function getPages(): array

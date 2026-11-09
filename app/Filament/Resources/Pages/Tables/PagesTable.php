@@ -27,7 +27,9 @@ class PagesTable
             ->recordActions([
                 EditAction::make(),
                 Action::make('view')->label(__('দেখুন'))->url(fn ($record) => $record->url())->openUrlInNewTab(),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Page::class)])]);
         // No delete: unpublish (খসড়া) instead. Deleting content needs the owner (CLAUDE.md §3).
     }
 }

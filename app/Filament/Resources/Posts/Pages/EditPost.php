@@ -8,9 +8,6 @@ use App\Filament\Resources\Posts\Tables\PostsTable;
 use App\Models\Post;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPost extends EditRecord
@@ -199,11 +196,9 @@ class EditPost extends EditRecord
                     $this->refreshFormData(['featured_image_path']);
                     \Filament\Notifications\Notification::make()->title(__('প্রচ্ছদ সরানো হয়েছে'))->success()->send();
                 }),
-            ActionGroup::make([
-                DeleteAction::make()->visible($isAdmin),
-                ForceDeleteAction::make()->visible($isAdmin),
-                RestoreAction::make()->visible($isAdmin),
-            ])->visible($isAdmin),
+            // Owner, 2026-11-09: a plain red "মুছুন" button, not hidden in a menu.
+            \App\Filament\Support\Deleting::page(static::$resource),
+            ...\App\Filament\Support\Deleting::trashActions(),
         ];
     }
 

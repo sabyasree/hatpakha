@@ -23,6 +23,7 @@ class RedirectsTable
             ->filters([
                 SelectFilter::make('status_code')->label(__('ধরন'))->options([301 => __('৩০১'), 410 => __('৪১০')]),
             ])
-            ->recordActions([EditAction::make()]);
+            ->recordActions([EditAction::make(), \App\Filament\Support\Deleting::row()])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Redirect::class)])]);
     }
 }

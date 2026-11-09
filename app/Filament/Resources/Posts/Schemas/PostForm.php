@@ -20,7 +20,7 @@ class PostForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->columns(3)->components([
-            Section::make(__('লেখার পাঠ'))->columnSpan(2)->schema([
+            Section::make(__('লেখার পাঠ'))->collapsible()->columnSpan(2)->schema([
                 TextInput::make('title')->label(__('শিরোনাম'))->required()->maxLength(400),
                 TextInput::make('slug')->label(__('ঠিকানা'))->required()->maxLength(380)
                     ->helperText(__('প্রকাশিত লেখার ঠিকানা বদলালে পুরনো ঠিকানা থেকে পাঠক নিজে থেকেই নতুনটিতে পৌঁছবেন।'))
@@ -33,7 +33,7 @@ class PostForm
             ]),
             Group::make()->columnSpan(1)->schema([
                 // D101: children's pieces: age band and word meanings (the AI teacher suggests; the owner edits)
-                Section::make(__('ছোটদের হাতপাখা'))->visible(fn (?Post $record) => $record?->section?->slug === \App\Models\Section::KIDS)->schema([
+                Section::make(__('ছোটদের হাতপাখা'))->collapsible()->visible(fn (?Post $record) => $record?->section?->slug === \App\Models\Section::KIDS)->schema([
                     \Filament\Forms\Components\Select::make('age_band')->label(__('বয়স'))->options(\App\Support\Lang::t(\App\Ai\KidsTeacher::AGES)),
                     \Filament\Forms\Components\Repeater::make('glossary')->label(__('শব্দের মানে'))->schema([
                         TextInput::make('word')->label(__('শব্দ'))->required()->maxLength(40),
@@ -42,11 +42,11 @@ class PostForm
                     ])->columns(1)->reorderable()->addActionLabel(__('শব্দ যোগ করুন'))->maxItems(12)->defaultItems(0),
                 ]),
                 // D95: an AI draft's desk-only note (facts to check, photo ideas). Never shown to readers.
-                Section::make(__('এআই খসড়ার নোট'))->visible(fn (?Post $record) => filled($record?->ai_note))->schema([
+                Section::make(__('এআই খসড়ার নোট'))->collapsible()->visible(fn (?Post $record) => filled($record?->ai_note))->schema([
                     Placeholder::make('ai_note_text')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString('<div style="white-space:pre-wrap;line-height:1.7">'.e($record->ai_note).'</div>')),
                 ]),
                 // What an editor needs to decide on a form submission, without leaving the page.
-                Section::make(__('জমার তথ্য'))->visible(fn (?Post $record) => $record?->submitted_by !== null)->schema([
+                Section::make(__('জমার তথ্য'))->collapsible()->visible(fn (?Post $record) => $record?->submitted_by !== null)->schema([
                     Placeholder::make('writer')->label(__('লেখক অ্যাকাউন্ট'))
                         ->content(fn (Post $record) => ($record->submittedBy?->name ?? '—').' · '.($record->submittedBy?->email ?? '')),
                     Placeholder::make('writer_history')->label(__('এর আগে প্রকাশিত'))
@@ -63,7 +63,7 @@ class PostForm
                         ->content(fn (Post $record) => $record->review_note ?: '—'),
                 ]),
                 // D113: human readers' feedback on this AI-written piece, and the rewrite waiting beside the current text.
-                Section::make(__('মানুষের মতামত'))->visible(fn (?Post $record) => $record && ($record->rewrite_html || \App\Models\WritingFeedback::where('post_id', $record->id)->exists()))
+                Section::make(__('মানুষের মতামত'))->collapsible()->visible(fn (?Post $record) => $record && ($record->rewrite_html || \App\Models\WritingFeedback::where('post_id', $record->id)->exists()))
                     ->schema([
                         Placeholder::make('feedback_view')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(view('filament.post-feedback', ['post' => $record])->render())),
                     ])->footerActions([
@@ -80,7 +80,7 @@ class PostForm
                             ->action(fn (Post $record) => \App\Ai\Rewriter::discard($record)),
                     ]),
                 // D64: the cover, and any picture the designer has drawn for it, always visible on the edit page.
-                Section::make(__('প্রচ্ছদ'))->visible(fn (?Post $record) => $record !== null)->schema([
+                Section::make(__('প্রচ্ছদ'))->collapsible()->visible(fn (?Post $record) => $record !== null)->schema([
                     Placeholder::make('cover_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(
                         view('filament.post-cover', ['post' => $record])->render())),
                 ])->footerActions([
@@ -132,7 +132,7 @@ class PostForm
                         }),
                 ]),
                 // D73: the certificate, as the writer sees it (published pieces).
-                Section::make(__('শংসাপত্র'))->visible(fn (?Post $record) => (bool) $record?->isLive() && $record->authors()->where('is_desk', false)->exists())
+                Section::make(__('শংসাপত্র'))->collapsible()->visible(fn (?Post $record) => (bool) $record?->isLive() && $record->authors()->where('is_desk', false)->exists())
                     ->collapsible()->schema([
                         Placeholder::make('cert_now')->hiddenLabel()->content(function (Post $record) {
                             $c = \App\Models\Certificate::with('post.issue')->where('post_id', $record->id)->where('kind', 'publication')->whereNull('revoked_at')->first();
@@ -146,7 +146,7 @@ class PostForm
                         }),
                     ]),
                 // D67: the writer's own reading: listen, then approve or remove.
-                Section::make(__('লেখকের পাঠ'))->visible(fn (?Post $record) => (bool) $record?->audio_path)->schema([
+                Section::make(__('লেখকের পাঠ'))->collapsible()->visible(fn (?Post $record) => (bool) $record?->audio_path)->schema([
                     Placeholder::make('audio_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(
                         '<audio controls preload="none" src="'.e($record->audio_path).'" style="width:100%"></audio><div style="font-size:.85rem;opacity:.75;margin-top:.35rem">'
                         .e($record->audio_status === 'approved' ? __('লেখার পাতায় চলছে।') : __('অনুমোদনের অপেক্ষায়। শুনে ঠিক থাকলে অনুমোদন দিন।')).'</div>')),
@@ -157,7 +157,7 @@ class PostForm
                     \Filament\Actions\Action::make('removeAudio')->label(__('পাঠ সরান'))->icon('heroicon-o-trash')->color('gray')->size('sm')->requiresConfirmation()
                         ->action(fn (Post $record) => \App\Support\AudioReading::remove($record)),
                 ]),
-                Section::make(__('প্রকাশ'))->schema([
+                Section::make(__('প্রকাশ'))->collapsible()->schema([
                     Select::make('status')->label(__('অবস্থা'))->required()->default('draft')
                         ->options(\App\Support\Lang::t(\App\Filament\Resources\Posts\Tables\PostsTable::STATUS)),
                     DateTimePicker::make('published_at')->label(__('প্রকাশের সময়'))->native(false)->displayFormat('d/m/Y, h:i A')->seconds(false),
@@ -168,7 +168,7 @@ class PostForm
                     Select::make('language')->label(__('ভাষা'))->options(['bn' => __('বাংলা'), 'en' => __('ইংরেজি'), 'hi' => __('হিন্দি')])->required()->default('bn'),
                 ]),
             ]),
-            Section::make(__('গুগল ও শেয়ার'))->columnSpan(2)->collapsible()->schema([
+            Section::make(__('গুগল ও শেয়ার'))->collapsible()->columnSpan(2)->collapsible()->schema([
                 TextInput::make('seo_title')->label(__('গুগলের জন্য শিরোনাম'))->maxLength(70),
                 Textarea::make('seo_description')->label(__('গুগলের জন্য বিবরণ'))->maxLength(160)->rows(2),
                 Toggle::make('noindex')->label(__('গুগলে দেখাবে না')),

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Authors\Pages;
 
 use App\Filament\Resources\Authors\AuthorResource;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditAuthor extends EditRecord
@@ -35,7 +34,7 @@ class EditAuthor extends EditRecord
                 ->requiresConfirmation()->modalHeading(__('এঁর চোখে সাইটটি দেখুন'))
                 ->modalDescription(__('শুধু দেখা যাবে: কিছু বদলানো বা পাঠানো যাবে না। ৩০ মিনিট পরে বা "বন্ধ করুন" টিপলে শেষ হবে।'))
                 ->action(fn () => ($to = \App\Http\Middleware\ViewAs::start($this->record->user)) ? $this->redirect($to) : null),
-            DeleteAction::make(),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 }

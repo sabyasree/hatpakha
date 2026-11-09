@@ -133,6 +133,34 @@ class AiTeam extends Page
         Notification::make()->title(__('আবার কাজ দেওয়া হয়েছে'))->success()->send();
     }
 
+    /** Remove a finished or failed request from the list (owner, 2026-11-09). A queued one is cancelled the same way. */
+    public function deleteRequest(int $id): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $r = \App\Models\TeamRequest::findOrFail($id);
+        if ($r->status === 'running') {
+            Notification::make()->title(__('কাজ চলছে; শেষ হলে মুছতে পারবেন।'))->warning()->send();
+
+            return;
+        }
+        \App\Models\AuditLog::record('team_request.deleted', null, ['id' => $r->id, 'agent' => $r->agent, 'job' => $r->job]);
+        $r->delete();
+        Notification::make()->title(__('মুছে ফেলা হয়েছে'))->success()->send();
+    }
+
+    /** Clears every finished or failed request from the list. */
+    public function clearRequests(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $n = \App\Models\TeamRequest::whereIn('status', ['done', 'failed'])->delete();
+        \App\Models\AuditLog::record('team_request.cleared', null, ['count' => $n]);
+        Notification::make()->title(\App\Support\Bn::num((string) $n).__('টি মুছে ফেলা হয়েছে'))->success()->send();
+    }
+
     public function findTrends(): void
     {
         \App\Ai\TeamJobs::queue('scout', 'trends');

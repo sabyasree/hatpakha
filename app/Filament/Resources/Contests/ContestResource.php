@@ -63,7 +63,8 @@ class ContestResource extends Resource
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()->formatStateUsing(fn ($state) => __(Contest::STATUS[$state] ?? $state))
                     ->color(fn ($state) => ['open' => 'success', 'judging' => 'warning', 'done' => 'gray'][$state] ?? 'info'),
             ])
-            ->recordActions([EditAction::make()]);
+            ->recordActions([EditAction::make(), \App\Filament\Support\Deleting::row()])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Contest::class)])]);
     }
 
     public static function getPages(): array

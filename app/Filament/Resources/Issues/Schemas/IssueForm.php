@@ -24,14 +24,14 @@ class IssueForm
     {
         return $schema->components([
             // The AI editor's proposal (D42): what it chose and why. The owner approves from the top of the page.
-            \Filament\Schemas\Components\Section::make(__('এআই সম্পাদকের প্রস্তাব'))->columnSpanFull()
+            \Filament\Schemas\Components\Section::make(__('এআই সম্পাদকের প্রস্তাব'))->collapsible()->columnSpanFull()
                 ->visible(fn ($record) => filled($record?->ai_plan))
                 ->schema([
                     \Filament\Forms\Components\Placeholder::make('plan')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
                         view('filament.issue-plan', ['issue' => $record])->render())),
                 ]),
             // The graphic designer's issue cover (D51): AI artwork under our own Bengali masthead and title.
-            \Filament\Schemas\Components\Section::make(__('সংখ্যার প্রচ্ছদ'))->columnSpanFull()->collapsible()
+            \Filament\Schemas\Components\Section::make(__('সংখ্যার প্রচ্ছদ'))->collapsible()->columnSpanFull()->collapsible()
                 ->visible(fn ($record) => $record && ($record->cover_path || $record->proposed_cover_path))
                 ->schema([
                     \Filament\Forms\Components\Placeholder::make('cover')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(

@@ -110,6 +110,29 @@ class Marketing extends Page
         self::undoable($id, __('বাদ দেওয়া হলো'));
     }
 
+    /** Delete a weekly plan or a post for good (owner, 2026-11-09). Admins only, like every delete in the desk. */
+    public function deleteSocial(int $id): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $s = SocialPost::findOrFail($id);
+        AuditLog::record('marketing.deleted', null, ['social_post' => $s->id, 'kind' => $s->kind, 'title' => mb_substr((string) $s->title, 0, 120)]);
+        $s->delete();
+        Notification::make()->title(__('মুছে ফেলা হয়েছে'))->success()->send();
+    }
+
+    /** Clears the "পোস্ট করা / বাদ" list in one go. */
+    public function clearDone(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $n = SocialPost::where('kind', '!=', 'weekly')->where('status', '!=', 'ready')->delete();
+        AuditLog::record('marketing.cleared', null, ['count' => $n]);
+        Notification::make()->title(\App\Support\Bn::num((string) $n).__('টি মুছে ফেলা হয়েছে'))->success()->send();
+    }
+
     /** Undo (D70): back to "পোস্টের জন্য তৈরি". From the notification, or from the "পোস্ট করা / বাদ" list. */
     #[\Livewire\Attributes\On('mk-restore')]
     public function restore(int $id): void

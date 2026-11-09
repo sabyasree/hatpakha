@@ -85,6 +85,7 @@ class EditNewsletter extends EditRecord
             Action::make('cancel')->label(__('পাঠানো থামান'))->icon('heroicon-o-stop')->color('danger')->requiresConfirmation()
                 ->visible(fn (Newsletter $record) => in_array($record->status, ['queued', 'sending'], true))
                 ->action(fn (Newsletter $record) => $record->forceFill(['status' => 'cancelled'])->save()),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 }

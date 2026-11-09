@@ -1,7 +1,7 @@
 {{-- Contest entries and the contest manager's shortlist (D53). Inline styles: /desk has no utility CSS. --}}
 <div style="display:grid;gap:1rem;margin-top:1.5rem">
     @if ($shortlist->isNotEmpty())
-        <x-filament::section icon="heroicon-o-sparkles">
+        <x-filament::section icon="heroicon-o-sparkles" collapsible persist-collapsed collapse-id="hp-contest-entries-1">
             <x-slot name="heading">{{ __('এআই-এর বাছাই তালিকা (শুধু পরামর্শ)') }}</x-slot>
             <ol style="margin:0;padding-inline-start:1.4rem;list-style:decimal;line-height:1.9">
                 @foreach ($shortlist as $s)
@@ -11,7 +11,7 @@
             </ol>
         </x-filament::section>
     @endif
-    <x-filament::section>
+    <x-filament::section collapsible persist-collapsed collapse-id="hp-contest-entries-2">
         <x-slot name="heading">{{ __('জমা পড়া লেখা') }} ({{ \App\Support\Bn::num((string) $entries->count()) }})</x-slot>
         @forelse ($entries as $p)
             <div style="padding:.35rem 0;border-bottom:1px solid rgba(127,127,127,.15)">

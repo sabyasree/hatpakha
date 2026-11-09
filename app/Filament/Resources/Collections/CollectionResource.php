@@ -109,7 +109,9 @@ class CollectionResource extends Resource
                 Action::make('hide')->label(__('লুকান'))->icon('heroicon-o-eye-slash')->color('gray')->requiresConfirmation()
                     ->visible(fn (Collection $record) => $record->status === 'approved')
                     ->action(fn (Collection $record) => $record->forceFill(['status' => 'hidden'])->save()),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Collection::class)])]);
     }
 
     public static function approve(Collection $c): void

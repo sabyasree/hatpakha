@@ -23,7 +23,7 @@ class PageForm
                     ->disabledOn('edit')->helperText(__('একবার তৈরি হলে বদলানো যায় না।')),
                 RichEditor::make('body_html')->label(__('লেখা'))->columnSpanFull()
                     ->toolbarButtons([['bold', 'italic', 'link'], ['h2', 'h3'], ['bulletList', 'orderedList', 'blockquote'], ['undo', 'redo']]),
-                Section::make(__('প্রকাশ ও সার্চ'))->columns(2)->schema([
+                Section::make(__('প্রকাশ ও সার্চ'))->collapsible()->columns(2)->schema([
                     Select::make('status')->label(__('অবস্থা'))->options(['published' => __('প্রকাশিত'), 'draft' => __('খসড়া')])->required()->default('published'),
                     TextInput::make('sort')->label(__('ফুটারে ক্রম'))->numeric()->default(100),
                     Toggle::make('show_in_footer')->label(__('ফুটারে লিংক দেখাও')),

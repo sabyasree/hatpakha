@@ -12,7 +12,6 @@ use App\Models\Serial;
 use App\Models\WritingFeedback;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -85,8 +84,9 @@ class WritingRuleResource extends Resource
                 Action::make('piece')->label(__('লেখাটি'))->icon('heroicon-o-document-text')->color('gray')
                     ->visible(fn (WritingFeedback $r) => (bool) $r->post_id)->url(fn (WritingFeedback $r) => PostResource::getUrl('edit', ['record' => $r->post_id])),
                 EditAction::make(),
-                DeleteAction::make(),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\WritingFeedback::class)])]);
     }
 
     public static function getPages(): array

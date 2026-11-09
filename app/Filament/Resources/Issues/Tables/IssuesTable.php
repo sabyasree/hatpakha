@@ -28,6 +28,8 @@ class IssuesTable
                 Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->url(fn (Issue $record) => $record->url())->openUrlInNewTab()
                     ->visible(fn (Issue $record) => $record->status === 'published'),
                 EditAction::make(),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Issue::class)])]);
     }
 }

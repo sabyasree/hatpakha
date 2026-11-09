@@ -13,7 +13,7 @@
         .hp-stats span { font-size: .75rem; padding: .1rem .5rem; border-radius: 999px; background: rgba(127,127,127,.1); }
     </style>
 
-    <x-filament::section icon="heroicon-o-information-circle">
+    <x-filament::section icon="heroicon-o-information-circle" collapsible persist-collapsed collapse-id="hp-honours-1">
         <x-slot name="heading">{{ __('যেভাবে কাজ করে') }}</x-slot>
         <ol style="margin:0;padding-left:1.2rem;line-height:1.9">
             <li>{{ __('নিচের তালিকা থেকে বা যেকোনো লেখকের পাতা থেকে "সম্মান দিন" টিপুন: কোন সম্মান (মাসের লেখক, সম্পাদকের পছন্দের লেখক, নতুন প্রতিভা, হাতপাখা সম্মান) আর আপনার প্রশংসার কথা। চাইলে এআই প্রথম খসড়া লিখে দেবে।') }}</li>
@@ -25,7 +25,7 @@
     </x-filament::section>
 
     @if ($p = $d['proposal'])
-        <x-filament::section icon="heroicon-o-sparkles">
+        <x-filament::section icon="heroicon-o-sparkles" collapsible persist-collapsed collapse-id="hp-honours-2">
             <x-slot name="heading">{{ __('এআই সম্পাদকের প্রস্তাব') }}</x-slot>
             <strong>{{ $p->title }}</strong>
             @if ($p->payload['why'] ?? null)<p class="hp-muted" style="margin:.3rem 0 0">{{ $p->payload['why'] }}</p>@endif
@@ -53,7 +53,7 @@
         @endforelse
     </x-filament::section>
 
-    <x-filament::section icon="heroicon-o-star">
+    <x-filament::section icon="heroicon-o-star" collapsible persist-collapsed collapse-id="hp-honours-3">
         <x-slot name="heading">{{ __('এখন সম্মানিত') }} ({{ $n($d['honoured']->count()) }})</x-slot>
         @if ($d['honoured']->isEmpty())
             <div class="hp-muted">{{ __('এখনও কাউকে সম্মান দেওয়া হয়নি, তাই সাইটে কিছু দেখা যাচ্ছে না। নিচের তালিকা থেকে শুরু করুন।') }}</div>
@@ -78,7 +78,7 @@
         @endif
     </x-filament::section>
 
-    <x-filament::section icon="heroicon-o-trophy">
+    <x-filament::section icon="heroicon-o-trophy" collapsible persist-collapsed collapse-id="hp-honours-4">
         <x-slot name="heading">{{ __('যাঁদের সম্মান দেওয়া যায়') }}</x-slot>
         <x-slot name="description">{{ __('লেখার মানই আগে: এআই সম্পাদক প্রত্যেকের কয়েকটি লেখা পড়ে নম্বর দেয়, সেটাই ক্রম ঠিক করে। লেখার সংখ্যা সামান্য গুরুত্ব পায় (যত বেশিই হোক), সাম্প্রতিক লেখা বেশি; পাঠকের ভালো লাগা, মতামত আর পড়া যোগ হয়। যাঁদের লেখা এখনও পড়া হয়নি, তাঁরা পরে। শেষ সিদ্ধান্ত আপনার।') }}</x-slot>
         @if ($d['reading'])

@@ -61,6 +61,18 @@ class Post extends Model
 
     protected static function booted(): void
     {
+        // Never break an old URL (CLAUDE.md §2): a published piece moved to the trash answers 410 Gone, not 404;
+        // bringing it back removes that. An existing redirect for the same path (e.g. a merge 301) is left alone.
+        static::deleted(function (self $post) {
+            if ($post->status === 'published' && filled($post->slug)) {
+                Redirect::firstOrCreate(['from_path' => '/'.$post->slug.'/'], ['to_path' => null, 'status_code' => 410]);
+            }
+        });
+        static::restored(function (self $post) {
+            if (filled($post->slug)) {
+                Redirect::where('from_path', '/'.$post->slug.'/')->where('status_code', 410)->whereNull('to_path')->delete();
+            }
+        });
         static::saving(function (self $post) {
             // D104 (owner): the old unanswered submissions are never published unless their writer said yes to the apology letter.
             if ($post->exists && $post->isDirty('status') && in_array($post->status, ['published', 'scheduled'], true)

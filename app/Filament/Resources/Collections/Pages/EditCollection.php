@@ -21,6 +21,7 @@ class EditCollection extends EditRecord
                 }),
             Action::make('open')->label(__('পাতা দেখুন'))->icon('heroicon-o-eye')->color('gray')
                 ->visible(fn () => filled($this->record->slug))->url(fn () => $this->record->url(), shouldOpenInNewTab: true),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 

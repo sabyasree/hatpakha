@@ -1,5 +1,6 @@
 {{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
 @php($d = $this->data())
+@php($isAdmin = \App\Filament\Support\Deleting::isAdmin())
 <x-filament-panels::page>
     <style>
         .hp-mk { display: grid; gap: 1rem; }
@@ -24,7 +25,7 @@
     </x-filament::section>
 
     {{-- The weekly plan, pinned (D70). --}}
-    <x-filament::section icon="heroicon-o-calendar-days">
+    <x-filament::section icon="heroicon-o-calendar-days" collapsible persist-collapsed collapse-id="hp-marketing-1">
         <x-slot name="heading">{{ __('সপ্তাহের পরিকল্পনা') }}</x-slot>
         <x-slot name="afterHeader">
             <x-filament::button size="sm" color="gray" icon="heroicon-o-forward" wire:click="nextWeek" wire:loading.attr="disabled" wire:target="nextWeek">
@@ -36,7 +37,12 @@
             <div style="{{ $loop->first ? '' : 'margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(127,127,127,.25)' }}">
                 <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
                     <strong>{{ $plan->title }}</strong>
-                    <span class="hp-muted">{{ $plan->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
+                    <span style="display:flex;gap:.5rem;align-items:center">
+                        <span class="hp-muted">{{ $plan->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
+                        @if ($isAdmin)
+                            <x-filament::button size="xs" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteSocial({{ $plan->id }})" wire:confirm="{{ __('এই পরিকল্পনাটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।') }}">{{ __('মুছুন') }}</x-filament::button>
+                        @endif
+                    </span>
                 </div>
                 <ul style="margin:.4rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ((array) ($plan->texts['plan'] ?? []) as $line)<li>{{ $line }}</li>@endforeach</ul>
                 @if (filled($plan->texts['facebook'] ?? '') || filled($plan->texts['whatsapp'] ?? ''))
@@ -86,6 +92,9 @@
     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
         <x-filament::button size="sm" :color="$filter === 'ready' ? 'primary' : 'gray'" wire:click="$set('filter', 'ready')">{{ __('পোস্টের জন্য তৈরি') }}</x-filament::button>
         <x-filament::button size="sm" :color="$filter === 'done' ? 'primary' : 'gray'" wire:click="$set('filter', 'done')">{{ __('পোস্ট করা / বাদ') }}</x-filament::button>
+        @if ($isAdmin && $filter === 'done' && $d['items']->isNotEmpty())
+            <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="clearDone" wire:confirm="{{ __('পোস্ট করা ও বাদ দেওয়া সব পোস্ট মুছে ফেলবেন? এগুলো আর ফেরানো যাবে না।') }}">{{ __('এই তালিকা খালি করুন') }}</x-filament::button>
+        @endif
         <span class="hp-muted">{{ $filter === 'done' ? __('ভুল করে সরানো কিছু থাকলে "ফিরিয়ে আনুন" টিপুন।') : __('কপি করে পোস্ট করুন, তারপর "পোস্ট করেছি" টিপুন।') }}</span>
     </div>
 
@@ -129,11 +138,17 @@
                         <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="posted({{ $s->id }})">{{ __('পোস্ট করেছি') }}</x-filament::button>
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-x-mark" wire:click="dismiss({{ $s->id }})">{{ __('পোস্ট করব না') }}</x-filament::button>
                         <span class="hp-muted">{{ __('দুটোই পরে ফেরানো যায়।') }}</span>
+                        @if ($isAdmin)
+                            <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteSocial({{ $s->id }})" wire:confirm="{{ __('এই পোস্টটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।') }}">{{ __('মুছুন') }}</x-filament::button>
+                        @endif
                     </div>
                 @else
                     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
                         <span class="hp-muted">{{ $s->status === 'posted' ? '✓ '.__('পোস্ট করা হয়েছে') : __('বাদ দেওয়া') }}</span>
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-uturn-left" wire:click="restore({{ $s->id }})">{{ __('ফিরিয়ে আনুন') }}</x-filament::button>
+                        @if ($isAdmin)
+                            <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteSocial({{ $s->id }})" wire:confirm="{{ __('এই পোস্টটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।') }}">{{ __('মুছুন') }}</x-filament::button>
+                        @endif
                     </div>
                 @endif
             </div>

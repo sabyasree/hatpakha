@@ -24,7 +24,7 @@
     </x-filament::section>
 
     {{-- D102: choose the voice by ear, separately for the alphabet and for rhymes and stories --}}
-    <x-filament::section icon="heroicon-o-speaker-wave">
+    <x-filament::section icon="heroicon-o-speaker-wave" collapsible persist-collapsed collapse-id="hp-kids-corner-1">
         <x-slot name="heading">{{ __('কণ্ঠ বাছাই') }}</x-slot>
         <x-slot name="description">{{ __('প্রতিটি কণ্ঠে একই লাইন শুনে বেছে নিন। বাছাইয়ের পরে নতুন পাঠ সেই কণ্ঠে হবে।') }}</x-slot>
         <x-slot name="afterHeader">
@@ -62,7 +62,7 @@
         @endif
     </x-filament::section>
 
-    <x-filament::section icon="heroicon-o-language">
+    <x-filament::section icon="heroicon-o-language" collapsible persist-collapsed collapse-id="hp-kids-corner-2">
         <x-slot name="heading">{{ __('বর্ণমালা') }}</x-slot>
         <x-slot name="afterHeader">
             <x-filament::button size="sm" color="gray" wire:click="approveAll('pic')">{{ __('সব ছবি অনুমোদন') }}</x-filament::button>
@@ -100,7 +100,7 @@
         </div>
     </x-filament::section>
 
-    <x-filament::section icon="heroicon-o-book-open">
+    <x-filament::section icon="heroicon-o-book-open" collapsible persist-collapsed collapse-id="hp-kids-corner-3">
         <x-slot name="heading">{{ __('ছোটদের লেখা') }}</x-slot>
         @if ($d['pieces']->isEmpty())
             <div class="hp-muted">{{ __('এখনও কোনো লেখা নেই।') }}</div>

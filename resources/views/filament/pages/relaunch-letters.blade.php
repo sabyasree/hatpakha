@@ -13,7 +13,7 @@
         .hp-r-table td, .hp-r-table th { padding: .45rem .5rem; text-align: left; border-bottom: 1px solid rgba(127,127,127,.2); vertical-align: top; }
     </style>
 
-    <x-filament::section icon="heroicon-o-information-circle">
+    <x-filament::section icon="heroicon-o-information-circle" collapsible persist-collapsed collapse-id="hp-relaunch-letters-1">
         <x-slot name="heading">{{ __('কীভাবে চলে') }}</x-slot>
         <ul style="margin:0;padding-left:1.2rem;line-height:1.9">
             <li>{{ __('প্রথমে এআই সম্পাদক প্রতিটি পুরনো লেখা একবার পড়ে বলে: জিজ্ঞেস করার মতো, না খুব দুর্বল। আপনি যেকোনোটি বদলাতে পারেন।') }}</li>
@@ -36,7 +36,7 @@
     </div>
 
     {{-- Owner (D104): read first; only pieces worth publishing are asked about --}}
-    <x-filament::section icon="heroicon-o-funnel">
+    <x-filament::section icon="heroicon-o-funnel" collapsible persist-collapsed collapse-id="hp-relaunch-letters-2">
         <x-slot name="heading">{{ __('লেখা বাছাই') }}</x-slot>
         <x-slot name="description">{{ __('এআই সম্পাদকের মত ও কারণ শুধু আপনার জন্য; লেখক কখনও দেখেন না।') }}</x-slot>
         <x-slot name="afterHeader">
@@ -74,7 +74,7 @@
         @endif
     </x-filament::section>
 
-    <x-filament::section icon="heroicon-o-envelope">
+    <x-filament::section icon="heroicon-o-envelope" collapsible persist-collapsed collapse-id="hp-relaunch-letters-3">
         <x-slot name="heading">{{ __('চিঠি') }}</x-slot>
         <x-slot name="description">
             @if ($d['waiting'])
@@ -107,7 +107,7 @@
         </x-filament::section>
     @endif
 
-    <x-filament::section icon="heroicon-o-hand-thumb-up">
+    <x-filament::section icon="heroicon-o-hand-thumb-up" collapsible persist-collapsed collapse-id="hp-relaunch-letters-4">
         <x-slot name="heading">{{ __('যাঁরা প্রকাশ চান') }}</x-slot>
         @if ($d['yes']->isEmpty())
             <div class="hp-muted">{{ __('এখনও কোনো উত্তর আসেনি।') }}</div>

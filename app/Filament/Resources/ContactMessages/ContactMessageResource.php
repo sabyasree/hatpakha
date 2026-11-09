@@ -88,7 +88,9 @@ class ContactMessageResource extends Resource
                 $mark('replied', 'উত্তর দিয়েছি', 'heroicon-o-check', 'replied', 'success'),
                 $mark('closed', 'হয়ে গেছে', 'heroicon-o-archive-box', 'closed'),
                 $mark('spam', 'স্প্যাম', 'heroicon-o-no-symbol', 'spam'),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\ContactMessage::class)])]);
     }
 
     public static function getPages(): array

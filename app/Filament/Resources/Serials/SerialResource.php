@@ -69,7 +69,7 @@ class SerialResource extends Resource
             Section::make(__('গল্পের পরিকল্পনা (শুধু ডেস্কে)'))->collapsible()->schema([
                 \Filament\Forms\Components\Placeholder::make('bible_view')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(self::bibleHtml($record))),
             ]),
-            Section::make(__('পর্ব'))->schema([
+            Section::make(__('পর্ব'))->collapsible()->schema([
                 \Filament\Forms\Components\Placeholder::make('episodes_view')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(self::episodesHtml($record))),
             ]),
         ]);
@@ -90,7 +90,9 @@ class SerialResource extends Resource
                 EditAction::make()->label(__('খুলুন')),
                 Action::make('open')->label(__('পাতা দেখুন'))->icon('heroicon-o-eye')->color('gray')
                     ->visible(fn (Serial $record) => $record->isPublic())->url(fn (Serial $record) => $record->url(), shouldOpenInNewTab: true),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Serial::class)])]);
     }
 
     public static function start(Serial $s): void

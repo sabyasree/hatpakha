@@ -8,7 +8,6 @@ use App\Filament\Resources\Issues\IssueResource;
 use App\Filament\Resources\Posts\PostResource;
 use App\Models\Issue;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
@@ -86,7 +85,7 @@ class EditIssue extends EditRecord
                            : Notification::make()->title(__('হলো না'))->body($err)->warning()->send();
                     $this->refreshFormData(['title', 'theme_key', 'kind']);
                 }),
-            DeleteAction::make()->visible($isAdmin),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 }

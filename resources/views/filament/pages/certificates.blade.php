@@ -12,7 +12,7 @@
         .hp-row:last-child { border-bottom: 0; }
     </style>
 
-    <x-filament::section icon="heroicon-o-information-circle">
+    <x-filament::section icon="heroicon-o-information-circle" collapsible persist-collapsed collapse-id="hp-certificates-1">
         <x-slot name="heading">{{ __('কীভাবে চলে') }}</x-slot>
         <ul style="margin:0;padding-left:1.2rem;line-height:1.9">
             <li>{{ $d['auto'] ? __('নতুন লেখা প্রকাশ হলে কয়েক মিনিটের মধ্যে শংসাপত্র নিজে থেকে তৈরি হয়; অ্যাকাউন্ট থাকলে লেখক ই-মেল পান।') : __('নিজে থেকে শংসাপত্র দেওয়া এখন বন্ধ; প্রতিটি শংসাপত্র আপনি দেন।') }}</li>
@@ -24,7 +24,7 @@
     </x-filament::section>
 
     @if ($d['requests']->isNotEmpty())
-        <x-filament::section id="requests" icon="heroicon-o-hand-raised">
+        <x-filament::section id="requests" icon="heroicon-o-hand-raised" collapsible persist-collapsed collapse-id="hp-certificates-2">
             <x-slot name="heading">{{ __('লেখকদের অনুরোধ') }} ({{ $n($d['requests']->count()) }})</x-slot>
             @foreach ($d['requests'] as $task)
                 <div class="hp-row" wire:key="rq-{{ $task->id }}">
@@ -38,7 +38,7 @@
         </x-filament::section>
     @endif
 
-    <x-filament::section icon="heroicon-o-swatch">
+    <x-filament::section icon="heroicon-o-swatch" collapsible persist-collapsed collapse-id="hp-certificates-3">
         <x-slot name="heading">{{ __('শংসাপত্রের ধরন') }}</x-slot>
         <x-slot name="description">{{ __('কোন লেখা কোন নকশা পাবে, তা নিজে থেকে ঠিক হয়। নমুনায় সত্যিকারের শংসাপত্র থাকলে সেটাই দেখানো হয়েছে।') }}</x-slot>
         <div class="hp-gallery">

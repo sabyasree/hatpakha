@@ -55,7 +55,7 @@
     <div class="hp-dash">
         {{-- LEFT: everything waiting for a decision --}}
         <div class="hp-col">
-            <x-filament::section id="approvals" icon="heroicon-o-check-badge">
+            <x-filament::section id="approvals" icon="heroicon-o-check-badge" collapsible persist-collapsed collapse-id="hp-today-1">
                 <x-slot name="heading">{{ __('আপনার অনুমোদনের অপেক্ষায়') }}</x-slot>
                 <x-slot name="description">{{ __('খুলে দেখুন, দরকার হলে বদলান, তারপর এক ক্লিকে অনুমোদন।') }}</x-slot>
 
@@ -117,7 +117,7 @@
 
             @if ($t['tasks']->isNotEmpty())
                 {{-- The AI editor's other jobs (D48): nothing is sent or shown until you click. --}}
-                <x-filament::section id="tasks" icon="heroicon-o-briefcase">
+                <x-filament::section id="tasks" icon="heroicon-o-briefcase" collapsible persist-collapsed collapse-id="hp-today-2">
                     <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
                     <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
                     @php($labels = ['followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'collection_add' => __('সংকলনে নতুন লেখা'), 'kids_alphabet' => __('ছোটদের বর্ণমালা'), 'serial' => __('নতুন ধারাবাহিক'), 'serial_episode' => __('ধারাবাহিকের পর্ব'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'certificate_request' => __('লেখকের শংসাপত্রের অনুরোধ'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক'), 'audio' => __('লেখকের পাঠ (অডিও)')])
@@ -151,7 +151,7 @@
                 </x-filament::section>
             @endif
 
-            <x-filament::section id="comments" icon="heroicon-o-chat-bubble-left-right">
+            <x-filament::section id="comments" icon="heroicon-o-chat-bubble-left-right" collapsible persist-collapsed collapse-id="hp-today-3">
                 <x-slot name="heading">{{ __('পাঠকের মন্তব্য') }}</x-slot>
                 <x-slot name="description">{{ __('এআই আগেই পড়ে রেখেছে। "ঠিক আছে" চিহ্নিতগুলো একসঙ্গে প্রকাশ করতে পারেন।') }}</x-slot>
                 @if ($t['commentsOk'])
@@ -182,7 +182,7 @@
 
         {{-- RIGHT: the AI editor, the publishing calendar, the next issue --}}
         <div class="hp-col">
-            <x-filament::section icon="heroicon-o-sparkles">
+            <x-filament::section icon="heroicon-o-sparkles" collapsible persist-collapsed collapse-id="hp-today-4">
                 <x-slot name="heading">{{ __('এআই সম্পাদক') }}</x-slot>
                 <div style="line-height:1.9">
                     <div>{{ __('অবস্থা:') }} <x-filament::badge :color="$aiState[1]">{{ $aiState[0] }}</x-filament::badge></div>
@@ -212,7 +212,7 @@
             </x-filament::section>
 
             @if ($t['isAdmin'])
-                <x-filament::section icon="heroicon-o-book-open">
+                <x-filament::section icon="heroicon-o-book-open" collapsible persist-collapsed collapse-id="hp-today-5">
                     <x-slot name="heading">{{ __('পরের সংখ্যা') }}</x-slot>
                     @if ($t['issue'])
                         <p style="margin:0">{{ __('প্রস্তাব তৈরি:') }} <strong>{{ $t['issue']->title }}</strong>{{ __('। "সংখ্যা দেখুন" চাপুন।') }}</p>
@@ -227,7 +227,7 @@
                 </x-filament::section>
             @endif
 
-            <x-filament::section icon="heroicon-o-calendar-days">
+            <x-filament::section icon="heroicon-o-calendar-days" collapsible persist-collapsed collapse-id="hp-today-6">
                 <x-slot name="heading">{{ __('প্রকাশের সূচি (দুই সপ্তাহ)') }}</x-slot>
                 <x-slot name="description">{{ __('সোম/বুধ/শুক্র সকাল ৯টা নিয়মিত দিন। খালি দিনে নতুন লেখা বসবে।') }}</x-slot>
                 @foreach ($t['week']->filter(fn ($d) => $d['slot'] || $d['posts']->isNotEmpty()) as $d)

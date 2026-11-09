@@ -52,6 +52,7 @@ class EditContest extends EditRecord
                     Notification::make()->title(__('ফলাফলের খসড়া তৈরি'))->success()
                         ->actions([Action::make('open')->label(__('খুলুন'))->url(PostResource::getUrl('edit', ['record' => $post]))])->send();
                 }),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 

@@ -50,7 +50,7 @@
 
     {{-- 2. The plan --}}
     <div class="hp-grid2">
-        <x-filament::section icon="heroicon-o-calendar-days">
+        <x-filament::section icon="heroicon-o-calendar-days" collapsible persist-collapsed collapse-id="hp-ai-team-1">
             <x-slot name="heading">{{ __('পরের কাজ') }}</x-slot>
             <x-slot name="description">{{ __('দল নিজে থেকে কখন কী করবে') }}</x-slot>
             <div class="hp-list">
@@ -81,7 +81,7 @@
             </div>
         </x-filament::section>
 
-        <x-filament::section icon="heroicon-o-inbox-stack">
+        <x-filament::section icon="heroicon-o-inbox-stack" collapsible persist-collapsed collapse-id="hp-ai-team-2">
             <x-slot name="heading">{{ __('যে কাজ বাকি') }}</x-slot>
             <x-slot name="description">{{ __('দল এগুলো ধীরে ধীরে শেষ করছে; আপনাকে কিছু করতে হবে না') }}</x-slot>
             @php($max = max(1, ...array_column($d['plan']['queues'], 1)))
@@ -96,7 +96,7 @@
     </div>
 
     {{-- The strategist's plan for the month (D63) --}}
-    <x-filament::section icon="heroicon-o-light-bulb">
+    <x-filament::section icon="heroicon-o-light-bulb" collapsible persist-collapsed collapse-id="hp-ai-team-3">
         <x-slot name="heading">{{ __('এই মাসের কৌশল') }}</x-slot>
         <x-slot name="description">{{ $d['strategy'] ? __('কৌশলবিদের পরিকল্পনা').', '.$n($d['strategy']['at']).'। '.__('সম্পাদক, মার্কেটিং, কপিরাইটার আর প্রধান সম্পাদক এই অগ্রাধিকার মেনে কাজ করে।') : __('প্রতি মাসের ১ তারিখে কৌশলবিদ বাজার ও অন্য পত্রিকার খোঁজ নিয়ে পরিকল্পনা দেবে।') }}</x-slot>
         <x-slot name="afterHeader">
@@ -145,9 +145,14 @@
     {{-- Work the owner gave the team by hand (D72) --}}
     @php($busy = $d['requests']->whereIn('status', ['queued', 'running'])->isNotEmpty())
     <div @if ($busy) wire:poll.15s @endif>
-    <x-filament::section icon="heroicon-o-clipboard-document-check">
+    <x-filament::section icon="heroicon-o-clipboard-document-check" collapsible persist-collapsed collapse-id="hp-ai-team-4">
         <x-slot name="heading">{{ __('আপনার দেওয়া কাজ') }}</x-slot>
         <x-slot name="description">{{ __('উপরের "দলকে কাজ দিন" বা কোনো সদস্যের "কাজ দিন" থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়।') }}</x-slot>
+        @if (\App\Filament\Support\Deleting::isAdmin() && $d['requests']->whereIn('status', ['done', 'failed'])->isNotEmpty())
+            <x-slot name="afterHeader">
+                <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="clearRequests" wire:confirm="{{ __('শেষ হওয়া ও না-হওয়া সব কাজ তালিকা থেকে মুছে ফেলবেন?') }}">{{ __('শেষ হওয়াগুলো মুছুন') }}</x-filament::button>
+            </x-slot>
+        @endif
         <div class="hp-list">
             @forelse ($d['requests'] as $r)
                 @php($color = ['queued' => '#EFC08D', 'running' => '#2DAAE2', 'done' => '#1A86C2', 'failed' => '#CB1B32'][$r->status] ?? '#13212C')
@@ -181,6 +186,9 @@
                             @if (in_array($r->status, ['done', 'failed'], true))
                                 <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-path" wire:click="again({{ $r->id }})">{{ __('আবার করুন') }}</x-filament::button>
                             @endif
+                            @if ($r->status !== 'running' && \App\Filament\Support\Deleting::isAdmin())
+                                <x-filament::button size="xs" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteRequest({{ $r->id }})" wire:confirm="{{ $r->status === 'queued' ? __('এই কাজটি বাতিল করে মুছে ফেলবেন?') : __('এই কাজটি তালিকা থেকে মুছে ফেলবেন?') }}">{{ $r->status === 'queued' ? __('বাতিল করুন') : __('মুছুন') }}</x-filament::button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -192,7 +200,7 @@
     </div>
 
     {{-- 3. The team --}}
-    <x-filament::section icon="heroicon-o-user-group">
+    <x-filament::section icon="heroicon-o-user-group" collapsible persist-collapsed collapse-id="hp-ai-team-5">
         <x-slot name="heading">{{ __('দল') }} ({{ $n(count($agents)) }})</x-slot>
         <x-slot name="description">{{ __('কে কী করে, এই মাসে কত কাজ ও খরচ। থামালে শুধু সেই সদস্য বিশ্রাম নেবে।') }}</x-slot>
         <div class="hp-team">

@@ -23,7 +23,7 @@ class AuthorForm
                 ->unique(ignoreRecord: true)->disabledOn('edit')->helperText(__('একবার তৈরি হলে বদলানো যায় না।')),
             TextInput::make('city')->label(__('শহর'))->maxLength(80),
             Textarea::make('bio')->label(__('পরিচয়'))->rows(4)->maxLength(2000)->columnSpanFull(),
-            Section::make(__('ধরন (শুধু অ্যাডমিন)'))->columns(2)->visible($admin)->schema([
+            Section::make(__('ধরন (শুধু অ্যাডমিন)'))->collapsible()->columns(2)->visible($admin)->schema([
                 Toggle::make('is_guest')->label(__('অতিথি লেখক (অ্যাকাউন্ট নেই)')),
                 Toggle::make('is_desk')->label(__('হাতপাখা ডেস্কের বাইলাইন')),
             ]),

@@ -49,9 +49,11 @@ class CommentsTable
                     ->url(fn (Comment $record) => $record->post?->url())->openUrlInNewTab()
                     ->visible(fn (Comment $record) => $record->post?->status === 'published'),
                 EditAction::make(),
+                \App\Filament\Support\Deleting::row(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    \App\Filament\Support\Deleting::bulk(\App\Models\Comment::class),
                     BulkAction::make('approve')->label(__('প্রকাশ করুন'))->icon('heroicon-o-check')
                         ->action(fn (Collection $records) => $records->each(fn ($c) => self::setStatus($c, 'approved'))),
                     BulkAction::make('spam')->label(__('স্প্যাম'))->icon('heroicon-o-no-symbol')

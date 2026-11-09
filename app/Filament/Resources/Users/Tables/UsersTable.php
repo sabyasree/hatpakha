@@ -58,6 +58,8 @@ class UsersTable
                             ->{$ok ? 'success' : 'warning'}()->send();
                     }),
                 EditAction::make(),
-            ]);
+                \App\Filament\Support\Deleting::row(),
+            ])
+            ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\User::class)])]);
     }
 }

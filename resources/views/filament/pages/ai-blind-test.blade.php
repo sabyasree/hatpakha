@@ -18,7 +18,7 @@
         {{-- The reveal --}}
         @php($w = $result['wins'])
         @php($winner = $w['anthropic'] === $w['openai'] ? null : ($w['anthropic'] > $w['openai'] ? 'anthropic' : 'openai'))
-        <x-filament::section icon="heroicon-o-trophy">
+        <x-filament::section icon="heroicon-o-trophy" collapsible persist-collapsed collapse-id="hp-ai-blind-test-1">
             <x-slot name="heading">{{ __('ফলাফল') }}</x-slot>
             <p style="font-size:1.25rem;margin:0 0 .75rem">
                 @if ($winner)
@@ -60,7 +60,7 @@
 
     @if ($pair)
         {{-- The piece --}}
-        <x-filament::section>
+        <x-filament::section collapsible persist-collapsed collapse-id="hp-ai-blind-test-2">
             <x-slot name="heading">{{ $post?->title }}</x-slot>
             <x-slot name="description">{{ $post?->section?->name_bn ?? '' }} · {{ Bn::num($words($post?->body_html)) }} {{ __('শব্দ') }}</x-slot>
             <details>
@@ -72,7 +72,7 @@
         {{-- The two reports, side by side (stacked on phones) --}}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:1rem;align-items:start">
             @foreach ($pair->sortBy('blind_label') as $review)
-                <x-filament::section>
+                <x-filament::section collapsible persist-collapsed collapse-id="hp-ai-blind-test-3">
                     <x-slot name="heading">
                         {{ __('রিপোর্ট') }} {{ $review->blind_label }}
                         @if ($result) <span style="font-weight:400;opacity:.75">({{ $name($review->provider) }})</span>@endif
@@ -84,7 +84,7 @@
 
         {{-- One question --}}
         @php($picked = AiBlindTest::choiceOf($pair))
-        <x-filament::section>
+        <x-filament::section collapsible persist-collapsed collapse-id="hp-ai-blind-test-4">
             <x-slot name="heading">{{ __('কোন রিপোর্টটা আপনার বেশি কাজে লাগবে?') }}</x-slot>
             <x-slot name="description">{{ __('লেখাটা বুঝেছে কি না, বাংলা কেমন, পরামর্শ কাজের ও সদয় কি না। দাম বা দৈর্ঘ্য নয়।') }}</x-slot>
             <div style="display:flex;flex-wrap:wrap;gap:.75rem">

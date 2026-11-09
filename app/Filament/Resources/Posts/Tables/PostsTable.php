@@ -93,9 +93,13 @@ class PostsTable
                 Action::make('dismissAudit')->label(__('রাখুন'))->icon('heroicon-o-x-mark')->color('gray')
                     ->visible(fn (Post $p) => $isAdmin() && $actionable($p))
                     ->action(fn (Post $p) => ContentAudit::dismiss($p, auth()->user())),
+                \App\Filament\Support\Deleting::row(),
+                ...\App\Filament\Support\Deleting::trashActions(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    \App\Filament\Support\Deleting::bulk(\App\Models\Post::class),
+                    ...\App\Filament\Support\Deleting::trashBulk(),
                     // D60: draw covers for several pieces at once (proposals; approve on ছবি অনুমোদন).
                     BulkAction::make('drawCovers')->label(__('এআই দিয়ে ছবি আঁকান'))->icon('heroicon-o-paint-brush')
                         ->requiresConfirmation()->modalDescription(__('একবারে ১০টি পর্যন্ত। ছবিগুলো তৈরি হলে "ছবি অনুমোদন" পাতায় দেখে বসাবেন।'))

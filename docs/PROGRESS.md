@@ -199,3 +199,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] "মানুষের মতামত" on AI pieces: rewrite this piece (owner accepts, can go back) and/or a standing rule; /desk → লেখার নির্দেশিকা
 - [ ] Owner: edit and publish the first drafts (about one per section per week); give a few pieces to real readers and record their feedback
 - [ ] After 8 weeks: keep the sections people read and share; consider Phase 2 (প্রবাসের কথা, শব্দের গল্প, মাঠের গল্প)
+
+## Desk: delete everywhere and collapsible panels (D115), 2026-11-09
+- [x] Every desk list: a red "মুছুন" on each row and "বেছে নেওয়াগুলো মুছুন" for bulk delete (pieces, writers, sections, issues, pages, newsletters, contests, collections, serials, comments, messages, redirects, users, writing rules); every edit page has the same button
+- [x] Pieces go to the trash (filter "ট্র্যাশ"): bring back, or delete forever, one by one or in bulk; a trashed published piece answers 410
+- [x] Marketing: delete a weekly plan or a post, clear the posted/skipped list; AI team: delete or cancel a job, clear finished jobs
+- [x] Panels on the desk pages and edit forms can be folded (pages remember it per browser)

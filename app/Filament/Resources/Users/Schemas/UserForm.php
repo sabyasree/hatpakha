@@ -32,7 +32,7 @@ class UserForm
                 ->helperText(__('সম্পাদক বা তার উপরে হলে ডেস্ক খোলা যায় (২-ধাপ যাচাই বাধ্যতামূলক)। প্রতিটি বদল লগে থাকে।')),
             TextInput::make('spam_reason')->label(__('স্প্যাম চিহ্ন (কারণ)'))->maxLength(120)
                 ->helperText(__('খালি রাখলে স্বাভাবিক অ্যাকাউন্ট। চিহ্নিত অ্যাকাউন্ট মুছে ফেলা হয় না।')),
-            Section::make(__('তথ্য'))->columns(2)->visibleOn('edit')->schema([
+            Section::make(__('তথ্য'))->collapsible()->columns(2)->visibleOn('edit')->schema([
                 Placeholder::make('legacy')->label(__('পুরনো ওয়ার্ডপ্রেস ভূমিকা'))
                     ->content(fn (?User $record) => $record?->legacy_role ?: '—'),
                 Placeholder::make('last_login')->label(__('শেষ লগইন'))

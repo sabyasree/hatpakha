@@ -37,6 +37,7 @@ class EditSerial extends EditRecord
                 ->action(fn () => $this->record->forceFill(['status' => 'finished'])->save()),
             Action::make('open')->label(__('পাতা দেখুন'))->icon('heroicon-o-eye')->color('gray')
                 ->visible(fn () => $this->record->isPublic())->url(fn () => $this->record->url(), shouldOpenInNewTab: true),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 
