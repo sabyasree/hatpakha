@@ -32,7 +32,7 @@
         <div class="absolute -right-10 -top-40 font-serif text-[520px] leading-none text-red" aria-hidden="true">“</div>
         <div class="relative mx-auto grid max-w-[1320px] gap-8 px-5 py-14 md:grid-cols-[1fr_2fr] md:gap-10 md:py-24">
             <div class="flex flex-col gap-3">
-                <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">{{ $isPick ? 'সম্পাদকের পছন্দ' : 'আজকের কবিতা' }}</span>
+                <span class="w-fit -rotate-3 rounded-full bg-sky px-4 pt-1 font-hand text-2xl text-navy">{{ $isPick ? 'সম্পাদকের পছন্দ' : 'আজকের '.$poemOfDay->kindLabel() }}</span>
                 <h2 id="poem-h" class="font-display text-5xl font-extrabold leading-none"><a href="{{ $poemOfDay->url() }}">{{ $poemOfDay->title }}</a></h2>
                 <span class="text-peach-light"><x-byline :post="$poemOfDay" /> · {{ \App\Support\Bn::num($poemOfDay->reading_minutes) }} মিনিট</span>
                 @if ($isPick && $pickNote)
@@ -41,7 +41,7 @@
                         <blockquote class="mt-1 font-serif text-lg leading-relaxed text-paper">{{ $pickNote }}</blockquote>
                     </figure>
                 @endif
-                <a href="{{ $poemOfDay->url() }}" class="mt-2 hidden h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:flex">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
+                <a href="{{ $poemOfDay->url() }}" class="mt-2 hidden h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:flex">{{ 'পুরো '.$poemOfDay->kindLabel().' পড়ুন' }}</a>
             </div>
             <div>
                 @if ($poemOfDay->isPoem())
@@ -50,7 +50,7 @@
                     {{-- Prose (owner, 2026-11-09): only the opening, never the whole piece --}}
                     <div class="max-w-[40ch] font-serif text-xl leading-relaxed md:text-2xl md:leading-relaxed">{!! \App\Support\Excerpt::prose($poemOfDay->body_html, 320) !!}</div>
                 @endif
-                <a href="{{ $poemOfDay->url() }}" class="mt-6 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:hidden">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
+                <a href="{{ $poemOfDay->url() }}" class="mt-6 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:hidden">{{ 'পুরো '.$poemOfDay->kindLabel().' পড়ুন' }}</a>
             </div>
         </div>
     </section>

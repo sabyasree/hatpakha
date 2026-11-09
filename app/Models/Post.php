@@ -138,6 +138,12 @@ class Post extends Model
 
     public function isPoem(): bool { return $this->format === 'poem'; }
 
+    /** "কবিতা", "গল্প" or "লেখা", for labels such as "আজকের …" (owner, 2026-11-09). */
+    public function kindLabel(): string
+    {
+        return $this->isPoem() ? 'কবিতা' : ($this->section?->slug === 'short-stories' ? 'গল্প' : 'লেখা');
+    }
+
     public function serial(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(Serial::class); }
 
     /** D108: the episode before / after this one (published only). */

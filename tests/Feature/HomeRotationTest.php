@@ -83,4 +83,25 @@ class HomeRotationTest extends TestCase
         $this->assertLessThan(500, mb_strlen(strip_tags(\App\Support\Excerpt::prose($long, 320))));
         $this->assertStringEndsWith('। …</p>', \App\Support\Excerpt::prose($long, 320), 'Cut at a full stop');
     }
+
+    public function test_the_daily_piece_rotates_between_poems_stories_and_other_prose(): void
+    {
+        // Owner (2026-11-09): "it can be anything, why only poem?"
+        $poetry = Section::firstOrCreate(['slug' => 'poetry'], ['name_bn' => 'কবিতা', 'format' => 'poem']);
+        $travel = Section::updateOrCreate(['slug' => 'travel'], ['name_bn' => 'ভ্রমণ', 'format' => 'prose']);
+        $this->makePost(['slug' => 'a-poem', 'title' => 'একটি কবিতা', 'format' => 'poem', 'section_id' => $poetry->id]);
+        $this->makePost(['slug' => 'a-trip', 'title' => 'একটি ভ্রমণ', 'format' => 'prose', 'section_id' => $travel->id]);
+        $seen = [];
+        $start = now()->addDay();
+        foreach ([0, 1, 2] as $d) {
+            Carbon::setTestNow($start->copy()->addDays($d));
+            cache()->flush();
+            $html = $this->get('/')->getContent();
+            preg_match('/-rotate-3 rounded-full bg-sky[^>]*>([^<]+)</u', $html, $m);
+            $seen[] = trim($m[1] ?? '');
+        }
+        $this->assertContains('আজকের কবিতা', $seen);
+        $this->assertContains('আজকের গল্প', $seen);
+        $this->assertContains('আজকের লেখা', $seen);
+    }
 }

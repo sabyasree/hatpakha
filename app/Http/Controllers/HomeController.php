@@ -34,7 +34,20 @@ class HomeController extends Controller
         // Cache only IDs/scalars: Laravel refuses to unserialize models from the cache (a good default).
         $ids = Cache::remember('home:v2:'.now()->toDateString(), now()->addMinutes(15), function () {
             $base = fn () => Post::published()->latest('published_at');
-            $poemIds = $base()->where('format', 'poem')->where('language', 'bn')->limit(60)->pluck('id');
+            // Owner (2026-11-09): "it can be anything, why only poem?" The daily piece rotates: a poem, then a story,
+            // then other prose (essay, travel, heritage…), each chosen afresh per date. Never children's, editorial,
+            // English or a serial episode out of order.
+            $kind = ['poem', 'story', 'prose'][(int) now('Asia/Kolkata')->dayOfYear % 3];
+            $pool = fn (string $kind) => $base()->where('language', 'bn')->whereNull('serial_id')
+                ->whereHas('section', fn ($q) => $q->whereNotIn('slug', ['chhotoder', 'editorial', 'english']))
+                ->when($kind === 'poem', fn ($q) => $q->where('format', 'poem'))
+                ->when($kind === 'story', fn ($q) => $q->where('format', '!=', 'poem')->whereHas('section', fn ($s) => $s->where('slug', 'short-stories')))
+                ->when($kind === 'prose', fn ($q) => $q->where('format', '!=', 'poem')->whereHas('section', fn ($s) => $s->where('slug', '!=', 'short-stories')))
+                ->limit(80)->pluck('id');
+            $poemIds = $pool($kind);
+            if ($poemIds->isEmpty()) {
+                $poemIds = $pool('poem');
+            }
 
             return [
                 // Poem of the day: deterministic per date, so the cached page and share cards agree.
@@ -72,7 +85,7 @@ class HomeController extends Controller
 
         $data = [
             'pickNote' => $pickPost ? ($pick['note'] ?? null) : null,
-            'poemOfDay' => $ids['poemOfDay'] ? Post::with('authors')->find($ids['poemOfDay']) : null,
+            'poemOfDay' => $ids['poemOfDay'] ? Post::with('authors', 'section')->find($ids['poemOfDay']) : null,
             // Owner (2026-11-08): new pieces first, then archive pieces that change daily (+ spares for read ones).
             'stories' => $load(($rot = \App\Support\HomeRotation::today())['stories']),
             'travel' => $load($rot['travel']),
