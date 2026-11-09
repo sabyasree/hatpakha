@@ -84,7 +84,8 @@ SES_SNS_TOPIC_ARN=<the topic ARN from step 6>
 ```
 
 - `MAIL_DAILY_LIMIT=190` keeps the site under the sandbox limit. After Amazon lifts it (step 5), change it to `0` (no limit) or to the quota SES shows.
-- Then re-run the deploy (Actions → Deploy → Run workflow on `main`). Staging keeps `MAIL_MAILER=log` and no `MAIL_BULK_*`, so staging never mails anyone.
+- Then re-run the deploy (Actions → Deploy → Run workflow on `main`).
+- **Staging:** put none of this in the **staging** ENV_FILE (keep `MAIL_MAILER=log`). Even if you do by mistake, the code protects you (D118): off hatpakha.com no newsletter or bulk mail is ever sent, and other mail reaches only desk staff (editor or above), so the team still gets login codes there.
 
 ## 8. Check it (10 minutes)
 1. /desk → চিঠি → open a draft → **"আমাকে একটা পাঠান"**: the test letter arrives from chithi@hatpakha.com.

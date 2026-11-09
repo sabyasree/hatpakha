@@ -133,6 +133,9 @@ return [
     // D117: at most this many bulk e-mails in any 24 hours (0 = no limit). SES starts at 200 a day until Amazon
     // lifts the account out of its "sandbox"; set it to the daily quota the SES console shows.
     'daily_limit' => (int) env('MAIL_DAILY_LIMIT', 0),
+    // Off hatpakha.com (staging), mail goes only to desk staff and bulk mail is off (App\Support\MailGuard).
+    // "allow" switches the guard off; only the test suite uses it.
+    'off_live' => env('MAIL_OFF_LIVE', 'block'),
     // The SNS topic SES reports bounces and complaints to; webhooks from any other topic are refused.
     'ses_topic_arn' => env('SES_SNS_TOPIC_ARN'),
 

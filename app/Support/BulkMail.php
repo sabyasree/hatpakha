@@ -17,7 +17,7 @@ final class BulkMail
     /** Whether bulk mail really leaves the server (not the "log" or "array" test mailers). */
     public static function real(): bool
     {
-        return ! in_array(self::mailer(), ['log', 'array'], true);
+        return MailGuard::live() && ! in_array(self::mailer(), ['log', 'array'], true);   // never on staging
     }
 
     /** How many more bulk e-mails may go now under MAIL_DAILY_LIMIT (null = no limit). */

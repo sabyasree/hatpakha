@@ -18,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Staging never e-mails readers or writers, whatever its ENV_FILE says (App\Support\MailGuard).
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class, [\App\Support\MailGuard::class, 'check']);
+
         // Accepts migrated WordPress password hashes once, then re-hashes (docs/SECURITY.md §2).
         Auth::provider('legacy-eloquent', fn ($app, array $config) => new LegacyAwareUserProvider($app['hash'], $config['model']));
 
