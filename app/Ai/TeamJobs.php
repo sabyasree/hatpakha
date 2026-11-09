@@ -66,6 +66,9 @@ final class TeamJobs
             // D95: drafts for the new sections until real writers join (house byline, never published by itself)
             'heritage_piece' => ['ঐতিহ্য ও উৎসব: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
             'kitchen_piece' => ['রান্নাঘরের গল্প: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
+            'classics_piece' => ['ফিরে পড়া, ফিরে দেখা: একটি লেখার খসড়া (বই বা সিনেমার নাম লিখুন)', 'topic', 'posts'],
+            'place_piece' => ['জনপদের গল্প: একটি লেখার খসড়া (জায়গার নাম লিখুন)', 'topic', 'posts'],
+            'legend_piece' => ['রহস্যময় বাংলা: একটি লেখার খসড়া (কিংবদন্তি বা জায়গা লিখুন)', 'topic', 'posts'],
         ],
         'contest' => [
             'shortlist' => ['চলতি প্রতিযোগিতার বাছাই তালিকা', null, 'contests'],
@@ -224,8 +227,8 @@ final class TeamJobs
             'marketing.custom' => $done(Marketer::custom($topic), 'পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।', 'পোস্ট তৈরি হয়নি।'),
             'copywriter.newsletter' => $done(EditorJobs::newsletter($redo), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।'),
             'copywriter.writers_letter' => $done(EditorJobs::writersLetter($redo), 'লেখকদের চিঠির খসড়া তৈরি; চিঠি পাতায় দেখুন।'),
-            'copywriter.heritage_piece', 'copywriter.kitchen_piece' => (function () use ($job, $topic) {
-                [$p, $e] = DeskWriter::draft($job === 'heritage_piece' ? 'heritage' : 'kitchen', $topic);
+            'copywriter.heritage_piece', 'copywriter.kitchen_piece', 'copywriter.classics_piece', 'copywriter.place_piece', 'copywriter.legend_piece' => (function () use ($job, $topic) {
+                [$p, $e] = DeskWriter::draft(DeskWriter::JOBS[$job], $topic);
 
                 return $p ? [true, 'খসড়া তৈরি: "'.$p->title.'" (লেখা → খসড়া)। নিজের মতো করে লিখে, তথ্য যাচাই করে তবেই প্রকাশ করুন।'] : [false, 'করা গেল না: '.$e];
             })(),

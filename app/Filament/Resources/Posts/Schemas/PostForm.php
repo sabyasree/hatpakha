@@ -62,6 +62,23 @@ class PostForm
                     Placeholder::make('last_note')->label(__('শেষ বার্তা লেখককে'))
                         ->content(fn (Post $record) => $record->review_note ?: '—'),
                 ]),
+                // D113: human readers' feedback on this AI-written piece, and the rewrite waiting beside the current text.
+                Section::make(__('মানুষের মতামত'))->visible(fn (?Post $record) => $record && ($record->rewrite_html || \App\Models\WritingFeedback::where('post_id', $record->id)->exists()))
+                    ->schema([
+                        Placeholder::make('feedback_view')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(view('filament.post-feedback', ['post' => $record])->render())),
+                    ])->footerActions([
+                        \Filament\Actions\Action::make('useRewrite')->size('sm')->icon('heroicon-o-check')->color('success')
+                            ->label(fn (?Post $record) => $record?->rewrite_kind === 'previous' ? __('আগের সংস্করণে ফিরুন') : __('নতুন সংস্করণ বসান'))
+                            ->visible(fn (?Post $record) => (bool) $record?->rewrite_html)->requiresConfirmation()
+                            ->action(function (Post $record, $livewire) {
+                                \App\Ai\Rewriter::swap($record);
+                                $livewire->refreshFormData(['title', 'body_html']);
+                                \Filament\Notifications\Notification::make()->title(__('বসানো হয়েছে'))->body(__('অন্য সংস্করণটি রাখা আছে; চাইলে ফিরতে পারেন।'))->success()->send();
+                            }),
+                        \Filament\Actions\Action::make('dropRewrite')->size('sm')->icon('heroicon-o-x-mark')->color('gray')->label(__('বাদ দিন'))
+                            ->visible(fn (?Post $record) => $record?->rewrite_kind === 'proposed')->requiresConfirmation()
+                            ->action(fn (Post $record) => \App\Ai\Rewriter::discard($record)),
+                    ]),
                 // D64: the cover, and any picture the designer has drawn for it, always visible on the edit page.
                 Section::make(__('প্রচ্ছদ'))->visible(fn (?Post $record) => $record !== null)->schema([
                     Placeholder::make('cover_now')->hiddenLabel()->content(fn (Post $record) => new \Illuminate\Support\HtmlString(

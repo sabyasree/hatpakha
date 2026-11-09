@@ -193,3 +193,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Every AI-written piece gets a designer cover proposal
 - [ ] Owner: read the three proposals in /desk → ধারাবাহিক, edit episode 1, approve its picture, publish (that starts the serial)
 - [ ] Next: "আপনার বই" (book-making for writers), plan agreed first
+
+## Phase 1 sections and human feedback (D112, D113), 2026-11-09
+- [x] ফিরে পড়া, ফিরে দেখা · জনপদের গল্প · রহস্যময় বাংলা: sections, desk briefs, jobs, share pictures, 3 drafts each queued
+- [x] "মানুষের মতামত" on AI pieces: rewrite this piece (owner accepts, can go back) and/or a standing rule; /desk → লেখার নির্দেশিকা
+- [ ] Owner: edit and publish the first drafts (about one per section per week); give a few pieces to real readers and record their feedback
+- [ ] After 8 weeks: keep the sections people read and share; consider Phase 2 (প্রবাসের কথা, শব্দের গল্প, মাঠের গল্প)

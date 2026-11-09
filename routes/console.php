@@ -24,6 +24,8 @@ Schedule::call($shift('monthly'))->name('ai-shift monthly')->monthlyOn(1, '08:15
 Schedule::call($shift('chief'))->name('ai-shift chief')->hourlyAt(45)->withoutOverlapping(30);                                  // editor-in-chief checks (no AI)
 Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timezone('Asia/Kolkata');
 // Newsletters (D58): after the owner's click, a small batch every minute until all are sent.
+// D113: rewrites asked for by human readers' feedback, and turning feedback into standing rules
+Schedule::call(fn () => \App\Ai\Rewriter::runQueued())->name('feedback rewrites')->everyMinute()->withoutOverlapping(30);
 // D104: apology letters to writers of old unanswered submissions. Runs only on hatpakha.com, with real mail, after the owner approved the text.
 Schedule::call(fn () => \App\Support\RelaunchLetters::send())->name('relaunch letters')->hourlyAt(50)->withoutOverlapping(30);
 Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newsletter batch')->everyMinute()->withoutOverlapping(10);

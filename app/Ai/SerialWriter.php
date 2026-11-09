@@ -49,7 +49,7 @@ final class SerialWriter
             return [null, 'লেখক পাওয়া যায়নি।'];
         }
         [$genre, $brief] = self::WRITERS[$writer];
-        [$d, $err] = Claude::json('serial', self::CRAFT.' '.$brief.' '
+        [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
             .'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
             .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens and how it ends. '
             .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
@@ -94,7 +94,7 @@ final class SerialWriter
         $before = $serial->episodes()->get();
         $story = $before->map(fn (Post $p) => 'পর্ব '.$p->episode_no.' "'.$p->title.'": '.($p->episode_summary ?: mb_substr(strip_tags((string) $p->body_html), 0, 400)))->implode("\n");
         $tail = mb_substr(trim(html_entity_decode(strip_tags(str_replace('</p>', "\n", (string) $before->last()?->body_html)))), -2500);
-        [$d, $err] = Claude::json('serial', self::CRAFT.' '.(self::WRITERS[$serial->writer][1] ?? ''),
+        [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik', $serial->id).' '.(self::WRITERS[$serial->writer][1] ?? ''),
             '<serial><title>'.e($serial->title).'</title><setting>'.e((string) ($serial->bible['setting'] ?? '')).'</setting>'
             ."\n<characters>".e(collect((array) ($serial->bible['characters'] ?? []))->map(fn ($c) => ($c['name'] ?? '').': '.($c['role'] ?? ''))->implode("\n")).'</characters>'
             ."\n<plan>".e(collect($plan)->map(fn ($e, $i) => 'পর্ব '.($i + 1).' '.($e['title'] ?? '').': '.($e['beat'] ?? ''))->implode("\n")).'</plan>'

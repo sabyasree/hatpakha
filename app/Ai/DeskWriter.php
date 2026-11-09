@@ -16,6 +16,18 @@ use Illuminate\Support\Str;
  */
 final class DeskWriter
 {
+    /** Owner (2026-11-09): which desk-writer job drafts for which section. */
+    public const JOBS = ['heritage_piece' => 'heritage', 'kitchen_piece' => 'kitchen', 'classics_piece' => 'phire-pora', 'place_piece' => 'jonopod', 'legend_piece' => 'rohosyomoy'];
+
+    /** What the designer is told for each section's cover (never a real person, monument or film still). */
+    public const COVER_HINTS = [
+        'heritage' => 'A symbolic or everyday scene from the piece (people, light, season, objects); never a drawing of a specific real temple, monument or place.',
+        'kitchen' => 'The dish or ingredient in its kitchen moment: warm light, hands at work, the season; appetising and real.',
+        'phire-pora' => 'A symbolic scene evoking the book or film (a landscape, an object, a moment); never a real actor, writer or director, never a book cover or film still.',
+        'jonopod' => 'The mood of this place: river, lane, light, season, ordinary people seen from a distance; never a drawing of a specific real monument.',
+        'rohosyomoy' => 'Eerie, atmospheric Bengal folk-legend scene: dusk, mist, a lantern, a banyan tree, a pond; mysterious, never gory.',
+    ];
+
     public const SECTIONS = [
         // D106 (owner): literary essays, not information. One moment, seen closely; the facts stay in the background.
         'heritage' => 'A literary essay (রম্যরচনা / স্মৃতিগদ্যের ধাঁচ) about one place, craft, ritual or festival of Bengal. '
@@ -25,6 +37,16 @@ final class DeskWriter
             .'season, people and longing (the tradition of Buddhadeva Bose\'s "ভোজনশিল্পী বাঙালী" or Leela Majumdar\'s kitchen prose; never copy them). '
             .'Not a recipe, not a catalogue of varieties or regions: no lists of dish names, no "in East Bengal… in West Bengal…" survey. '
             .'Stay with one kitchen-moment (the smell reaching the stairs, the waiting, the first bite in the cold) and let the method appear only through it.',
+        // Phase 1 sections (owner, 2026-11-09; docs/STRATEGY.md §3c)
+        'phire-pora' => 'A literary essay returning to one classic Bengali book or film (Bibhutibhushan, Tagore, Manik, Ashapurna, Satyajit Ray, Ritwik Ghatak, Tapan Sinha, the Uttam-Suchitra era…). '
+            .'Not a summary or a review: begin from one scene, line or image of the work and what it still does to a reader or viewer today; then why it lasts. '
+            .'Quote at most one or two short lines, and only lines you are certain of; otherwise describe. Facts (years, names, awards) only if widely documented, all of them in facts_to_check. Never a new release.',
+        'jonopod' => 'A literary essay about one town, village, neighbourhood, street, market or river of Bengal (both Bengals): what you would see, hear and smell there at one hour, '
+            .'then a little of its past told through a detail, then how it lives today. Never a tourist guide, never a list of sights. '
+            .'Only widely documented history, cautiously worded; every name, date and claim in facts_to_check. No invented named people.',
+        'rohosyomoy' => 'A retelling of one Bengal legend, ghost lore or folk tale tied to a place (a pond, a banyan tree, a ruined house, a river crossing), told as a story with atmosphere and dread, '
+            .'clearly framed as legend ("লোকে বলে", "গ্রামের বুড়োরা বলেন"). Public-domain folklore only, never a copyrighted modern story, never a real crime, never real named living people. '
+            .'In facts_to_check, say where the legend is told and in which collections it appears, so the editor can check it.',
     ];
 
     public static function draft(string $section, string $topic): array
@@ -37,7 +59,7 @@ final class DeskWriter
         $system = 'You write for Hatpakha (হাতপাখা), a Bengali literary web magazine, as its editorial desk (byline: হাতপাখা ডেস্ক). '
             .self::SECTIONS[$section].' '
             // What makes it literature rather than information (owner, 2026-11-08).
-            .Prompt::LITERARY.' '
+            .Prompt::LITERARY.FeedbackLessons::forPrompt($section).' '
             .'Show the scene in present tense or a remembered "সেই সময়" in the plural ("আমরা", "পাড়ায়"). '
             .'Let the piece turn once (a small surprise, a shift from then to now, from the many to the one); never end on a moral, a question to the reader or an invitation to write in. '
             .'Honesty: never invent named people, quotes, statistics, dates or events, and never claim a personal memory as a real fact ("আমার ঠাকুমা"). '
@@ -68,9 +90,7 @@ final class DeskWriter
         }
 
         // Owner (2026-11-08): every AI-written piece gets a meaningful cover from the designer (a proposal the owner approves).
-        Illustrator::queue($post, $section === 'heritage'
-            ? 'A symbolic or everyday scene from the piece (people, light, season, objects); never a drawing of a specific real temple, monument or place.'
-            : 'The dish or ingredient in its kitchen moment: warm light, hands at work, the season; appetising and real.');
+        Illustrator::queue($post, self::COVER_HINTS[$section] ?? null);
 
         return [$post, null];
     }

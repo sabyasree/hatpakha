@@ -29,7 +29,7 @@ final class EditorialWriter
         [$data] = Claude::json('editorial_draft',
             "You draft the monthly editorial (সম্পাদকীয়) of Hatpakha (হাতপাখা), a Bengali literary web magazine, for the owner-editor "
             ."{$owner->name}, who will edit it and publish it under their own name, first person plural (আমরা) as the magazine. "
-            .Prompt::LITERARY.' '
+            .Prompt::LITERARY.FeedbackLessons::forPrompt('editorial').' '
             // D107 (owner): a literary editorial, not an issue announcement.
             .'An editorial in the tradition of Bengali little magazines: begin from one small, exact image of this month (the light, a sound in the lane, the first cold) and let it lead, '
             .'without a jump, to what this issue is about. Do not list the contents: choose two or three pieces and say in a line each what stays with you, quoting nothing you were not given '
