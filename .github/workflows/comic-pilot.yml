@@ -1,0 +1,67 @@
+# Comic PILOT (owner, 2026-11-09): draws a 4-panel test strip on a GitHub runner with the staging AI keys.
+# Touches no server and no database: a throwaway SQLite file holds the spend log; the pictures are uploaded
+# as a workflow artifact (kept 7 days). Cost: about 6 pictures + one short script request.
+name: Comic pilot
+
+on:
+  push:
+    branches: [claude/zealous-goldberg-hh8o61]
+    paths: ['.github/workflows/comic-pilot.yml', 'app/Console/Commands/ComicPilot.php']
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: Legend or idea for the strip
+        default: 'আলেয়া'
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 30
+    env:
+      # Real environment variables win over .env: never the staging database, mail or cache.
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/pilot.sqlite
+      DB_URL: ''
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: log
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, gd, zip
+          coverage: none
+
+      - name: Install
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress
+
+      - name: Draw the strip
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          TOPIC: ${{ inputs.topic || 'আলেয়া' }}
+        run: |
+          umask 077
+          printf '%s\n' "$ENV_FILE" > .env
+          touch "$DB_DATABASE"
+          php artisan migrate --force --no-ansi >/dev/null
+          php artisan hatpakha:comic-pilot --topic="$TOPIC" --out="$PWD/comic-out" --no-ansi
+          rm -f .env "$DB_DATABASE"
+
+      - name: Remove secrets
+        if: always()
+        run: rm -f .env
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comic-pilot
+          path: comic-out/
+          retention-days: 7
+          if-no-files-found: warn
