@@ -28,6 +28,9 @@ final class Strategist
                 .'; old submissions still waiting: '.Post::where('status', 'pending')->count(),
             'Newsletter readers (confirmed sign-ups): '.NewsletterSubscriber::mailable()->count(),
         ];
+        if ($r = \App\Support\ReaderInsights::brief()) {
+            $lines[] = $r;   // D119
+        }
         if ($t = Knowledge::trends()) {
             $lines[] = 'Trend scout ('.$t['at'].'): '.collect($t['items'])->pluck('title')->implode('; ');
         }

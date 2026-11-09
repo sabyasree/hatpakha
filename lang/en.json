@@ -1447,5 +1447,14 @@
     "হাতপাখা খুলুন": "Open Hatpakha",
     "জন অন্তত একটি লিংকে ক্লিক করেছেন": "people clicked at least one link",
     "খোলার সংখ্যা দেখানো হয় না: অনেক মেল-অ্যাপ নিজে থেকেই ছবি খোলে, তাই সেই সংখ্যা ভুল হয়। ক্লিকই আসল আগ্রহ। কিছু অফিসের মেল-সুরক্ষা লিংক আগে থেকে খুলে দেখে, তাই দু-একটি ক্লিক বেশি দেখাতে পারে।": "Opens aren't shown: many mail apps load images by themselves, so that number is wrong. Clicks show real interest. Some office mail scanners open links in advance, so a click or two may be extra.",
-    "কে কোন লিংকে ক্লিক করেছেন": "Which links people clicked"
+    "কে কোন লিংকে ক্লিক করেছেন": "Which links people clicked",
+    "গুগল থেকে আনা গেল না": "Could not fetch from Google",
+    "গুগলের হিসাব আনা হয়েছে": "Google numbers fetched",
+    "গুগল অ্যানালিটিক্স ও সার্চ কনসোল": "Google Analytics and Search Console",
+    "এখনও যুক্ত হয়নি। docs/GOOGLE.md-এর ধাপগুলো দেখুন।": "Not connected yet. See the steps in docs/GOOGLE.md.",
+    "শেষবার আনা হয়েছে: ": "Last fetched: ",
+    "প্রতিদিন সকাল সাড়ে ৭টায় নিজে থেকে আসে।": "Fetched automatically every day at 7:30.",
+    "যুক্ত হয়েছে; প্রথমবার আনা বাকি।": "Connected; not fetched yet.",
+    "এখনই আনুন": "Fetch now",
+    "এআই দল ঠিক এই লেখাটুকু পড়ে (পরিকল্পনা, পোস্ট, চিঠি, এসইও আর মাসিক হিসাবে):": "The AI team reads exactly this text (for plans, posts, letters, SEO and the monthly report):"
 }

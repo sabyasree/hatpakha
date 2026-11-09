@@ -36,7 +36,10 @@ final class NewsletterLinks
             default => $home,
         };
 
-        return parse_url($url, PHP_URL_HOST) === parse_url($home, PHP_URL_HOST) ? $url : $home;
+        $url = parse_url($url, PHP_URL_HOST) === parse_url($home, PHP_URL_HOST) ? $url : $home;
+
+        // D119: Google Analytics then counts these visits as coming from the letter.
+        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(['utm_source' => 'hatpakha-chithi', 'utm_medium' => 'email', 'utm_campaign' => 'chithi-'.$n->id]);
     }
 
     /** @return array{clickers: int, links: array<string, int>} people who clicked anything; clicks per link (people) */

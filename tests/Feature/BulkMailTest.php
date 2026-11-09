@@ -72,17 +72,18 @@ class BulkMailTest extends TestCase
 
         [$a, $b] = NewsletterDelivery::where('newsletter_id', $n->id)->pluck('id')->all();
         $link = fn ($d, $l) => NewsletterLinks::tracked($n, $d, $l);
-        $this->get($link($a, '0'))->assertRedirect($n->items[0]['url']);
+        $utm = '?utm_source=hatpakha-chithi&utm_medium=email&utm_campaign=chithi-'.$n->id;
+        $this->get($link($a, '0'))->assertRedirect($n->items[0]['url'].$utm);
         $this->get($link($a, '0'));
-        $this->get($link($b, 'cta'))->assertRedirect(url('/').'/');
-        $this->get('/chithi/'.$n->id.'/'.$b.'/0/0000000000000000/')->assertRedirect($n->items[0]['url']);   // forged: goes on, not counted
+        $this->get($link($b, 'cta'))->assertRedirect(url('/').'/'.$utm);
+        $this->get('/chithi/'.$n->id.'/'.$b.'/0/0000000000000000/')->assertRedirect($n->items[0]['url'].$utm);   // forged: goes on, not counted
 
         $s = NewsletterLinks::stats($n);
         $this->assertSame(2, $s['clickers']);
         $this->assertSame(['0' => 1, 'cta' => 1], $s['links']);
 
         $n->forceFill(['items' => [['title' => 'x', 'url' => 'https://evil.example/']]])->save();
-        $this->get($link($a, '0'))->assertRedirect(url('/').'/');
+        $this->get($link($a, '0'))->assertRedirect(url('/').'/'.$utm);
     }
 
     public function test_test_mails_and_previews_have_plain_links(): void

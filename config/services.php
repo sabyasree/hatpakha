@@ -11,6 +11,14 @@ return [
         'hostnames' => env('TURNSTILE_HOSTNAMES', parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: ''),
     ],
 
+    // D119: Google Analytics 4 tag (public pages of the live site) and read-only reports for the AI team.
+    'google' => [
+        'measurement_id' => env('GA_MEASUREMENT_ID'),            // G-XXXXXXXXXX (the tag)
+        'ga_property' => env('GA_PROPERTY_ID'),                  // numeric property id (the reports)
+        'search_console_site' => env('SEARCH_CONSOLE_SITE'),     // sc-domain:hatpakha.com
+        'service_account' => env('GOOGLE_SERVICE_ACCOUNT_JSON'), // the service account's JSON key, base64
+    ],
+
     // D116: the magazine's own social pages (footer link + Organization sameAs) and Meta's domain verification code.
     'social' => [
         'facebook' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/Hatpakhaonline'),

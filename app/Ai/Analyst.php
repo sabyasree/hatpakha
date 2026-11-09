@@ -42,9 +42,11 @@ final class Analyst
             return null;
         }
         $s = self::stats($month, $month->copy()->endOfMonth());
-        if ($s['views'] === 0) {
+        $google = \App\Support\ReaderInsights::brief();   // D119: the last 28 days from Google, when connected
+        if ($s['views'] === 0 && ! $google) {
             return null;
         }
+        $google && $s['google'] = $google;
         [$d] = Claude::json('analyst',
             'You are the analyst of a Bengali literary web magazine. From the numbers given (DATA), write 3-5 short, plain Bengali observations and one practical '
             .'suggestion each (e.g. share an old favourite again, more of a section readers like). Use only the numbers given; do not invent figures.',

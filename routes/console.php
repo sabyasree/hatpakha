@@ -27,6 +27,8 @@ Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timez
 // D113: rewrites asked for by human readers' feedback, and turning feedback into standing rules
 Schedule::call(fn () => \App\Ai\Rewriter::runQueued())->name('feedback rewrites')->everyMinute()->withoutOverlapping(30);
 // D104: apology letters to writers of old unanswered submissions. Runs only on hatpakha.com, with real mail, after the owner approved the text.
+// D119: what readers did yesterday (Google Analytics + Search Console), before the morning brief. No AI involved.
+Schedule::call(fn () => \App\Support\ReaderInsights::refresh())->name('reader insights')->dailyAt('07:30')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 Schedule::call(fn () => \App\Support\RelaunchLetters::send())->name('relaunch letters')->hourlyAt(50)->withoutOverlapping(30);
 Schedule::call(fn () => \App\Support\NewsletterSender::batch())->name('newsletter batch')->everyMinute()->withoutOverlapping(10);
 // Covers the owner asked for from /desk (D60): two a minute, inside this process.

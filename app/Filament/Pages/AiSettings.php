@@ -114,8 +114,18 @@ class AiSettings extends Page
             'keys' => ['anthropic' => filled(config('ai.anthropic.key')), 'openai' => filled(config('ai.openai.key'))],
             'spent' => $spent,
             'reviews' => AiReview::whereNull('blind_run')->where('created_at', '>=', now()->startOfMonth())->where('status', 'done')->count(),
+            'google' => ['configured' => \App\Support\GoogleData::configured(), 'status' => \App\Support\ReaderInsights::status(), 'brief' => \App\Support\ReaderInsights::brief()],
             'avg' => AiReview::whereNull('blind_run')->where('status', 'done')->where('created_at', '>=', now()->startOfMonth())->count()
                 ? $spent / max(1, AiReview::whereNull('blind_run')->where('status', 'done')->where('created_at', '>=', now()->startOfMonth())->count()) : 0,
         ];
+    }
+
+    /** D119: fetch Google Analytics + Search Console now instead of waiting for the morning. */
+    public function refreshGoogle(): void
+    {
+        $errors = \App\Support\ReaderInsights::refresh();
+        \Filament\Notifications\Notification::make()
+            ->title($errors ? __('গুগল থেকে আনা গেল না') : __('গুগলের হিসাব আনা হয়েছে'))
+            ->body($errors ? implode(' · ', $errors) : null)->{$errors ? 'warning' : 'success'}()->send();
     }
 }

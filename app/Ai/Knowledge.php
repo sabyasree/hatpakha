@@ -17,6 +17,9 @@ final class Knowledge
     public const FOR = ['review', 'editor', 'issue_plan', 'editorial_draft', 'picks', 'proof', 'seo', 'image_scene', 'cover',
         'marketing', 'newsletter', 'copy', 'contest', 'archive', 'analyst', 'chief', 'followup'];
 
+    /** D119: purposes that also read what readers did (Google Analytics + Search Console). */
+    public const ANALYTICS_FOR = ['issue_plan', 'picks', 'seo', 'marketing', 'newsletter', 'copy', 'contest', 'archive', 'analyst', 'chief'];
+
     /** Purposes that also get this week's trends. */
     public const TRENDS_FOR = ['issue_plan', 'editorial_draft', 'picks', 'marketing', 'newsletter', 'copy', 'contest', 'archive', 'chief'];
 
@@ -78,6 +81,9 @@ TXT;
         if (in_array($purpose, self::TRENDS_FOR, true) && ($m = Strategist::current())) {
             $out .= "\n\n### This month's priorities from the strategist (".$m['at'].'; let your work serve them where it fits)'."\n"
                 .collect($m['priorities'])->map(fn ($p) => '- '.$p['what'].' ('.$p['who'].')')->implode("\n");
+        }
+        if (in_array($purpose, self::ANALYTICS_FOR, true) && ($r = \App\Support\ReaderInsights::brief(search: in_array($purpose, ['seo', 'analyst', 'chief', 'marketing', 'issue_plan'], true)))) {
+            $out .= "\n\n".$r;
         }
         if (in_array($purpose, self::TRENDS_FOR, true) && ($t = self::trends())) {
             $out .= "\n\n### This week's news in Bengali literature and culture (from the trend scout, ".$t['at'].'; awareness only, '

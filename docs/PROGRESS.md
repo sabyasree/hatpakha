@@ -214,3 +214,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 ## E-mail: Hostinger + Amazon SES (D117), 2026-11-09
 - [x] Separate sender for letters (SES over SMTP), daily limit, counted clicks per letter and per link in /desk, automatic bounce/complaint suppression via SNS, privacy policy updated
 - [ ] Owner: follow docs/EMAIL.md (Hostinger mailbox, SES domain + DNS, production access, SNS topic, ENV_FILE), then send a test letter and check SPF/DKIM/DMARC pass
+
+## Google Analytics + Search Console for the AI team (D119), 2026-11-09
+- [x] GA4 tag (live site only, path only, consent mode for Europe, not on children's pages), daily snapshot, AI team reads it, /desk panel, privacy policy, letter utm labels
+- [ ] Owner: docs/GOOGLE.md (GA4 property, Search Console, service account, access, ENV_FILE), then "এখনই আনুন" in /desk → এআই সেটিংস

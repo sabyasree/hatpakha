@@ -12,6 +12,19 @@
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($gaId = \App\Support\Analytics::id())
+        {{-- D119: Google Analytics 4. Only the page's path (plus utm_ campaign labels) is sent, never the rest of the query: signed links stay private; no Google signals or ad
+             personalisation from analytics; visitors in Europe are asked first (the consent message updates Google's consent mode). --}}
+        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', region: @json(\App\Support\Analytics::CONSENT_REGIONS)});
+            gtag('js', new Date());
+            const utm = new URLSearchParams([...new URLSearchParams(location.search)].filter(([k]) => k.startsWith('utm_'))).toString();
+            gtag('config', @json($gaId), {page_location: location.origin + location.pathname + (utm ? '?' + utm : ''), page_referrer: document.referrer.split('?')[0], allow_google_signals: false, allow_ad_personalization_signals: false});
+        </script>
+    @endif
     @if (\App\Support\Ads::on())
         {{-- D111: only on page types that allow ads, on the live site --}}
         <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ \App\Support\Ads::client() }}" crossorigin="anonymous"></script>

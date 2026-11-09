@@ -28,7 +28,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self' data:",
             "img-src 'self' data: https:",
-            "connect-src 'self' https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google",
+            "connect-src 'self' https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",   // D119: GA4
             'frame-src https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.google.com https://*.adtrafficquality.google https://challenges.cloudflare.com https://www.youtube-nocookie.com',
             "frame-ancestors 'self'",
             "base-uri 'self'",
