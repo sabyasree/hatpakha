@@ -92,7 +92,7 @@ final class SerialWriter
         }
         $last = $n >= count($plan);
         $before = $serial->episodes()->get();
-        $story = $before->map(fn (Post $p) => 'পর্ব '.$p->episode_no.' "'.$p->title.'": '.($p->episode_summary ?: mb_substr(strip_tags((string) $p->body_html), 0, 400)))->implode("\n");
+        $story = $before->map(fn (Post $p) => 'পর্ব '.$p->episode_no.' "'.self::ownTitle((string) $p->title, $serial->title).'": '.($p->episode_summary ?: mb_substr(strip_tags((string) $p->body_html), 0, 400)))->implode("\n");
         $tail = mb_substr(trim(html_entity_decode(strip_tags(str_replace('</p>', "\n", (string) $before->last()?->body_html)))), -2500);
         [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik', $serial->id).' '.(self::WRITERS[$serial->writer][1] ?? ''),
             '<serial><title>'.e($serial->title).'</title><setting>'.e((string) ($serial->bible['setting'] ?? '')).'</setting>'
@@ -101,7 +101,7 @@ final class SerialWriter
             ."\n<so_far>".e($story).'</so_far>'
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
             ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))
-            .' Also give its private summary and an image_prompt.',
+            .' The title is only this episode\'s own short title (2-5 words): never the serial\'s name, never "পর্ব" or a number. Also give its private summary and an image_prompt.',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
             (string) config('ai.anthropic.writer_model'), 64000);   // thinking + up to 1800 Bengali words; streamed
         if (! is_array($d) || empty($d['episode']['paragraphs'])) {
@@ -125,6 +125,30 @@ final class SerialWriter
         return $done;
     }
 
+    /**
+     * The episode's own short title, without any serial name or "(পর্ব N):" the writer copied from earlier titles
+     * (owner's screenshot, 2026-11-09: "লাল কাচ (পর্ব ২): লাল কাচ (পর্ব ২): খাতা").
+     */
+    public static function ownTitle(string $title, string $serialTitle = ''): string
+    {
+        $t = trim($title);
+        do {
+            $before = $t;
+            $t = trim((string) preg_replace('/^.*?\(\s*পর্ব\s*[০-৯0-9]+\s*\)\s*[:：।-]?\s*/u', '', $t));
+            $t = trim((string) preg_replace('/^পর্ব\s*[০-৯0-9]+\s*[:：।-]\s*/u', '', $t));
+            if ($serialTitle !== '') {
+                $t = trim((string) preg_replace('/^'.preg_quote($serialTitle, '/').'\s*[:：,–—-]\s*/u', '', $t));
+            }
+        } while ($t !== $before && $t !== '');
+
+        return $t !== '' ? $t : trim($title);
+    }
+
+    public static function fullTitle(Serial $serial, int $n, string $own): string
+    {
+        return mb_substr($serial->title.' (পর্ব '.\App\Support\Bn::num((string) $n).'): '.self::ownTitle($own, $serial->title), 0, 200);
+    }
+
     private static function episodeSchema(): array
     {
         return ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs', 'summary', 'image_prompt'], 'properties' => [
@@ -139,7 +163,7 @@ final class SerialWriter
         $desk = Author::where('slug', 'hatpakha-desk')->first();
         $post = new Post;
         $post->forceFill([
-            'title' => mb_substr($serial->title.' (পর্ব '.\App\Support\Bn::num((string) $n).'): '.trim((string) $e['title']), 0, 200),
+            'title' => self::fullTitle($serial, $n, (string) $e['title']),
             'excerpt' => mb_substr($serial->logline ?? '', 0, 300),
             'body_html' => collect((array) $e['paragraphs'])->map(fn ($p) => '<p>'.e(trim((string) $p)).'</p>')->implode(''),
             'section_id' => $sec?->id, 'serial_id' => $serial->id, 'episode_no' => $n, 'episode_summary' => mb_substr(trim((string) $e['summary']), 0, 2000),

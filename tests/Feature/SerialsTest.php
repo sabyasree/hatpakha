@@ -114,4 +114,19 @@ class SerialsTest extends TestCase
             ->assertSee('উত্তর কলকাতা')->assertSee('অমল')->callAction('start');
         $this->assertSame('active', $serial->fresh()->status);
     }
+
+    public function test_episode_titles_never_repeat_the_serial_name_or_number(): void
+    {
+        // Owner's screenshot (2026-11-09): "লাল কাচ (পর্ব ২): লাল কাচ (পর্ব ২): খাতা".
+        $this->assertSame('খাতা', SerialWriter::ownTitle('লাল কাচ (পর্ব ২): লাল কাচ (পর্ব ২): খাতা', 'লাল কাচ'));
+        $this->assertSame('রঙের নিচে রং', SerialWriter::ownTitle('উল্টো হরফ (পর্ব ২): রঙের নিচে রং'));
+        $this->assertSame('খাতা', SerialWriter::ownTitle('পর্ব ২: খাতা'));
+        $this->assertSame('খাতা', SerialWriter::ownTitle('লাল কাচ: খাতা', 'লাল কাচ'));
+        $this->assertSame('বন্ধ দরজা', SerialWriter::ownTitle('বন্ধ দরজা'));
+
+        $serial = Serial::create(['title' => 'লাল কাচ', 'status' => 'active', 'slug' => 'lal-kach', 'day' => 6]);
+        $this->assertSame('লাল কাচ (পর্ব ২): খাতা', SerialWriter::fullTitle($serial, 2, 'লাল কাচ (পর্ব ২): খাতা'));
+        $p = $this->makePost(['slug' => 'lk2', 'serial_id' => $serial->id, 'episode_no' => 2, 'title' => 'লাল কাচ (পর্ব ২): লাল কাচ (পর্ব ২): খাতা']);
+        $this->assertSame('পর্ব ২: খাতা', $p->episodeLabel());
+    }
 }

@@ -155,7 +155,7 @@ class Post extends Model
     /** "পর্ব ৩: ভাঙা আয়না" from the stored "Serial (পর্ব ৩): ভাঙা আয়না". */
     public function episodeLabel(): string
     {
-        $own = str_contains((string) $this->title, '): ') ? trim(\Illuminate\Support\Str::after($this->title, '): ')) : (string) $this->title;
+        $own = \App\Ai\SerialWriter::ownTitle((string) $this->title, (string) $this->serial?->title);
 
         return 'পর্ব '.\App\Support\Bn::num((string) $this->episode_no).($own !== '' ? ': '.$own : '');
     }
