@@ -205,3 +205,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Pieces go to the trash (filter "ট্র্যাশ"): bring back, or delete forever, one by one or in bulk; a trashed published piece answers 410
 - [x] Marketing: delete a weekly plan or a post, clear the posted/skipped list; AI team: delete or cancel a job, clear finished jobs
 - [x] Panels on the desk pages and edit forms can be folded (pages remember it per browser)
+
+## Facebook and Instagram (D116), 2026-11-09
+- [x] Kit: docs/SOCIAL.md + pictures in docs/social/ (profile, cover, two post pictures); site footer and structured data link both accounts
+- [ ] Owner: Part A now (link the accounts, update fields, post and pin "নতুন রূপে ফিরছে")
+- [ ] Owner, launch day: Part B (second pinned post, automatic reply, domain verification code in ENV_FILE, Sharing Debugger)

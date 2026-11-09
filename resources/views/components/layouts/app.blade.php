@@ -94,6 +94,8 @@
                 @endforeach
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
                 <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
+                @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
+                @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
             </nav>
         </div>
     </footer>

@@ -11,6 +11,13 @@ return [
         'hostnames' => env('TURNSTILE_HOSTNAMES', parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: ''),
     ],
 
+    // D116: the magazine's own social pages (footer link + Organization sameAs) and Meta's domain verification code.
+    'social' => [
+        'facebook' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/Hatpakhaonline'),
+        'instagram' => env('INSTAGRAM_URL', 'https://www.instagram.com/hatpakha/'),
+        'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
+    ],
+
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
     'adsense' => [
         'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),
