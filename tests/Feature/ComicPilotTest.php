@@ -39,6 +39,28 @@ class ComicPilotTest extends TestCase
         rmdir($out);
     }
 
+    public function test_claude_draws_the_same_script_as_vector_panels_without_active_content(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => null]);
+        $dir = sys_get_temp_dir().'/comic-test-'.uniqid();
+        mkdir($dir);
+        $panel = ['scene' => 'A boy on a marsh path', 'caption' => '', 'bubbles' => []];
+        file_put_contents("{$dir}/in.json", json_encode(['title' => 'আলেয়া', 'characters' => [['name' => 'খোকা', 'look' => 'boy']], 'panels' => array_fill(0, 4, $panel)]));
+        Claude::$fake = fn ($purpose) => $purpose === 'design'
+            ? ['panels' => array_fill(0, 4, '<svg viewBox="0 0 1024 1024"><script>alert(1)</script><g onclick="x()"><circle r="5"/></g></svg>')] : null;
+        Http::fake();
+
+        $this->artisan('hatpakha:comic-pilot', ['--engine' => 'claude', '--script' => "{$dir}/in.json", '--out' => $dir])->assertSuccessful();
+
+        $svg = file_get_contents("{$dir}/claude-panel-4.svg");
+        $this->assertStringContainsString('<circle', $svg);
+        $this->assertStringNotContainsString('script', $svg);
+        $this->assertStringNotContainsString('onclick', $svg);
+        Http::assertNothingSent();   // no OpenAI call at all
+        array_map('unlink', glob("{$dir}/*"));
+        rmdir($dir);
+    }
+
     public function test_refuses_without_keys(): void
     {
         config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => null]);
