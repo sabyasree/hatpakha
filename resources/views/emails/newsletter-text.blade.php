@@ -2,14 +2,15 @@
 
 {{ $newsletter->intro }}
 
-@foreach ((array) $newsletter->items as $it)
+@php($link = fn (string $l) => \App\Support\NewsletterLinks::tracked($newsletter, $deliveryId ?? null, $l))
+@foreach ((array) $newsletter->items as $i => $it)
 * {{ $it['title'] }}{{ ! empty($it['author']) ? ' — '.$it['author'] : '' }}
   {{ $it['line'] ?? '' }}
-  {{ $it['url'] }}
+  {{ $link((string) $i) }}
 
 @endforeach
 {{ $newsletter->closing }}
 
-{{ $newsletter->cta_label ?: 'হাতপাখা খুলুন' }}: {{ \App\Ai\Copywriter::ctaUrl($newsletter) }}
+{{ $newsletter->cta_label ?: 'হাতপাখা খুলুন' }}: {{ $link('cta') }}
 
 আর চিঠি চান না? {{ $unsubscribeUrl }}

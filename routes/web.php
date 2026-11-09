@@ -181,6 +181,9 @@ Route::post('/newsletter/subscribe', [\App\Http\Controllers\NewsletterController
 // D104: a writer answers the apology letter about an old submission (signed link, no sign-in).
 Route::get('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'show'])->middleware(['signed', 'throttle:20,1'])->name('relaunch.reply');
 Route::post('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'store'])->middleware(['signed', 'throttle:10,1'])->name('relaunch.answer');
+// D117: counted links in sent letters (the target comes from the letter, never from the URL).
+Route::get('/chithi/{newsletter}/{delivery}/{link}/{sig}', \App\Http\Controllers\NewsletterClickController::class)
+    ->whereNumber(['newsletter', 'delivery'])->where(['link' => 'home|cta|[0-9]{1,2}', 'sig' => '[a-f0-9]{16}'])->middleware('throttle:60,1');
 Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
 Route::get('/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
 Route::get('/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {

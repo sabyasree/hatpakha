@@ -11,7 +11,8 @@ use Illuminate\Mail\Mailables\Headers;
 /** One newsletter e-mail (D58). Sent synchronously by the scheduler's batch (no queue worker on the host). */
 class NewsletterMail extends Mailable
 {
-    public function __construct(public Newsletter $newsletter, public string $unsubscribeUrl) {}
+    /** $deliveryId: set for real sends, so the links can be counted (D117); null for previews and test mails. */
+    public function __construct(public Newsletter $newsletter, public string $unsubscribeUrl, public ?int $deliveryId = null) {}
 
     public function envelope(): Envelope
     {

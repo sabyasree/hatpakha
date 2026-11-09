@@ -19,7 +19,7 @@ class NewFromWriter extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return (new MailMessage)->subject($this->author->publicName().'-এর নতুন লেখা: '.$this->post->title)->greeting('নমস্কার')
+        return (new MailMessage)->mailer(\App\Support\BulkMail::mailer())->subject($this->author->publicName().'-এর নতুন লেখা: '.$this->post->title)->greeting('নমস্কার')
             ->line('আপনি যাঁকে অনুসরণ করেন, সেই '.$this->author->publicName().'-এর নতুন লেখা হাতপাখায় প্রকাশিত হয়েছে।')
             ->line('"'.$this->post->title.'"'.($this->post->share_text ? ' — '.$this->post->share_text : ''))
             ->action('লেখাটি পড়ুন', $this->post->url())

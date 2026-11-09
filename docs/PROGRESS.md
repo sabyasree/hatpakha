@@ -210,3 +210,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Kit: docs/SOCIAL.md + pictures in docs/social/ (profile, cover, two post pictures); site footer and structured data link both accounts
 - [ ] Owner: Part A now (link the accounts, update fields, post and pin "নতুন রূপে ফিরছে")
 - [ ] Owner, launch day: Part B (second pinned post, automatic reply, domain verification code in ENV_FILE, Sharing Debugger)
+
+## E-mail: Hostinger + Amazon SES (D117), 2026-11-09
+- [x] Separate sender for letters (SES over SMTP), daily limit, counted clicks per letter and per link in /desk, automatic bounce/complaint suppression via SNS, privacy policy updated
+- [ ] Owner: follow docs/EMAIL.md (Hostinger mailbox, SES domain + DNS, production access, SNS topic, ENV_FILE), then send a test letter and check SPF/DKIM/DMARC pass

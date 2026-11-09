@@ -18,8 +18,31 @@ class EditNewsletter extends EditRecord
     {
         $r = $this->record;
 
+        $s = $r->sent ? \App\Support\NewsletterLinks::stats($r) : null;
+        $bounced = $r->sent ? $r->deliveries()->whereNotNull('bounce')->count() : 0;
+        $left = in_array($r->status, ['queued', 'sending'], true) ? \App\Support\BulkMail::remainingToday() : null;
+
         return __(Newsletter::STATUS[$r->status] ?? $r->status).($r->recipients ? ' · '.Bn::num($r->sent.' / '.$r->recipients).' '.__('জনকে পাঠানো') : '')
-            .($r->failed ? ' · '.Bn::num((string) $r->failed).' '.__('টি যায়নি') : '');
+            .($r->failed ? ' · '.Bn::num((string) $r->failed).' '.__('টি যায়নি') : '')
+            .($s ? ' · '.Bn::num((string) $s['clickers']).' '.__('জন লিংকে ক্লিক করেছেন').' ('.Bn::num((string) round(100 * $s['clickers'] / max(1, $r->sent))).'%)' : '')
+            .($bounced ? ' · '.Bn::num((string) $bounced).' '.__('টি ঠিকানা অচল বা অভিযোগ, আর পাঠানো হবে না') : '')
+            .($left === 0 ? ' · '.__('আজকের সীমা শেষ; বাকিগুলো কাল যাবে') : '');
+    }
+
+    /** D117: which links people clicked (each person counted once per link). */
+    public static function resultsHtml(Newsletter $r): string
+    {
+        $s = \App\Support\NewsletterLinks::stats($r);
+        $rows = ['home' => __('উপরের “হাতপাখা” নাম'), 'cta' => $r->cta_label ?: __('হাতপাখা খুলুন')];
+        foreach ((array) $r->items as $i => $it) {
+            $rows[(string) $i] = (string) ($it['title'] ?? '');
+        }
+        $html = '<p>'.e(Bn::num((string) $r->sent).' '.__('জনকে পাঠানো').' · '.Bn::num((string) $s['clickers']).' '.__('জন অন্তত একটি লিংকে ক্লিক করেছেন')).'</p><table style="width:100%;margin-top:.6rem;border-collapse:collapse">';
+        foreach ($rows as $k => $label) {
+            $html .= '<tr style="border-top:1px solid rgba(127,127,127,.2)"><td style="padding:.4rem 0">'.e($label).'</td><td style="text-align:right;font-weight:700">'.e(Bn::num((string) ($s['links'][$k] ?? 0))).' '.e(__('জন')).'</td></tr>';
+        }
+
+        return $html.'</table><p style="margin-top:.8rem;opacity:.7;font-size:.85rem">'.e(__('খোলার সংখ্যা দেখানো হয় না: অনেক মেল-অ্যাপ নিজে থেকেই ছবি খোলে, তাই সেই সংখ্যা ভুল হয়। ক্লিকই আসল আগ্রহ। কিছু অফিসের মেল-সুরক্ষা লিংক আগে থেকে খুলে দেখে, তাই দু-একটি ক্লিক বেশি দেখাতে পারে।')).'</p>';
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -40,6 +63,11 @@ class EditNewsletter extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('results')->label(__('ফলাফল'))->icon('heroicon-o-chart-bar')->color('gray')
+                ->visible(fn () => $this->record->sent > 0)
+                ->modalHeading(__('কে কোন লিংকে ক্লিক করেছেন'))
+                ->modalContent(fn () => new \Illuminate\Support\HtmlString(self::resultsHtml($this->record)))
+                ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ')),
             Action::make('preview')->label(__('ই-মেল দেখুন'))->icon('heroicon-o-eye')->color('gray')
                 ->modalHeading(fn (Newsletter $record) => $record->subject)->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ'))->modalWidth('3xl')
                 ->modalContent(fn (Newsletter $record) => new \Illuminate\Support\HtmlString('<iframe sandbox="" style="width:100%;height:70vh;border:0;border-radius:.75rem;background:#fff" srcdoc="'

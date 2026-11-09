@@ -22,7 +22,7 @@ final class NewsletterSender
 {
     public static function realMail(): bool
     {
-        return ! in_array(config('mail.default'), ['log', 'array'], true);
+        return BulkMail::real();
     }
 
     /**
@@ -75,15 +75,18 @@ final class NewsletterSender
     public static function batch(?int $size = null): int
     {
         $size ??= (int) config('mail.batch', 30);
+        if (($left = BulkMail::remainingToday()) !== null) {
+            $size = min($size, $left);   // D117: a big letter goes out over several days instead of being refused
+        }
         $n = Newsletter::whereIn('status', ['queued', 'sending'])->orderBy('queued_at')->first();
-        if (! $n || ! self::realMail()) {
+        if (! $n || ! self::realMail() || $size <= 0) {
             return 0;
         }
         $n->status === 'queued' && $n->forceFill(['status' => 'sending'])->save();
         $done = 0;
         foreach ($n->deliveries()->whereNull('sent_at')->whereNull('error')->limit($size)->get() as $d) {
             try {
-                Mail::to($d->email)->send(new NewsletterMail($n, self::unsubscribeUrl($d->kind, $d->recipient_id)));
+                Mail::mailer(BulkMail::mailer())->to($d->email)->send(new NewsletterMail($n, self::unsubscribeUrl($d->kind, $d->recipient_id), $d->id));
                 $d->forceFill(['sent_at' => now()])->save();
                 $done++;
             } catch (\Throwable $e) {
@@ -102,7 +105,7 @@ final class NewsletterSender
     /** "আমাকে একটা পাঠান": the owner sees the real e-mail before sending to everyone. */
     public static function test(Newsletter $n, User $to): void
     {
-        Mail::to($to->email)->send(new NewsletterMail($n, url('/').'/'));
+        Mail::mailer(BulkMail::mailer())->to($to->email)->send(new NewsletterMail($n, url('/').'/'));
     }
 
     public static function unsubscribeUrl(string $kind, int $id): string

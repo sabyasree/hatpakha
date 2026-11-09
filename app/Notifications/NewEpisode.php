@@ -20,7 +20,7 @@ class NewEpisode extends Notification
     {
         $serial = $this->post->serial;
 
-        return (new MailMessage)->subject($serial->title.': '.$this->post->episodeLabel())->greeting('নমস্কার')
+        return (new MailMessage)->mailer(\App\Support\BulkMail::mailer())->subject($serial->title.': '.$this->post->episodeLabel())->greeting('নমস্কার')
             ->line('আপনি যে ধারাবাহিক পড়ছেন, "'.$serial->title.'"-এর নতুন পর্ব এসেছে।')
             ->action('নতুন পর্ব পড়ুন', $this->post->url())
             ->line('এই ধারাবাহিকের খবর আর চান না? এক ক্লিকে বন্ধ করুন: '.$this->unfollowUrl)

@@ -1438,5 +1438,14 @@
     "এই পরিকল্পনাটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।": "Delete this plan? This can't be undone.",
     "পোস্ট করা ও বাদ দেওয়া সব পোস্ট মুছে ফেলবেন? এগুলো আর ফেরানো যাবে না।": "Delete all posted and skipped posts? This can't be undone.",
     "এই তালিকা খালি করুন": "Clear this list",
-    "এই পোস্টটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।": "Delete this post? This can't be undone."
+    "এই পোস্টটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।": "Delete this post? This can't be undone.",
+    "ক্লিক": "Clicks",
+    "জন লিংকে ক্লিক করেছেন": "people clicked a link",
+    "টি ঠিকানা অচল বা অভিযোগ, আর পাঠানো হবে না": "addresses bounced or complained; they won't be mailed again",
+    "আজকের সীমা শেষ; বাকিগুলো কাল যাবে": "today's limit reached; the rest go tomorrow",
+    "উপরের “হাতপাখা” নাম": "The “হাতপাখা” name at the top",
+    "হাতপাখা খুলুন": "Open Hatpakha",
+    "জন অন্তত একটি লিংকে ক্লিক করেছেন": "people clicked at least one link",
+    "খোলার সংখ্যা দেখানো হয় না: অনেক মেল-অ্যাপ নিজে থেকেই ছবি খোলে, তাই সেই সংখ্যা ভুল হয়। ক্লিকই আসল আগ্রহ। কিছু অফিসের মেল-সুরক্ষা লিংক আগে থেকে খুলে দেখে, তাই দু-একটি ক্লিক বেশি দেখাতে পারে।": "Opens aren't shown: many mail apps load images by themselves, so that number is wrong. Clicks show real interest. Some office mail scanners open links in advance, so a click or two may be extra.",
+    "কে কোন লিংকে ক্লিক করেছেন": "Which links people clicked"
 }

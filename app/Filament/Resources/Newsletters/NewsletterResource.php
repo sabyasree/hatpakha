@@ -95,6 +95,8 @@ class NewsletterResource extends Resource
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()->formatStateUsing(fn ($state) => __(Newsletter::STATUS[$state] ?? $state))
                     ->color(fn ($state) => ['draft' => 'warning', 'sent' => 'success', 'cancelled' => 'gray'][$state] ?? 'info'),
                 TextColumn::make('sent')->label(__('পাঠানো'))->formatStateUsing(fn ($state, Newsletter $record) => $record->recipients ? \App\Support\Bn::num($state.' / '.$record->recipients) : '—'),
+                TextColumn::make('clicks')->label(__('ক্লিক'))->state(fn (Newsletter $record) => $record->sent
+                    ? \App\Support\Bn::num((string) \App\Support\NewsletterLinks::stats($record)['clickers']).' '.__('জন') : '—'),
                 TextColumn::make('updated_at')->label(__('শেষ বদল'))->since(),
             ])
             ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন')), \App\Filament\Support\Deleting::row()])

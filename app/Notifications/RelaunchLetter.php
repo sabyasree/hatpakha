@@ -24,7 +24,7 @@ class RelaunchLetter extends Notification
             $list .= "\n".'এবং আরও '.Bn::num((string) (count($this->titles) - 10)).'টি লেখা';
         }
         $body = strtr($this->letter['body'], ['{লেখা}' => $list, '{নাম}' => (string) $notifiable->name]);
-        $mail = (new MailMessage)->subject($this->letter['subject'])->greeting('নমস্কার, '.$notifiable->name);
+        $mail = (new MailMessage)->mailer(\App\Support\BulkMail::mailer())->subject($this->letter['subject'])->greeting('নমস্কার, '.$notifiable->name);
         foreach (preg_split("/\n{2,}/u", $body) as $para) {
             $mail->line(new \Illuminate\Support\HtmlString(nl2br(e(trim($para)))));
         }
