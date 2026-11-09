@@ -6,12 +6,15 @@ name: Comic pilot
 on:
   push:
     branches: [claude/zealous-goldberg-hh8o61]
-    paths: ['.github/workflows/comic-pilot.yml', 'app/Console/Commands/ComicPilot.php']
+    paths: ['.github/workflows/comic-pilot.yml', '.github/comic-pilot/**', 'app/Console/Commands/ComicPilot.php']
   workflow_dispatch:
     inputs:
       topic:
         description: Legend or idea for the strip
         default: 'আলেয়া'
+      engine:
+        description: openai (painted) or claude (vector drawing)
+        default: 'claude'
 
 permissions:
   contents: read
@@ -20,7 +23,7 @@ jobs:
   pilot:
     runs-on: ubuntu-latest
     environment: staging
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       # Real environment variables win over .env: never the staging database, mail or cache.
       DB_CONNECTION: sqlite
@@ -46,12 +49,16 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
           TOPIC: ${{ inputs.topic || 'আলেয়া' }}
+          # Pushes after the first OpenAI run draw Claude's version of the SAME script (.github/comic-pilot/script.json).
+          ENGINE: ${{ inputs.engine || 'claude' }}
         run: |
           umask 077
           printf '%s\n' "$ENV_FILE" > .env
           touch "$DB_DATABASE"
           php artisan migrate --force --no-ansi >/dev/null
-          php artisan hatpakha:comic-pilot --topic="$TOPIC" --out="$PWD/comic-out" --no-ansi
+          case "$ENGINE" in openai|claude) ;; *) echo "engine must be openai or claude"; exit 1 ;; esac
+          SCRIPT=""; [ -f .github/comic-pilot/script.json ] && SCRIPT="--script=$PWD/.github/comic-pilot/script.json"
+          php artisan hatpakha:comic-pilot --engine="$ENGINE" --topic="$TOPIC" $SCRIPT --out="$PWD/comic-out" --no-ansi
           rm -f .env "$DB_DATABASE"
 
       - name: Remove secrets
