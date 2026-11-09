@@ -68,4 +68,19 @@ class HomeRotationTest extends TestCase
         $this->assertStringContainsString('নতুন পর্ব', $html);
         $this->assertLessThan(strpos($html, 'গল্পের পাতা'), strpos($html, 'id="serials-h"'), 'Serials come before the story shelf');
     }
+
+    public function test_a_long_prose_pick_shows_only_its_opening_on_the_home_page(): void
+    {
+        // Owner (2026-11-09): a long essay as the editor's pick filled the whole home page.
+        $long = '<p>'.str_repeat('শ্যামরায় মন্দিরের সামনে দাঁড়ালে প্রথমে চোখে পড়ে রং। ', 40).'</p><p>শেষ অনুচ্ছেদ যা দেখা উচিত নয়।</p>';
+        $this->makePost(['slug' => 'pick', 'format' => 'prose', 'language' => 'bn', 'body_html' => $long]);
+        $post = \App\Models\Post::where('slug', 'pick')->first();
+        \App\Models\Setting::put('home.pick', json_encode(['post_id' => $post->id, 'note' => 'ভালো লেখা']));
+        cache()->flush();
+        $html = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('পুরো লেখা পড়ুন', $html);
+        $this->assertStringNotContainsString('শেষ অনুচ্ছেদ যা দেখা উচিত নয়', $html);
+        $this->assertLessThan(500, mb_strlen(strip_tags(\App\Support\Excerpt::prose($long, 320))));
+        $this->assertStringEndsWith('। …</p>', \App\Support\Excerpt::prose($long, 320), 'Cut at a full stop');
+    }
 }

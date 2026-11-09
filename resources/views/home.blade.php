@@ -44,7 +44,12 @@
                 <a href="{{ $poemOfDay->url() }}" class="mt-2 hidden h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:flex">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
             </div>
             <div>
-                <div class="poem-bn poem-tight max-w-[34ch] text-2xl md:text-4xl">{!! \App\Support\Excerpt::lines($poemOfDay->body_html, 6) !!}</div>
+                @if ($poemOfDay->isPoem())
+                    <div class="poem-bn poem-tight max-w-[34ch] text-2xl md:text-4xl">{!! \App\Support\Excerpt::lines($poemOfDay->body_html, 6) !!}</div>
+                @else
+                    {{-- Prose (owner, 2026-11-09): only the opening, never the whole piece --}}
+                    <div class="max-w-[40ch] font-serif text-xl leading-relaxed md:text-2xl md:leading-relaxed">{!! \App\Support\Excerpt::prose($poemOfDay->body_html, 320) !!}</div>
+                @endif
                 <a href="{{ $poemOfDay->url() }}" class="mt-6 flex h-12 w-fit items-center rounded-full bg-paper px-5 font-bold text-navy md:hidden">{{ $poemOfDay->isPoem() ? 'পুরো কবিতা পড়ুন' : 'পুরো লেখা পড়ুন' }}</a>
             </div>
         </div>
