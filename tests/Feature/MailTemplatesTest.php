@@ -53,7 +53,7 @@ class MailTemplatesTest extends TestCase
         $this->assertSame('খুলুন', $mail->actionText);
 
         Livewire::test(MailTemplatesPage::class)->callAction('reset', arguments: ['key' => 'decision_changes']);
-        $this->assertSame('হাতপাখা: "বৃষ্টির দিন" — একটু বদল চাই', (new SubmissionDecision($post, 'changes'))->toMail($writer)->subject);
+        $this->assertSame('হাতপাখা: “বৃষ্টির দিন” — একটু বদল চাই', (new SubmissionDecision($post, 'changes'))->toMail($writer)->subject);
     }
 
     public function test_an_empty_placeholder_drops_its_paragraph(): void

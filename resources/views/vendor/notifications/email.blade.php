@@ -1,13 +1,8 @@
-<x-mail::message>
-{{-- Greeting --}}
+<x-mail::message :preheader="$introLines[0] ?? null">
+{{-- Greeting: plain bold text; the headline ("## …" in the template) carries the news (D124) --}}
 @if (! empty($greeting))
-# {{ $greeting }}
-@else
-@if ($level === 'error')
-# @lang('Whoops!')
-@else
-# @lang('Hello!')
-@endif
+**{{ $greeting }}**
+
 @endif
 
 {{-- Intro Lines --}}
@@ -46,7 +41,9 @@
 @isset($actionText)
 <x-slot:subcopy>
 {{-- D123: in Bengali, like the rest of the e-mail --}}
-"{{ $actionText }}" বোতামে চাপ দিতে অসুবিধা হলে নিচের ঠিকানাটি ব্রাউজারে খুলুন: <span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
+বোতামটি কাজ না করলে এই লিংকে চাপ দিন, বা লিংকটি কপি করে ব্রাউজারে বসান:
+
+<span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
 </x-slot:subcopy>
 @endisset
 </x-mail::message>
