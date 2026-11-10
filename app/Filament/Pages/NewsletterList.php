@@ -140,6 +140,8 @@ class NewsletterList extends Page implements HasTable
                     ->modalDescription(__('এই অ্যাকাউন্ট আর চিঠি পাবে না, লগ-ইন করতে পারবে না, মন্তব্য সবসময় দেখে নেওয়া হবে। পরে “মানুষ” টিপে ফেরানো যায়।'))
                     ->visible(fn (User $record) => $record->bot_review !== 'bot')
                     ->action(fn (User $record) => $verdict(collect([$record]), 'bot')),
+                // Owner, 2026-11-10: delete a bot account outright (admins; asks first; written to the audit log).
+                \App\Filament\Support\Deleting::row(),
             ])
             ->toolbarActions([
                 \Filament\Actions\BulkActionGroup::make([
@@ -148,6 +150,7 @@ class NewsletterList extends Page implements HasTable
                     BulkAction::make('botSelected')->label(__('বেছে নেওয়ারা বট'))->icon('heroicon-o-no-symbol')->color('danger')->requiresConfirmation()
                         ->modalDescription(__('এরা আর চিঠি পাবে না, লগ-ইন করতে পারবে না। পরে “মানুষ” টিপে ফেরানো যায়।'))
                         ->action(fn (Collection $records) => $verdict($records, 'bot'))->deselectRecordsAfterCompletion(),
+                    \App\Filament\Support\Deleting::bulk(User::class),
                 ]),
             ]);
     }

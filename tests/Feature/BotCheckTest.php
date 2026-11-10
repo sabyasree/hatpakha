@@ -106,4 +106,18 @@ class BotCheckTest extends TestCase
         $this->post('/login/', ['email' => 'promo@mailinator.com', 'password' => 'a-good-long-pass-9087'])->assertSessionHasErrors('email');
         $this->assertGuest();
     }
+
+    public function test_the_owner_can_delete_flagged_accounts(): void
+    {
+        $a = $this->user('Casino One', 'c1@gmail.com');
+        $b = $this->user('Casino Two', 'c2@gmail.com');
+        BotCheck::scan();
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::withQueryParams(['source' => 'suspects'])->test(NewsletterList::class)->callTableAction('delete', $a);
+        $this->assertModelMissing($a);
+        Livewire::withQueryParams(['source' => 'suspects'])->test(NewsletterList::class)->callTableBulkAction('deleteSelected', [$b]);
+        $this->assertModelMissing($b);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'user.deleted']);
+    }
 }
