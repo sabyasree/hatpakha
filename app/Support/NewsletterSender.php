@@ -26,8 +26,8 @@ final class NewsletterSender
     }
 
     /**
-     * Readers: confirmed sign-ups, plus every account with a verified e-mail that has not switched
-     * the letter off (owner's decision, D59: accounts get the letter by default, one click to stop).
+     * Readers: confirmed sign-ups, plus every account that has not switched the letter off and is not
+     * marked as spam (D59; owner, 2026-11-10 (D120): verified or not, every current account is on the list).
      * Writers: registered writers who have not opted out.
      */
     public static function recipients(string $audience): Collection
@@ -36,20 +36,41 @@ final class NewsletterSender
         if (in_array($audience, ['readers', 'both'], true)) {
             NewsletterSubscriber::mailable()->get(['id', 'email'])
                 ->each(fn ($s) => $out->push(['email' => mb_strtolower(trim($s->email)), 'kind' => 'subscriber', 'id' => $s->id]));
-            User::where('mail_opt_out', false)->whereNotNull('email_verified_at')
+            User::where('mail_opt_out', false)
                 ->when(\Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason'), fn ($q) => $q->whereNull('spam_reason'))
                 ->get(['id', 'email'])
                 ->each(fn ($u) => $out->push(['email' => mb_strtolower(trim($u->email)), 'kind' => 'writer', 'id' => $u->id]));
         }
         if (in_array($audience, ['writers', 'both'], true)) {
-            User::where('mail_opt_out', false)->whereNotNull('email_verified_at')
-                ->where(fn ($q) => $q->whereIn('role', [Role::Writer->value])->orWhereHas('author', fn ($a) => $a->where('published_count', '>', 0)))
+            User::where('mail_opt_out', false)
+                ->where(fn ($q) => $q->whereIn('role', [Role::Writer->value, Role::TrustedWriter->value])->orWhereHas('author', fn ($a) => $a->where('published_count', '>', 0)->orWhereHas('posts', fn ($p) => $p->where('status', 'published'))))
                 ->when(\Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason'), fn ($q) => $q->whereNull('spam_reason'))
                 ->get(['id', 'email'])
                 ->each(fn ($u) => $out->push(['email' => mb_strtolower(trim($u->email)), 'kind' => 'writer', 'id' => $u->id]));
         }
 
         return $out->filter(fn ($r) => filter_var($r['email'], FILTER_VALIDATE_EMAIL))->unique('email')->values();
+    }
+
+    /**
+     * Why accounts are or aren't on the list (counts only), for /desk → চিঠি.
+     *
+     * @return array{accounts: int, spam: int, unverified: int, opted_out: int, readers: int, writers: int, signups: int}
+     */
+    public static function breakdown(): array
+    {
+        $spam = \Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason');
+        $clean = fn () => User::query()->when($spam, fn ($q) => $q->whereNull('spam_reason'));
+
+        return [
+            'accounts' => User::count(),
+            'spam' => $spam ? User::whereNotNull('spam_reason')->count() : 0,
+            'unverified' => $clean()->whereNull('email_verified_at')->count(),
+            'opted_out' => $clean()->where('mail_opt_out', true)->count(),
+            'readers' => self::count('readers'),
+            'writers' => self::count('writers'),
+            'signups' => NewsletterSubscriber::mailable()->count(),
+        ];
     }
 
     public static function count(string $audience): int

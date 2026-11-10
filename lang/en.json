@@ -1456,5 +1456,22 @@
     "প্রতিদিন সকাল সাড়ে ৭টায় নিজে থেকে আসে।": "Fetched automatically every day at 7:30.",
     "যুক্ত হয়েছে; প্রথমবার আনা বাকি।": "Connected; not fetched yet.",
     "এখনই আনুন": "Fetch now",
-    "এআই দল ঠিক এই লেখাটুকু পড়ে (পরিকল্পনা, পোস্ট, চিঠি, এসইও আর মাসিক হিসাবে):": "The AI team reads exactly this text (for plans, posts, letters, SEO and the monthly report):"
+    "এআই দল ঠিক এই লেখাটুকু পড়ে (পরিকল্পনা, পোস্ট, চিঠি, এসইও আর মাসিক হিসাবে):": "The AI team reads exactly this text (for plans, posts, letters, SEO and the monthly report):",
+    "মোট অ্যাকাউন্ট": "Accounts in total",
+    "ই-মেল যাচাই হয়নি": "email not verified",
+    "চিঠি বন্ধ রেখেছেন": "switched letters off",
+    "স্প্যাম বলে চিহ্নিত": "marked as spam",
+    "চিঠি পাবেন": "Will get letters",
+    "স্প্যাম বলে চিহ্নিত (পাবেন না)": "marked as spam (won't get them)",
+    "চিঠি বন্ধ করুন": "Stop letters",
+    "এই মানুষটি আর কোনও চিঠি পাবেন না। পরে চাইলে নিজের অ্যাকাউন্ট থেকে আবার চালু করতে পারবেন।": "This person won't get any more letters. They can switch them back on from their own account.",
+    "বেছে নেওয়াদের চিঠি বন্ধ করুন": "Stop letters for the selected",
+    "পাবেন": "Will get them",
+    "নিশ্চিত করেননি": "Not confirmed",
+    "চিঠি বন্ধ করা হয়েছে": "Letters stopped",
+    "জনের চিঠি বন্ধ করা হয়েছে": " people's letters stopped",
+    "অ্যাকাউন্ট (পাঠক ও লেখক)": "Accounts (readers and writers)",
+    "অ্যাকাউন্ট ছাড়া সাইন-আপ": "Sign-ups without an account",
+    "বন্ধ রেখেছেন": "Switched off",
+    "স্প্যাম, পাবেন না": "Spam, won't get them"
 }

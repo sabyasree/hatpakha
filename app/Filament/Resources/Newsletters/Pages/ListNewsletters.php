@@ -18,7 +18,11 @@ class ListNewsletters extends ListRecords
     {
         $n = fn ($v) => \App\Support\Bn::num((string) $v);
 
-        return __('চিঠি পান').': '.$n(NewsletterSubscriber::mailable()->count()).' '.__('জন পাঠক').' · '.$n(\App\Support\NewsletterSender::count('writers')).' '.__('জন লেখক')
+        $b = \App\Support\NewsletterSender::breakdown();
+
+        return __('চিঠি পান').': '.$n($b['readers']).' '.__('জন পাঠক').' · '.$n($b['writers']).' '.__('জন লেখক')
+            .' · '.__('মোট অ্যাকাউন্ট').' '.$n($b['accounts']).' ('.__('চিঠি বন্ধ রেখেছেন').' '.$n($b['opted_out'])
+            .', '.__('স্প্যাম বলে চিহ্নিত').' '.$n($b['spam']).')'
             .(\App\Support\NewsletterSender::realMail() ? '' : ' · '.__('এই সার্ভারে আসল ই-মেল চালু নেই: খসড়া ও পরীক্ষা চলবে, পাঠানো যাবে না'));
     }
 
