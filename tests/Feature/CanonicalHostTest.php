@@ -21,6 +21,13 @@ class CanonicalHostTest extends TestCase
         $this->get('https://hatpakha.com/megh/')->assertOk();
     }
 
+    public function test_staging_reached_through_the_main_domain_sends_readers_to_the_real_site(): void
+    {
+        config(['app.url' => 'https://new.hatpakha.com']);
+        $this->call('GET', 'https://hatpakha.com/new/megh/', [], [], [], ['SCRIPT_NAME' => '/new/index.php', 'SCRIPT_FILENAME' => base_path('public/index.php'), 'REQUEST_URI' => '/new/megh/'])
+            ->assertStatus(301)->assertRedirect('https://hatpakha.com/megh/');
+    }
+
     public function test_staging_and_local_are_left_alone(): void
     {
         config(['app.url' => 'https://new.hatpakha.com']);
