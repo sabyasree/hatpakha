@@ -129,4 +129,12 @@ class SerialsTest extends TestCase
         $p = $this->makePost(['slug' => 'lk2', 'serial_id' => $serial->id, 'episode_no' => 2, 'title' => 'লাল কাচ (পর্ব ২): লাল কাচ (পর্ব ২): খাতা']);
         $this->assertSame('পর্ব ২: খাতা', $p->episodeLabel());
     }
+
+    public function test_a_live_serial_is_in_the_sitemap_with_its_last_episode_date(): void
+    {
+        // Production, 2026-11-10: the sitemap crashed once a serial had a published episode (the date came back as text).
+        $serial = Serial::create(['title' => 'লাল কাচ', 'status' => 'active', 'slug' => 'lal-kach', 'day' => 6]);
+        $this->makePost(['status' => 'published', 'serial_id' => $serial->id, 'episode' => 1, 'published_at' => '2026-11-08 18:00:00']);
+        $this->get('/sitemap-pages.xml')->assertOk()->assertSee($serial->url(), false)->assertSee('<lastmod>2026-11-08T18:00:00', false);
+    }
 }

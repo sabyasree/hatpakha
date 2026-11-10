@@ -64,7 +64,7 @@ class SitemapController extends Controller
             $type === 'pages' => Page::published()->where('noindex', false)->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => null])
                 // D97: collection pages live with the pages
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
-                ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at, 'image' => null])),
+                ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null])),
             $type === 'issues' => Issue::where('status', 'published')->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 
