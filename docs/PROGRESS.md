@@ -219,3 +219,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] GA4 tag (live site only, path only, consent mode for Europe, not on children's pages), daily snapshot, AI team reads it, /desk panel, privacy policy, letter utm labels
 - [ ] Owner: docs/GOOGLE.md (GA4 property, Search Console, service account, access, ENV_FILE), then "এখনই আনুন" in /desk → এআই সেটিংস
 - [x] D120: writers by pieces, every account on the letter list (except opted-out and spam), /desk → চিঠির তালিকা
+- [x] D121: bot check (existing accounts + new sign-ups), manual review in /desk → চিঠির তালিকা → বট-যাচাই
+- [ ] Owner: review the flagged accounts before the first big letter

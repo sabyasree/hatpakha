@@ -54,7 +54,8 @@ class NewsletterList extends Page implements HasTable
         $n = fn ($v) => \App\Support\Bn::num((string) $v);
 
         return __('চিঠি পাবেন').': '.$n($b['readers']).' '.__('জন পাঠক').' · '.$n($b['writers']).' '.__('জন লেখক').' · '
-            .__('চিঠি বন্ধ রেখেছেন').' '.$n($b['opted_out']).' · '.__('স্প্যাম বলে চিহ্নিত (পাবেন না)').' '.$n($b['spam']);
+            .__('চিঠি বন্ধ রেখেছেন').' '.$n($b['opted_out']).' · '.__('স্প্যাম বা বট (পাবেন না)').' '.$n($b['spam'])
+            .' · '.__('সন্দেহজনক, দেখা বাকি (ততদিন পাবেন না)').' '.$n($b['suspects']);
     }
 
     public static function status(User $u): string
@@ -68,7 +69,87 @@ class NewsletterList extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        return $this->source === 'signups' ? $this->signups($table) : $this->accounts($table);
+        return match ($this->source) {
+            'signups' => $this->signups($table),
+            'suspects' => $this->suspects($table),
+            default => $this->accounts($table),
+        };
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return ($n = \App\Support\BotCheck::pendingCount()) ? \App\Support\Bn::num((string) $n) : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return __('সন্দেহজনক অ্যাকাউন্ট, দেখা বাকি');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('scan')->label(__('বট-যাচাই আবার চালান'))->icon('heroicon-o-magnifying-glass')->color('gray')
+                ->requiresConfirmation()->modalDescription(__('সব অ্যাকাউন্ট আবার দেখা হবে (আপনি যাদের আগেই দেখে রায় দিয়েছেন, তারা বাদ)। কাউকে মোছা বা আটকানো হয় না, শুধু দেখার তালিকায় ওঠে।'))
+                ->action(function () {
+                    $n = \App\Support\BotCheck::scan();
+                    Notification::make()->title(\App\Support\Bn::num((string) $n['flagged']).__('টি অ্যাকাউন্ট দেখার তালিকায়'))->success()->send();
+                }),
+        ];
+    }
+
+    /** D121: accounts that look like bots, for the owner to decide. Nothing happens to them without a click. */
+    private function suspects(Table $table): Table
+    {
+        $verdict = function (Collection $users, string $v) {
+            foreach ($users as $u) {
+                \App\Support\BotCheck::decide($u, $v, auth()->user());
+            }
+            Notification::make()->title(\App\Support\Bn::num((string) $users->count()).' '.($v === 'bot' ? __('টি অ্যাকাউন্ট বট বলে চিহ্নিত') : __('টি অ্যাকাউন্ট মানুষ বলে চিহ্নিত')))->success()->send();
+        };
+
+        return $table->query(User::query()->whereNotNull('bot_reasons'))->defaultSort('id')
+            ->columns([
+                TextColumn::make('name')->label(__('নাম'))->weight('bold')->searchable(['name', 'email'])->description(fn (User $record) => $record->email),
+                TextColumn::make('bot_reasons')->label(__('কেন সন্দেহ'))->wrap()
+                    ->state(fn (User $record) => implode(' · ', array_map('__', \App\Support\BotCheck::labels($record->bot_reasons)))),
+                TextColumn::make('bot_review')->label(__('রায়'))->badge()
+                    ->state(fn (User $record) => __(['human' => 'মানুষ', 'bot' => 'বট'][$record->bot_review] ?? 'দেখা বাকি'))
+                    ->color(fn (User $record) => ['human' => 'success', 'bot' => 'danger'][$record->bot_review] ?? 'warning'),
+                TextColumn::make('created_at')->label(__('যোগ দিয়েছেন'))->date('d/m/Y')->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('review')->label(__('রায়'))->default('pending')
+                    ->options(['pending' => __('দেখা বাকি'), 'bot' => __('বট'), 'human' => __('মানুষ')])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'pending' => $query->whereNull('bot_review'),
+                        'bot', 'human' => $query->where('bot_review', $data['value']),
+                        default => $query,
+                    }),
+            ])
+            ->recordActions([
+                Action::make('human')->label(__('মানুষ'))->icon('heroicon-o-user')->color('success')
+                    ->visible(fn (User $record) => $record->bot_review !== 'human')
+                    ->action(fn (User $record) => $verdict(collect([$record]), 'human')),
+                Action::make('bot')->label(__('বট'))->icon('heroicon-o-no-symbol')->color('danger')->requiresConfirmation()
+                    ->modalDescription(__('এই অ্যাকাউন্ট আর চিঠি পাবে না, লগ-ইন করতে পারবে না, মন্তব্য সবসময় দেখে নেওয়া হবে। পরে “মানুষ” টিপে ফেরানো যায়।'))
+                    ->visible(fn (User $record) => $record->bot_review !== 'bot')
+                    ->action(fn (User $record) => $verdict(collect([$record]), 'bot')),
+            ])
+            ->toolbarActions([
+                \Filament\Actions\BulkActionGroup::make([
+                    BulkAction::make('humanSelected')->label(__('বেছে নেওয়ারা মানুষ'))->icon('heroicon-o-user')
+                        ->action(fn (Collection $records) => $verdict($records, 'human'))->deselectRecordsAfterCompletion(),
+                    BulkAction::make('botSelected')->label(__('বেছে নেওয়ারা বট'))->icon('heroicon-o-no-symbol')->color('danger')->requiresConfirmation()
+                        ->modalDescription(__('এরা আর চিঠি পাবে না, লগ-ইন করতে পারবে না। পরে “মানুষ” টিপে ফেরানো যায়।'))
+                        ->action(fn (Collection $records) => $verdict($records, 'bot'))->deselectRecordsAfterCompletion(),
+                ]),
+            ]);
     }
 
     private function accounts(Table $table): Table

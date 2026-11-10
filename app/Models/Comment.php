@@ -37,7 +37,7 @@ class Comment extends Model
     /** Guests: always checked. Signed-in: checked until trusted. Spam-flagged accounts: always checked. */
     public static function statusFor(?User $user): string
     {
-        if (! $user || filled($user->spam_reason)) {
+        if (! $user || filled($user->spam_reason) || (filled($user->bot_reasons) && $user->bot_review !== 'human')) {   // D121
             return 'pending';
         }
 

@@ -36,6 +36,8 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'app_authentication_recovery_codes' => 'encrypted:array',
             'has_email_authentication' => 'boolean',
             'mail_opt_out' => 'boolean',
+            'bot_reasons' => 'array',
+            'bot_checked_at' => 'datetime',
         ];
     }
 

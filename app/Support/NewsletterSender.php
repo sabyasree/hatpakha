@@ -38,6 +38,7 @@ final class NewsletterSender
                 ->each(fn ($s) => $out->push(['email' => mb_strtolower(trim($s->email)), 'kind' => 'subscriber', 'id' => $s->id]));
             User::where('mail_opt_out', false)
                 ->when(\Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason'), fn ($q) => $q->whereNull('spam_reason'))
+                ->where(fn ($q) => $q->whereNull('bot_reasons')->orWhere('bot_review', 'human'))   // D121: suspected bots wait for review
                 ->get(['id', 'email'])
                 ->each(fn ($u) => $out->push(['email' => mb_strtolower(trim($u->email)), 'kind' => 'writer', 'id' => $u->id]));
         }
@@ -45,6 +46,7 @@ final class NewsletterSender
             User::where('mail_opt_out', false)
                 ->where(fn ($q) => $q->whereIn('role', [Role::Writer->value, Role::TrustedWriter->value])->orWhereHas('author', fn ($a) => $a->where('published_count', '>', 0)->orWhereHas('posts', fn ($p) => $p->where('status', 'published'))))
                 ->when(\Illuminate\Support\Facades\Schema::hasColumn('users', 'spam_reason'), fn ($q) => $q->whereNull('spam_reason'))
+                ->where(fn ($q) => $q->whereNull('bot_reasons')->orWhere('bot_review', 'human'))   // D121: suspected bots wait for review
                 ->get(['id', 'email'])
                 ->each(fn ($u) => $out->push(['email' => mb_strtolower(trim($u->email)), 'kind' => 'writer', 'id' => $u->id]));
         }
@@ -55,7 +57,7 @@ final class NewsletterSender
     /**
      * Why accounts are or aren't on the list (counts only), for /desk → চিঠি.
      *
-     * @return array{accounts: int, spam: int, unverified: int, opted_out: int, readers: int, writers: int, signups: int}
+     * @return array{accounts: int, spam: int, unverified: int, opted_out: int, readers: int, writers: int, signups: int, suspects: int}
      */
     public static function breakdown(): array
     {
@@ -70,6 +72,7 @@ final class NewsletterSender
             'readers' => self::count('readers'),
             'writers' => self::count('writers'),
             'signups' => NewsletterSubscriber::mailable()->count(),
+            'suspects' => BotCheck::pendingCount(),
         ];
     }
 

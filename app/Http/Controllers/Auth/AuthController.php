@@ -113,6 +113,11 @@ class AuthController extends Controller
 
     private function finishLogin(Request $request, User $user, bool $remember)
     {
+        // D121: an account the owner confirmed as a bot can't sign in.
+        if ($user->bot_review === 'bot') {
+            AuditLog::record('user.login_refused_bot', null, ['user' => $user->id]);
+            throw ValidationException::withMessages(['email' => 'এই অ্যাকাউন্টে এখন লগ-ইন করা যাচ্ছে না। ভুল মনে হলে যোগাযোগ পাতায় জানান।']);
+        }
         Auth::login($user, $remember);
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
@@ -183,6 +188,7 @@ class AuthController extends Controller
             'mail_opt_out' => ! $request->boolean('newsletter', true),
         ])->save();
         AuditLog::record('user.registered', $user);
+        \App\Support\BotCheck::check($user);   // D121: a likely bot is flagged for the owner to review (never blocked here)
         event(new Registered($user)); // sends the verification email when real mail is configured
 
         if ($realMail) {
