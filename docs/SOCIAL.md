@@ -103,4 +103,4 @@ Don't give a date until the launch day is fixed. Don't promise anything that isn
 ## Site side (done)
 - The site footer links to the Facebook page and Instagram; Google's site data (`Organization.sameAs`) lists both (`config/services.php` → `social`, env `FACEBOOK_PAGE_URL`, `INSTAGRAM_URL`).
 - `FACEBOOK_DOMAIN_VERIFICATION` adds Meta's verification tag to every page (only a plain letters-and-digits code is accepted).
-- The pictures were made from the logo palette; the "p" mark is redrawn as a vector in `docs/social/mark.js`, so it can be made at any size.
+- The pictures were made from the logo palette; the "p" mark is redrawn as a vector in `docs/social/mark.cjs`, so it can be made at any size.

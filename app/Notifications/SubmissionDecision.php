@@ -19,28 +19,15 @@ class SubmissionDecision extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        $m = (new MailMessage)->greeting('নমস্কার, '.$notifiable->name)->salutation('— হাতপাখা সম্পাদকমণ্ডলী');
-        $title = '"'.$this->post->title.'"';
+        $p = $this->post;
+        $v = ['{নাম}' => $notifiable->name, '{লেখা}' => $p->title, '{সম্পাদকের_কথা}' => (string) $p->review_note];
 
         return match ($this->decision) {
-            'approved' => $m->subject("হাতপাখা: {$title} মনোনীত হয়েছে")
-                ->line("আনন্দের খবর! আপনার লেখা {$title} হাতপাখায় প্রকাশের জন্য মনোনীত হয়েছে।")
-                ->line($this->post->published_at?->isFuture() ? 'প্রকাশের তারিখ: '.\App\Support\Bn::date($this->post->published_at) : 'লেখাটি এখন প্রকাশিত।')
-                ->when($this->post->review_note, fn ($m) => $m->line('সম্পাদকের কথা: '.$this->post->review_note))
-                ->action('লেখাটি দেখুন', $this->post->published_at?->isFuture() ? Url::to('/account') : $this->post->url()),
-            'confirm' => $m->subject("হাতপাখা: {$title} মনোনীত — আপনার সম্মতি চাই")
-                ->line("আপনার লেখা {$title} প্রকাশের জন্য মনোনীত হয়েছে।")
-                ->line('প্রকাশের আগে সম্পাদক কয়েকটি শব্দ বদলাতে চান। বদলগুলো দেখে সম্মতি দিলেই লেখাটি প্রকাশিত হবে।')
-                ->action('বদলগুলো দেখুন', Url::to('/submit/'.$this->post->id)),
-            'changes' => $m->subject("হাতপাখা: {$title} — একটু বদল চাই")
-                ->line("আপনার লেখা {$title} পড়ে সম্পাদক কয়েকটি কথা লিখেছেন:")
-                ->line($this->post->review_note)
-                ->action('লেখাটি খুলে ঠিক করুন', Url::to('/submit/'.$this->post->id))
-                ->line('ঠিক করে আবার জমা দিলেই আমরা আবার পড়ব।'),
-            default => $m->subject("হাতপাখা: {$title} সম্পর্কে")
-                ->line($this->post->review_note)
-                ->line('লেখার জন্য ধন্যবাদ।')
-                ->action('আমার লেখা', Url::to('/account')),
+            'approved' => \App\Support\MailTemplates::mail('decision_approved', $v + ['{প্রকাশ}' => $p->published_at?->isFuture() ? 'প্রকাশের তারিখ: '.\App\Support\Bn::date($p->published_at) : 'লেখাটি এখন হাতপাখায় পড়া যাচ্ছে।'],
+                $p->published_at?->isFuture() ? Url::to('/account') : $p->url()),
+            'confirm' => \App\Support\MailTemplates::mail('decision_confirm', $v, Url::to('/submit/'.$p->id)),
+            'changes' => \App\Support\MailTemplates::mail('decision_changes', $v, Url::to('/submit/'.$p->id)),
+            default => \App\Support\MailTemplates::mail('decision_declined', $v, Url::to('/account')),
         };
     }
 }

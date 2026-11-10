@@ -183,6 +183,7 @@ class SubmissionController extends Controller
             $request->user()->forceFill(['role' => Role::Writer])->save();
         }
         AuditLog::record($wasChanges ? 'submission.resubmitted' : 'submission.received', $post);
+        rescue(fn () => $request->user()->notify(new \App\Notifications\FormReceived('submission', $post->title)));   // D122
         // AI report for the editor (advice only), written after the writer's page has been sent.
         \App\Jobs\ReviewSubmission::dispatch($post->id)->afterResponse();
 

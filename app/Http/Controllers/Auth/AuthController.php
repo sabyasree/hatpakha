@@ -190,6 +190,7 @@ class AuthController extends Controller
         AuditLog::record('user.registered', $user);
         \App\Support\BotCheck::check($user);   // D121: a likely bot is flagged for the owner to review (never blocked here)
         event(new Registered($user)); // sends the verification email when real mail is configured
+        \App\Http\Controllers\Auth\VerifyEmailController::claimSend($user->id);   // so the "check your e-mail" page doesn't send a second one
 
         if ($realMail) {
             return $check;   // signed in only by the link in the e-mail

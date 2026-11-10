@@ -143,10 +143,8 @@ class Certificate extends Model
     {
         $user = $this->author?->user;
         if ($user && $user->email_verified_at && \App\Support\NewsletterSender::realMail()) {
-            $user->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার লেখার শংসাপত্র',
-                'নমস্কার '.$this->author_name_snapshot.', হাতপাখায় প্রকাশিত আপনার লেখা "'.$this->title_snapshot.'"-এর শংসাপত্র তৈরি। '
-                .'নিচের লিংক খুলে ছবি (PNG) বা PDF হিসেবে নামাতে পারবেন, বন্ধুদের সঙ্গে শেয়ারও করতে পারেন। আপনার অ্যাকাউন্টের "আমার লেখা"-তেও সব শংসাপত্র থাকে।',
-                $this->verifyUrl(), 'শংসাপত্র দেখুন ও নামান'));
+            $user->notify(new \App\Notifications\TemplateMail('certificate_ready',
+                ['{নাম}' => (string) $this->author_name_snapshot, '{লেখা}' => (string) $this->title_snapshot], $this->verifyUrl()));   // D123
         }
     }
 }

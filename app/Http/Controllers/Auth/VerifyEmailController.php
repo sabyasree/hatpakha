@@ -13,6 +13,12 @@ class VerifyEmailController extends Controller
         if ($request->user()->hasVerifiedEmail()) {
             return redirect(Url::to('/account'));
         }
+        // Launch day, 2026-11-10: accounts that came from WordPress never got a verification e-mail (only new sign-ups
+        // did), yet this page says one was sent. Send it the first time they land here, then at most once per 30 minutes.
+        if (\App\Http\Controllers\AccountController::verificationRequired() && self::claimSend($request->user()->id)) {
+            // A mail problem must never break this page; it's logged, and "লিংক আবার পাঠান" stays available.
+            rescue(fn () => $request->user()->sendEmailVerificationNotification());
+        }
 
         return view('auth.verify', ['seo' => AuthController::seo('ইমেল যাচাই')]);
     }
@@ -42,6 +48,12 @@ class VerifyEmailController extends Controller
         }
 
         return redirect(Url::to('/login'))->with('status', 'ইমেল যাচাই হয়ে গেছে। এবার লগ-ইন করুন।');
+    }
+
+    /** True once per 30 minutes per account (the registration e-mail counts too). */
+    public static function claimSend(int $userId): bool
+    {
+        return \Illuminate\Support\Facades\Cache::add('verify.sent.'.$userId, 1, now()->addMinutes(30));
     }
 
     public function resend(Request $request)

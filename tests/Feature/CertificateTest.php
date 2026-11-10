@@ -7,7 +7,6 @@ use App\Filament\Resources\Posts\Pages\EditPost;
 use App\Models\Author;
 use App\Models\Certificate;
 use App\Models\User;
-use App\Notifications\WriterNote;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -34,7 +33,7 @@ class CertificateTest extends TestCase
         $c = Certificate::sole();
         $this->assertSame('মেঘলা দাস', $c->author_name_snapshot);
         if (\App\Support\NewsletterSender::realMail()) {
-            Notification::assertSentTo($writer, WriterNote::class, fn ($n) => $n->link === $c->verifyUrl());
+            Notification::assertSentTo($writer, \App\Notifications\TemplateMail::class, fn ($n) => $n->key === 'certificate_ready' && $n->url === $c->verifyUrl());
         }
         $this->assertSame([], Certificate::issueFor($post->fresh()), 'Never twice');
 

@@ -18,12 +18,7 @@ class NewEpisode extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        $serial = $this->post->serial;
-
-        return (new MailMessage)->mailer(\App\Support\BulkMail::mailer())->subject($serial->title.': '.$this->post->episodeLabel())->greeting('নমস্কার')
-            ->line('আপনি যে ধারাবাহিক পড়ছেন, "'.$serial->title.'"-এর নতুন পর্ব এসেছে।')
-            ->action('নতুন পর্ব পড়ুন', $this->post->url())
-            ->line('এই ধারাবাহিকের খবর আর চান না? এক ক্লিকে বন্ধ করুন: '.$this->unfollowUrl)
-            ->salutation('— হাতপাখা');
+        return \App\Support\MailTemplates::mail('new_episode', ['{ধারাবাহিক}' => $this->post->serial->title, '{পর্ব}' => $this->post->episodeLabel(), '{বন্ধের_লিংক}' => $this->unfollowUrl],
+            $this->post->url(), (new MailMessage)->mailer(\App\Support\BulkMail::mailer()));   // D123
     }
 }

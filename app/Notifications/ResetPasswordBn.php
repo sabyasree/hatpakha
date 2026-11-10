@@ -12,13 +12,6 @@ class ResetPasswordBn extends ResetPassword
     {
         $url = route('password.reset', ['token' => $this->token, 'email' => $notifiable->getEmailForPasswordReset()]);
 
-        return (new MailMessage)
-            ->subject('হাতপাখা: নতুন পাসওয়ার্ড বানানোর লিংক')
-            ->greeting('নমস্কার,')
-            ->line('আপনার হাতপাখা অ্যাকাউন্টের পাসওয়ার্ড বদলানোর অনুরোধ এসেছে।')
-            ->action('নতুন পাসওয়ার্ড বানান', $url)
-            ->line('লিংকটি '.config('auth.passwords.users.expire').' মিনিট কাজ করবে।')
-            ->line('আপনি অনুরোধ না করে থাকলে কিছু করতে হবে না; পাসওয়ার্ড যেমন আছে তেমনই থাকবে।')
-            ->salutation('— হাতপাখা');
+        return \App\Support\MailTemplates::mail('reset_password', ['{মিনিট}' => \App\Support\Bn::num((string) config('auth.passwords.users.expire'))], $url);   // D123
     }
 }

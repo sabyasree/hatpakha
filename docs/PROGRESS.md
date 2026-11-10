@@ -221,3 +221,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D120: writers by pieces, every account on the letter list (except opted-out and spam), /desk → চিঠির তালিকা
 - [x] D121: bot check (existing accounts + new sign-ups), manual review in /desk → চিঠির তালিকা → বট-যাচাই
 - [ ] Owner: review the flagged accounts before the first big letter
+- [x] D122: form receipts, confirmations that survive caches, old CSS builds kept, Cloudflare purge after deploys
+- [x] D123: /desk → ই-মেলের নমুনা (every automatic email: preview, edit, back to the original); Bengali email frame

@@ -17,7 +17,8 @@ use Illuminate\Validation\ValidationException;
  * The contact and advertising forms (D89), instead of an e-mail address. Guarded like comments: CSRF, a hidden
  * honeypot, a "too fast" check, Cloudflare Turnstile, per-IP limits (route: 5 a minute; here: 10 a day), length
  * limits, at most two links, plain text only. Messages wait in /desk → বার্তা; the owner gets a short notice
- * that never carries the visitor's text. Nothing is mailed back to the address typed in (no mail bombing).
+ * that never carries the visitor's text. D122 (owner): the address typed in gets one short "we received it" a day at most,
+ * with nothing from the form in it, so it can't be used to send someone else a message (no mail bombing).
  */
 class ContactController extends Controller
 {
@@ -92,8 +93,15 @@ class ContactController extends Controller
         ]);
 
         $msg->notifyAdmins();
+        // D122: "we received it" to the address given: no text from the form in it, and at most one a day per address.
+        if (\Illuminate\Support\Facades\Cache::add('contact.ack.'.hash('sha256', mb_strtolower($msg->email)), 1, now()->addDay())) {
+            rescue(fn () => \Illuminate\Support\Facades\Notification::route('mail', $msg->email)->notify(new \App\Notifications\FormReceived($kind === 'advertise' ? 'advertise' : 'contact')));
+        }
 
-        return redirect($back)->with('contact_sent', $kind === 'advertise'
+        // D122: a unique address, so no cache (Cloudflare) can answer with a copy of the page without the "পৌঁছেছে!" message.
+        $sent = Url::to($kind === 'advertise' ? '/advertise' : '/contact-us').'?sent='.now()->timestamp.'#form';
+
+        return redirect($sent)->with('contact_sent', $kind === 'advertise'
             ? 'ধন্যবাদ! আপনার প্রস্তাব পৌঁছেছে। আমরা ই-মেলে যোগাযোগ করব।'
             : 'ধন্যবাদ! আপনার বার্তা পৌঁছেছে। আমরা যত তাড়াতাড়ি সম্ভব ই-মেলে উত্তর দেব।');
     }

@@ -76,6 +76,11 @@ clock is not running, this line is missing. The schedule only prepares work and 
 
 ## Speed: Cloudflare cache for guests (D65), one rule per domain
 
+> **Production check (2026-11-10, D122):** a rule that caches pages **without** the cookie condition, or with an Edge TTL
+> that ignores the site's header, serves signed-in readers and people who just sent a form an old guest copy (no
+> confirmation, wrong header, an old style file after a deploy). Test it: `curl -sI -H "Cookie: hatpakha-session=x" https://hatpakha.com/`
+> must say `cf-cache-status: BYPASS` or `DYNAMIC`, never `HIT`. Also remove any old **Page Rule** with "Cache Everything".
+
 The app already marks guests' public pages as shareable (`Cache-Control: public, s-maxage=300/600`, no cookies) and never shares anything for signed-in readers, writers or editors. Cloudflare only needs to be allowed to keep them:
 
 1. Cloudflare dashboard → the domain → **Caching → Cache Rules → Create rule**, name it `Hatpakha guest pages`.

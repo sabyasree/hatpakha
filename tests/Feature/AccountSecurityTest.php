@@ -68,6 +68,21 @@ class AccountSecurityTest extends TestCase
         $this->post('/comment/'.$post->id, ['body' => 'ভালো লেখা'])->assertSessionHasErrors('body');
     }
 
+    public function test_an_old_account_gets_its_verification_email_on_the_check_page_once(): void
+    {
+        // Launch day: imported accounts were never sent a link, but the page said one was sent.
+        config(['mail.default' => 'smtp']);
+        \Illuminate\Support\Facades\Notification::fake();
+        $user = User::factory()->unverified()->create();
+        $this->actingAs($user);
+        $this->get('/email/verify/')->assertOk();
+        $this->get('/email/verify/')->assertOk();
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($user, \App\Notifications\VerifyEmailBn::class, 1);
+        $this->travel(31)->minutes();
+        $this->get('/email/verify/')->assertOk();
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($user, \App\Notifications\VerifyEmailBn::class, 2);
+    }
+
     public function test_login_with_two_factor_needs_the_code_and_recovery_codes_work_once(): void
     {
         $mfa = AppAuthentication::make();

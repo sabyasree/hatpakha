@@ -38,8 +38,10 @@ class SubmissionTest extends TestCase
 
     public function test_writer_submits_a_poem_and_sees_it_pending(): void
     {
+        \Illuminate\Support\Facades\Notification::fake();
         $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('জমা দিন');
         $this->post('/submit/', $this->poem())->assertRedirect(url('/account').'/');
+        \Illuminate\Support\Facades\Notification::assertSentTo($this->writer, \App\Notifications\FormReceived::class, fn ($n) => $n->title === 'বৃষ্টির দিন');   // D122
 
         $post = Post::where('title', 'বৃষ্টির দিন')->firstOrFail();
         $this->assertSame('pending', $post->status);

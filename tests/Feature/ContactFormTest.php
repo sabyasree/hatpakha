@@ -49,16 +49,17 @@ class ContactFormTest extends TestCase
 
     public function test_a_message_is_saved_plain_and_the_admin_gets_a_notice_without_the_text(): void
     {
+        $this->freezeTime();
         \Illuminate\Support\Facades\Notification::fake();
         $admin = User::factory()->create(['role' => Role::Admin]);
         $this->post('/contact/contact/', $this->contact(['body' => 'বানান ভুল <script>alert(1)</script> আছে, দেখে নেবেন।']))
-            ->assertRedirect(url('/contact-us').'/#form')->assertSessionHas('contact_sent');
+            ->assertRedirect(url('/contact-us').'/?sent='.now()->timestamp.'#form')->assertSessionHas('contact_sent');
         $m = ContactMessage::sole();
         $this->assertSame('new', $m->status);
         $this->assertSame('https://hatpakha.com/megh/', $m->link, 'A link typed without https:// still works');
         $this->assertStringNotContainsString('<script>', $m->body);
         $this->assertNotSame('127.0.0.1', $m->ip_hash, 'Never the raw IP');
-        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\WriterNote::class, fn ($n) => ! str_contains($n->message, 'বানান'));
+        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\TemplateMail::class, fn ($n, $ch, $to) => $n->key === 'contact_admin' && ! str_contains((string) $n->toMail($to)->render(), 'বানান'));
         $this->get('/contact-us/')->assertSee('পৌঁছেছে!');
     }
 
@@ -119,5 +120,20 @@ class ContactFormTest extends TestCase
         $this->assertStringContainsString('প্রশ্ন &lt;b&gt;আছে&lt;/b&gt;', view('filament.partials.contact-message', ['m' => $m->fresh()])->render());
         $this->actingAs(User::factory()->create(['role' => Role::Writer]));
         $this->get(\App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index'))->assertForbidden();
+    }
+
+    public function test_the_sender_gets_one_text_free_receipt_a_day(): void
+    {
+        // D122: "we received it", without anything typed into the form, at most once a day per address.
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->post('/contact/contact/', $this->contact(['body' => 'আপনাদের সাইটে একটা ভুল দেখলাম, ঠিক করে দেবেন।']));
+        $this->post('/contact/contact/', $this->contact(['body' => 'আরও একটা কথা জানানোর ছিল, দেখে নেবেন।']));
+        \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(\App\Notifications\FormReceived::class, 1);
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(\App\Notifications\FormReceived::class, function ($n, $channels, $notifiable) {
+            $mail = $n->toMail($notifiable)->render();
+
+            return $notifiable->routes['mail'] === 'amit@example.com' && str_contains($mail, 'বার্তা আমাদের কাছে পৌঁছেছে')
+                && ! str_contains($mail, 'ভুল দেখলাম') && ! str_contains($mail, 'অমিত');
+        });
     }
 }
