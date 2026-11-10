@@ -34,7 +34,7 @@ class AdsTest extends TestCase
     public function test_piece_page_has_labelled_lazy_spots_after_the_text_and_none_on_the_first_screen(): void
     {
         $this->slots();
-        config(['app.url' => 'https://hatpakha.com']);
+        $this->asLiveSite();
         $post = $this->makePost(['slug' => 'a-story', 'format' => 'prose', 'body_html' => '<p>'.str_repeat('গল্পের লাইন। ', 50).'</p>']);
         $html = $this->get($post->url())->assertOk()->getContent();
         $this->assertStringContainsString('ca-pub-4627594058272769', $html);
@@ -50,7 +50,7 @@ class AdsTest extends TestCase
     public function test_home_and_lists_have_ads_but_children_forms_and_info_pages_never(): void
     {
         $this->slots();
-        config(['app.url' => 'https://hatpakha.com']);
+        $this->asLiveSite();
         $this->assertStringContainsString('data-ad-slot="1"', $this->get('/')->getContent());
 
         $kids = Section::where('slug', Section::KIDS)->first();

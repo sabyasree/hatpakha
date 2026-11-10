@@ -55,6 +55,15 @@ abstract class TestCase extends BaseTestCase
     }
 
     /** Creates a published post with one author. */
+    /** Requests and generated links behave as on https://hatpakha.com (D125: other hosts are redirected there). */
+    protected function asLiveSite(): void
+    {
+        config(['app.url' => 'https://hatpakha.com']);
+        \Illuminate\Support\Facades\URL::forceRootUrl('https://hatpakha.com');
+        \Illuminate\Support\Facades\URL::forceScheme('https');
+        $this->withServerVariables(['HTTP_HOST' => 'hatpakha.com', 'HTTPS' => 'on', 'SERVER_PORT' => '443']);
+    }
+
     protected function makePost(array $attrs = [], ?Author $author = null): Post
     {
         $section = Section::firstOrCreate(['slug' => 'poetry'], ['name_bn' => 'কবিতা', 'format' => 'poem']);

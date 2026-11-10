@@ -31,7 +31,7 @@ class GoogleAnalyticsTest extends TestCase
         config(['services.google.measurement_id' => 'G-ABC123XYZ9']);
         $this->get('/')->assertDontSee('googletagmanager.com/gtag', false);   // staging / local
 
-        config(['app.url' => 'https://hatpakha.com']);
+        $this->asLiveSite();
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('gtag/js?id=G-ABC123XYZ9', $html);
         $this->assertStringContainsString("location.origin + location.pathname", $html);
@@ -44,7 +44,8 @@ class GoogleAnalyticsTest extends TestCase
 
     public function test_no_tag_on_childrens_pieces(): void
     {
-        config(['services.google.measurement_id' => 'G-ABC123XYZ9', 'app.url' => 'https://hatpakha.com']);
+        config(['services.google.measurement_id' => 'G-ABC123XYZ9']);
+        $this->asLiveSite();
         $kids = \App\Models\Section::firstOrCreate(['slug' => \App\Models\Section::KIDS], ['name_bn' => 'ছোটদের হাতপাখা', 'format' => 'prose']);
         $post = $this->makePost(['status' => 'published', 'slug' => 'chhoto', 'section_id' => $kids->id, 'published_at' => now()->subDay()]);
         $this->get('/chhoto/')->assertOk()->assertDontSee('gtag/js', false);
