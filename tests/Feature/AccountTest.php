@@ -194,7 +194,7 @@ class AccountTest extends TestCase
         $this->post('/account/change/'.$post->id.'/', ['what' => 'তৃতীয় লাইনে বানান ভুল'])->assertSessionHas('status');
         $m = \App\Models\ContactMessage::sole();
         $this->assertSame(['change', $me->id, $post->id], [$m->kind, $m->user_id, $m->post()?->id]);
-        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\WriterNote::class);
+        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\TemplateMail::class, fn ($n) => $n->key === 'contact_admin');
         $this->post('/account/change/'.$post->id.'/', ['what' => ''])->assertSessionHasErrors('what', null, 'change');
         foreach ([2, 3, 4] as $n) {
             $this->post('/account/change/'.$post->id.'/', ['what' => 'আরেকটি অনুরোধ '.$n]);

@@ -251,9 +251,8 @@ final class Honours
         $cert = $author->is_desk ? null : \App\Models\Certificate::firstOrCreate(['author_id' => $author->id, 'kind' => 'honour', 'title_snapshot' => mb_substr($label, 0, 400)],
             ['author_name_snapshot' => $author->publicName()]);
         if ($tellWriter && $author->user && \App\Support\NewsletterSender::realMail()) {
-            $author->user->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনাকে অভিনন্দন!',
-                'নমস্কার '.$author->publicName().', হাতপাখা আপনাকে "'.$label.'" হিসেবে সম্মান জানাচ্ছে।'."\n\n".$praise."\n\nআপনার লেখক-পাতায় সম্মানটি দেখা যাবে, আর নিচের লিংকে আপনার সম্মাননা শংসাপত্র (ছবি বা PDF হিসেবে নামাতে পারবেন)। লিখতে থাকুন!",
-                $cert?->verifyUrl() ?? $author->url(), $cert ? 'শংসাপত্র দেখুন' : 'আমার লেখা'));
+            $author->user->notify(new \App\Notifications\TemplateMail('honour',
+                ['{নাম}' => $author->publicName(), '{সম্মান}' => $label, '{প্রশংসা}' => (string) $praise], $cert?->verifyUrl() ?? $author->url()));   // D123
         }
     }
 }

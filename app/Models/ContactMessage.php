@@ -47,9 +47,8 @@ class ContactMessage extends Model
         dispatch(function () use ($admins, $msg) {
             $where = ['advertise' => 'বিজ্ঞাপন ফর্মে', 'change' => 'লেখকের কাছ থেকে', 'contact' => 'যোগাযোগ ফর্মে'][$msg->kind] ?? 'ওয়েবসাইটে';
             foreach ($admins as $a) {
-                $a->notify(new \App\Notifications\WriterNote('হাতপাখা: নতুন বার্তা ('.$msg->topicLabel().')',
-                    $where.' নতুন বার্তা এসেছে। ডেস্কে "বার্তা" খুলে পড়ুন ও উত্তর দিন।',
-                    \App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index', panel: 'desk'), 'বার্তা দেখুন'));
+                $a->notify(new \App\Notifications\TemplateMail('contact_admin', ['{বিষয়}' => $msg->topicLabel(), '{কোথায়}' => $where],
+                    \App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index', panel: 'desk')));   // D123
             }
         })->afterResponse();
     }

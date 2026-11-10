@@ -59,7 +59,7 @@ class ContactFormTest extends TestCase
         $this->assertSame('https://hatpakha.com/megh/', $m->link, 'A link typed without https:// still works');
         $this->assertStringNotContainsString('<script>', $m->body);
         $this->assertNotSame('127.0.0.1', $m->ip_hash, 'Never the raw IP');
-        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\WriterNote::class, fn ($n) => ! str_contains($n->message, 'বানান'));
+        \Illuminate\Support\Facades\Notification::assertSentTo($admin, \App\Notifications\TemplateMail::class, fn ($n, $ch, $to) => $n->key === 'contact_admin' && ! str_contains((string) $n->toMail($to)->render(), 'বানান'));
         $this->get('/contact-us/')->assertSee('পৌঁছেছে!');
     }
 

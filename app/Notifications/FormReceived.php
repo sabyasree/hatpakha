@@ -22,19 +22,10 @@ class FormReceived extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        $m = (new MailMessage)->salutation('— হাতপাখা সম্পাদকমণ্ডলী');
-
         return match ($this->kind) {
-            'submission' => $m->subject('আপনার লেখা পেয়েছি: '.$this->title)->greeting('নমস্কার, '.$notifiable->name)
-                ->line('"'.$this->title.'" আমাদের কাছে পৌঁছেছে। ধন্যবাদ!')
-                ->line('সম্পাদকমণ্ডলী লেখাটি পড়ে দেখবেন। কোন ধাপে আছে, নিজের অ্যাকাউন্টের "লেখা" পাতায় যে কোনও সময় দেখতে পাবেন; সিদ্ধান্ত হলে ই-মেলেও জানাব।')
-                ->action('আমার লেখা', Url::to('/account/writings')),
-            'advertise' => $m->subject('হাতপাখা: আপনার প্রস্তাব পেয়েছি')->greeting('নমস্কার')
-                ->line('হাতপাখার ওয়েবসাইটের ফর্ম থেকে পাঠানো আপনার প্রস্তাব আমাদের কাছে পৌঁছেছে। আমরা দেখে ই-মেলে যোগাযোগ করব।')
-                ->line('আপনি এই ফর্ম পূরণ না করে থাকলে এই মেলটি উপেক্ষা করুন; আর কিছু পাঠানো হবে না।'),
-            default => $m->subject('হাতপাখা: আপনার বার্তা পেয়েছি')->greeting('নমস্কার')
-                ->line('হাতপাখার ওয়েবসাইটের ফর্ম থেকে পাঠানো আপনার বার্তা আমাদের কাছে পৌঁছেছে। আমরা যত তাড়াতাড়ি সম্ভব ই-মেলে উত্তর দেব।')
-                ->line('আপনি এই ফর্ম পূরণ না করে থাকলে এই মেলটি উপেক্ষা করুন; আর কিছু পাঠানো হবে না।'),
+            'submission' => \App\Support\MailTemplates::mail('submission_received', ['{নাম}' => $notifiable->name, '{লেখা}' => $this->title], Url::to('/account/writings')),
+            'advertise' => \App\Support\MailTemplates::mail('advertise_received', []),
+            default => \App\Support\MailTemplates::mail('contact_received', []),
         };
     }
 }

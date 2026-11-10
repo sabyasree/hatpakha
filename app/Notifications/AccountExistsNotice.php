@@ -16,10 +16,6 @@ class AccountExistsNotice extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return (new MailMessage)->subject('হাতপাখা: আপনার অ্যাকাউন্ট আগে থেকেই আছে')->greeting('নমস্কার')
-            ->line('এই ই-মেলে নতুন অ্যাকাউন্ট খোলার চেষ্টা হয়েছে, কিন্তু এই ঠিকানায় হাতপাখার অ্যাকাউন্ট আগে থেকেই আছে।')
-            ->action('লগ-ইন করুন', Url::to('/login'))
-            ->line('পাসওয়ার্ড মনে না থাকলে লগ-ইন পাতার "পাসওয়ার্ড ভুলে গেছেন?" থেকে নতুন পাসওয়ার্ড নিন। আপনি চেষ্টা না করে থাকলে এই ই-মেলটি উপেক্ষা করুন।')
-            ->salutation('— হাতপাখা');
+        return \App\Support\MailTemplates::mail('account_exists', [], Url::to('/login'));   // D123
     }
 }
