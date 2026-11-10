@@ -1,0 +1,283 @@
+<?php
+
+namespace App\Ai;
+
+use App\Models\EditorTask;
+use App\Models\Post;
+use App\Models\Section;
+use App\Models\Setting;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+
+/**
+ * D101: the narrator (কথক) reads children's pieces and the alphabet aloud with an AI voice (OpenAI text to speech).
+ * Every recording waits for the owner's approval; the page always says it is an AI voice. A writer's own reading
+ * is never replaced.
+ */
+final class Narrator
+{
+    /** D102: OpenAI's voices (names as OpenAI gives them; the owner chooses by ear). Mostly English-trained. */
+    public const VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'];
+
+    /** D103: Google's Bengali (India) voices, trained on native speakers. The owner chose bn-IN-Standard-A. */
+    public const GOOGLE_VOICES = ['bn-IN-Standard-A', 'bn-IN-Standard-B', 'bn-IN-Standard-C', 'bn-IN-Standard-D',
+        'bn-IN-Wavenet-A', 'bn-IN-Wavenet-B', 'bn-IN-Wavenet-C', 'bn-IN-Wavenet-D'];
+
+    public const DEFAULT_VOICE = 'bn-IN-Standard-A';
+
+    /** Every voice in the picker: Google's Bengali voices first. */
+    public static function voices(): array
+    {
+        return [...self::GOOGLE_VOICES, ...self::VOICES];
+    }
+
+    public static function isGoogle(string $voice): bool
+    {
+        return in_array($voice, self::GOOGLE_VOICES, true);
+    }
+
+    /** What each choice is for, and the line every voice reads as a sample (Sukumar Ray, public domain). */
+    public const USES = [
+        'alphabet' => ['বর্ণমালা', 'অ। অ-এ অজগর। আ। আ-এ আম।'],
+        'stories' => ['ছড়া ও গল্প', "হাঁস ছিল, সজারু, (ব্যাকরণ মানি না),\nহয়ে গেল “হাঁসজারু” কেমনে তা জানি না।"],
+    ];
+
+    /** The chosen voice for alphabet|stories: the owner's pick in /desk, else the server setting. */
+    public static function voice(string $use): string
+    {
+        $v = Setting::get('kids.voice.'.$use);
+
+        return in_array($v, self::voices(), true) ? $v : self::DEFAULT_VOICE;
+    }
+
+    public static function setVoice(string $use, string $voice): void
+    {
+        abort_unless(isset(self::USES[$use]) && in_array($voice, self::voices(), true), 422);
+        Setting::put('kids.voice.'.$use, $voice);
+    }
+
+    /** @return array<string, array<string, string>> use => voice => sample path */
+    public static function samples(): array
+    {
+        return json_decode((string) Setting::get('kids.voice.samples'), true) ?: [];
+    }
+
+    /** Record the sample line in every voice still without one (22 short clips, about 2 US cents). */
+    public static function makeSamples(): int
+    {
+        $all = self::samples();
+        $done = 0;
+        foreach (self::USES as $use => [, $line]) {
+            foreach (self::voices() as $voice) {
+                if (! empty($all[$use][$voice]) && is_file(public_path(ltrim($all[$use][$voice], '/')))) {
+                    continue;
+                }
+                [$mp3] = self::speak($line, null, $voice);
+                if ($mp3) {
+                    $rel = 'media/kids/voices/'.$use.'-'.$voice.'-'.Str::lower(Str::random(4)).'.mp3';
+                    @mkdir(public_path('media/kids/voices'), 0755, true);
+                    file_put_contents(public_path($rel), $mp3);
+                    $all[$use][$voice] = '/'.$rel;
+                    $done++;
+                }
+            }
+        }
+        Setting::put('kids.voice.samples', json_encode($all));
+
+        return $done;
+    }
+
+    /** Recordings made in a voice other than the chosen one. @return array{alphabet:int,stories:int} */
+    public static function outdated(): array
+    {
+        $sec = Section::where('slug', Section::KIDS)->value('id');
+
+        return [
+            'alphabet' => collect(KidsAlphabet::state())->filter(fn ($s) => ! empty($s['audio']) && ($s['voice'] ?? null) !== self::voice('alphabet'))->count(),
+            'stories' => Post::where('section_id', $sec)->where('audio_ai', true)->whereNotNull('audio_path')
+                ->where(fn ($q) => $q->whereNull('audio_voice')->orWhere('audio_voice', '!=', self::voice('stories')))->count(),
+        ];
+    }
+
+    /** Redo recordings made in an old voice. Each new one waits for approval again. */
+    public static function revoice(int $max = 5): int
+    {
+        $done = 0;
+        $state = KidsAlphabet::state();
+        foreach ($state as $i => $s) {
+            if (! empty($s['audio']) && ($s['voice'] ?? null) !== self::voice('alphabet')) {
+                @unlink(public_path(ltrim($s['audio'], '/')));
+                unset($state[$i]['audio'], $state[$i]['audio_ok'], $state[$i]['voice']);
+            }
+        }
+        KidsAlphabet::save($state);
+        $done += self::alphabet();
+        $sec = Section::where('slug', Section::KIDS)->value('id');
+        foreach (Post::where('section_id', $sec)->where('audio_ai', true)->whereNotNull('audio_path')
+            ->where(fn ($q) => $q->whereNull('audio_voice')->orWhere('audio_voice', '!=', self::voice('stories')))->limit($max)->get() as $p) {
+            $done += self::forPost($p) === null ? 1 : 0;
+        }
+
+        return $done;
+    }
+
+    public static function blocked(?string $voice = null): ?string
+    {
+        if ($why = Claude::blocked()) {
+            return $why;
+        }
+        if (self::isGoogle($voice ?? self::DEFAULT_VOICE)) {
+            return blank(config('ai.google_tts.key')) ? 'No Google Text-to-Speech key (GOOGLE_TTS_KEY)' : null;
+        }
+
+        return blank(config('ai.openai.key')) ? 'No OpenAI key for the voice' : null;
+    }
+
+    /** Speak a text; long texts are read in parts and joined (MP3 frames join cleanly). @return array{0:?string,1:?string} */
+    public static function speak(string $text, ?int $postId = null, ?string $voice = null): array
+    {
+        $voice ??= self::DEFAULT_VOICE;
+        if ($why = self::blocked($voice)) {
+            return [null, $why];
+        }
+        $google = self::isGoogle($voice);
+        // Google takes at most 5,000 bytes a request (Bengali is 3 bytes a letter).
+        $audio = '';
+        foreach (self::chunks($text, $google ? 1200 : 1500) as $part) {
+            [$mp3, $err] = $google ? self::google($part, $voice) : self::openai($part, $voice);
+            if ($mp3 === null) {
+                return [null, $err];
+            }
+            $audio .= $mp3;
+        }
+        $price = $google ? (float) (config('ai.google_tts.price_per_1k_chars')[str_contains($voice, 'Wavenet') ? 'Wavenet' : 'Standard'] ?? 0)
+            : (float) config('ai.openai.tts_price_per_1k_chars');
+        Claude::log($google ? 'google' : 'openai', $google ? $voice : (string) config('ai.openai.tts_model'), 'tts', $postId,
+            ['in' => 0, 'out' => 0, 'cache_read' => 0, 'cache_write' => 0], round(mb_strlen($text) / 1000 * $price, 4));
+
+        return [$audio, null];
+    }
+
+    /** @return array{0:?string,1:?string} */
+    private static function openai(string $part, string $voice): array
+    {
+        $res = rescue(fn () => Http::withToken((string) config('ai.openai.key'))->timeout(180)
+            ->post(rtrim((string) config('ai.openai.base_url'), '/').'/audio/speech', [
+                'model' => config('ai.openai.tts_model'), 'voice' => $voice, 'input' => $part, 'response_format' => 'mp3',
+                'instructions' => 'Read in Bengali (Bangla) with natural Kolkata pronunciation, warmly and slowly, like a parent reading to a young child. '
+                    .'For rhymes, keep the rhythm and pause at line ends.',
+            ]), null, false);
+        if (! $res || ! $res->successful() || $res->body() === '') {
+            return [null, 'voice API '.($res?->status() ?? 'connection').': '.mb_substr((string) ($res?->json('error.message') ?? ''), 0, 120)];
+        }
+
+        return [$res->body(), null];
+    }
+
+    /** D103: Google Cloud Text-to-Speech. The key goes in a header, never in the URL (so it stays out of logs). @return array{0:?string,1:?string} */
+    private static function google(string $part, string $voice): array
+    {
+        $res = rescue(fn () => Http::withHeaders(['X-Goog-Api-Key' => (string) config('ai.google_tts.key')])->timeout(120)
+            ->post((string) config('ai.google_tts.url'), [
+                'input' => ['text' => $part],
+                'voice' => ['languageCode' => 'bn-IN', 'name' => $voice],
+                'audioConfig' => ['audioEncoding' => 'MP3', 'speakingRate' => (float) config('ai.google_tts.speaking_rate')],
+            ]), null, false);
+        $mp3 = $res?->successful() ? base64_decode((string) $res->json('audioContent'), true) : null;
+        if (! $mp3) {
+            return [null, 'Google voice '.($res?->status() ?? 'connection').': '.mb_substr((string) ($res?->json('error.message') ?? ''), 0, 120)];
+        }
+
+        return [$mp3, null];
+    }
+
+    /** A reading for one children's piece, pending the owner's approval. */
+    public static function forPost(Post $post): ?string
+    {
+        if ($post->audio_path && ! $post->audio_ai) {
+            return 'লেখকের নিজের পাঠ আছে; যন্ত্রকণ্ঠ দেওয়া হয়নি।';
+        }
+        $text = $post->title."।\n\n".trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br />', '</p>'], ["\n", "\n", "\n\n"], (string) $post->body_html))));
+        [$mp3, $err] = self::speak($text, $post->id, $voice = self::voice('stories'));
+        if (! $mp3) {
+            return $err;
+        }
+        $rel = 'media/audio/ai-'.$post->id.'-'.Str::lower(Str::random(6)).'.mp3';
+        @mkdir(public_path('media/audio'), 0755, true);
+        file_put_contents(public_path($rel), $mp3);
+        if ($post->audio_ai && $post->audio_path && is_file(public_path(ltrim($post->audio_path, '/')))) {
+            @unlink(public_path(ltrim($post->audio_path, '/')));
+        }
+        $post->forceFill(['audio_path' => '/'.$rel, 'audio_status' => 'pending', 'audio_ai' => true, 'audio_voice' => $voice])->saveQuietly();
+        EditorTask::propose('audio', __('যন্ত্রকণ্ঠে পাঠ (এআই): ').$post->title, [], $post);
+
+        return null;
+    }
+
+    /** Readings for children's pieces that have none yet. */
+    public static function backlog(int $max = 5): int
+    {
+        $sec = Section::where('slug', Section::KIDS)->value('id');
+        $done = 0;
+        foreach (Post::where('section_id', $sec)->whereIn('status', ['draft', 'scheduled', 'published'])->whereNull('audio_path')->limit($max)->get() as $p) {
+            $done += self::forPost($p) === null ? 1 : 0;
+        }
+
+        return $done;
+    }
+
+    /** The alphabet: "অ। অ-য় অজগর।" for every letter still without a voice. */
+    public static function alphabet(): int
+    {
+        $state = KidsAlphabet::state();
+        $done = 0;
+        foreach (KidsAlphabet::letters() as $i => [$letter, $word]) {
+            if (! empty($state[$i]['audio'])) {
+                continue;
+            }
+            [$mp3] = self::speak($letter.'। '.$letter.'-এ '.$word.'।', null, self::voice('alphabet'));
+            if ($mp3) {
+                $rel = 'media/kids/bornomala/'.$i.'-'.Str::lower(Str::random(4)).'.mp3';
+                @mkdir(public_path('media/kids/bornomala'), 0755, true);
+                file_put_contents(public_path($rel), $mp3);
+                $state[$i] = array_merge($state[$i] ?? [], ['audio' => '/'.$rel, 'audio_ok' => false, 'voice' => self::voice('alphabet')]);
+                $done++;
+            }
+        }
+        KidsAlphabet::save($state);
+        if ($done) {
+            EditorTask::propose('kids_alphabet', __('বর্ণমালার নতুন কণ্ঠ/ছবি অনুমোদনের অপেক্ষায়'), []);
+        }
+
+        return $done;
+    }
+
+    /** @return list<string> */
+    private static function chunks(string $text, int $max): array
+    {
+        $out = [''];
+        $paras = [];
+        foreach (preg_split("/\n{2,}/u", trim($text)) as $para) {
+            // A paragraph longer than the limit is split after sentence ends (। ? !) or line ends, then by force.
+            while (mb_strlen($para) > $max) {
+                $cut = 0;
+                foreach (['।', '?', '!', "\n"] as $stop) {
+                    $pos = mb_strrpos(mb_substr($para, 0, $max), $stop);
+                    $cut = max($cut, $pos === false ? 0 : $pos + 1);
+                }
+                $cut = $cut ?: $max;
+                $paras[] = trim(mb_substr($para, 0, $cut));
+                $para = trim(mb_substr($para, $cut));
+            }
+            $paras[] = $para;
+        }
+        foreach ($paras as $para) {
+            if (mb_strlen(end($out)) + mb_strlen($para) > $max && end($out) !== '') {
+                $out[] = '';
+            }
+            $out[count($out) - 1] .= (end($out) === '' ? '' : "\n\n").$para;
+        }
+
+        return array_values(array_filter($out, fn ($p) => trim($p) !== ''));
+    }
+}

@@ -29,24 +29,55 @@
 }
 
 @layer base {
+    /* Checkboxes big enough for a thumb, in our red (mobile UX review). */
+    input[type="checkbox"] { width: 1.5rem; height: 1.5rem; flex: none; accent-color: var(--color-red); }
     html { background: var(--color-paper); color: var(--color-navy); -webkit-text-size-adjust: 100%; }
     body { font-family: var(--font-sans); }
     :focus-visible { outline: 3px solid var(--color-sky-deep); outline-offset: 2px; }
     a { text-underline-offset: 3px; }
 }
 
-/* Reading text (stories, essays). */
-.prose-bn { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.95; }
-.prose-bn p { margin: 1.1em 0; }
-.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; }
-.prose-bn blockquote { margin: 1.4em 0; padding-left: 1em; border-left: 4px solid var(--color-red); font-family: var(--font-display); font-weight: 700; font-size: 1.25em; color: var(--color-red); }
-.prose-bn img { max-width: 100%; height: auto; border-radius: 4px; }
-.prose-bn figcaption { font-family: var(--font-sans); font-size: .85rem; color: var(--color-ink2); }
+/* Reading text (stories, essays). Structure comes from App\Support\BodyFormatter. */
+.prose-bn { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.95; text-wrap: pretty; overflow-wrap: anywhere; }
+.prose-bn p { margin: 0 0 1.05em; }
+.prose-bn h2, .prose-bn h3, .prose-bn h4 { font-family: var(--font-display); font-weight: 800; line-height: 1.3; margin: 1.6em 0 .6em; }
+.prose-bn h2 { font-size: 1.5em; }
+.prose-bn h3 { font-size: 1.25em; }
+.prose-bn h4 { font-size: 1.1em; color: var(--color-red-dark); }
+.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; text-underline-offset: 3px; }
+.prose-bn strong, .prose-bn b { font-weight: 700; }
+.prose-bn ul, .prose-bn ol { margin: 0 0 1.05em; padding-left: 1.4em; }
+.prose-bn ul { list-style: disc; }
+.prose-bn ol { list-style: decimal; }
+.prose-bn li { margin: .25em 0; }
+.prose-bn blockquote { margin: 1.5em 0; padding: .2em 0 .2em 1.1em; border-left: 4px solid var(--color-sky); color: var(--color-sky-night); }
+.prose-bn blockquote p:last-child { margin-bottom: 0; }
+.prose-bn hr { border: 0; margin: 2em auto; width: 5rem; height: 1rem; background: radial-gradient(circle, var(--color-red) 2.5px, transparent 3px) center / 1.6rem 1rem repeat-x; }
+.prose-bn pre { white-space: pre-wrap; font-family: inherit; margin: 0 0 1.05em; }
+.prose-bn table { display: block; overflow-x: auto; border-collapse: collapse; margin: 1.5em 0; font-size: .9em; }
+.prose-bn th, .prose-bn td { border: 1px solid var(--color-rule); padding: .4em .7em; vertical-align: top; }
+.prose-bn th { background: var(--color-peach-light); }
 
-/* Poem mode: tight lines, stanza = paragraph. */
-.poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; }
-.poem-bn p { margin: 0 0 .45em; }
-.poem-bn img { max-width: 100%; height: auto; margin: 0 auto 1em; border-radius: 4px; }
+/* Images: never stretched beyond their real size, centred, with room around them. */
+.prose-bn figure, .poem-bn figure { margin: 1.8em auto; text-align: center; }
+.prose-bn img, .poem-bn img { display: inline-block; max-width: 100%; height: auto; border-radius: 6px; }
+.prose-bn figure + figure, .poem-bn figure + figure { margin-top: -0.6em; }
+.prose-bn figcaption, .poem-bn figcaption { margin-top: .5em; font-family: var(--font-sans); font-size: .85rem; line-height: 1.5; color: var(--color-ink2); }
+.prose-bn figure.video, .poem-bn figure.video { position: relative; aspect-ratio: 16 / 9; width: 100%; }
+.prose-bn figure.video iframe, .poem-bn figure.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 8px; }
+
+/* Poem mode: a paragraph is a stanza, <br> is a line. */
+.poem-bn { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.9; text-wrap: balance; }
+.poem-bn p { margin: 0 0 1.3em; }
+.prose-bn.kids-read, .poem-bn.kids-read { font-size: 1.4rem; line-height: 2.05; }   /* D101: bigger text for children */
+.poem-bn.poem-tight p { margin: 0 0 .3em; } /* home page excerpt: lines, not stanzas (UX review D78) */
+.poem-bn h2, .poem-bn h3, .poem-bn h4 { font-family: var(--font-display); font-weight: 800; margin: 1.4em 0 .6em; }
+@media (max-width: 480px) {
+    .prose-bn { font-size: 1.12rem; line-height: 1.9; }
+    .poem-bn { font-size: 1.18rem; }
+    /* Long centred lines that wrap read badly on a phone: poems sit left there (mobile UX review). */
+    .poem-bn.text-center { text-align: left; }
+}
 
 .tilt-a { transform: rotate(-1.6deg); }
 .tilt-b { transform: rotate(1.4deg); }
@@ -56,3 +87,40 @@
 }
 .halftone { background-image: radial-gradient(var(--color-navy) 1.2px, transparent 1.6px); background-size: 14px 14px; opacity: .14; }
 .lined { background-image: repeating-linear-gradient(transparent 0 31px, rgba(19,33,44,.08) 31px 32px); }
+
+/* Submission editor (D40) */
+.ed-toolbar { scrollbar-width: thin; }
+.ed-toolbar > * { flex: none; }
+.ed-btn { min-width: 2.5rem; height: 2.75rem; border-radius: .6rem; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 640px) { .ed-btn { min-width: 2.75rem; } }
+.ed-btn:hover { background: var(--color-peach-light); }
+.ed-btn[aria-pressed="true"], .ed-tile[aria-pressed="true"] { background: var(--color-navy); color: #fff; }
+.ed-area { min-height: max(22rem, 50vh); padding: 1rem 1.1rem; outline: none; white-space: pre-wrap; font-size: 1.15rem; line-height: 1.9; }
+.ed-area.ProseMirror p { margin: 0 0 1em; }
+.ed-area blockquote { border-inline-start: 4px solid var(--color-peach-deep); padding-inline-start: 1rem; color: var(--color-ink2); }
+.ed-area ul { list-style: disc; padding-inline-start: 1.5rem; }
+.ed-area ol { list-style: decimal; padding-inline-start: 1.5rem; }
+.ed-area hr { border: 0; border-top: 2px dashed var(--color-rule); margin: 1.5rem 0; }
+.ed-wrap { position: relative; }
+.ed-placeholder { position: absolute; inset: 1rem 1.1rem auto; color: var(--color-ink2); pointer-events: none; white-space: pre-line; }
+
+/* Paragraph alignment chosen by the writer/editor (D40). Overrides the poem's default centring. */
+.ta-left { text-align: left; }
+.ta-center { text-align: center; }
+.ta-right { text-align: right; }
+
+/* Book view of an issue (D68) */
+.book { padding: 1.5rem; }
+.book-pages { line-height: 1.8; font-size: 18px; }
+/* No padding on the paged box itself: one page = its width + the gap, exactly. */
+.book-pages.paged { height: calc(100dvh - 15rem); min-height: 22rem; column-width: 100vw; column-fill: auto; column-gap: 3rem; overflow: hidden; }
+.book-pages.paged .book-break { break-before: column; }
+/* Phones: leave room for the fixed bottom bar (4rem) and the safe area, so the page-turn buttons stay visible. */
+@media (max-width: 767px) { .book-pages.paged { height: calc(100dvh - 15rem - env(safe-area-inset-bottom)); } }   /* the bottom bar is hidden in the book reader */
+.book-pages.paged .book-cover { text-align: center; }
+.book-pages.paged img { max-height: 55vh; break-inside: avoid; }
+@media (min-width: 768px) { .book { padding: 2.5rem 3rem; } }
+[data-progress] { transition: transform .1s linear; }
+
+/* Home stories shelf on phones: only the first (unread) taped card; the rest are in the list below (owner, 2026-11-08). */
+@media (max-width: 639px) { .hp-first-only > [data-pid]:not([data-first]) { display: none; } }

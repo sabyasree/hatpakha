@@ -6,19 +6,21 @@ use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\Email\Contracts\HasEmailAuthentication;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use SensitiveParameter;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'spam_reason'])]
 #[Hidden(['password', 'legacy_password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
-class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -32,7 +34,34 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'role' => Role::class,
             'app_authentication_secret' => 'encrypted',
             'app_authentication_recovery_codes' => 'encrypted:array',
+            'has_email_authentication' => 'boolean',
+            'mail_opt_out' => 'boolean',
+            'bot_reasons' => 'array',
+            'bot_checked_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Role changes made by a signed-in person (the /desk Users screen) are logged, like console changes.
+        static::updated(function (self $user) {
+            if ($user->wasChanged('role') && auth()->check()) {
+                AuditLog::record('user.role_changed', $user, ['from' => $user->getOriginal('role')?->value ?? $user->getOriginal('role'), 'to' => $user->role?->value, 'via' => 'desk']);
+            }
+        });
+    }
+
+    /** Public-site emails in Bengali (the /desk panel sends its own reset email). */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordBn($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        if (\App\Http\Controllers\AccountController::verificationRequired()) {
+            $this->notify(new \App\Notifications\VerifyEmailBn);
+        }
     }
 
     public function author(): HasOne
@@ -77,6 +106,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function saveAppAuthenticationRecoveryCodes(#[SensitiveParameter] ?array $codes): void
     {
         $this->app_authentication_recovery_codes = $codes;
+        $this->save();
+    }
+
+    // --- Filament email 2FA (one-time code sent to the user's email) ---
+
+    public function hasEmailAuthentication(): bool
+    {
+        return (bool) $this->has_email_authentication;
+    }
+
+    public function toggleEmailAuthentication(bool $condition): void
+    {
+        $this->has_email_authentication = $condition;
         $this->save();
     }
 }

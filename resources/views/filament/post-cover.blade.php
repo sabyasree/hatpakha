@@ -1,0 +1,34 @@
+{{-- Cover box on the post edit page (D64): what is on the site now, and the AI designer's proposal. Inline styles. --}}
+@php
+    $now = $post->featured_image_path;
+    $drawn = $post->proposed_image_path;
+    $spare = \App\Support\CoverImage::spare($post);
+    $src = fn ($p) => str_starts_with($p, 'http') ? $p : asset(ltrim($p, '/'));
+@endphp
+<div style="display:grid;gap:.75rem">
+    <div>
+        <div style="font-size:.8rem;opacity:.7;margin-bottom:.25rem">{{ __('সাইটে এখন') }}</div>
+        @if ($now)
+            <img src="{{ $src($now) }}" alt="" style="width:100%;max-height:14rem;object-fit:cover;border-radius:.75rem">
+        @else
+            <div style="padding:1rem;border:1px dashed rgba(127,127,127,.4);border-radius:.75rem;opacity:.75">{{ __('প্রচ্ছদ নেই। উপরের "প্রচ্ছদ → এআই দিয়ে ছবি আঁকান" দিয়ে আঁকিয়ে নিতে পারেন।') }}</div>
+        @endif
+    </div>
+    @if ($drawn)
+        <div style="padding:.6rem;border:2px solid #2DAAE2;border-radius:.9rem">
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:.35rem">{{ __('এআই-এর আঁকা নতুন ছবি (এখনও বসানো হয়নি)') }}</div>
+            <img src="{{ $src($drawn) }}" alt="" style="width:100%;max-height:14rem;object-fit:cover;border-radius:.6rem">
+            <div style="font-size:.8rem;opacity:.8;margin-top:.35rem;line-height:1.5">{{ __('পছন্দ হলে নিচের "এটা বসান" টিপুন: সাইটে এই ছবি বসবে, এখনকার ছবিটি রাখা থাকবে, পরে ফেরানো যাবে।') }}<br>{{ __('পছন্দ না হলে "বাদ দিন" টিপুন: সাইটে কিছু বদলাবে না। ভুল করে বাদ দিলেও ফিরিয়ে আনা যাবে।') }}</div>
+        </div>
+    @elseif (\App\Ai\Illustrator::drawing($post))
+        <div style="padding:.6rem;border-radius:.75rem;background:rgba(45,170,226,.1)">{{ __('ছবি আঁকা হচ্ছে… দুই-তিন মিনিট পরে পাতাটি আবার খুলুন।') }}</div>
+    @elseif ($post->proposed_image_error)
+        <div style="font-size:.8rem;opacity:.75">{{ __('শেষবার আঁকা যায়নি:') }} {{ $post->proposed_image_error }}</div>
+    @endif
+    @if ($spare && $spare['path'] !== $drawn)
+        <div style="display:flex;gap:.6rem;align-items:center;font-size:.8rem;opacity:.85">
+            <img src="{{ $src($spare['path']) }}" alt="" style="width:4.5rem;height:3rem;object-fit:cover;border-radius:.4rem">
+            <span>{{ $spare['kind'] === 'dropped' ? __('শেষ বাদ দেওয়া ছবি: নিচের "বাদ দেওয়া ছবি ফিরিয়ে আনুন" দিয়ে ফেরানো যায়।') : __('আগের প্রচ্ছদ: নিচের "আগের প্রচ্ছদে ফিরুন" দিয়ে ফেরানো যায়।') }}</span>
+        </div>
+    @endif
+</div>

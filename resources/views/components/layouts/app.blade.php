@@ -3,34 +3,91 @@
 <html lang="{{ $seo->lang }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFBF4">
     <x-seo :seo="$seo" />
     <link rel="icon" href="{{ asset('images/logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    {{-- TODO(Phase 4): self-host subset fonts (docs/SEO.md §5). --}}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wdth,wght@75..100,400..800&family=Noto+Serif+Bengali:wght@400;500;700&family=Galada&display=swap">
+    {{-- Fonts are self-hosted (public/fonts/fonts.css, shared with the admin panel); preload the two Bengali faces used above the fold. --}}
+    <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if (config('services.adsense.client'))
-        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>
+    @if ($gaId = \App\Support\Analytics::id())
+        {{-- D119: Google Analytics 4. Only the page's path (plus utm_ campaign labels) is sent, never the rest of the query: signed links stay private; no Google signals or ad
+             personalisation from analytics; visitors in Europe are asked first (the consent message updates Google's consent mode). --}}
+        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', region: @json(\App\Support\Analytics::CONSENT_REGIONS)});
+            gtag('js', new Date());
+            const utm = new URLSearchParams([...new URLSearchParams(location.search)].filter(([k]) => k.startsWith('utm_'))).toString();
+            gtag('config', @json($gaId), {page_location: location.origin + location.pathname + (utm ? '?' + utm : ''), page_referrer: document.referrer.split('?')[0], allow_google_signals: false, allow_ad_personalization_signals: false});
+        </script>
+    @endif
+    @if (\App\Support\Ads::on())
+        {{-- D111: only on page types that allow ads, on the live site --}}
+        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ \App\Support\Ads::client() }}" crossorigin="anonymous"></script>
     @endif
 </head>
-<body class="min-h-screen bg-paper text-navy antialiased pb-16 md:pb-0">
+<body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
+    @if ($va = request()->attributes->get('view_as'))
+        {{-- D85: the admin is looking through a writer's eyes --}}
+        <div data-view-as class="sticky top-0 z-[60] flex flex-wrap items-center gap-x-3 gap-y-1 bg-red px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sm font-bold text-white" role="status">
+            <span class="min-w-0 flex-1 leading-snug"><span class="block truncate">{{ $va['name'] }}-এর চোখে দেখছেন</span><span class="block text-xs font-semibold">শুধু দেখা, কিছু বদলাবে না · ৩০ মিনিটে নিজে বন্ধ হবে</span></span>
+            <form method="POST" action="{{ route('view-as.stop') }}">@csrf<button class="min-h-11 rounded-full bg-white px-4 text-red">বন্ধ করুন</button></form>
+        </div>
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            // Look only: every save/send button is shown as off, so nothing invites a press that would be refused.
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('form[method="POST"] button, form[method="post"] button').forEach(function (b) {
+                    if (b.closest('[data-view-as]')) return;
+                    b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = 'শুধু দেখা'; b.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+            });
+        </script>
+    @endif
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-paper focus:p-2">মূল লেখায় যান</a>
 
     <header class="border-b-2 border-navy bg-paper">
-        <div class="mx-auto flex max-w-[1320px] items-center justify-between gap-5 px-5 py-3">
+        <div class="mx-auto flex max-w-[1320px] items-center justify-between gap-5 px-5 py-3 max-[359px]:gap-2 max-[359px]:px-4">
             <a href="{{ url('/') }}/" class="flex flex-none flex-col items-end" aria-label="হাতপাখা — প্রথম পাতা">
-                <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto md:h-12">
-                <span class="-mt-1 text-[11px] font-bold">ISSN: 2321-3035</span>
+                <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto max-[359px]:h-7 md:h-12">
+                <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
-            <nav aria-label="বিভাগ" class="hidden gap-7 text-lg font-semibold lg:flex">
-                @foreach (\App\Models\Section::where('is_active', true)->orderBy('sort')->limit(7)->get() as $s)
-                    <a href="{{ $s->url() }}" class="hover:text-red">{{ $s->name_bn }}</a>
+            @php $menu = \App\Models\Section::menu(); @endphp
+            {{-- D95 (UX review): big screens show the chosen sections and "সব বিভাগ" for every section, grouped --}}
+            <nav aria-label="প্রধান বিভাগ" class="hidden min-w-0 items-center gap-1 text-lg font-semibold lg:flex">
+                @foreach ($menu['top'] as [$name, $href, $lang])
+                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
+                <details class="relative" data-menu>
+                    <summary class="flex h-11 cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-full px-3 hover:text-red [&::-webkit-details-marker]:hidden">সব বিভাগ <span aria-hidden="true">▾</span></summary>
+                    <div class="absolute right-0 top-12 z-50 w-[36rem] rounded-2xl border-2 border-navy bg-paper p-4 text-base shadow-[4px_4px_0_#13212C]">
+                        <x-menu-panel :menu="$menu" :wide="true" />
+                    </div>
+                </details>
             </nav>
-            <div class="flex items-center gap-2">
-                <a href="{{ url('/submit/') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
+            <div class="flex min-w-0 items-center gap-1 max-[359px]:gap-0 sm:gap-3">
+                {{-- Phones and tablets: every section, grouped, with English and the archive --}}
+                <details class="relative lg:hidden" data-menu>
+                    <summary class="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full px-3 font-bold max-[359px]:px-2 hover:bg-peach-light [&::-webkit-details-marker]:hidden">বিভাগ <span aria-hidden="true">▾</span></summary>
+                    <div class="fixed inset-x-3 top-[4.75rem] z-50 max-h-[calc(100dvh-10.5rem)] overflow-y-auto rounded-2xl border-2 border-navy bg-paper p-3 shadow-[4px_4px_0_#13212C] sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[22rem]">
+                        <x-menu-panel :menu="$menu" />
+                    </div>
+                </details>
+                <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-peach-light max-[359px]:w-10" aria-label="খুঁজুন" title="খুঁজুন">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
+                </a>
+                @auth
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 min-w-11 flex-none items-center justify-center font-bold hover:text-red" aria-label="আমার লেখা">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-navy bg-peach-light sm:hidden" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
+                        <span class="hidden sm:inline">আমার লেখা</span>
+                    </a>
+                @else
+                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap px-1 font-bold hover:text-red">লগ-ইন</a>
+                @endauth
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
             </div>
         </div>
     </header>
@@ -41,21 +98,90 @@
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 py-12">
             <div>
                 <div class="font-hand text-6xl leading-none text-sky md:text-8xl">আবার আসবেন</div>
-                <p class="mt-3 text-sm text-[#C9D3DA]">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
+                <p class="mt-3 text-sm text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
             </div>
-            <nav aria-label="ফুটার" class="flex gap-10 text-base">
-                <div class="flex flex-col gap-2"><a href="{{ url('/submit/') }}">লেখা পাঠান</a><a href="{{ url('/feed/') }}">RSS</a></div>
-                <div class="flex flex-col gap-2"><a href="{{ url('/about/') }}">আমাদের কথা</a><a href="{{ url('/privacy/') }}">গোপনীয়তা</a></div>
+            @if (! auth()->check() && ! request()->attributes->get('hp.newsletter.card'))<x-newsletter-signup variant="footer" />@endif
+            <nav aria-label="ফুটার" class="grid w-full grid-cols-2 gap-x-6 text-base sm:w-auto sm:grid-cols-3">
+                @foreach (\App\Models\Page::footerLinks() as [$t, $u])
+                    <a href="{{ $u }}" class="flex min-h-11 items-center hover:text-sky">{{ $t }}</a>
+                @endforeach
+                <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
+                <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
+                @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
+                @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
             </nav>
         </div>
     </footer>
 
-    {{-- Mobile bottom tab bar --}}
-    <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-4 border-t-2 border-navy bg-paper text-xs font-bold md:hidden">
-        <a href="{{ url('/') }}/" class="flex items-center justify-center">হোম</a>
-        <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex items-center justify-center">কবিতা</a>
-        <a href="{{ url('/submit/') }}" class="flex items-center justify-center text-red">লিখুন</a>
-        <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="flex items-center justify-center">গল্প</a>
+    {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, "লিখুন" as a raised sticker, safe-area padding. --}}
+    @php
+        $tabs = [
+            ['হোম', url('/').'/', request()->is('/'), 'home'],
+            ['কবিতা', \App\Support\Url::to('/category/poetry'), request()->is('category/poetry*'), 'poem'],
+            ['লিখুন', \App\Support\Url::to('/submit'), request()->is('submit*', 'submissions*'), 'write'],
+            ['গল্প', \App\Support\Url::to('/category/short-stories'), request()->is('category/short-stories*'), 'story'],
+            ['আর্কাইভ', \App\Support\Url::to('/archive'), request()->is('archive*'), 'archive'],
+        ];
+        $icons = [
+            'home' => '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
+            'poem' => '<path d="M20 4c-7 1-12 6-13 13l-3 3"/><path d="M7 17c4 0 8-3 9-8"/>',
+            'write' => '<path d="M12 5v14M5 12h14"/>',
+            'story' => '<path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/>',
+            'archive' => '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
+        ];
+    @endphp
+    @unless (request()->is('sonkha/*/boi*') || request()->attributes->get('hp.no-bottom-nav'))
+    <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
+        @foreach ($tabs as [$label, $href, $on, $ic])
+            @if ($ic === 'write')
+                <a href="{{ $href }}" class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
+                    <span class="-mt-5 flex h-11 w-11 items-center justify-center rounded-full border-2 border-navy bg-red text-white shadow-[2px_2px_0_#13212C]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg></span>
+                    <span class="mt-0.5 text-red">{{ $label }}</span>
+                </a>
+            @else
+                <a href="{{ $href }}" class="flex h-16 flex-col items-center justify-center gap-0.5 {{ $on ? 'text-red' : '' }}" @if ($on) aria-current="page" @endif>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $icons[$ic] !!}</svg>
+                    <span>{{ $label }}</span>
+                </a>
+            @endif
+        @endforeach
     </nav>
+    @endunless
+    @if (\App\Support\Ads::on())
+        {{-- D111: request each ad only when the reader scrolls near it; hidden spots (e.g. the side ad on smaller screens) are never requested --}}
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            (() => {
+                const fill = (el) => { el.className = 'adsbygoogle'; try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {} };
+                const spots = document.querySelectorAll('ins.hp-ad-pending');
+                if (!('IntersectionObserver' in window)) { spots.forEach(fill); return; }
+                const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); } }), { rootMargin: '400px 0px' });
+                spots.forEach((el) => io.observe(el));
+            })();
+        </script>
+    @endif
+    {{-- Owner (2026-11-08): remember pieces this reader opened (in their own browser only) and swap them out of the home shelves. --}}
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+        (() => {
+            let read = [];
+            try { read = JSON.parse(localStorage.getItem('hp.read') || '[]'); } catch (e) {}
+            const art = document.querySelector('article[data-view]');
+            if (art) {
+                const id = art.dataset.view;
+                read = [id, ...read.filter((x) => x !== id)].slice(0, 400);
+                try { localStorage.setItem('hp.read', JSON.stringify(read)); } catch (e) {}
+                return;
+            }
+            const seen = new Set(read);
+            document.querySelectorAll('[data-rotate]').forEach((box) => {
+                const max = parseInt(box.dataset.rotate, 10) || 4;
+                const items = [...box.querySelectorAll(':scope > [data-pid]')];
+                const order = [...items.filter((el) => !seen.has(el.dataset.pid)), ...items.filter((el) => seen.has(el.dataset.pid))];
+                const skip = box.hasAttribute('data-skip-first') ? 1 : 0;
+                items.forEach((el) => { el.hidden = true; el.removeAttribute('data-first'); });
+                order.slice(skip, skip + max).forEach((el, i) => { el.hidden = false; if (i === 0) el.setAttribute('data-first', ''); });
+                order.forEach((el) => box.appendChild(el));
+            });
+        })();
+    </script>
 </body>
 </html>

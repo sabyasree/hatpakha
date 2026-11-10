@@ -16,6 +16,9 @@ use Filament\Tables\Table;
 
 class UserResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels;
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
     /** Only admins manage accounts and roles (docs/SECURITY.md §3). */
     public static function canAccess(): bool
     {
@@ -24,7 +27,15 @@ class UserResource extends Resource
 
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static ?string $modelLabel = 'ব্যবহারকারী';
+
+    protected static ?string $pluralModelLabel = 'ব্যবহারকারী';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {

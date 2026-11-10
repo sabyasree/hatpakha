@@ -9,7 +9,9 @@ class Issue extends Model
 {
     protected $guarded = ['id'];
 
-    protected function casts(): array { return ['published_at' => 'datetime']; }
+    protected function casts(): array { return ['published_at' => 'datetime', 'ai_plan' => 'array']; }
+
+    public function editorial(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(Post::class, 'editorial_post_id'); }
 
     public function posts(): HasMany { return $this->hasMany(Post::class); }
 

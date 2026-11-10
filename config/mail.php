@@ -49,6 +49,18 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        // D117: newsletters and other bulk mail (Amazon SES over SMTP); account mail keeps the default mailer.
+        'bulk' => [
+            'transport' => 'smtp',
+            'scheme' => env('MAIL_BULK_SCHEME', 'smtp'),
+            'host' => env('MAIL_BULK_HOST'),
+            'port' => env('MAIL_BULK_PORT', 587),
+            'username' => env('MAIL_BULK_USERNAME'),
+            'password' => env('MAIL_BULK_PASSWORD'),
+            'timeout' => 30,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
@@ -114,5 +126,20 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
+
+
+    // Newsletters (D58): letters sent per minute by the scheduler. Shared hosting allows only so many per hour.
+    'batch' => (int) env('MAIL_BATCH', 30),
+    // D117: at most this many bulk e-mails in any 24 hours (0 = no limit). SES starts at 200 a day until Amazon
+    // lifts the account out of its "sandbox"; set it to the daily quota the SES console shows.
+    'daily_limit' => (int) env('MAIL_DAILY_LIMIT', 0),
+    // Off hatpakha.com (staging), mail goes only to desk staff and bulk mail is off (App\Support\MailGuard).
+    // "allow" switches the guard off; only the test suite uses it.
+    'off_live' => env('MAIL_OFF_LIVE', 'block'),
+    // The SNS topic SES reports bounces and complaints to; webhooks from any other topic are refused.
+    'ses_topic_arn' => env('SES_SNS_TOPIC_ARN'),
+
+    // D104: apology letters to old writers, per hour (old addresses: go slowly so bounces don't hurt the site's mail).
+    'relaunch_per_hour' => (int) env('MAIL_RELAUNCH_PER_HOUR', 20),
 
 ];

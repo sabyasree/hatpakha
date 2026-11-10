@@ -13,8 +13,14 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 - Passwords: Laravel `Hash` (bcrypt or argon2id).
 - **Legacy WordPress hashes** (`$P$` phpass, `$wp$` bcrypt): verified once at login, then immediately re-hashed and the legacy hash deleted. The legacy hash is never logged or exposed. ✅test
 - Login options: email + password, Google (Socialite), and **magic link** (signed URL, single use, 15-minute expiry).
-- Email verification is required before submitting.
-- **Two-factor authentication (TOTP) is mandatory** for editors and admins (Filament MFA).
+- **Email verification before anything** (D59) ✅test: a new account cannot open its account page, submit or comment until the address is verified. Sign-up never signs in by itself; the e-mailed link (signed, 60 minutes) verifies and signs in **only on first use**, and never signs in accounts with 2FA or desk roles. Enforced wherever real mail is configured (test servers with the log mailer cannot verify, so they skip it).
+- **No account probing** ✅test: sign-up answers the same for new and existing addresses; the owner of an existing address gets a short "you already have an account" e-mail instead. Login and password reset already answer generically.
+- **Bots** ✅test: hidden honeypot + "too fast" check on sign-up; Cloudflare Turnstile on sign-up, login, password reset, guest comments, newsletter sign-up and the contact/advertising forms (D89) (once `TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET` are set); rate limits below.
+  - Turnstile server check (D60) ✅test: token must be a non-empty string ≤ 2048 characters; siteverify (form POST with secret, response, remote IP; 10-second timeout) must say `success`, the **action of that form** (`login`, `register`, `forgot`, `comment`, `newsletter`, `contact`, `advertise`) and one of **our hostnames** (`TURNSTILE_HOSTNAMES`, default the `APP_URL` host; localhost never allowed in production). Network errors, non-2xx, unreadable replies or an empty allowlist **fail closed**. Tokens are single-use (Cloudflare rejects replays). Siteverify is never called from the browser; the secret lives only in the server environment (GitHub Environments → `ENV_FILE`).
+- **Passwords**: at least 10 characters with letters and numbers, and refused if they appear in known breaches (Have I Been Pwned range check: only the first 5 characters of the SHA-1 hash leave the server). Changing the password logs out other devices.
+- **Optional 2FA for readers and writers** (D59) ✅test: authenticator app (TOTP) with 8 one-time recovery codes stored hashed, set up from /account/ (QR + key, confirmed by a first code). Login then asks for the code (10-minute window, throttled, codes cannot be reused). The account page nudges everyone without 2FA. Desk roles cannot switch it off.
+- **Two-factor authentication is mandatory** for editors and admins (Filament MFA). Two methods: authenticator app (TOTP, with recovery codes; **recommended for admins**) or a 6-digit **email code** (valid 5 minutes, max 2 sends per window). ✅test
+  - Email 2FA is only as safe as the mailbox: anyone who controls the email can also reset the password, so admins should use the app, or both.
 - Rate limits ✅test: login 5 per minute per IP+email; password reset 3 per hour; registration 5 per hour per IP; submissions 3 per day per writer.
 - Generic error messages (no "user exists" leaks).
 
@@ -58,3 +64,8 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 
 ## 9. Payments (when the gateway is enabled)
 - Gateway-hosted checkout only (no card data on our server). Webhook **signature verification**, idempotency keys, and a server-side amount check. ✅test
+
+## Imported accounts (Phase 2)
+- **Least privilege at import:** WordPress administrators/editors arrive as writers; `/desk` access only by an explicit, logged grant (`php artisan hatpakha:role`, or the Users screen). ✅test
+- Bot-like and Facebook-test accounts are flagged in `users.spam_reason` (never deleted automatically). ✅test
+- Newsletter: only explicit, confirmed consent is mailable; unsubscribed/bounced addresses are suppressed permanently. ✅test

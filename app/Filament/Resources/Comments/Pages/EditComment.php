@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Comments\Pages;
 
 use App\Filament\Resources\Comments\CommentResource;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditComment extends EditRecord
@@ -13,7 +12,7 @@ class EditComment extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
 }

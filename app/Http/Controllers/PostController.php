@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Page;
 use App\Models\Post;
 use App\Seo\JsonLd;
 use App\Seo\Seo;
@@ -15,14 +16,30 @@ class PostController extends Controller
             ->where('slug', Slug::normalize($slug))->first();
 
         if (! $post) {
-            return app(LegacyController::class)->fallback(request());
+            return $this->page($slug) ?? app(LegacyController::class)->fallback(request());
         }
 
-        $related = Post::published()->with('authors')
-            ->where('section_id', $post->section_id)->whereKeyNot($post->id)
-            ->latest('published_at')->limit(3)->get();
+        // "আরও পড়ুন": the SEO expert's picks (D46), otherwise the newest in the same section.
+        $picked = array_map('intval', (array) $post->related_ids);
+        $related = $picked
+            ? Post::published()->with('authors')->whereIn('id', $picked)->when($post->isKids(), fn ($q) => $q->where('section_id', $post->section_id))->get()->sortBy(fn ($p) => array_search($p->id, $picked))->values()
+            : collect();
+        if ($related->count() < 3) {
+            $related = $related->concat(Post::published()->with('authors')
+                ->where('section_id', $post->section_id)->whereKeyNot($post->id)->whereNotIn('id', $related->pluck('id'))
+                ->latest('published_at')->limit(3 - $related->count())->get());
+        }
 
-        $comments = $post->comments()->where('status', 'approved')->oldest()->limit(50)->get();
+        // "পরের লেখা" (mobile UX review): one more by the same writer first, when there is one.
+        $writerIds = $post->authors->where('is_desk', false)->pluck('id');
+        if ($writerIds->isNotEmpty() && ($same = Post::published()->with('authors')->whereKeyNot($post->id)->whereNotIn('id', $related->pluck('id'))
+            ->whereHas('authors', fn ($q) => $q->whereIn('authors.id', $writerIds))
+            ->when($post->isKids(), fn ($q) => $q->where('section_id', $post->section_id))   // D101: children stay among children's pieces
+            ->inRandomOrder()->first())) {
+            $related = collect([$same])->concat($related)->take(4)->values();
+        }
+
+        $comments = $post->comments()->with('user')->where('status', 'approved')->oldest()->limit(50)->get();
 
         $crumbs = [['হাতপাখা', url('/').'/']];
         if ($post->section) {
@@ -35,13 +52,44 @@ class PostController extends Controller
             description: $post->metaDescription(),
             canonical: $post->url(),
             noindex: $post->noindex,
-            image: $post->hasLargeImage() ? asset($post->featured_image_path) : null,
+            image: \App\Support\ShareImage::forPost($post),
             type: 'article',
             lang: $post->language,
             jsonLd: [JsonLd::post($post), JsonLd::breadcrumbs($crumbs)],
             publishedAt: $post->published_at?->toAtomString(),
+            shareTitle: $post->shareTitle(),
         );
 
+        if ($post->isKids()) {
+            request()->attributes->set('hp.no_ads', true);   // D101: no ads around children's pieces
+        } elseif (! $post->no_ads && $post->isLive()) {
+            \App\Support\Ads::allow();   // D111
+        }
+
         return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));
+    }
+
+    /** Static pages share the /{slug}/ namespace with posts, exactly as on WordPress. */
+    private function page(string $slug)
+    {
+        $page = Page::published()->where('slug', Slug::normalize($slug))->first();
+        if (! $page) {
+            return null;
+        }
+
+        $crumbs = [['হাতপাখা', url('/').'/'], [$page->title, $page->url()]];
+        $seo = new Seo(
+            title: $page->metaTitle(),
+            description: $page->metaDescription(),
+            canonical: $page->url(),
+            noindex: $page->noindex,
+            jsonLd: [JsonLd::breadcrumbs($crumbs)],
+        );
+
+        if ($page->slug === 'bornomala') {
+            request()->attributes->set('hp.no_ads', true);   // D101
+        }
+
+        return view('page', compact('page', 'seo', 'crumbs'));
     }
 }

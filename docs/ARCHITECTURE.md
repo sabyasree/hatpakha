@@ -18,6 +18,7 @@ Laravel 13 · Filament 5 (admin at `/desk`) · Blade + Tailwind v4 (Vite) · MyS
 | `author_post` | Co-authors | `position` keeps byline order |
 | `comments` | Reader comments | `feature_opt_out` must be respected |
 | `certificates` | Author certificates | Public code (10 chars, no 0/O/1/I), snapshots of title/name so later edits don't change an issued certificate |
+| `pages` | Static pages at `/{slug}/` | Same URL space as posts (post wins). Initial copy from `database/content/pages/*.html`; never overwritten by a re-import |
 | `redirects` | 301 map | Checked by the fallback route; `hits` counted |
 | `audit_logs` | Who did what | `AuditLog::record()` |
 

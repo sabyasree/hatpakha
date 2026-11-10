@@ -23,6 +23,9 @@ final class Seo
         /** @var array<int,array> */
         public array $jsonLd = [],
         public ?string $publishedAt = null,
+        /** What social previews show as the title (defaults to the page title). */
+        public ?string $shareTitle = null,
+        public ?string $imageAlt = null,
     ) {
         $this->canonical ??= Url::to(request()->getPathInfo());
         $this->description = mb_substr(trim(preg_replace('/\s+/u', ' ', $this->description)), 0, 155);
@@ -40,6 +43,6 @@ final class Seo
 
     public function ogImage(): string
     {
-        return $this->image ?? asset('images/og-default.png');
+        return $this->image ?? asset('images/og/card-default.jpg');
     }
 }

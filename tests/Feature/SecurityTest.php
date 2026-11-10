@@ -25,6 +25,10 @@ class SecurityTest extends TestCase
         $this->assertStringContainsString("frame-ancestors 'self'", $csp);
         $res->assertHeader('X-Content-Type-Options', 'nosniff');
         $res->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $res->assertHeaderMissing('X-Powered-By');
+        // Fonts are self-hosted: no third-party font hosts are allowed or requested.
+        $this->assertStringNotContainsString('fonts.g', $csp);
+        $res->assertDontSee('fonts.googleapis.com', false)->assertSee('/fonts/fonts.css', false);
     }
 
     public function test_old_wordpress_attack_paths_are_gone(): void
@@ -44,6 +48,37 @@ class SecurityTest extends TestCase
         foreach (['<script', 'onclick', 'onerror', 'javascript:', '<iframe'] as $bad) {
             $this->assertStringNotContainsString($bad, $clean);
         }
+    }
+
+    public function test_sanitizer_keeps_text_inside_unknown_wrappers(): void
+    {
+        // Real case: poems pasted from a Mac/Word editor wrap every word in <span>; the text must survive.
+        $html = '<p class="p1"><span class="s1">দক্ষিণের</span> <span class="s2">ছড়া</span></p><div><font color="red">লাল</font> <o:p>শেষ</o:p></div><table><tr><td>ঘর</td></tr></table>';
+        $clean = HtmlSanitizer::clean($html);
+
+        foreach (['দক্ষিণের', 'ছড়া', 'লাল', 'শেষ', '<td>ঘর</td>'] as $kept) {
+            $this->assertStringContainsString($kept, $clean);
+        }
+        foreach (['<span', '<font', 'class=', 'color='] as $gone) {
+            $this->assertStringNotContainsString($gone, $clean);
+        }
+    }
+
+    public function test_sanitizer_drops_style_and_script_contents_entirely(): void
+    {
+        $clean = HtmlSanitizer::clean('<p>ক<STYLE type="text/css">p{color:red}</STYLE><script>steal()</script><noscript>x</noscript><form><input value="pw"></form></p>');
+
+        $this->assertSame('<p>ক</p>', $clean);
+    }
+
+    public function test_sanitizer_never_blanks_long_posts(): void
+    {
+        // Regression: a regex failure on a long post returned '' and blanked 5 imported posts.
+        $long = str_repeat('<p><span style="font-weight:400">'.str_repeat('কবিতার লাইন&nbsp; ', 3000).'</span></p><p>&nbsp;</p>', 4);
+        $clean = HtmlSanitizer::clean($long);
+
+        $this->assertGreaterThan(100000, strlen($clean));
+        $this->assertStringNotContainsString('<p>&nbsp;</p>', $clean);
     }
 
     public function test_post_body_is_sanitised_on_save_and_rendered_safely(): void

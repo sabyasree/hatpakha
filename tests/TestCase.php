@@ -9,12 +9,33 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * Safety (D93): tests wipe their database. They may only ever touch the throwaway in-memory SQLite one.
+     * With cached config (every deploy runs `optimize`) phpunit.xml is ignored and RefreshDatabase would
+     * wipe the site's real database, so refuse loudly before anything runs.
+     */
+    public function createApplication()
+    {
+        $app = parent::createApplication();
+        $db = $app['config']->get('database.default');
+        $name = $app['config']->get("database.connections.{$db}.database");
+        if ($app->configurationIsCached() || $db !== 'sqlite' || $name !== ':memory:') {
+            throw new \RuntimeException("Refusing to run tests: they would wipe the '{$db}' database '{$name}'. "
+                .'Run `php artisan config:clear` first; tests only ever use the in-memory SQLite database.');
+        }
+
+        return $app;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->withoutVite();
         // Test the live-site behaviour by default; staging (noindex) has its own test.
         config(['seo.indexable' => true]);
+        // The breached-password check (D59) must not call the internet from tests: "not found".
+        \Illuminate\Support\Facades\Http::preventStrayRequests(false);
+        \Illuminate\Support\Facades\Http::fake(['api.pwnedpasswords.com/*' => \Illuminate\Support\Facades\Http::response('', 200)]);
     }
 
     /**

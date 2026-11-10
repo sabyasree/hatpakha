@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Author;
 use App\Models\Comment;
+use App\Models\Page;
 use App\Models\Post;
 use App\Models\Redirect;
 use App\Models\Section;
@@ -11,6 +12,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Enums\Role;
 use App\Support\Slug;
+use App\Support\WpContent;
 use Illuminate\Console\Command;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportWordPress extends Command
 {
-    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)}';
+    protected $signature = 'hatpakha:import-wp {--connection=legacy} {--limit=0 : Import only N posts (testing)} {--pages : Only import/refresh static pages} {--refresh-pages : Replace pages that have revised copy in database/content/pages, unless edited in /desk} {--overwrite-edited : Also overwrite posts edited in /desk (owner decision only)}';
 
     protected $description = 'Import users, authors, sections, tags, posts (all statuses) and comments from the old WordPress database';
 
@@ -40,6 +42,15 @@ class ImportWordPress extends Command
     /** When a post has several categories, the first match in this order wins. */
     private const SECTION_PRIORITY = ['poetry', 'sher-o-shayari', 'short-stories', 'travel', 'translated', 'literature', 'editorial', 'inspiration', 'social'];
 
+    /**
+     * Old categories that were really festival issues → archive issues (owner approved, docs/CATEGORY-MAP.md).
+     * slug => [issue slug yyyy-mm, Bengali title, theme]
+     */
+    private const ARCHIVE_ISSUES = ['puja-2020' => ['2020-10', 'শারদীয়া ১৪২৭', 'puja']];
+
+    /** @var array<string,int> old category slug → issue id */
+    private array $issueByCategory = [];
+
     private const STATUS_MAP = ['publish' => 'published', 'pending' => 'pending', 'draft' => 'draft', 'future' => 'scheduled', 'private' => 'archived'];
 
     private ConnectionInterface $wp;
@@ -53,9 +64,16 @@ class ImportWordPress extends Command
 
     public function handle(): int
     {
+        \App\Models\Post::$allowLegacyPublish = true;   // D104: the import mirrors WordPress as it is
         $this->wp = DB::connection($this->option('connection'));
         $this->call('db:seed', ['--force' => true]);
         $this->sectionId = Section::pluck('id', 'slug')->all();
+
+        if ($this->option('pages')) {
+            $this->importPages();
+
+            return self::SUCCESS;
+        }
 
         $this->importSections();
         $this->importTags();
@@ -63,10 +81,12 @@ class ImportWordPress extends Command
         $this->importCoAuthors();
         $this->importPosts();
         $this->importComments();
+        $this->importPages();
+        $this->importSubscribers();
         $this->refreshCounts();
 
         $this->newLine();
-        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'comments', 'redirects'])
+        $this->table(['Table', 'Rows'], collect(['users', 'authors', 'sections', 'tags', 'posts', 'pages', 'comments', 'redirects', 'newsletter_subscribers'])
             ->map(fn ($t) => [$t, DB::table($t)->count()])->all());
         $this->table(['Post status', 'Rows'], Post::query()->selectRaw('status, count(*) c')->groupBy('status')->get()->map(fn ($r) => [$r->status, $r->c])->all());
 
@@ -81,6 +101,14 @@ class ImportWordPress extends Command
             $old = Slug::normalize($c->slug);
             $this->catSlug[$c->term_id] = $old;
             $new = self::SECTION_MAP[$old] ?? 'social';
+            if (isset(self::ARCHIVE_ISSUES[$old])) {
+                [$issueSlug, $title, $theme] = self::ARCHIVE_ISSUES[$old];
+                $issue = \App\Models\Issue::firstOrCreate(['slug' => $issueSlug], ['title' => $title, 'kind' => 'festival', 'theme_key' => $theme, 'status' => 'published']);
+                $this->issueByCategory[$old] = $issue->id;
+                Redirect::updateOrCreate(['from_path' => "/category/{$old}/"], ['to_path' => "/sonkha/{$issueSlug}/", 'status_code' => 301]);
+
+                continue;
+            }
             if ($old !== $new) {
                 // Merged category: keep the old URL working (docs/SEO.md §1).
                 Redirect::updateOrCreate(['from_path' => "/category/{$old}/"], ['to_path' => "/category/{$new}/", 'status_code' => 301]);
@@ -106,25 +134,34 @@ class ImportWordPress extends Command
         $roles = $this->wp->table('usermeta')->where('meta_key', $this->wp->getTablePrefix().'capabilities')->pluck('meta_value', 'user_id');
         $bios = $this->wp->table('usermeta')->where('meta_key', 'description')->pluck('meta_value', 'user_id');
         $postAuthors = $this->wp->table('posts')->where('post_type', 'post')->distinct()->pluck('post_author')->flip();
+        $commenters = $this->wp->table('comments')->where('user_id', '>', 0)->distinct()->pluck('user_id')->flip();
+        // Panel roles granted by a person (console or /desk) are logged; only those survive a re-import.
+        $explicitRoles = \App\Models\AuditLog::where('action', 'user.role_changed')->where('subject_type', (new User)->getMorphClass())->pluck('subject_id')->flip();
 
-        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $postAuthors) {
+        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $postAuthors, $commenters, $explicitRoles) {
             foreach ($rows as $u) {
                 $email = strtolower(trim($u->user_email)) ?: "wp-user-{$u->ID}@invalid.hatpakha.local";
                 if (User::where('email', $email)->where('legacy_wp_id', '!=', $u->ID)->exists()) {
                     $email = "wp-user-{$u->ID}+dup@invalid.hatpakha.local";
                 }
-                $role = $this->mapRole((string) ($roles[$u->ID] ?? ''), isset($postAuthors[$u->ID]));
+                $caps = (string) ($roles[$u->ID] ?? '');
+                $role = self::mapRole($caps, isset($postAuthors[$u->ID]));
                 // forceFill: legacy_wp_id / legacy_password are intentionally NOT mass-assignable.
                 $user = User::firstOrNew(['legacy_wp_id' => $u->ID]);
                 $user->forceFill([
                     'legacy_wp_id' => $u->ID,
                     'name' => html_entity_decode($u->display_name ?: $u->user_login),
                     'email' => $email,
-                    // Keep a role an admin already changed in the new system; otherwise map it.
-                    'role' => $user->exists ? $user->role : $role,
+                    // Keep a role a person explicitly granted; a panel role that only came from an earlier
+                    // import is taken back (least privilege, docs/SECURITY.md §3).
+                    'role' => $user->exists && ($explicitRoles->has($user->id) || ! ($user->role?->atLeast(Role::Editor) ?? false)) ? $user->role : $role,
+                    'legacy_role' => self::legacyRole($caps),
+                    'spam_reason' => self::spamReason($u, isset($postAuthors[$u->ID]) || isset($commenters[$u->ID])),
                     // Legacy hash is stored as-is (never through the "hashed" cast) until first login.
                     'legacy_password' => $user->password ? null : ($u->user_pass ?: null),
                     'created_at' => $u->user_registered,
+                    // Accounts from the old site are treated as verified; new sign-ups verify by email.
+                    'email_verified_at' => $user->email_verified_at ?? $u->user_registered,
                 ])->save();
                 $this->userMap[$u->ID] = $user->id;
 
@@ -139,6 +176,10 @@ class ImportWordPress extends Command
                             'bio' => isset($bios[$u->ID]) ? strip_tags($bios[$u->ID]) : null,
                         ]);
                     $this->authorByWpUser[$u->ID] = $author->id;
+                    if ($isDesk && ($nice = Slug::normalize((string) $u->user_nicename)) !== '' && $nice !== 'hatpakha-desk') {
+                        // House accounts share the desk byline; their old author URLs must still land there.
+                        Redirect::updateOrCreate(['from_path' => "/author/{$nice}/"], ['to_path' => '/author/hatpakha-desk/', 'status_code' => 301]);
+                    }
                 }
             }
         });
@@ -208,10 +249,29 @@ class ImportWordPress extends Command
         });
         $bar->finish();
         $this->newLine();
+        if ($this->skippedEdited) {
+            $this->warn("{$this->skippedEdited} posts edited in /desk or decided in the audit were kept as they are (use --overwrite-edited to replace them).");
+        }
+    }
+
+    private int $skippedEdited = 0;
+
+    /** Edited in /desk, or an applied audit decision (removed/merged/hidden): a re-import must not undo either. */
+    public static function editedInDesk(int $legacyId): bool
+    {
+        return Post::withTrashed()->where('legacy_wp_id', $legacyId)
+            ->where(fn ($q) => $q->whereNotNull('edited_in_desk_at')->orWhere('audit_decision', 'applied'))->exists();
     }
 
     private function importPost(object $p, $meta, $rels, $thumbs): void
     {
+        // Never overwrite an editor's work: posts saved in /desk keep their current version (Phase 2).
+        if (! $this->option('overwrite-edited') && self::editedInDesk((int) $p->ID)) {
+            $this->skippedEdited++;
+
+            return;
+        }
+
         $m = $meta->pluck('meta_value', 'meta_key');
         $title = trim(html_entity_decode($p->post_title, ENT_QUOTES | ENT_HTML5));
         $sample = $title.' '.mb_substr(strip_tags($p->post_content), 0, 2000);
@@ -221,6 +281,7 @@ class ImportWordPress extends Command
         $language = $isBengali ? 'bn' : ($isDevanagari ? 'hi' : 'en');
 
         $catSlugs = $rels->where('taxonomy', 'category')->map(fn ($r) => self::SECTION_MAP[$this->catSlug[$r->term_id] ?? ''] ?? null)->filter()->all();
+        $issueId = $rels->where('taxonomy', 'category')->map(fn ($r) => $this->issueByCategory[$this->catSlug[$r->term_id] ?? ''] ?? null)->filter()->first();
         $byCategory = collect(self::SECTION_PRIORITY)->first(fn ($s) => in_array($s, $catSlugs, true));
         // English-language pieces go to the English section, except shayari written in Latin script.
         $sectionSlug = $language === 'en' && $byCategory !== 'sher-o-shayari' ? 'english' : ($byCategory ?? 'social');
@@ -240,13 +301,14 @@ class ImportWordPress extends Command
             'slug' => $slug,
             'title' => $title !== '' ? $title : '(শিরোনামহীন)',
             'excerpt' => $p->post_excerpt ? strip_tags(html_entity_decode($p->post_excerpt)) : null,
-            'body_html' => self::autop((string) $p->post_content),
+            'body_html' => self::autop(WpContent::convert((string) $p->post_content, $this->attachmentImages(...))),
             'format' => $format,
             'language' => $language,
             'status' => $status,
             'submitted_at' => $status === 'pending' ? $date : null,
             'published_at' => in_array($status, ['published', 'scheduled', 'archived'], true) ? $date : null,
             'section_id' => $this->sectionId[$sectionSlug] ?? null,
+            'issue_id' => $issueId,
             'featured_image_path' => $imgPath,
             'featured_image_width' => $imgW,
             'featured_image_height' => $imgH,
@@ -312,16 +374,59 @@ class ImportWordPress extends Command
         )]);
     }
 
-    private function mapRole(string $caps, bool $hasPosts): Role
+    /**
+     * Least privilege: nobody gets admin/editor rights from WordPress. Old admins and editors arrive as
+     * writers and must be promoted explicitly (php artisan hatpakha:role). An unused old admin password
+     * would otherwise let anyone log in and enrol their OWN 2FA device (docs/SECURITY.md §3).
+     */
+    public static function mapRole(string $caps, bool $hasPosts): Role
     {
         $role = match (true) {
-            str_contains($caps, '"administrator"') => Role::Admin,
-            str_contains($caps, '"editor"') => Role::Editor,
+            str_contains($caps, '"administrator"'), str_contains($caps, '"editor"'),
             str_contains($caps, '"author"'), str_contains($caps, '"contributor"') => Role::Writer,
             default => Role::Reader,
         };
 
         return ($hasPosts && $role === Role::Reader) ? Role::Writer : $role;
+    }
+
+    public static function legacyRole(string $caps): ?string
+    {
+        foreach (['administrator', 'editor', 'author', 'contributor'] as $r) {
+            if (str_contains($caps, '"'.$r.'"')) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Flags (never deletes) accounts that look automated. Very conservative: real readers who never
+     * posted are NOT flagged; only bot-style sign-ups and Facebook test accounts.
+     */
+    public static function spamReason(object $u, bool $active): ?string
+    {
+        if (str_ends_with(strtolower((string) $u->user_email), '@tfbnw.net')) {
+            return 'Facebook test account';
+        }
+        if (preg_match('/\b(casino|betting|loan|crypto|viagra|escort|seo services?|essay|replica|cheap)\b/i', $u->display_name.' '.$u->user_login.' '.$u->user_url)) {
+            return 'spam words in name or website';
+        }
+        if ($active) {
+            return null;
+        }
+        // "terrie9929 / Delbert Mcgrath": random lowercase login + digits, unrelated English full name, recent.
+        $year = (int) substr((string) $u->user_registered, 0, 4);
+        $mainstream = (bool) preg_match('/@(gmail|googlemail|yahoo|ymail|rediffmail|hotmail|outlook|live|icloud|me|protonmail|aol)\./i', (string) $u->user_email);
+        if (! $mainstream && $year >= 2021 && preg_match('/^[a-z]+\d{3,}$/', (string) $u->user_login)
+            && preg_match('/^([A-Z][a-z]+) ([A-Z][a-z]+)$/', trim((string) $u->display_name), $m)
+            && ! str_contains(strtolower((string) $u->user_login), strtolower($m[1]))
+            && ! str_contains(strtolower((string) $u->user_login), strtolower($m[2]))) {
+            return 'bot-like sign-up (random login, unrelated name, no activity)';
+        }
+
+        return null;
     }
 
     /** Ensures uniqueness; a clash gets "-{legacyId}" appended. Re-runs keep the same slug. */
@@ -332,6 +437,153 @@ class ImportWordPress extends Command
             ->where('slug', $slug)->where(fn ($q) => $q->whereNull($legacyCol)->orWhere($legacyCol, '!=', $legacyId))->exists();
 
         return $clash ? "{$slug}-{$legacyId}" : $slug;
+    }
+
+    /**
+     * Old WordPress pages that hold plugin screens (login, cart, …): their URLs 301 to the home page.
+     * Everything else published is imported as a Page at the same URL.
+     */
+    private const SYSTEM_PAGES = ['connections', 'edit-post', 'authors', 'user', 'members', 'home-4', 'tds-checkout', 'tds-my-account', 'tds-login-register'];
+
+    /** Old plugin URLs that are real pages again on the new site (Phase 3a): their old 301s are removed. */
+    private const LIVE_AGAIN = ['/login/', '/register/', '/account/', '/logout/', '/password-reset/'];
+
+    /**
+     * Pages the editor rewrote for the new magazine live in database/content/pages/{slug}.html
+     * (front matter: title, seo_description, noindex, footer, sort). See docs/PAGES-REVIEW.md.
+     * An existing page is never overwritten, so edits made in /desk survive a re-import.
+     */
+    private function importPages(): void
+    {
+        $count = 0;
+        foreach (self::SYSTEM_PAGES as $slug) {
+            Redirect::updateOrCreate(['from_path' => "/{$slug}/"], ['to_path' => '/', 'status_code' => 301]);
+        }
+        Redirect::whereIn('from_path', self::LIVE_AGAIN)->delete();
+        Redirect::updateOrCreate(['from_path' => '/password-reset/'], ['to_path' => '/forgot-password/', 'status_code' => 301]);
+
+        $rows = $this->wp->table('posts')->where('post_type', 'page')->where('post_status', 'publish')
+            ->whereNotIn('post_name', self::SYSTEM_PAGES)->get(['ID', 'post_name', 'post_title', 'post_content', 'post_date', 'post_modified']);
+
+        foreach ($rows as $p) {
+            $slug = Slug::normalize((string) $p->post_name);
+            if ($slug === '') {
+                continue;
+            }
+            $revised = self::revisedPage($slug);
+            $existing = Page::where('legacy_wp_id', $p->ID)->orWhere('slug', $slug)->first();
+            if ($existing) {
+                // Refresh only from revised copy, and never over an editor's work in /desk.
+                if ($this->option('refresh-pages') && $revised && ! $existing->edited_in_desk_at) {
+                    $existing->update([
+                        'title' => $revised['title'] ?? $existing->title,
+                        'body_html' => $revised['body'],
+                        'seo_description' => $revised['seo_description'] ?? $existing->seo_description,
+                        'noindex' => (bool) ($revised['noindex'] ?? $existing->noindex),
+                        'show_in_footer' => (bool) ($revised['footer'] ?? $existing->show_in_footer),
+                        'sort' => (int) ($revised['sort'] ?? $existing->sort),
+                    ]);
+                    $refreshed = ($refreshed ?? 0) + 1;
+                }
+
+                continue;
+            }
+            Page::create([
+                'slug' => $slug,
+                'legacy_wp_id' => $p->ID,
+                'title' => $revised['title'] ?? trim(html_entity_decode($p->post_title, ENT_QUOTES | ENT_HTML5)),
+                'body_html' => $revised['body'] ?? self::autop(WpContent::convert((string) $p->post_content)),
+                'seo_description' => $revised['seo_description'] ?? null,
+                'noindex' => (bool) ($revised['noindex'] ?? true), // un-reviewed old pages stay out of Google
+                'show_in_footer' => (bool) ($revised['footer'] ?? false),
+                'sort' => (int) ($revised['sort'] ?? 100),
+            ]);
+            $count++;
+        }
+        $this->info("Pages: {$count} new".(isset($refreshed) ? ", {$refreshed} refreshed from revised copy" : ''));
+    }
+
+    /** @return array<string,string>|null front matter + 'body' from database/content/pages/{slug}.html */
+    public static function revisedPage(string $slug): ?array
+    {
+        $file = database_path('content/pages/'.basename($slug).'.html');
+        if (! is_file($file)) {
+            return null;
+        }
+        $raw = (string) file_get_contents($file);
+        $meta = [];
+        if (preg_match('/\A---\n(.*?)\n---\n/s', $raw, $m)) {
+            foreach (explode("\n", $m[1]) as $line) {
+                if (str_contains($line, ':')) {
+                    [$k, $v] = array_map('trim', explode(':', $line, 2));
+                    $meta[$k] = $v === 'true' ? '1' : ($v === 'false' ? '0' : $v);
+                }
+            }
+            $raw = substr($raw, strlen($m[0]));
+        }
+
+        return $meta + ['body' => trim($raw)];
+    }
+
+    /**
+     * Gallery attachment IDs → image paths (for [gallery ids="…"]).
+     *
+     * @param  array<int,int>  $ids
+     * @return array<int,array{src:string,alt:string}>
+     */
+    private function attachmentImages(array $ids): array
+    {
+        $files = $this->wp->table('postmeta')->whereIn('post_id', $ids)->where('meta_key', '_wp_attached_file')->pluck('meta_value', 'post_id');
+        $alts = $this->wp->table('postmeta')->whereIn('post_id', $ids)->where('meta_key', '_wp_attachment_image_alt')->pluck('meta_value', 'post_id');
+        $out = [];
+        foreach ($ids as $id) {
+            $file = $files[$id] ?? null;
+            if ($file && ! str_contains($file, '..') && preg_match('/\.(jpe?g|png|gif|webp)$/i', $file)) {
+                $out[] = ['src' => '/wp-content/uploads/'.ltrim($file, '/'), 'alt' => (string) ($alts[$id] ?? '')];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * MailPoet list → newsletter_subscribers. Only people who signed up through a form AND confirmed count
+     * as consented; accounts MailPoet added automatically need a re-consent email first (owner approves).
+     * Unsubscribed and bounced addresses are suppressed forever. Nobody is emailed here.
+     */
+    private function importSubscribers(): void
+    {
+        if (! $this->wp->getSchemaBuilder()->hasTable('mailpoet_subscribers')) {
+            $this->warn('No MailPoet table: newsletter subscribers skipped.');
+
+            return;
+        }
+        $n = 0;
+        $this->wp->table('mailpoet_subscribers')->whereNull('deleted_at')->orderBy('id')->chunk(500, function ($rows) use (&$n) {
+            foreach ($rows as $s) {
+                $email = strtolower(trim((string) $s->email));
+                if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    continue;
+                }
+                $existing = \App\Models\NewsletterSubscriber::where('email', $email)->first();
+                $suppressed = in_array($s->status, ['unsubscribed', 'bounced'], true);
+                \App\Models\NewsletterSubscriber::updateOrCreate(['email' => $email], [
+                    'name' => trim(($s->first_name ?? '').' '.($s->last_name ?? '')) ?: null,
+                    // A later unsubscribe in the new system always wins over the old data.
+                    'status' => $existing?->suppressed ? $existing->status : $s->status,
+                    'source' => $s->source,
+                    'suppressed' => $suppressed || (bool) $existing?->suppressed,
+                    'consented_at' => $existing?->consented_at
+                        ?? ($s->source === 'form' && $s->status === 'subscribed' && $s->confirmed_at ? $s->confirmed_at : null),
+                    'user_id' => $s->wp_user_id ? ($this->userMap[$s->wp_user_id] ?? null) : null,
+                    'legacy_mailpoet_id' => $s->id,
+                    'created_at' => $s->created_at,
+                ]);
+                $n++;
+            }
+        });
+        $mailable = \App\Models\NewsletterSubscriber::mailable()->count();
+        $this->info("Newsletter: {$n} addresses imported, {$mailable} with explicit consent (nobody was emailed)");
     }
 
     /** Minimal port of WordPress wpautop(): blank lines → paragraphs, single newlines → <br>. */

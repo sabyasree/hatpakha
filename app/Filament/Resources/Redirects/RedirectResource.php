@@ -16,9 +16,20 @@ use Filament\Tables\Table;
 
 class RedirectResource extends Resource
 {
+    use \App\Filament\Concerns\TranslatedResourceLabels;
+    use \App\Filament\Concerns\AdminDeletesOnly;
+
     protected static ?string $model = Redirect::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUturnRight;
+
+    protected static ?string $modelLabel = 'রিডাইরেক্ট';
+
+    protected static ?string $pluralModelLabel = 'রিডাইরেক্ট';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+
+    protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
     {
@@ -44,5 +55,11 @@ class RedirectResource extends Resource
             'create' => CreateRedirect::route('/create'),
             'edit' => EditRedirect::route('/{record}/edit'),
         ];
+    }
+
+    /** Site-wide settings that can break URLs or accounts: admins only. */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
     }
 }

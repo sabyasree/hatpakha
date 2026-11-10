@@ -21,6 +21,7 @@ final class JsonLd
             'alternateName' => 'হাতপাখা',
             'url' => Url::to('/'),
             'logo' => asset('images/logo.png'),
+            'sameAs' => array_values(array_filter([config('services.social.facebook'), config('services.social.instagram')], fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
         ];
     }
 
@@ -63,6 +64,9 @@ final class JsonLd
             'alternateName' => $a->display_name_bn ? $a->display_name : null,
             'url' => $a->url(),
             'description' => $a->bio ? mb_substr(strip_tags($a->bio), 0, 300) : null,
+            'image' => $a->avatar_path ? url($a->avatar_path) : null,
+            'homeLocation' => $a->city ? ['@type' => 'Place', 'name' => $a->city] : null,
+            'sameAs' => array_values(array_filter((array) $a->links, fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
         ]);
     }
 
@@ -98,6 +102,24 @@ final class JsonLd
             'url' => $i->url(),
             'datePublished' => $i->published_at?->toDateString(),
             'isPartOf' => ['@id' => Url::to('/').'#periodical'],
+        ]);
+    }
+
+    /** D97: a themed collection page: the pieces as an ordered list. */
+    public static function collection(\App\Models\Collection $c, \Illuminate\Support\Collection $posts): array
+    {
+        return array_filter([
+            '@type' => 'CollectionPage',
+            '@id' => $c->url().'#collection',
+            'name' => $c->title,
+            'description' => $c->intro,
+            'url' => $c->url(),
+            'isPartOf' => ['@id' => Url::to('/').'#website'],
+            'mainEntity' => [
+                '@type' => 'ItemList',
+                'numberOfItems' => $posts->count(),
+                'itemListElement' => $posts->values()->map(fn ($p, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'url' => $p->url(), 'name' => $p->title])->all(),
+            ],
         ]);
     }
 

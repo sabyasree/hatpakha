@@ -12,6 +12,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 | Section | `/category/{slug}/` | Same as WordPress, so no redirect is needed |
 | Author | `/author/{nicename}/` | Same as WordPress |
 | Issue | `/sonkha/{yyyy-mm}/` and `/sonkha/{yyyy-mm}/read/` (flipbook) | New |
+| Archive | `/archive/` and `/archive/{yyyy}/` | New (D31). Old date archives `/yyyy/`, `/yyyy/mm/`, `/yyyy/mm/dd/` 301 here ✅test |
 | Tag | `/tag/{slug}/` | Only the ~150 controlled tags. Merged or removed tags → 301 to the section |
 - **Trailing slash, always** (as on WordPress). A URL without the slash → 301 to the slashed version. ✅test
 - `?p=123`, `/amp/`, `/feed/`, date archives, `/wp-content/plugins/...` and other legacy paths → 301 through the `redirects` table. Removed spam → **410**. ✅test
@@ -22,7 +23,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 - A unique `<title>` (≤ 60 chars where possible) and `<meta name="description">` (≤ 155 chars). Taken from Yoast data for old posts; AI-drafted and editor-approved for new posts. ✅test
 - `<link rel="canonical">` (absolute, https, trailing slash). ✅test
 - `<html lang="bn">` or `lang="en"` per article; `hreflang` pairs where a translation exists.
-- Open Graph + Twitter cards. `og:image` is the auto-generated 1200×630 share card (photos below 1200px are never used as og:image).
+- Open Graph + Twitter cards. `og:image` is the auto-generated 1200×630 share card under 300 KB (`App\Support\ShareImage`, D88): a cover at least 600px wide (Facebook's minimum for a large preview), cropped and scaled to 1200×630, with the logo + section badge; otherwise the section's card (owner, 2026-11-07: covers were missing on many pieces; was 1200px). og:title for a piece is "title | writer". Staging's robots.txt lets link-preview bots (Facebook, WhatsApp, X, Telegram…) in so shared links show a picture; pages stay noindex.
 - `<meta name="robots" content="max-image-preview:large">` on articles (eligible for Google Discover).
 - Breadcrumbs (visible + `BreadcrumbList`).
 

@@ -14,7 +14,7 @@ class Author extends Model
 
     protected function casts(): array
     {
-        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime'];
+        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime', 'honoured_at' => 'datetime', 'quality_at' => 'datetime', 'quality_score' => 'float', 'relaunch_letter_at' => 'datetime'];
     }
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
@@ -28,7 +28,19 @@ class Author extends Model
 
     public function publicName(): string
     {
-        return $this->display_name_bn ?: $this->display_name;
+        if ($this->display_name_bn) {
+            return $this->display_name_bn;
+        }
+        // Old WordPress logins ("sambuddha_chatterjee") read as names ("Sambuddha Chatterjee") until the writer sets one (D59).
+        $n = (string) $this->display_name;
+        // Never show an e-mail address as a name (privacy): "bijoy_bose_82@yahoo.com" → "Bijoy Bose".
+        if (str_contains($n, '@')) {
+            $n = trim(preg_replace('/[0-9]+$/', '', preg_replace('/[_.\-]+/', ' ', strstr($n, '@', true)))) ?: 'হাতপাখার লেখক';
+
+            return ucwords($n);
+        }
+
+        return preg_match('/^[a-z0-9]+([_.\-][a-z0-9]+)+$/', $n) ? ucwords(preg_replace('/[_.\-]+/', ' ', $n)) : $n;
     }
 
     /** First letter for the generated initials avatar. */
@@ -46,5 +58,11 @@ class Author extends Model
     public function url(): string
     {
         return \App\Support\Url::to('/author/'.rawurlencode($this->slug));
+    }
+
+    /** Keeps published_count right (it decides full vs compact profile and indexing). */
+    public function refreshCount(): void
+    {
+        $this->forceFill(['published_count' => $this->posts()->published()->count()])->saveQuietly();
     }
 }

@@ -46,6 +46,15 @@ jobs:
         run: |
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
+      - name: Refuse unsafe deploy paths
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          # The Laravel root (with .env, vendor, storage) must never sit inside a web root (docs/DEPLOYMENT.md).
+          case "$DEPLOY_PATH" in
+            ''|*public_html*|*/www/*|*/htdocs*) echo "DEPLOY_PATH must be outside public_html, e.g. /home/<user>/apps/hatpakha-staging"; exit 1 ;;
+          esac
+
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -56,6 +65,18 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
+      - name: Show "coming back soon" before touching any file
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          # Pre-rendered page (storage/framework/maintenance.php) is served by public/index.php before
+          # Laravel boots, so visitors see it even while vendor/ is half uploaded. Never fails the deploy.
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
+            { php artisan down --render=errors::503 --retry=30 --refresh=30 2>/dev/null || php artisan down --retry=30 || true; }"
+
       - name: Upload code (keeps .env, storage and old media on the server)
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -65,7 +86,8 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude='.git' --exclude='node_modules' --exclude='tests' \
-            --exclude='.env' --exclude='storage/' --exclude='public/wp-content/uploads/' \
+            --exclude='/.env' --exclude='/storage/' --exclude='/public/storage' --exclude='/public/media/' \
+            --include='/public/wp-content/uploads/.htaccess' --exclude='/public/wp-content/uploads/*' \
             -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT:-22}" \
             ./ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
 
@@ -78,13 +100,94 @@ jobs:
           ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
           printf '%s\n' "$ENV_FILE" | ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "umask 077 && cat > '${DEPLOY_PATH}/.env'"
-          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
-            mkdir -p storage/framework/{cache,sessions,views} storage/logs && \
-            php artisan down --retry=30 || true; \
-            php artisan migrate --force && \
-            php artisan optimize:clear && php artisan optimize && \
-            php artisan filament:optimize && \
+          # set -e: any step that fails stops the release (the site stays on the "back soon" page). Only the steps
+          # marked "|| …" may fail on purpose. Before, one harmless failure (storage:link: Hostinger's PHP has no
+          # exec) made a chain skip the database check, the backup and "down" (found 2026-11-07, D92).
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "set -e; cd '${DEPLOY_PATH}'; \
+            php -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);' || { echo 'Server CLI PHP is older than 8.3:'; php -v; exit 1; }; \
+            [ -L public/storage ] || rm -rf public/storage; \
+            mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/public storage/app/private; \
+            [ -L public/storage ] || php artisan storage:link >/dev/null 2>&1 || echo 'storage:link not possible on this server (fine: pictures live in public/media, D47)'; \
+            php artisan db:show --json >/dev/null || { echo 'Cannot connect to the database: check DB_HOST/DB_DATABASE/DB_USERNAME/DB_PASSWORD in ENV_FILE. The \"back soon\" page stays up until this is fixed and redeployed.'; exit 1; }; \
+            php artisan hatpakha:backup-db --label=predeploy --keep=10 || { echo 'Database backup failed: deploy stopped before any database change.'; exit 1; }; \
+            php artisan down --render=errors::503 --retry=30 --refresh=30 || true; \
+            php artisan migrate --force; \
+            php artisan db:seed --force; \
+            php artisan optimize:clear; php artisan optimize; \
+            php artisan filament:optimize; \
+            php artisan hatpakha:move-covers --no-ansi; \
             php artisan up"
+
+      # Staging only, and only when the commit message contains [run-blind-test] (owner asked to run it).
+      # The command estimates first and stops above $6 (≈ ₹500); see docs/AI.md.
+      - name: AI blind test (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-blind-test]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-blind-test --count=30 --max-usd=6 --force --no-ansi"
+
+      # Staging only, when the commit message contains [run-ai-editor]: the AI editor prepares the
+      # backlog packages and cover illustrations for the owner's approval (D42/D43). Never publishes.
+      # Two pieces first in the open (so a broken setup shows here), the rest in the background on the
+      # server (hours of work must not hold the deploy). Log: storage/logs/ai-editor.log
+      - name: AI editor batch (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-editor]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-editor --backlog --images --dry --no-ansi && \
+             php artisan hatpakha:ai-editor --backlog --limit=2 --no-ansi && \
+             (nohup php artisan hatpakha:ai-editor --backlog --images --no-ansi > storage/logs/ai-editor.log 2>&1 < /dev/null &) && \
+             echo 'Batch continues in the background: storage/logs/ai-editor.log'"
+
+      # Staging only, when the commit message contains [run-ai-images]: three pictures in the open,
+      # to check the image model works (proposals only; the owner approves them).
+      - name: AI pictures test (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-images]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && php artisan hatpakha:ai-images --limit=3 --retry --no-ansi && \
+             php artisan tinker --execute='echo json_encode(App\\Models\\Post::whereNotNull(\"proposed_image_error\")->latest(\"updated_at\")->limit(3)->pluck(\"proposed_image_error\"), JSON_UNESCAPED_UNICODE);'"
+
+      # Staging only, when the commit message contains [diagnose-cron]: read-only look at why the
+      # AI editor's clock (D44) isn't running. Changes nothing except running one normal shift.
+      - name: Diagnose the AI editor's clock (on request)
+        if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[diagnose-cron]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && \
+            echo '--- scheduled tasks (crontab -l):'; crontab -l 2>&1 | sed 's/^/    /'; \
+            echo '--- php on PATH:'; command -v php; php -v | head -1; \
+            echo '--- other PHP builds:'; ls -d /usr/bin/php* /opt/alt/php*/usr/bin/php /usr/local/bin/php* 2>/dev/null | sed 's/^/    /'; \
+            for b in /usr/bin/php /usr/local/bin/php; do [ -x \$b ] && echo \"    \$b: \$(\$b -r 'echo PHP_VERSION;')\"; done; \
+            echo '--- app folder:'; pwd; \
+            echo '--- last heartbeat:'; php artisan tinker --execute='echo App\\Models\\Setting::get(\"ai.heartbeat\") ?? \"never\";'; echo; \
+            echo '--- schedule:'; php artisan schedule:list --no-ansi; \
+            echo '--- cron log file:'; ls -la --time-style=full-iso storage/logs/ 2>&1 | sed 's/^/    /'; date; \
+            echo '--- schedule:run by hand (what cron runs):'; /usr/bin/php artisan schedule:run --no-ansi 2>&1 | tail -n 20 | sed 's/^/    /'; \
+            echo '--- laravel.log (last errors):'; grep -n 'ERROR' storage/logs/laravel.log 2>/dev/null | tail -n 8 | cut -c1-300 | sed 's/^/    /'; \
+            echo '--- cron log (storage/logs/cron.log, last lines):'; tail -n 30 storage/logs/cron.log 2>/dev/null | sed 's/^/    /' || echo '    (no log yet: the cron line has not run with the logging form)'; \
+            echo '--- pictures:'; php artisan tinker --execute='echo \"blocked: \".(App\\Ai\\Illustrator::blocked() ?? \"no\").PHP_EOL.\"proposed: \".App\\Models\\Post::whereNotNull(\"proposed_image_path\")->count().PHP_EOL.\"image calls: \".App\\Models\\AiUsage::where(\"purpose\",\"image\")->count().PHP_EOL.\"errors: \".json_encode(App\\Models\\Post::whereNotNull(\"proposed_image_error\")->select(\"proposed_image_error\")->distinct()->limit(5)->pluck(\"proposed_image_error\"), JSON_UNESCAPED_UNICODE).PHP_EOL.\"backlog prepared: \".App\\Models\\AiReview::where(\"status\",\"done\")->where(\"report\",\"like\",\"%edits%\")->count();' | sed 's/^/    /'; echo; \
+            echo '--- background batch log (last lines):'; tail -n 5 storage/logs/ai-editor.log 2>/dev/null | sed 's/^/    /'; \
+            echo '--- one shift by hand:'; php artisan hatpakha:ai-shift inbox --no-ansi && echo '    inbox OK'"
 
       - name: Remove key
         if: always()
