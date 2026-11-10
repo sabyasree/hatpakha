@@ -1,4 +1,4 @@
-<x-mail::message :preheader="$introLines[0] ?? null">
+<x-mail::message :preheader="strip_tags((string) ($introLines[0] ?? ''))" :reason="$reason ?? null">
 {{-- Greeting: plain bold text; the headline ("## …" in the template) carries the news (D124) --}}
 @if (! empty($greeting))
 **{{ $greeting }}**
@@ -43,7 +43,7 @@
 {{-- D123: in Bengali, like the rest of the e-mail --}}
 বোতামটি কাজ না করলে এই লিংকে চাপ দিন, বা লিংকটি কপি করে ব্রাউজারে বসান:
 
-<span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
+<span class="break-all"><a href="{{ $actionUrl }}" class="hp-link" style="color:#13212C;">{{ $displayableActionUrl }}</a></span>
 </x-slot:subcopy>
 @endisset
 </x-mail::message>

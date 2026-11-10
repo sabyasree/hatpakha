@@ -18,16 +18,24 @@
 @media only screen and (max-width: 500px) {
 .button { display: block !important; text-align: center !important; font-size: 18px !important; }
 .button-cell { width: 100% !important; }
+.action table { width: 100% !important; }
+.button { max-width: none !important; }
 }
-/* Dark mode (Apple Mail, Outlook): navy card, paper text; the button stays red with white text. */
+/* Dark mode (Apple Mail; Outlook via [data-ogsc]): navy card, paper text, peach labels; the button stays red. */
 @media (prefers-color-scheme: dark) {
-.wrapper, body { background-color: #0d171f !important; }
+.wrapper, body { background-color: #13212C !important; }
 .inner-body { background-color: #13212C !important; border-color: #4D5A63 !important; }
-.content-cell p, .content-cell h1, .content-cell h2, .footer p, .footer a, .content-cell a:not(.button) { color: #FFFBF4 !important; }
+.content-cell p, .content-cell h1, .content-cell h2, .content-cell td, .footer p { color: #FFFBF4 !important; }
+.hp-link, .footer a { color: #FFFBF4 !important; }
 .hp-note { background-color: #4D5A63 !important; }
+.hp-note-label { color: #EFC08D !important; }
 }
-[data-ogsc] .inner-body { background-color: #13212C !important; }
-[data-ogsc] .content-cell p, [data-ogsc] .content-cell h2 { color: #FFFBF4 !important; }
+[data-ogsc] .wrapper { background-color: #13212C !important; }
+[data-ogsc] .inner-body { background-color: #13212C !important; border-color: #4D5A63 !important; }
+[data-ogsc] .content-cell p, [data-ogsc] .content-cell h2, [data-ogsc] .content-cell td, [data-ogsc] .footer p { color: #FFFBF4 !important; }
+[data-ogsc] .hp-link, [data-ogsc] .footer a { color: #FFFBF4 !important; }
+[data-ogsc] .hp-note { background-color: #4D5A63 !important; }
+[data-ogsc] .hp-note-label { color: #EFC08D !important; }
 </style>
 {!! $head ?? '' !!}
 </head>

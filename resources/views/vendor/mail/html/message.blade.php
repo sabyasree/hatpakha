@@ -1,4 +1,4 @@
-@props(['preheader' => null])
+@props(['preheader' => null, 'reason' => null])
 <x-mail::layout :preheader="$preheader">
 <x-slot:header>
 <x-mail::header :url="\App\Support\Url::to('/')">
@@ -18,11 +18,11 @@
 
 <x-slot:footer>
 <x-mail::footer>
-**হাতপাখা** · বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321‑3035
+**হাতপাখা** · বাংলা সাহিত্যের ওয়েব পত্রিকা · <span style="white-space:nowrap;font-size:14px;">ISSN 2321-3035</span>
 
 [hatpakha.com]({{ \App\Support\Url::to('/') }}) · [ফেসবুক]({{ config('services.social.facebook') }}) · [ইনস্টাগ্রাম]({{ config('services.social.instagram') }}) · [যোগাযোগ]({{ \App\Support\Url::to('/contact-us') }})
 
-হাতপাখায় আপনার অ্যাকাউন্ট, লেখা বা পাঠানো ফর্মের জন্য এই ই-মেল। উত্তর দিলে সম্পাদকের কাছে পৌঁছবে।
+{{ $reason ?: 'হাতপাখার ওয়েবসাইট থেকে পাঠানো ই-মেল।' }} উত্তর দিলে সম্পাদকের কাছে পৌঁছবে।
 </x-mail::footer>
 </x-slot:footer>
 </x-mail::layout>

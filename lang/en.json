@@ -1530,5 +1530,8 @@
     "সম্মাননা": "Honour",
     "ধারাবাহিকের নতুন পর্ব": "New serial episode",
     "অনুসরণ করা লেখকের নতুন লেখা": "New piece from a followed writer",
-    "নতুন বার্তার খবর (আপনার কাছে)": "New message notice (to you)"
+    "নতুন বার্তার খবর (আপনার কাছে)": "New message notice (to you)",
+    "অনুচ্ছেদের শুরুতে": "Start a paragraph with",
+    "লিখলে সেটি বড় শিরোনাম হয় (খবরটা প্রথমে); শুরুতে": "to make it the big headline (the news first); start with",
+    "লিখলে রঙিন বাক্সে দেখায় (যেমন সম্পাদকের কথা)।": "to show it in a coloured box (like the editor's note)."
 }

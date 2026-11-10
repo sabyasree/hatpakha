@@ -53,7 +53,8 @@ class MailTemplatesPage extends Page
             ->modalWidth('3xl')
             ->fillForm(fn (array $arguments) => MailTemplates::text($arguments['key']))
             ->schema(fn (array $arguments) => [
-                Text::make(new HtmlString('<div style="font-size:.9rem;line-height:1.7">'.e(__('ফাঁকা লাইন দিয়ে অনুচ্ছেদ আলাদা করুন। বোতাম যেখানে চান, সেখানে আলাদা লাইনে লিখুন:')).' <b>[বোতাম]</b>'
+                Text::make(new HtmlString('<div style="font-size:.9rem;line-height:1.7">'.e(__('ফাঁকা লাইন দিয়ে অনুচ্ছেদ আলাদা করুন। বোতাম যেখানে চান, সেখানে আলাদা লাইনে লিখুন:')).' <b>[বোতাম]</b><br>'
+                    .e(__('অনুচ্ছেদের শুরুতে')).' <b>## </b>'.e(__('লিখলে সেটি বড় শিরোনাম হয় (খবরটা প্রথমে); শুরুতে')).' <b>&gt; </b>'.e(__('লিখলে রঙিন বাক্সে দেখায় (যেমন সম্পাদকের কথা)।'))
                     .(($p = MailTemplates::all()[$arguments['key']][3] ?? []) ? '<br>'.e(__('বসানো যায় (পাঠানোর সময় নিজে থেকে বসে যায়):')).'<br>'
                         .collect($p)->map(fn ($d, $k) => '<b>'.e($k).'</b>: '.e(__($d)))->implode('<br>') : '').'</div>')),
                 TextInput::make('subject')->label(__('বিষয় (ই-মেলের শিরোনাম)'))->required()->maxLength(200),
