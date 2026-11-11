@@ -1595,5 +1595,15 @@
     "বাকি": "to do",
     "আবার চেষ্টা হবে": "will try again",
     "দেখেছি": "Seen",
-    "কাজ শেষ করতে পারেনি": "couldn't finish the work"
+    "কাজ শেষ করতে পারেনি": "couldn't finish the work",
+    "তালিকা থেকে মুছুন…": "Clear from the list…",
+    "দেখা হয়ে গেছে এমন শেষ হওয়া কাজগুলো মুছবেন?": "Clear finished jobs you have already opened?",
+    "দেখা হয়ে যাওয়া শেষ কাজ": "Finished, already opened",
+    "সব শেষ হওয়া কাজ মুছবেন? নতুন, এখনও না-দেখাগুলোও যাবে।": "Clear all finished jobs? New ones you haven't opened go too.",
+    "সব শেষ হওয়া কাজ": "All finished",
+    "যে কাজগুলো হয়নি, সেগুলো মুছবেন?": "Clear the jobs that failed?",
+    "যে কাজগুলো হয়নি": "Failed jobs",
+    "শেষ হওয়া আর না-হওয়া সব কাজ মুছবেন?": "Clear all finished and failed jobs?",
+    "শেষ হওয়া আর না-হওয়া সব": "All finished and failed",
+    "অপেক্ষায় বা চলমান কাজ এখান থেকে মোছে না।": "Waiting or running jobs are never cleared here."
 }

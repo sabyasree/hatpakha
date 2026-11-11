@@ -127,4 +127,31 @@ class TeamRequestRetryTest extends TestCase
         $this->assertNotNull($post->ai_drafted_at);
         $this->assertSame(['done', 'done', 'done', 'done'], array_column(\App\Filament\Pages\AiTeam::stepsFor($r), 'state'));
     }
+
+    /** Owner (2026-11-11): "I cleared completed tasks and it cleared the failed ones too; I need to choose." */
+    public function test_the_owner_chooses_what_to_clear(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $seen = TeamRequest::create(['status' => 'done', 'seen_at' => now()]);
+        $new = TeamRequest::create(['status' => 'done']);
+        $failed = TeamRequest::create(['status' => 'failed']);
+        $waiting = TeamRequest::create(['status' => 'queued']);
+        $running = TeamRequest::create(['status' => 'running']);
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\AiTeam::class);
+
+        $page->call('clearRequests', 'done');
+        $this->assertModelMissing($seen);
+        $this->assertModelExists($new);
+        $this->assertModelExists($failed, 'Clearing finished work keeps the failed jobs');
+
+        $page->call('clearRequests', 'failed');
+        $this->assertModelMissing($failed);
+        $this->assertModelExists($new);
+
+        $page->call('clearRequests', 'all');
+        $this->assertModelMissing($new);
+        $this->assertModelExists($waiting);
+        $this->assertModelExists($running);
+    }
 }

@@ -225,13 +225,25 @@ class AiTeam extends Page
     }
 
     /** Clears every finished or failed request from the list. */
-    public function clearRequests(): void
+    /**
+     * Owner (2026-11-11): choose what to clear. done = finished work you've opened; done_all = all finished work;
+     * failed = jobs that couldn't be done; all = every finished or failed job. Waiting and running jobs are never cleared here.
+     */
+    public function clearRequests(string $which = 'done'): void
     {
         if (! \App\Filament\Support\Deleting::isAdmin()) {
             return;
         }
-        $n = \App\Models\TeamRequest::whereIn('status', ['done', 'failed'])->delete();
-        \App\Models\AuditLog::record('team_request.cleared', null, ['count' => $n]);
+        $q = \App\Models\TeamRequest::query();
+        match ($which) {
+            'done' => $q->where('status', 'done')->whereNotNull('seen_at'),
+            'done_all' => $q->where('status', 'done'),
+            'failed' => $q->where('status', 'failed'),
+            'all' => $q->whereIn('status', ['done', 'failed']),
+            default => $q->whereRaw('1 = 0'),
+        };
+        $n = $q->delete();
+        \App\Models\AuditLog::record('team_request.cleared', null, ['count' => $n, 'which' => $which]);
         Notification::make()->title(\App\Support\Bn::num((string) $n).__('টি মুছে ফেলা হয়েছে'))->success()->send();
     }
 
