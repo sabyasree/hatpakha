@@ -22,6 +22,11 @@ final class JsonLd
             'url' => Url::to('/'),
             'logo' => asset('images/logo.png'),
             'sameAs' => array_values(array_filter([config('services.social.facebook'), config('services.social.instagram')], fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
+            // D126 (keeps D89): how to reach the desk is the contact form, never a public address or phone number.
+            'contactPoint' => [
+                ['@type' => 'ContactPoint', 'contactType' => 'editorial', 'url' => Url::to('/contact-us'), 'availableLanguage' => ['bn', 'en']],
+                ['@type' => 'ContactPoint', 'contactType' => 'submissions', 'url' => Url::to('/submissions'), 'availableLanguage' => ['bn', 'en']],
+            ],
         ];
     }
 

@@ -39,7 +39,7 @@
         @endif
     </div>
 @else
-    <section id="{{ $id }}" class="mt-10 scroll-mt-24 overflow-hidden rounded-3xl bg-sky-tint" aria-labelledby="{{ $id }}-h">
+    <section id="{{ $id }}" data-md-skip class="mt-10 scroll-mt-24 overflow-hidden rounded-3xl bg-sky-tint" aria-labelledby="{{ $id }}-h">
         <div class="grid gap-5 p-6 md:grid-cols-[1fr_1.1fr] md:items-center md:p-8">
             <div>
                 <div class="font-hand text-2xl text-red">হাতপাখার চিঠি</div>

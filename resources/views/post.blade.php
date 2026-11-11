@@ -115,7 +115,7 @@
             $saved = $me && \Illuminate\Support\Facades\DB::table('saved_posts')->where(['user_id' => $me->id, 'post_id' => $post->id])->exists();
             $loginNext = \App\Support\Url::to('/login').'?next='.rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#reactions');
         @endphp
-        <div id="reactions" class="scroll-mt-24 flex flex-wrap items-center justify-center gap-3 border-y border-rule py-4">
+        <div id="reactions" data-md-skip class="scroll-mt-24 flex flex-wrap items-center justify-center gap-3 border-y border-rule py-4">
             @auth
                 <form method="POST" action="{{ route('like', $post) }}" data-toggle="like">@csrf
                     <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $liked ? 'bg-red text-white border-red' : '' }}" aria-pressed="{{ $liked ? 'true' : 'false' }}">
