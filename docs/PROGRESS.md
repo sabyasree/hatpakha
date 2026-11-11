@@ -239,3 +239,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D131: "write a story…" requests become a complete draft post (section, tags, SEO, cover request), opened from the request
 - [x] AI team page: "তালিকা থেকে মুছুন…" lets the owner choose (opened finished / all finished / failed / both), each with a count; waiting or running jobs never
 - [x] D132: install screenshots, offline reading list, /desk → ফোনে খবর (numbers + announcements), section choices, share to Hatpakha, morning fetch
+- [x] D133: the editor-in-chief plans each request across members (writer, designer, marketing…), with new poster and piece-posts jobs; each step shown
+- [x] D134: the editor-in-chief asks back when unsure (choices + reply box), then plans

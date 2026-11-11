@@ -133,6 +133,17 @@ class AiTeam extends Page
         Notification::make()->title(__('আবার কাজ দেওয়া হয়েছে'))->success()->send();
     }
 
+    /** The owner answers the editor-in-chief's question (owner, 2026-11-11: giving work is a conversation). */
+    public function replyRequest(int $id, string $text): void
+    {
+        $r = \App\Models\TeamRequest::findOrFail($id);
+        if ($r->status !== 'asking' || trim($text) === '') {
+            return;
+        }
+        \App\Ai\TeamJobs::reply($r, $text);
+        Notification::make()->title(__('উত্তর পাঠানো হল; প্রধান সম্পাদক এক মিনিটের মধ্যে আবার দেখবে'))->success()->send();
+    }
+
     /** A finished job stays marked "new" until the owner opens it. */
     public function markSeen(int $id): void
     {
@@ -175,7 +186,8 @@ class AiTeam extends Page
         $routeFailed = $phase === 'failed' && isset($route['start']) && ! isset($route['end']) && ! ($route['skipped'] ?? false);
         $steps[] = match (true) {
             ($route['skipped'] ?? false) || ($r->job && ! isset($route['start'])) => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'skipped', 'sub' => __('দরকার হয়নি'), 'at' => null],
-            isset($route['end']) => ['label' => __('কে করবে ঠিক হল'), 'state' => 'done', 'sub' => __('ঠিক হল').': '.$route['note'], 'at' => $clock($t($route['end']))],
+            $phase === 'asking' => ['label' => __('প্রধান সম্পাদকের একটি প্রশ্ন'), 'state' => 'ask', 'sub' => __('আপনার উত্তরের অপেক্ষায়'), 'at' => null],
+            isset($route['end']) => ['label' => __('কে করবে ঠিক হল'), 'state' => 'done', 'sub' => (filled($route['why'] ?? null) ? $route['why'].' · ' : '').__('ঠিক হল').': '.$route['note'], 'at' => $clock($t($route['end']))],
             $routeFailed => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'failed', 'sub' => null, 'at' => $clock($t($route['start']))],
             isset($route['start']) && $phase === 'route' => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'current', 'sub' => __('প্রধান সম্পাদক দেখছে কোন সদস্য করবে'), 'at' => $clock($t($route['start']))],
             default => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'pending', 'sub' => null, 'at' => null],
@@ -196,6 +208,26 @@ class AiTeam extends Page
                 'at' => $clock($start)],
             default => ['label' => $label, 'state' => 'pending', 'sub' => null, 'at' => null],
         };
+
+        // Owner (2026-11-11): a request split by the editor-in-chief shows each member's step on its own line.
+        if (! empty($s['plan']) && is_array($s['plan']) && $phase !== 'retry') {
+            array_pop($steps);
+            foreach ($s['plan'] as $p) {
+                $who = __(Team::AGENTS[$p['agent']][0] ?? $p['agent']);
+                $what = __(\App\Ai\TeamJobs::JOBS[$p['agent']][$p['job']][0] ?? 'নিজের কথায় কাজ');
+                $pStart = $t($p['start'] ?? null);
+                $steps[] = [
+                    'label' => $who.': '.$what,
+                    'state' => $p['state'] === 'current' && $phase === 'failed' ? 'failed' : ($p['state'] ?? 'pending'),
+                    'sub' => match ($p['state'] ?? 'pending') {
+                        'current' => $took($pStart, null).' '.__('ধরে চলছে'),
+                        'done', 'failed' => \Illuminate\Support\Str::limit((string) ($p['note'] ?? ''), 160),
+                        default => null,
+                    },
+                    'at' => $clock($t($p['end'] ?? null) ?? $pStart),
+                ];
+            }
+        }
 
         // 4. Ready for you (or could not be done)
         $steps[] = match ($phase) {
@@ -254,12 +286,28 @@ class AiTeam extends Page
     }
 
     /** Where a request's result is waiting in /desk. */
+    /** Every place the results of a job are: the draft piece, and the page of each planned step (marketing, images…). */
+    public static function resultLinks(\App\Models\TeamRequest $r): array
+    {
+        $links = [];
+        if ($l = self::resultLink($r)) {
+            $links[$l[1]] = $l;
+        }
+        foreach ((array) (($r->steps ?? [])['plan'] ?? []) as $p) {
+            if (($p['state'] ?? '') === 'done' && ($l = self::resultLink(new \App\Models\TeamRequest(['agent' => $p['agent'], 'job' => $p['job']])))) {
+                $links[$l[1]] = $l;
+            }
+        }
+
+        return array_values($links);
+    }
+
     public static function resultLink(\App\Models\TeamRequest $r): ?array
     {
         if (str_starts_with((string) $r->link, 'post:')) {
             return [__('লেখাটি খুলুন'), \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => (int) substr($r->link, 5)])];
         }
-        $where = \App\Ai\TeamJobs::JOBS[$r->agent][$r->job][2] ?? null;
+        $where = $r->agent === 'designer' && $r->job === 'post' ? 'images' : (\App\Ai\TeamJobs::JOBS[$r->agent][$r->job][2] ?? null);
 
         return match ($where) {
             'posts' => [__('লেখা'), \App\Filament\Resources\Posts\PostResource::getUrl()],
@@ -370,7 +418,7 @@ class AiTeam extends Page
             'feed' => self::feed(),
             // Needs you first (new results), then failed, running, waiting, and older finished work (UX review).
             'requests' => \App\Models\TeamRequest::latest('id')->limit(20)->get()->sortBy(fn ($r) => [match (true) {
-                $r->status === 'done' && ! $r->seen_at => 0, $r->status === 'failed' && ! $r->seen_at => 1, $r->status === 'running' => 2,
+                $r->status === 'asking' => -1, $r->status === 'done' && ! $r->seen_at => 0, $r->status === 'failed' && ! $r->seen_at => 1, $r->status === 'running' => 2,
                 $r->status === 'queued' => 3, default => 4,
             }, -$r->id])->values(),
             'alerts' => EditorTask::where('type', 'alert')->where('status', 'open')->latest()->get(),

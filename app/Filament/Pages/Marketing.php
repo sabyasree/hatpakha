@@ -181,7 +181,10 @@ class Marketing extends Page
                 'image' => $subject->featured_image_path ? asset(ltrim($subject->featured_image_path, '/')) : null,
             ];
         }
-        if ($subject instanceof Issue) {
+        if ($s->kind === 'poster' && filled($s->texts['image'] ?? null)) {   // the designer's poster: picture + headline + line
+            return ['title' => $s->title, 'by' => 'হাতপাখা', 'section' => '', 'quote' => $s->texts['quote'] ?? '', 'image' => asset(ltrim($s->texts['image'], '/'))];
+        }
+                if ($subject instanceof Issue) {
             return ['title' => $subject->title, 'by' => 'সংখ্যা', 'section' => '', 'quote' => '', 'image' => $subject->cover_path ? asset(ltrim($subject->cover_path, '/')) : null];
         }
 
