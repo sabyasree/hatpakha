@@ -144,10 +144,10 @@
 
     {{-- Work the owner gave the team by hand (D72) --}}
     @php($busy = $d['requests']->whereIn('status', ['queued', 'running'])->isNotEmpty())
-    <div @if ($busy) wire:poll.15s @endif>
+    <div @if ($busy) wire:poll.10s @endif>
     <x-filament::section icon="heroicon-o-clipboard-document-check" collapsible persist-collapsed collapse-id="hp-ai-team-4">
         <x-slot name="heading">{{ __('আপনার দেওয়া কাজ') }}</x-slot>
-        <x-slot name="description">{{ __('উপরের "দলকে কাজ দিন" বা কোনো সদস্যের "কাজ দিন" থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়।') }}</x-slot>
+        <x-slot name="description">{{ __('উপরের “দলকে কাজ দিন” বা কোনো সদস্যের “কাজ দিন” থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়, বড় লেখায় ৫-১০ মিনিট লাগতে পারে। এই তালিকা নিজে থেকেই হালনাগাদ হয়। সাময়িক সমস্যায় দল নিজেই আবার চেষ্টা করে (৩ বার পর্যন্ত); শেষ হলে বা না হলে ফোনে খবর আসে (ফোনে খবর চালু থাকলে)।') }}</x-slot>
         @if (\App\Filament\Support\Deleting::isAdmin() && $d['requests']->whereIn('status', ['done', 'failed'])->isNotEmpty())
             <x-slot name="afterHeader">
                 <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="clearRequests" wire:confirm="{{ __('শেষ হওয়া ও না-হওয়া সব কাজ তালিকা থেকে মুছে ফেলবেন?') }}">{{ __('শেষ হওয়াগুলো মুছুন') }}</x-filament::button>
@@ -161,7 +161,7 @@
                     <div style="flex:1;min-width:0">
                         <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
                             <strong>{{ $r->agent ? __($agents[$r->agent][0] ?? $r->agent) : __('প্রধান সম্পাদক ঠিক করছে') }} · {{ __(\App\Ai\TeamJobs::label($r->agent, $r->job)) }}@if ($r->redo) · {{ __('আবার') }}@endif</strong>
-                            <span class="hp-muted hp-num">{{ __(['queued' => 'অপেক্ষায়', 'running' => 'কাজ চলছে…', 'done' => 'হয়ে গেছে', 'failed' => 'হয়নি'][$r->status] ?? $r->status) }} · {{ $ago($r->finished_at ?? $r->created_at) }}</span>
+                            <span class="hp-muted hp-num">{{ __(['queued' => 'লাইনে অপেক্ষায়', 'running' => 'কাজ চলছে…', 'done' => 'হয়ে গেছে', 'failed' => 'কাজ হয়নি'][$r->status] ?? $r->status) }}@if ($r->attempts > 0 && $r->status !== 'done') · {{ __('চেষ্টা') }} {{ \App\Support\Bn::num(min($r->attempts + ($r->status === 'failed' ? 0 : 1), \App\Ai\TeamJobs::MAX_TRIES).'/'.\App\Ai\TeamJobs::MAX_TRIES) }}@endif · {{ $r->status === 'running' && $r->started_at ? __('শুরু').' '.$ago($r->started_at) : $ago($r->finished_at ?? $r->created_at) }}</span>
                         </div>
                         @if ($r->instruction && ! str_starts_with((string) $r->link, 'post:') && ! ctype_digit((string) $r->instruction))
                             <div class="hp-muted">“{{ \Illuminate\Support\Str::limit($r->instruction, 200) }}”</div>

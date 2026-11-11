@@ -613,7 +613,7 @@
     "প্রতিযোগিতার নাম": "Contest name",
     "বিভাগ (ঐচ্ছিক)": "Section (optional)",
     "\"চলছে\" হলে লেখা পাঠানোর ফর্মে প্রতিযোগিতাটি দেখা যাবে।": "When \"Open\", the contest appears on the submission form.",
-    "শুরু": "Starts",
+    "শুরু": "started",
     "শেষ তারিখ": "Last date",
     "উপরের \"এআই-কে নিয়ম লিখতে দিন\" চাপলে খসড়া তৈরি হবে; দেখে বদলে নিন।": "Press \"Let the AI draft the rules\" above for a draft; check and edit it.",
     "এআই-কে নিয়ম লিখতে দিন": "Let the AI draft the rules",
@@ -1564,5 +1564,9 @@
     "সেট করা নেই: ENV_FILE-এ": "Not set up: add the line",
     "লাইনটি যোগ করে আবার deploy করুন": "to ENV_FILE and deploy again",
     "কোন ঠিকানায়": "To which address",
-    "যেমন নিজের Gmail, বা mail-tester.com-এর দেওয়া ঠিকানা (স্প্যাম স্কোর আর কারণ দেখায়)।": "For example your own Gmail, or the address mail-tester.com gives you (it shows the spam score and the reasons)."
+    "যেমন নিজের Gmail, বা mail-tester.com-এর দেওয়া ঠিকানা (স্প্যাম স্কোর আর কারণ দেখায়)।": "For example your own Gmail, or the address mail-tester.com gives you (it shows the spam score and the reasons).",
+    "লাইনে অপেক্ষায়": "Waiting in line",
+    "কাজ হয়নি": "Failed",
+    "চেষ্টা": "try",
+    "উপরের “দলকে কাজ দিন” বা কোনো সদস্যের “কাজ দিন” থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়, বড় লেখায় ৫-১০ মিনিট লাগতে পারে। এই তালিকা নিজে থেকেই হালনাগাদ হয়। সাময়িক সমস্যায় দল নিজেই আবার চেষ্টা করে (৩ বার পর্যন্ত); শেষ হলে বা না হলে ফোনে খবর আসে (ফোনে খবর চালু থাকলে)।": "From “Give the team work” above or a member's “Give work”. The team does these now, outside its schedule; work starts within a minute or two, long writing can take 5–10 minutes. This list updates by itself. On a passing problem the team tries again by itself (up to 3 times); you get a phone notification when it is done or failed (if phone notifications are on)."
 }
