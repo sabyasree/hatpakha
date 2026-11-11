@@ -35,6 +35,7 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 - **Rich text is sanitised on save** with an allowlist (p, br, em, strong, blockquote, h2–h4, ul/ol/li, a[href], img[src,alt] from our own domain, figure/figcaption). Raw `{!! !!}` output is allowed only for sanitised fields (`*_html`). ✅test (XSS payloads stripped)
 - Eloquent / query bindings only. No string-built SQL.
 - Spam: honeypot + **Cloudflare Turnstile** on register, submit, comment and newsletter forms; cheap content pre-filters before any AI call.
+- **One-click unsubscribe (RFC 8058):** the signed unsubscribe links also accept POST without a CSRF token (mail apps send it); the signature is checked, so nobody can unsubscribe someone else. ✅test
 - **Push subscriptions (D127)** are untrusted URLs: only https addresses at the browsers' own push services (FCM, Mozilla, Windows, Apple) are stored or called, keys are size-checked, and a reader can remove only their own. The service worker never caches the desk, accounts, sign-in, forms or search, and keeps only pages marked `Cache-Control: public`. ✅test
 - Submissions are **untrusted input to the AI** (prompt injection). They go only into the user part of the prompt, delimited; AI output must match a JSON schema and is never executed or rendered as HTML.
 

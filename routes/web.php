@@ -142,7 +142,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class, 'thr
 });
 
 // D108: one-click stop for a serial's new-episode e-mails, no sign-in needed.
-Route::get('/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Serial $serial, \App\Models\User $user) {
+Route::match(['get', 'post'], '/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Serial $serial, \App\Models\User $user) {
     \Illuminate\Support\Facades\DB::table('serial_follows')->where(['serial_id' => $serial->id, 'user_id' => $user->id])->delete();
 
     return response()->view('newsletter-message', ['seo' => new \App\Seo\Seo(title: 'খবর বন্ধ হয়েছে', noindex: true),
@@ -150,7 +150,7 @@ Route::get('/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Se
 })->middleware(['signed', 'throttle:20,1'])->name('serial.unfollow');
 
 // One-click unfollow from the e-mail (D64), no sign-in needed.
-Route::get('/newsletter/unsubscribe/f/{author}/{user}', function (\App\Models\Author $author, \App\Models\User $user) {
+Route::match(['get', 'post'], '/newsletter/unsubscribe/f/{author}/{user}', function (\App\Models\Author $author, \App\Models\User $user) {
     \Illuminate\Support\Facades\DB::table('follows')->where(['author_id' => $author->id, 'user_id' => $user->id])->delete();
     $author->forceFill(['followers_count' => \Illuminate\Support\Facades\DB::table('follows')->where('author_id', $author->id)->count()])->saveQuietly();
 
@@ -182,6 +182,7 @@ Route::get('/desk-language/{locale}', function (\Illuminate\Http\Request $reques
 })->middleware('auth')->name('desk.language');
 
 // Newsletter: one-click unsubscribe from the signed link in every issue (D48). Never emailed again.
+// GET (a click) and POST (Gmail/Yahoo's one-click button, RFC 8058; no CSRF token, the signature is the proof).
 // Newsletter sign-up with double opt-in (D58).
 // D89: contact and advertising forms (instead of an e-mail address)
 Route::post('/contact/{kind}', [\App\Http\Controllers\ContactController::class, 'store'])->whereIn('kind', ['contact', 'advertise'])->middleware('throttle:5,1')->name('contact.store');
@@ -193,8 +194,8 @@ Route::post('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyControl
 Route::get('/chithi/{newsletter}/{delivery}/{link}/{sig}', \App\Http\Controllers\NewsletterClickController::class)
     ->whereNumber(['newsletter', 'delivery'])->where(['link' => 'home|cta|[0-9]{1,2}', 'sig' => '[a-f0-9]{16}'])->middleware('throttle:60,1');
 Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
-Route::get('/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
-Route::get('/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {
+Route::match(['get', 'post'], '/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
+Route::match(['get', 'post'], '/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {
     $subscriber->forceFill(['status' => 'unsubscribed', 'suppressed' => true])->save();
     \App\Models\AuditLog::record('newsletter.unsubscribed', $subscriber);
 

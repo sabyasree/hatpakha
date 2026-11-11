@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind Cloudflare/LiteSpeed: trust forwarded proto/host so HTTPS is detected.
         $middleware->trustProxies(at: '*');
+        // RFC 8058 one-click unsubscribe: mail apps POST to the signed link without a form token (the signature is the proof).
+        $middleware->validateCsrfTokens(except: ['newsletter/unsubscribe/*']);
         // docs/SEO.md §1 and docs/SECURITY.md §1
         $middleware->web(prepend: [\App\Http\Middleware\GuestPageCache::class, \App\Http\Middleware\CanonicalHost::class, \App\Http\Middleware\EnforceTrailingSlash::class]);   // D65: outermost; D125: one host
         $middleware->web(append: [\App\Http\Middleware\ViewAs::class, \App\Http\Middleware\SecurityHeaders::class, \App\Http\Middleware\AgentFormats::class]);   // D85: view as a writer (look only); D126: Markdown for agents
