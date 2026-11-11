@@ -125,10 +125,10 @@ jobs:
       # Optional: needs CLOUDFLARE_ZONE_ID and CLOUDFLARE_API_TOKEN (a token with only "Zone → Cache Purge") in the environment.
       - name: Purge Cloudflare cache
         env:
-          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID || vars.CLOUDFLARE_ZONE_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || vars.CLOUDFLARE_API_TOKEN }}
         run: |
-          if [ -z "$CF_ZONE" ] || [ -z "$CF_TOKEN" ]; then echo "Cloudflare purge skipped (no CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN)"; exit 0; fi
+          if [ -z "$CF_ZONE" ] || [ -z "$CF_TOKEN" ]; then echo "::warning::Cloudflare purge skipped: CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN not found as secrets or variables of this environment"; exit 0; fi
           curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/purge_cache" \
             -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data '{"purge_everything":true}' \
             | grep -q '"success":true' && echo "Cloudflare cache purged" || echo "::warning::Cloudflare purge failed (check the token's permission)"
