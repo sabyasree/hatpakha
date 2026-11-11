@@ -273,8 +273,10 @@
                             @endif
                         @endif
                         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem">
-                            @if ($r->status === 'done' && ($l = \App\Filament\Pages\AiTeam::resultLink($r)))
-                                <x-filament::button size="xs" tag="a" :href="$l[1]" icon="heroicon-o-arrow-top-right-on-square" wire:click="markSeen({{ $r->id }})">{{ $l[0] }}</x-filament::button>
+                            @if ($r->status === 'done')
+                                @foreach (\App\Filament\Pages\AiTeam::resultLinks($r) as $l)
+                                    <x-filament::button size="xs" tag="a" :href="$l[1]" icon="heroicon-o-arrow-top-right-on-square" wire:click="markSeen({{ $r->id }})">{{ $l[0] }}</x-filament::button>
+                                @endforeach
                             @endif
                             @if (in_array($r->status, ['done', 'failed'], true))
                                 <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-path" wire:click="again({{ $r->id }})">{{ __('আবার করুন') }}</x-filament::button>

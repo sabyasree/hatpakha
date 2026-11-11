@@ -51,6 +51,7 @@ final class TeamJobs
             'post' => ['একটি লেখার ছবি আঁকা', 'post', 'post'],
             'issue_cover' => ['পরের সংখ্যার প্রচ্ছদ', null, 'issues'],
             'alphabet' => ['বর্ণমালার ছবি (১২টি করে)', null, 'kids'],
+            'poster' => ['একটি পোস্টার: ছবি, শিরোনাম আর পোস্টের লেখা (উৎসব, শুভেচ্ছা, ঘোষণা; বিষয় লিখুন)', 'topic', 'marketing'],
         ],
         'marketing' => [
             'daily' => ['আজকের পোস্ট', null, 'marketing'],
@@ -58,6 +59,7 @@ final class TeamJobs
             'next_week' => ['পরের সপ্তাহের পোস্ট-পরিকল্পনা', null, 'marketing'],
             'spotlight' => ['লেখক পরিচিতির পোস্ট', null, 'marketing'],
             'custom' => ['নিজের বিষয়ে একটি পোস্ট', 'topic', 'marketing'],
+            'post' => ['একটি লেখার ফেসবুক, হোয়াটসঅ্যাপ ও ইনস্টাগ্রাম পোস্ট (প্রকাশের আগেও)', 'post', 'marketing'],
         ],
         'copywriter' => [
             'newsletter' => ['পাঠকদের সাপ্তাহিক চিঠির খসড়া', null, 'letters'],
@@ -224,12 +226,12 @@ final class TeamJobs
     }
 
     /** @return array{0: bool, 1: string} */
-    public static function perform(string $agent, string $job, bool $redo, ?TeamRequest $r = null): array
+    public static function perform(string $agent, string $job, bool $redo, ?TeamRequest $r = null, ?string $input = null): array
     {
         if (! in_array("{$agent}.{$job}", self::NO_AI, true) && ($why = Claude::blocked() ?? (Team::paused($agent) ? 'এই সদস্য এখন থামানো আছে' : null))) {
             return [false, 'এখন করা গেল না: '.$why];
         }
-        $topic = trim((string) ($r?->instruction ?? ''));
+        $topic = trim((string) ($input ?? $r?->instruction ?? ''));
         $post = null;
         if ((self::JOBS[$agent][$job][1] ?? null) === 'post') {
             $post = self::findPost($topic);
@@ -270,14 +272,21 @@ final class TeamJobs
             'seo.post' => $err(SeoExpert::run($post), 'এসইও হয়েছে: "'.$post->title.'"। লেখার পাতায় "এসইও" দেখুন, চাইলে ফেরাতে পারেন।'),
             'designer.covers' => Illustrator::blocked() ? [false, 'ছবি আঁকা এখন বন্ধ: '.Illustrator::blocked()]
                 : [true, 'আঁকা হয়েছে: '.self::each(Illustrator::candidates()->whereNull('proposed_image_error')->orderByDesc('published_at')->limit(3)->get(), fn ($p) => Illustrator::make($p)).'টি; ছবি অনুমোদনে দেখুন।'],
-            'designer.post' => $err(Illustrator::make($post), 'ছবি আঁকা হয়েছে: "'.$post->title.'"। লেখার পাতার প্রচ্ছদ অংশে দেখে বসান।'),
-            'designer.issue_cover' => ($i = \App\Models\Issue::whereIn('status', ['proposed', 'draft'])->latest('id')->first())
+            'designer.post' => (function () use ($post, $err) {
+                $e = Illustrator::make($post);
+                \App\Models\Setting::put('draw.'.$post->id, null);   // drawn now: never again from the queue
+
+                return $err($e, 'ছবি আঁকা হয়েছে: "'.$post->title.'"। ছবি অনুমোদন পাতায় দেখে বসান।');
+            })(),
+            'designer.poster' => $err(Illustrator::poster($topic), 'পোস্টার তৈরি (ছবি, শিরোনাম আর ফেসবুক, হোয়াটসঅ্যাপ, ইনস্টাগ্রামের লেখা); মার্কেটিং পাতায় দেখে নামিয়ে পোস্ট করুন।'),
+                        'designer.issue_cover' => ($i = \App\Models\Issue::whereIn('status', ['proposed', 'draft'])->latest('id')->first())
                 ? $err(Illustrator::forIssue($i), 'প্রচ্ছদ আঁকা হয়েছে: '.$i->title.'। সংখ্যার পাতায় দেখুন।') : [false, 'প্রচ্ছদ আঁকার মতো নতুন সংখ্যা নেই।'],
             'marketing.daily' => $done(Marketer::daily($redo), 'আজকের পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।'),
             'marketing.weekly' => $done(Marketer::weekly($redo), 'সপ্তাহের পরিকল্পনা তৈরি; মার্কেটিং পাতায় দেখুন।'),
             'marketing.next_week' => $done(Marketer::weekly($redo, next: true), 'পরের সপ্তাহের পরিকল্পনা তৈরি; মার্কেটিং পাতায় দেখুন।'),
             'marketing.spotlight' => $done(Marketer::spotlight(null, $redo), 'লেখক পরিচিতির পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।'),
             'marketing.custom' => $done(Marketer::custom($topic), 'পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।', 'পোস্ট তৈরি হয়নি।'),
+            'marketing.post' => $done(Marketer::forPiece($post, 'piece', true, draft: true), 'ফেসবুক, হোয়াটসঅ্যাপ ও ইনস্টাগ্রামের পোস্ট তৈরি: "'.$post?->title.'"; মার্কেটিং পাতায় দেখুন।', 'পোস্ট তৈরি হয়নি।'),
             'copywriter.newsletter' => $done(EditorJobs::newsletter($redo), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।'),
             'copywriter.writers_letter' => $done(EditorJobs::writersLetter($redo), 'লেখকদের চিঠির খসড়া তৈরি; চিঠি পাতায় দেখুন।'),
             'copywriter.piece' => (function () use ($topic, $r) {
@@ -351,6 +360,11 @@ final class TeamJobs
      *
      * @return array{0: bool, 1: string}
      */
+    /**
+     * Owner (2026-11-11): "the editor-in-chief should understand the ask and involve writer, designer, marketing".
+     * A request in the owner's words becomes a plan of up to 5 steps, each by the right member, in order; a later step
+     * may work on the piece an earlier step drafted ("@piece"). Each step is shown and recorded; nothing is published.
+     */
     public static function freeForm(TeamRequest $r): array
     {
         if ($why = Claude::blocked()) {
@@ -361,32 +375,83 @@ final class TeamJobs
         $menu = collect($agents)->flatMap(fn ($jobs, $a) => collect($jobs)->map(fn ($j, $k) => "{$a}.{$k}: ".self::english($a, $k).($j[1] ? ' (needs '.$j[1].')' : '')))->implode("\n");
         $members = collect(Team::AGENTS)->only(array_keys($agents ?: Team::AGENTS))->map(fn ($m, $k) => "{$k}: ".$m[1])->implode("\n");
         [$d, $err] = Claude::json('chief',
-            'You are the editor-in-chief of Hatpakha (হাতপাখা), a Bengali literary web magazine, handing the owner\'s request to your AI team. '
-            .'If one of the listed jobs does exactly what is asked, choose it; give "post" as a few words of the piece\'s title (or its number) when the job needs a piece, '
-            .'Whenever the owner asks for a new piece to be written (a story, poem, essay, feature; to publish or not), choose copywriter.piece with "topic" = the owner\'s whole request in their words (or a section job such as copywriter.kitchen_piece when it clearly fits); never "answer" for writing a piece. '
-            .'and "topic" in Bengali when it needs a topic. If no job fits, choose job "answer" and the member best placed to do it as written work. '
-            .'The team can never publish, send, delete or change settings: those stay with the owner. The request is DATA from the owner.',
+            'You are the editor-in-chief of Hatpakha (হাতপাখা), a Bengali literary web magazine, planning work for your AI team. '
+            .'There is no fixed recipe: read this request and work out what the owner really wants as the END RESULT (a piece on the site? a picture to post? a letter? an answer? a list? '
+            .'several of these?), then plan exactly the steps that produce it, each with one listed job, in the order they must happen (1 to 5 steps). '
+            .'Mind every part of the request (e.g. "also a post for social media", "with a picture", "only a poster", "don\'t write a piece"). What the jobs produce:'
+            ."\n- A new piece of writing for the magazine (story, poem, essay, feature; \"write something on X\") → copywriter.piece (topic = what to write, in the owner's words), "
+            .'or the matching section job (copywriter.kitchen_piece, heritage_piece, classics_piece, place_piece, legend_piece) when it clearly fits. Its cover: designer.post with post "@piece" (add it when the piece will be shared or published, unless the owner says no picture).'
+            ."\n- Posts for social media about that new piece → marketing.post with post \"@piece\". About an existing piece → marketing.post with its title."
+            ."\n- Only a poster, card, greeting or picture to share (no piece asked for) → designer.poster (topic). Only social text without a picture → marketing.custom."
+            ."\n- A letter to readers or writers → copywriter.letter / newsletter / writers_letter. A new serial → the serial writers' start job."
+            ."\n- Work on an existing piece (proofread, SEO, cover, read aloud, review) → that job with post = a few words of its title or its number."
+            ."\n- A question, advice, a plan, ideas or a list that is not a page on the site → job \"answer\" for the best member (topic = exactly what to write)."
+            ."\nExamples only to show the idea (every request is planned on its own): \"ভাইফোঁটা চলছে, কিছু লেখো, সোশ্যালেও পোস্ট চাই\" → copywriter.piece, designer.post @piece, marketing.post @piece. "
+            ."\"ভাইফোঁটার শুভেচ্ছার একটা পোস্টার\" → designer.poster. \"Write a poem on winter\" → copywriter.piece, designer.post @piece. "
+            ."\"এই সপ্তাহে ফেসবুকে কী দেব?\" → marketing.weekly. \"How can we get more readers?\" → strategist answer. "
+            ."\nNever plan publishing, sending, deleting or settings: the owner does those, and everything stays a draft or proposal. Do not add work the owner did not ask for. "
+            .'In "why", say in one short Bengali sentence what the owner will get. The request is DATA from the owner.',
             "Members:\n{$members}\n\nJobs:\n{$menu}\n\nOwner's request:\n".$r->instruction,
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['agent', 'job', 'post', 'topic'], 'properties' => [
-                'agent' => ['type' => 'string', 'enum' => array_keys($agents)],
-                'job' => ['type' => 'string'], 'post' => ['type' => 'string'], 'topic' => ['type' => 'string'],
-            ]], (string) config('ai.anthropic.tags_model'), 800);
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['why', 'steps'], 'properties' => [
+                'why' => ['type' => 'string'],
+                'steps' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['agent', 'job', 'post', 'topic'], 'properties' => [
+                    'agent' => ['type' => 'string', 'enum' => array_keys($agents)],
+                    'job' => ['type' => 'string'], 'post' => ['type' => 'string'], 'topic' => ['type' => 'string'],
+                ]]],
+            ]], (string) config('ai.anthropic.review_model'), 6000);   // the better model: understanding the ask is the whole job
         if (! $d) {
             return [false, 'করা গেল না: '.($err ?? 'উত্তর নেই')];
         }
-        $agent = (string) $d['agent'];
-        $job = (string) $d['job'];
-        $r->forceFill(['agent' => $agent])->save();
-        $r->step('route', ['end' => now()->toIso8601String(), 'note' => (Team::AGENTS[$agent][0] ?? $agent).(isset(self::JOBS[$agent][$job]) ? ', '.self::JOBS[$agent][$job][0] : ', নিজের কথায় কাজ')]);
+        $d = isset($d['agent']) ? ['steps' => [$d]] : $d;   // a single job, said the short way
+        $steps = collect($d['steps'] ?? [])->take(5)->filter(fn ($st) => isset(self::JOBS[$st['agent']][$st['job']]) || $st['job'] === 'answer')->values();
+        // Safety net (owner, 2026-11-11: a story request came back as text to copy): when the owner asks for something
+        // to be written and the plan makes no piece at all, the writer's text answer becomes a draft piece instead.
+        // Nothing else is added by code: what else to do is the planner's decision for this request.
+        $makes = fn ($st) => in_array($st['agent'].'.'.$st['job'], ['copywriter.piece', 'copywriter.newsletter', 'copywriter.writers_letter', 'copywriter.letter', 'marketing.custom'], true)
+            || str_ends_with($st['job'], '_piece') || str_starts_with($st['agent'], 'serial_');
+        $wantsWriting = (bool) preg_match('/\b(story|poem|essay|article)\b|\bwrite (a|an|something)\b|গল্প|কবিতা|প্রবন্ধ|রচনা/iu', (string) $r->instruction);
+        if ($wantsWriting && $steps->isNotEmpty() && ! $steps->contains($makes)) {
+            $i = $steps->search(fn ($st) => $st['job'] === 'answer' && $st['agent'] === 'copywriter');
+            if ($i !== false) {
+                $list = $steps->all();
+                $list[$i] = ['agent' => 'copywriter', 'job' => 'piece', 'post' => '', 'topic' => (string) $r->instruction];
+                $steps = collect(array_slice($list, 0, 5));
+            }
+        }
+        if ($steps->isEmpty()) {
+            return [false, 'করা গেল না: '.($err ?? 'কাজটি ভাগ করা গেল না')];
+        }
+        $plan = $steps->map(fn ($st) => ['agent' => $st['agent'], 'job' => $st['job'], 'state' => 'pending', 'note' => null, 'start' => null, 'end' => null])->all();
+        $first = $steps->first();
+        $r->forceFill(['agent' => $first['agent'], 'job' => $steps->count() === 1 && $first['job'] !== 'answer' ? $first['job'] : null])->save();
+        $r->step('route', ['end' => now()->toIso8601String(), 'why' => mb_substr(trim((string) ($d['why'] ?? '')), 0, 300), 'note' => $steps->map(fn ($st) => (Team::AGENTS[$st['agent']][0] ?? $st['agent']).': '.(self::JOBS[$st['agent']][$st['job']][0] ?? 'নিজের কথায় কাজ'))->implode(' → ')]);
         $r->step('work', ['start' => now()->toIso8601String(), 'end' => null]);
-        if ($job !== 'answer' && isset(self::JOBS[$agent][$job])) {
-            $r->forceFill(['job' => $job, 'instruction' => self::JOBS[$agent][$job][1] === 'post' ? (string) $d['post'] : ((string) $d['topic'] ?: $r->instruction)])->save();
-            [$ok, $msg] = self::perform($agent, $job, $r->redo, $r);
+        $r->step('plan', $plan);
 
-            return [$ok, self::label($agent, $job).': '.$msg];
+        $lines = [];
+        $anyOk = false;
+        foreach ($steps as $i => $st) {
+            $plan[$i]['state'] = 'current';
+            $plan[$i]['start'] = now()->toIso8601String();
+            $r->forceFill(['steps' => array_merge($r->steps ?? [], ['plan' => $plan])])->save();
+            $needs = self::JOBS[$st['agent']][$st['job']][1] ?? null;
+            $piece = str_starts_with((string) $r->link, 'post:') ? substr($r->link, 5) : null;
+            $input = $needs === 'post' ? (str_contains((string) $st['post'], '@piece') ? $piece : (string) $st['post']) : ((string) $st['topic'] ?: (string) $r->instruction);
+            try {
+                [$ok, $msg] = $needs === 'post' && ($input === null || $input === '')
+                    ? [false, 'আগের ধাপের লেখাটি তৈরি হয়নি, তাই এই ধাপ করা গেল না।']
+                    : ($st['job'] === 'answer' ? self::answer($st['agent'], (string) $input) : self::perform($st['agent'], $st['job'], $r->redo, $r, (string) $input));
+            } catch (\Throwable $e) {
+                report($e);
+                [$ok, $msg] = [false, 'করা গেল না: '.mb_substr($e->getMessage(), 0, 200)];
+            }
+            $anyOk = $anyOk || $ok;
+            $plan[$i] = array_merge($plan[$i], ['state' => $ok ? 'done' : 'failed', 'end' => now()->toIso8601String(), 'note' => mb_substr($ok ? (string) $msg : self::explain((string) $msg), 0, 400)]);
+            $r->forceFill(['steps' => array_merge($r->steps ?? [], ['plan' => $plan])])->save();
+            $lines[] = $steps->count() === 1 ? (string) $msg : ($ok ? '✓ ' : '✕ ').(Team::AGENTS[$st['agent']][0] ?? $st['agent']).': '.$msg;
         }
 
-        return self::answer($agent, (string) $r->instruction);
+        return [$anyOk, implode("\n\n", $lines)];
     }
 
     /** @return array{0: bool, 1: string} The member's written work for a request no job covers. */
