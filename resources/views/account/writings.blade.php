@@ -26,6 +26,10 @@
             @endforeach
         </div>
 
+        @if (($counts['published'] ?? 0) > 0)
+            <a href="{{ Url::to('/account/stats') }}" class="mt-4 inline-flex min-h-11 items-center gap-2 font-bold text-sky-deep underline">📊 আমার পাঠক: কতজন পড়ছেন, শেয়ার কার্ড →</a>
+        @endif
+
         @if ($filter !== 'certificates' && $counts->sum() > 10)
             <form method="GET" action="{{ $base }}" role="search" class="mt-4 flex gap-2">
                 @if ($filter !== 'all')<input type="hidden" name="status" value="{{ $filter }}">@endif

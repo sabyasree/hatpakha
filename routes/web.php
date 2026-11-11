@@ -42,6 +42,7 @@ Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archiv
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
+// Owner (2026-11-12, later): readers read the issue on the site only; no e-book download for now (the EPUB stays in /desk).
 Route::get('/issue-print/{issue}', function (\App\Models\Issue $issue) {   // D68: print-ready book for "Save as PDF" (editors only)
     abort_unless(auth()->user()?->hasRole(\App\Enums\Role::Editor), 403);
 
@@ -109,6 +110,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account');
     Route::get('/account/writings', [\App\Http\Controllers\AccountController::class, 'writings'])->name('account.writings');
     Route::get('/account/reading', [\App\Http\Controllers\AccountController::class, 'reading'])->name('account.reading');
+    Route::get('/account/stats', [\App\Http\Controllers\AccountController::class, 'stats'])->name('account.stats');   // "আমার পাঠক"
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
     Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
         $request->session()->forget('view_as');

@@ -1,0 +1,215 @@
+{{-- The issue as a magazine (owner, 2026-11-12): full screen, pages that turn in 3D (public/js/hp-magazine.js).
+     Cover, inside cover, contents with page numbers, editorial, section openers, pieces, the issue's writers, back cover.
+     Without JavaScript the same content reads as one long page. Only real data: titles, writers, bios, the editor's note. --}}
+@php
+    use App\Support\Bn;
+    $bySection = $rest->groupBy(fn ($p) => $p->section?->name_bn ?? 'অন্যান্য');
+    $coverLines = $rest->take(3);
+@endphp
+<!doctype html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#13212C">
+    <title>{{ $issue->title }} · হাতপাখা</title>
+    <link rel="canonical" href="{{ $issue->url() }}">
+    <link rel="icon" href="{{ asset('images/logo.png') }}">
+    <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
+    @vite(['resources/css/app.css'])
+    <style>
+        html, body { height: 100%; }
+        body { margin: 0; background: #13212C; color: #13212C; overflow: hidden; }
+        .mag { position: fixed; inset: 0; display: flex; flex-direction: column; }
+        .mag-bar { display: flex; align-items: center; gap: .5rem; padding: .5rem max(.75rem, env(safe-area-inset-left)); color: #FFFBF4; min-height: 52px; }
+        .mag-bar a, .mag-bar button { color: #FFFBF4; border: 2px solid rgba(255,251,244,.35); border-radius: 999px; min-height: 44px; min-width: 44px; padding: 0 .8rem; font-weight: 700; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
+        .mag-bar .mag-title { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+        .mag-stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .mag-nav { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: .4rem 0 max(.6rem, env(safe-area-inset-bottom)); color: #FFFBF4; }
+        .mag-nav button { min-height: 44px; padding: 0 1.2rem; border-radius: 999px; font-weight: 700; }
+        .mag-nav [data-mag-prev] { border: 2px solid rgba(255,251,244,.5); color: #FFFBF4; }
+        .mag-nav [data-mag-next] { background: #CB1B32; color: #fff; }
+        .mag-nav button:disabled { opacity: .4; cursor: default; }
+        .mag-wide { display: none; }
+        @media (min-width: 760px) { .mag-wide { display: inline; } .mag-narrow { display: none; } }
+        .mag-hint { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: .5rem 1rem; background: #FBEBD8; color: #13212C; font-weight: 700; text-align: center; }
+        .mag-hint button { min-height: 44px; min-width: 44px; border: 2px solid #13212C; border-radius: 999px; background: transparent; color: #13212C; font-weight: 700; padding: 0 .9rem; }
+        .mag-count { min-width: 9rem; text-align: center; font-variant-numeric: tabular-nums; font-size: .9rem; }
+
+        /* The book and its leaves */
+        .mag-book { position: relative; width: var(--pw); height: var(--ph); perspective: 2600px; transition: transform .6s ease; }
+        .mag-book.mag-spread { width: calc(var(--pw) * 2); }
+        .mag-book.mag-closed-front { transform: translateX(-25%); }
+        .mag-book.mag-closed-back { transform: translateX(25%); }
+        .mag-leaf { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-style: preserve-3d; transform-origin: left center; transition: transform .65s cubic-bezier(.45,.05,.25,1); cursor: pointer; }
+        .mag-spread .mag-leaf { left: 50%; width: 50%; }
+        .mag-leaf.turned { transform: rotateY(-180deg); }
+        .mag-leaf.gone { visibility: hidden; }
+        .mag-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; background: #FFFBF4; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        .mag-back-face { transform: rotateY(180deg); }
+        .mag-front::after { content: ''; position: absolute; inset: 0 auto 0 0; width: 26px; background: linear-gradient(90deg, rgba(19,33,44,.22), transparent); pointer-events: none; }
+        .mag-back-face::after { content: ''; position: absolute; inset: 0 0 0 auto; width: 26px; background: linear-gradient(270deg, rgba(19,33,44,.22), transparent); pointer-events: none; }
+        @media (prefers-reduced-motion: reduce) { .mag-leaf, .mag-book { transition: none; } }
+
+        /* A page */
+        .mag-page { width: var(--pw); height: var(--ph); box-sizing: border-box; display: flex; flex-direction: column; padding: 5.5% 8% 4.5%; font-family: 'Noto Serif Bengali', serif; line-height: 1.75; }
+        .mag-stage-measure { position: absolute; left: -99999px; top: 0; visibility: hidden; }
+        .mag-head { display: flex; justify-content: space-between; gap: 1rem; font: 600 .68em 'Anek Bangla', sans-serif; color: #4D5A63; border-bottom: 1px solid #E8DCCB; padding-bottom: .4em; margin-bottom: 1.1em; }
+        .mag-head span:last-child { color: #CB1B32; }
+        .mag-body { flex: 1; overflow: hidden; min-height: 0; }
+        .mag-foot { text-align: center; font: 600 .72em 'Anek Bangla', sans-serif; color: #4D5A63; padding-top: .6em; }
+        .mag-body p { margin: 0 0 .85em; }
+        .mag-body p.mag-cont { text-indent: 0; }
+        .mag-kicker { font: 700 .75em 'Anek Bangla', sans-serif; color: #CB1B32; letter-spacing: .02em; margin: 0 0 .3em !important; }
+        .mag-h { font: 800 1.75em/1.25 'Anek Bangla', sans-serif; margin: 0 0 .25em; }
+        .mag-by { color: #4D5A63; margin: 0 0 1.2em !important; font-family: 'Anek Bangla', sans-serif; }
+        .mag-by::after { content: ''; display: block; width: 3em; border-bottom: 3px solid #CB1B32; margin-top: .6em; }
+        .mag-poem .mag-body { text-align: center; }
+        .mag-poem .mag-by::after { margin-left: auto; margin-right: auto; }
+
+        /* Cover, inside cover, openers, back cover */
+        .mag-cover, .mag-back, .mag-opener { padding: 0; }
+        .mag-cover .mag-body, .mag-back .mag-body, .mag-opener .mag-body { height: 100%; }
+        .mag-cover-in { position: relative; height: 100%; color: #fff; background: #13212C; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 7% 8%; box-sizing: border-box; }
+        .mag-cover-in img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .mag-cover-in::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(19,33,44,.55) 0%, rgba(19,33,44,0) 35%, rgba(19,33,44,0) 55%, rgba(19,33,44,.85) 100%); }
+        .mag-cover-in > * { position: relative; z-index: 1; }
+        .mag-mast { font-family: 'Galada', cursive; font-size: 4.2em; line-height: 1; color: #fff; margin: 0; }
+        .mag-mast-sub { font: 600 .72em 'Anek Bangla', sans-serif; color: #EFC08D; margin: .2em 0 0; }
+        .mag-cover-title { font: 800 1.6em/1.2 'Anek Bangla', sans-serif; margin: 0; }
+        .mag-cover-lines { list-style: none; padding: 0; margin: .6em 0 0; font-family: 'Anek Bangla', sans-serif; }
+        .mag-cover-lines li { border-top: 1px solid rgba(255,251,244,.35); padding: .35em 0; }
+        .mag-cover-lines b { display: block; font-size: 1.05em; }
+        .mag-cover-lines span { color: #EFC08D; font-size: .85em; }
+        /* UX review: cover lines sit on a navy panel, never on the pink fan or a photo */
+        .mag-cover-in > div:last-child { background: #13212C; margin: 0 calc(-8% - 4px) -8%; padding: 6% calc(8% + 4px) 8% 8%; }
+        .mag-fanbg { position: absolute; right: -30%; top: 22%; width: 85%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
+        .mag-inside .mag-body { display: flex; flex-direction: column; justify-content: center; text-align: center; font-family: 'Anek Bangla', sans-serif; }
+        .mag-opener-in { height: 100%; background: #FBEBD8; display: flex; flex-direction: column; justify-content: flex-end; padding: 10% 9%; box-sizing: border-box; }
+        .mag-opener-in p { margin: 0; font: 700 .9em 'Anek Bangla', sans-serif; color: #CB1B32; }
+        .mag-opener-in h2 { margin: .1em 0 0; font: 800 2.6em/1.1 'Anek Bangla', sans-serif; }
+        .mag-back-in { height: 100%; background: #13212C; color: #FFFBF4; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 10%; box-sizing: border-box; font-family: 'Anek Bangla', sans-serif; }
+        .mag-back-in a { color: #EFC08D; }
+        .mag-contents ol { list-style: none; padding: 0; margin: 0; font-family: 'Anek Bangla', sans-serif; }
+        .mag-contents li a { display: flex; gap: .6em; align-items: baseline; padding: .28em 0; min-height: 44px; box-sizing: border-box; color: inherit; text-decoration: none; }
+        .mag-contents li a .t { flex: 1; min-width: 0; }
+        .mag-contents li a .t small { display: block; color: #4D5A63; }
+        .mag-contents li a .dots { flex: 1; border-bottom: 1px dotted #4D5A63; transform: translateY(-.3em); min-width: 1em; }
+        .mag-contents h3 { font: 700 .8em 'Anek Bangla', sans-serif; color: #CB1B32; margin: .9em 0 .2em; }
+        .mag-writers h3 { font: 700 1em 'Anek Bangla', sans-serif; margin: .8em 0 .1em; }
+        .mag-writers p { font-size: .9em; color: #4D5A63; }
+        /* Without JavaScript: one long readable page */
+        .mag-source { background: #FFFBF4; max-width: 720px; margin: 0 auto; padding: 1.5rem; height: calc(100% - 52px); overflow: auto; }
+        .mag-ready .mag-source { display: none; }
+    </style>
+</head>
+<body>
+<div class="mag" data-mag="{{ $issue->slug }}" data-title="{{ $issue->title }}">
+    <div class="mag-bar">
+        <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="mag-wide">ফিরুন</span></a>
+        <div class="mag-title">হাতপাখা · {{ $issue->title }}</div>
+        <button type="button" data-mag-contents aria-label="সূচি">সূচি</button>
+        <button type="button" data-mag-font="-1" aria-label="অক্ষর ছোট করুন"><span class="mag-narrow">অ-</span><span class="mag-wide">ছোট অক্ষর</span></button>
+        <button type="button" data-mag-font="1" aria-label="অক্ষর বড় করুন"><span class="mag-narrow">অ+</span><span class="mag-wide">বড় অক্ষর</span></button>
+        <button type="button" data-mag-fullscreen hidden aria-pressed="false" aria-label="পুরো পর্দায়"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+    <div class="mag-stage"><div class="mag-book" data-mag-book aria-live="polite"></div></div>
+    <div class="mag-hint" data-mag-hint hidden>
+        <span>পাতা ওল্টাতে আঙুল দিয়ে ডানে-বাঁয়ে টানুন, বা ‘পরের’ চাপুন।</span>
+        <button type="button" data-mag-hint-close aria-label="বুঝেছি, বন্ধ করুন">বুঝেছি</button>
+    </div>
+    <div class="mag-nav">
+        <button type="button" data-mag-prev>← আগের</button>
+        <span class="mag-count" data-mag-count></span>
+        <button type="button" data-mag-next>পরের →</button>
+    </div>
+
+    {{-- The content, in order. hp-magazine.js lays it out into pages; without it, this is the page. --}}
+    <div class="mag-source" data-mag-source>
+        <section data-kind="cover" data-head="none">
+            <div class="mag-cover-in">
+                @if ($issue->cover_path)<img src="{{ $issue->cover_path }}" alt="">@else<div class="mag-fanbg" aria-hidden="true"></div>@endif
+                <div>
+                    <p class="mag-mast">হাতপাখা</p>
+                    <p class="mag-mast-sub">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</p>
+                </div>
+                <div>
+                    <p class="mag-cover-title">{{ $issue->title }}</p>
+                    <ul class="mag-cover-lines">
+                        @foreach ($coverLines as $p)<li><b>{{ $p->title }}</b><span>{{ $p->authors->map->publicName()->implode(', ') }}</span></li>@endforeach
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section data-kind="inside" data-head="none">
+            <p style="font-family:'Galada',cursive;font-size:2.4em;color:#CB1B32;margin:0">হাতপাখা</p>
+            <p style="margin:.2em 0 1.2em">বাংলা সাহিত্যের ওয়েব পত্রিকা, ২০১২ থেকে</p>
+            <p><b>{{ $issue->title }}</b></p>
+            <p>এই সংখ্যায় {{ Bn::num((string) $pieces->count()) }}টি লেখা · {{ Bn::num((string) count($writers)) }} জন লেখক</p>
+            @if ($issue->published_at)<p>প্রকাশ: {{ Bn::date($issue->published_at) }}</p>@endif
+            <p style="margin-top:2em;font-size:.85em;color:#4D5A63">ISSN 2321-3035 · hatpakha.com<br>প্রতিটি লেখার স্বত্ব তার লেখকের। লেখা পাঠানো ও প্রকাশ বিনামূল্যে।</p>
+        </section>
+        <section data-kind="contents" data-section="সূচি" data-anchor="contents">
+            <p class="mag-kicker">এই সংখ্যায়</p>
+            <h2 class="mag-h">সূচি</h2>
+            <ol>
+                @if ($editorial)<li><a href="#" data-goto="piece-{{ $editorial->id }}"><span class="t">সম্পাদকীয়<small>{{ $editorial->title }}</small></span><span class="dots"></span><span data-pn="piece-{{ $editorial->id }}"></span></a></li>@endif
+                @foreach ($bySection as $sec => $list)
+                    <li><h3>{{ $sec }}</h3></li>
+                    @foreach ($list as $p)
+                        <li><a href="#" data-goto="piece-{{ $p->id }}"><span class="t">{{ $p->title }}<small>{{ $p->authors->map->publicName()->implode(', ') }}</small></span><span class="dots"></span><span data-pn="piece-{{ $p->id }}"></span></a></li>
+                    @endforeach
+                @endforeach
+                @if ($writers)<li><a href="#" data-goto="writers"><span class="t">এই সংখ্যার লেখকেরা</span><span class="dots"></span><span data-pn="writers"></span></a></li>@endif
+            </ol>
+        </section>
+        @if ($editorial)
+            <section data-kind="piece" data-section="সম্পাদকীয়" data-anchor="piece-{{ $editorial->id }}">
+                <p class="mag-kicker">সম্পাদকীয়</p>
+                <h2 class="mag-h">{{ $editorial->title }}</h2>
+                <p class="mag-by">{{ $editorial->authors->map->publicName()->implode(', ') }}</p>
+                {!! \App\Support\IssueBook::xhtml((string) $editorial->body_html) !!}
+            </section>
+        @elseif ($issue->editor_note)
+            <section data-kind="piece" data-section="সম্পাদকের কথা" data-anchor="editor-note">
+                <p class="mag-kicker">সম্পাদকের কথা</p>
+                @foreach (preg_split('/\n{2,}/', trim($issue->editor_note)) as $para)<p>{{ trim($para) }}</p>@endforeach
+            </section>
+        @endif
+        @foreach ($bySection as $sec => $list)
+            <section data-kind="opener" data-head="none"><div class="mag-opener-in"><p>{{ $issue->title }}</p><h2>{{ $sec }}</h2></div></section>
+            @foreach ($list as $p)
+                {{-- body_html is sanitised on save; IssueBook::xhtml leaves out pictures and embeds --}}
+                <section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }}" data-section="{{ $sec }}" data-running="{{ $p->title }} · {{ $p->authors->map->publicName()->implode(', ') }}" data-anchor="piece-{{ $p->id }}">
+                    <p class="mag-kicker">{{ $sec }}</p>
+                    <h2 class="mag-h">{{ $p->title }}</h2>
+                    <p class="mag-by">{{ $p->authors->map->publicName()->implode(', ') }}</p>
+                    {!! \App\Support\IssueBook::xhtml((string) $p->body_html) !!}
+                </section>
+            @endforeach
+        @endforeach
+        @if ($writers)
+            <section data-kind="writers" data-section="লেখকেরা" data-anchor="writers">
+                <p class="mag-kicker">এই সংখ্যার</p>
+                <h2 class="mag-h">লেখকেরা</h2>
+                @foreach ($writers as $w)
+                    <h3>{{ $w->publicName() }}</h3>
+                    @if (filled($w->bio))<p>{{ \Illuminate\Support\Str::limit(strip_tags($w->bio), 220) }}</p>@endif
+                @endforeach
+            </section>
+        @endif
+        <section data-kind="back" data-head="none">
+            <div class="mag-back-in">
+                <p style="font-family:'Galada',cursive;font-size:3em;margin:0;color:#FFFBF4">হাতপাখা</p>
+                <p style="margin:.4em 0 1.6em;color:#EFC08D">কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা</p>
+                <p><b>আপনার লেখাও পাঠান</b><br>প্রকাশ সবসময় বিনামূল্যে<br><a href="{{ \App\Support\Url::to('/submit') }}">hatpakha.com/submit</a></p>
+                <p style="margin-top:1.4em">প্রতি সপ্তাহের চিঠি আর নতুন লেখার খবর<br><a href="{{ \App\Support\Url::to('/app') }}">hatpakha.com/app</a></p>
+                <p style="margin-top:2em;font-size:.8em;opacity:.8">ISSN 2321-3035 · ২০১২ থেকে</p>
+            </div>
+        </section>
+    </div>
+</div>
+<script src="{{ asset('js/hp-magazine.js') }}?v=2" defer></script>
+</body>
+</html>

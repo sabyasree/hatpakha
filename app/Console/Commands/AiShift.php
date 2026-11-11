@@ -20,7 +20,7 @@ use Illuminate\Console\Command;
  * It prepares; it never publishes, sends or deletes. The owner's pause button stops everything.
  *   inbox    (every 10 min) new submissions, comments, pictures for new pieces
  *   backlog  (hourly)       a few old pending pieces + a few pictures for old posts
- *   issue    (daily)        from the 20th: next month's issue proposal + editorial draft
+ *   issue    (daily)        from the 20th: next month's issue proposal + editorial draft; every day: IssueWatch
  *   brief    (daily 08:00)  the owner's morning summary (dashboard; e-mail when real mail is set up)
  */
 class AiShift extends Command
@@ -135,6 +135,8 @@ class AiShift extends Command
             [, $err] = IssuePlanner::propose($owner);
             $this->line($err ?? 'Issue proposed.');
         }
+        // Owner (2026-11-12): never miss the editorial or the cover; remind until they are done.
+        $this->line('Issue watch: '.json_encode(\App\Ai\IssueWatch::run()));
 
         return self::SUCCESS;
     }

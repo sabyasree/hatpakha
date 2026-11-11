@@ -9,7 +9,7 @@ class Issue extends Model
 {
     protected $guarded = ['id'];
 
-    protected function casts(): array { return ['published_at' => 'datetime', 'ai_plan' => 'array']; }
+    protected function casts(): array { return ['published_at' => 'datetime', 'ai_plan' => 'array', 'ebook_built_at' => 'datetime', 'ebook_approved_at' => 'datetime']; }
 
     public function editorial(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(Post::class, 'editorial_post_id'); }
 

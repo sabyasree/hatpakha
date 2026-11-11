@@ -67,14 +67,24 @@ final class IssueBook
             '<item id="f2" href="fonts/NotoSerifBengali-Bold.ttf" media-type="font/ttf"/>', '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>'];
         $spine = [];
 
-        $cover = $issue->cover_path && is_file(public_path(ltrim($issue->cover_path, '/'))) ? public_path(ltrim($issue->cover_path, '/')) : null;
-        if ($cover) {
-            $zip->addFile($cover, 'OEBPS/images/cover.jpg');
-            $manifest[] = '<item id="cover-image" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>';
-            $zip->addFromString('OEBPS/cover.xhtml', $page($title, '<div class="cover"><img src="images/cover.jpg" alt="'.e($title).'"/></div>'));
-            $manifest[] = '<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>';
-            $spine[] = '<itemref idref="cover"/>';
+        // Owner (2026-11-12): a proper magazine cover, as on the site: the designer's artwork (or our fan), the masthead,
+        // the issue's name on a navy panel and three pieces from inside. Drawn as SVG so the Bengali text stays text.
+        $art = $issue->cover_path && is_file(public_path(ltrim($issue->cover_path, '/'))) ? public_path(ltrim($issue->cover_path, '/')) : null;
+        $artHref = null;
+        if ($art) {
+            $ext = strtolower(pathinfo($art, PATHINFO_EXTENSION)) ?: 'jpg';
+            $mime = ['png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'image/jpeg';
+            $artHref = 'images/cover.'.$ext;
+            $zip->addFile($art, 'OEBPS/'.$artHref);
+            $manifest[] = '<item id="cover-art" href="'.$artHref.'" media-type="'.$mime.'"/>';
         }
+        $svg = self::coverSvg($issue, $pieces, $artHref);
+        // The same cover as a picture for e-book shelves (it sits next to the artwork, so its link is relative to images/).
+        $zip->addFromString('OEBPS/images/cover.svg', '<?xml version="1.0" encoding="UTF-8"?>'.self::coverSvg($issue, $pieces, $artHref ? basename($artHref) : null));
+        $manifest[] = '<item id="cover-image" href="images/cover.svg" media-type="image/svg+xml" properties="cover-image"/>';
+        $zip->addFromString('OEBPS/cover.xhtml', $page($title, '<div class="cover">'.$svg.'</div>'));
+        $manifest[] = '<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml" properties="svg"/>';
+        $spine[] = '<itemref idref="cover"/>';
         $zip->addFromString('OEBPS/title.xhtml', $page($title, '<div class="titlepage"><p class="mast">হাতপাখা</p><h1>'.e($issue->title).'</h1>'
             .'<p>বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</p><p>'.e(Bn::year((int) substr($issue->slug, 0, 4))).'</p>'
             .($issue->editor_note ? '<div class="note">'.collect(preg_split('/\n{2,}/', trim($issue->editor_note)))->map(fn ($p) => '<p>'.e(trim($p)).'</p>')->implode('').'</div>' : '')
@@ -93,6 +103,19 @@ final class IssueBook
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
         }
+        // Owner (2026-11-12): like a printed magazine, the issue's writers and a back page close the book.
+        $writers = $pieces->flatMap(fn (Post $p) => $p->authors->where('is_desk', false))->unique('id')->values();
+        if ($writers->isNotEmpty()) {
+            $zip->addFromString('OEBPS/writers.xhtml', $page('এই সংখ্যার লেখকেরা', '<section class="writers"><h2>এই সংখ্যার লেখকেরা</h2>'
+                .$writers->map(fn ($w) => '<h3>'.e($w->publicName()).'</h3>'.(filled($w->bio) ? '<p>'.e(Str::limit(strip_tags((string) $w->bio), 300)).'</p>' : ''))->implode('').'</section>'));
+            $manifest[] = '<item id="writers" href="writers.xhtml" media-type="application/xhtml+xml"/>';
+            $spine[] = '<itemref idref="writers"/>';
+            $navItems .= '<li><a href="writers.xhtml">এই সংখ্যার লেখকেরা</a></li>';
+        }
+        $zip->addFromString('OEBPS/back.xhtml', $page('হাতপাখা', '<div class="titlepage"><p class="mast">হাতপাখা</p><p>কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা, ২০১২ থেকে</p>'
+            .'<p><b>আপনার লেখাও পাঠান</b> · প্রকাশ সবসময় বিনামূল্যে<br/>hatpakha.com/submit</p><p class="small">ISSN 2321-3035 · hatpakha.com</p></div>'));
+        $manifest[] = '<item id="back" href="back.xhtml" media-type="application/xhtml+xml"/>';
+        $spine[] = '<itemref idref="back"/>';
         $zip->addFromString('OEBPS/nav.xhtml', $page('সূচি', '<nav epub:type="toc" id="toc"><h2>সূচি</h2><ol>'.$navItems.'</ol></nav>'));
 
         $creators = collect(self::contributors($pieces))->map(fn ($n, $i) => '<dc:contributor>'.e($n).'</dc:contributor>')->implode('');
@@ -104,6 +127,40 @@ final class IssueBook
         $zip->close();
 
         return $path;
+    }
+
+    /** The cover as SVG (600×900): artwork or the fan, masthead, the issue's name and three pieces from inside. */
+    public static function coverSvg(Issue $issue, Collection $pieces, ?string $artHref): string
+    {
+        $x = fn (string $t) => htmlspecialchars($t, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $fan = '';
+        if (! $artHref) {
+            for ($k = 0; $k < 26; $k++) {
+                $a1 = M_PI + $k * M_PI / 52;
+                $a2 = M_PI + ($k + 1) * M_PI / 52;
+                $fan .= sprintf('<path d="M640 640 L%.1f %.1f A420 420 0 0 1 %.1f %.1f Z" fill="%s"/>', 640 + 420 * cos($a1), 640 + 420 * sin($a1), 640 + 420 * cos($a2), 640 + 420 * sin($a2), $k % 2 ? '#F08D90' : '#CB1B32');
+            }
+        }
+        $title = $issue->title;
+        $size = max(28, min(46, (int) floor(1000 / max(1, mb_strlen($title)))));
+        $lines = $pieces->filter(fn ($p) => $p->id !== $issue->editorial_post_id)->take(3)->values();
+        $cl = '';
+        foreach ($lines as $n => $p) {
+            $by = $p->authors->where('is_desk', false)->map->publicName()->implode(', ');
+            $cl .= '<text x="40" y="'.(790 + $n * 36).'" font-size="22" fill="#FFFBF4"><tspan font-weight="bold">'.$x(mb_strimwidth($p->title, 0, 34, '…')).'</tspan>'
+                .($by !== '' ? '<tspan fill="#EFC08D"> · '.$x(mb_strimwidth($by, 0, 24, '…')).'</tspan>' : '').'</text>';
+        }
+
+        return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 600 900" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" font-family="\'Noto Serif Bengali\', serif">'
+            .'<rect width="600" height="900" fill="#13212C"/>'
+            .($artHref ? '<image width="600" height="900" preserveAspectRatio="xMidYMid slice" xlink:href="'.$x($artHref).'" href="'.$x($artHref).'"/>' : $fan)
+            .'<text x="40" y="115" font-size="92" font-weight="bold" fill="#FFFBF4">হাতপাখা</text>'
+            .'<text x="44" y="152" font-size="18" fill="#EFC08D">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</text>'
+            .'<rect y="660" width="600" height="240" fill="#13212C"/>'
+            .'<rect x="40" y="676" width="60" height="5" fill="#CB1B32"/>'
+            .'<text x="40" y="'.(712 + (int) ($size / 2)).'" font-size="'.$size.'" font-weight="bold" fill="#FFFBF4">'.$x($title).'</text>'
+            .$cl
+            .'</svg>';
     }
 
     public static function css(): string
@@ -122,6 +179,7 @@ blockquote { margin: 1em 5%; font-style: italic; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
+.writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
 CSS;
     }
 

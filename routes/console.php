@@ -29,6 +29,8 @@ Schedule::call(fn () => \App\Ai\Rewriter::runQueued())->name('feedback rewrites'
 // D104: apology letters to writers of old unanswered submissions. Runs only on hatpakha.com, with real mail, after the owner approved the text.
 // D119: what readers did yesterday (Google Analytics + Search Console), before the morning brief. No AI involved.
 Schedule::call(fn () => \App\Support\ReaderInsights::refresh())->name('reader insights')->dailyAt('07:30')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+Schedule::call(fn () => \App\Models\Post::where('status', 'published')->where('updated_at', '>=', now()->subDays(2))->each(fn ($p) => \App\Support\BnSearch::index($p)))->name('search index')->dailyAt('03:10')->timezone('Asia/Kolkata');   // spelling-forgiving search: keys with the latest writers and tags
+Schedule::call(fn () => \App\Support\IssueEbook::buildDue())->name('ebooks')->dailyAt('04:20')->timezone('Asia/Kolkata')->withoutOverlapping(60);   // each issue's e-book, rebuilt when its pieces change; waits for the owner's approval
 Schedule::call(fn () => \App\Support\PushNotifier::announceBatch())->name('push announcements')->everyMinute()->withoutOverlapping(10);   // D132: the owner's announcement, 200 phones a minute
 Schedule::call(fn () => \App\Support\PushNotifier::daily())->name('push daily')->dailyAt('19:40')->timezone('Asia/Kolkata')->withoutOverlapping(30);   // D128: the day's new pieces, once, to phones that asked
 Schedule::call(fn () => \App\Support\RelaunchLetters::send())->name('relaunch letters')->hourlyAt(50)->withoutOverlapping(30);

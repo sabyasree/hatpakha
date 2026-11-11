@@ -138,6 +138,31 @@ class AiEditorTest extends TestCase
         foreach (glob(public_path('media/covers/*/*/*')) ?: [] as $f) { @unlink($f); }
     }
 
+    public function test_designer_paints_a_portrait_issue_cover_with_room_for_masthead_and_title(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => 'k', 'ai.openai.image_model' => 'img-model']);
+        $briefs = [];
+        \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$briefs) {
+            $briefs[] = $user;
+
+            return ['scene' => 'Paddy fields under the first winter mist'];
+        };
+        $img = imagecreatetruecolor(1024, 1536);
+        ob_start(); imagepng($img); $png = ob_get_clean();
+        \Illuminate\Support\Facades\Http::fake(['*/images/generations' => \Illuminate\Support\Facades\Http::response(['data' => [['b64_json' => base64_encode($png)]]])]);
+        \App\Models\Issue::create(['slug' => '2026-10', 'title' => 'আগের', 'status' => 'published', 'ai_plan' => ['cover_scene' => 'Lamps on a river ghat']]);
+        $issue = \App\Models\Issue::create(['slug' => '2026-11', 'title' => 'অগ্রহায়ণ সংখ্যা', 'status' => 'proposed', 'theme_key' => 'hemonto', 'ai_plan' => []]);
+
+        $this->assertNull(\App\Ai\Illustrator::forIssue($issue));
+        $this->assertNotNull($issue->fresh()->proposed_cover_path);
+        $this->assertNull($issue->fresh()->cover_path, 'Only a proposal until the owner picks it');
+        $this->assertSame('Paddy fields under the first winter mist', $issue->fresh()->ai_plan['cover_scene'], 'Remembered so next month differs');
+        $this->assertStringContainsString('Lamps on a river ghat', $briefs[0], 'Recent covers are not repeated');
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => $r['size'] === '1024x1536' && str_contains($r['prompt'], 'portrait composition'));
+        \App\Ai\Claude::$fake = null;
+        foreach (glob(public_path('media/covers/*/*/*')) ?: [] as $f) { @unlink($f); }
+    }
+
     public function test_illustrator_does_nothing_when_paused_or_unconfigured(): void
     {
         $post = $this->makePost(['slug' => 'x1']);

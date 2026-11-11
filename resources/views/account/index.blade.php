@@ -97,6 +97,12 @@
 
         {{-- Recently published: three rows, then the full list --}}
         @if ($recent->isNotEmpty())
+            {{-- "আমার পাঠক" (owner, 2026-11-12): the writer's numbers and share cards --}}
+            <a href="{{ Url::to('/account/stats') }}" class="mt-7 flex min-h-16 items-center gap-3 rounded-2xl bg-navy px-5 py-3 text-white hover:bg-sky-night">
+                <svg class="h-7 w-7 flex-none text-peach" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+                <span class="min-w-0 flex-1"><strong class="block text-lg">আমার পাঠক</strong><span class="text-sm text-peach-light">কতবার পড়া হল · ফেসবুকে শেয়ারের কার্ড</span></span>
+                <span aria-hidden="true" class="font-bold">→</span>
+            </a>
             <h2 class="mt-8 font-display text-2xl font-extrabold">সাম্প্রতিক প্রকাশিত</h2>
             <ul class="mt-2 divide-y divide-rule border-y border-rule">
                 @foreach ($recent as $p)
