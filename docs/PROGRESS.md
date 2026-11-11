@@ -229,3 +229,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: run `php artisan hatpakha:vapid` on the server, put the two lines in production ENV_FILE, redeploy, test on a phone (docs/APP.md)
 - [x] D128: notifications without an account (🔔 on writer and serial pages, daily evening note), /app/ page + footer "যোগ করুন" buttons + menu link, one-time "ফোনে জানাব?" right after adding to the phone
 - [x] Emails: the newsletter has the same logo header as every other e-mail; long links (unsubscribe, stop following) show as "এক চাপে বন্ধ করুন" and can never stretch the card wider than the header; web addresses typed in a letter become links
+- [x] Newsletter sending: a batch where every letter fails pauses the letter; /desk shows "কেন যায়নি" (reasons in plain words) and "যেগুলো যায়নি, আবার পাঠান"
+- [x] Newsletters: "কপি করুন" (duplicate) on the letter page and in the list: a new draft with the same words, pieces and audience

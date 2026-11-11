@@ -24,4 +24,17 @@ class Newsletter extends Model
     public function deliveries(): HasMany { return $this->hasMany(NewsletterDelivery::class); }
 
     public function editable(): bool { return $this->status === 'draft'; }
+
+    /** A new draft with the same words, pieces and audience (owner, 2026-11-11). Nothing about sending is copied. */
+    public function duplicate(?User $by): self
+    {
+        $copy = self::create([
+            'audience' => $this->audience, 'subject' => $this->subject, 'preheader' => $this->preheader, 'intro' => $this->intro,
+            'items' => $this->items, 'closing' => $this->closing, 'cta_label' => $this->cta_label, 'cta_target' => $this->cta_target,
+            'source' => 'owner', 'status' => 'draft', 'created_by' => $by?->id,
+        ]);
+        AuditLog::record('newsletter.duplicated', null, ['from' => $this->id, 'to' => $copy->id]);
+
+        return $copy;
+    }
 }

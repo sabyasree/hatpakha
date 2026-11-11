@@ -162,4 +162,61 @@ class BulkMailTest extends TestCase
         $this->call('POST', '/webhooks/ses', [], [], [], [], json_encode($this->sns(['Type' => 'Notification', 'Message' => $bounce], $key)))->assertForbidden();
         $this->assertFalse($sub->fresh()->suppressed);
     }
+
+    /** Owner (2026-11-11): 149 letters failed, the desk didn't say why, and sending carried on. */
+    public function test_a_failing_batch_pauses_the_letter_explains_why_and_can_be_resent(): void
+    {
+        $n = $this->letter(12);
+        Mail::extend('broken', fn () => new class extends \Symfony\Component\Mailer\Transport\AbstractTransport
+        {
+            protected function doSend(\Symfony\Component\Mailer\SentMessage $message): void
+            {
+                throw new \RuntimeException('Expected response code "250" but got code "554", with message "554 Message rejected: Email address is not verified. The following identities failed the check in region AP-SOUTH-1: r0@example.test".');
+            }
+
+            public function __toString(): string
+            {
+                return 'broken';
+            }
+        });
+        config(['mail.mailers.bulk' => ['transport' => 'broken', 'host' => 'email-smtp.ap-south-1.amazonaws.com']]);
+
+        $this->assertSame(0, NewsletterSender::batch(30));
+        $n->refresh();
+        $this->assertSame('cancelled', $n->status, 'Every letter in the batch failed: paused, not carried on');
+        $this->assertGreaterThanOrEqual(10, $n->failed);
+        $why = NewsletterSender::failures($n);
+        $this->assertSame($n->failed, array_sum($why));
+        $this->assertStringContainsString('স্যান্ডবক্সে', NewsletterSender::explain(array_key_first($why)));
+
+        Mail::fake();
+        $this->assertSame(12, NewsletterSender::retry($n));
+        $this->assertSame('sending', $n->fresh()->status);
+        $this->assertSame(0, $n->fresh()->failed);
+        NewsletterSender::batch(30);
+        $this->assertSame('sent', $n->fresh()->status);
+        $this->assertSame(12, $n->fresh()->sent);
+    }
+
+    /** Owner (2026-11-11): "add duplicate newsletter option". */
+    public function test_a_letter_can_be_duplicated_as_a_fresh_draft(): void
+    {
+        Mail::fake();
+        $n = $this->letter(2);
+        $n->forceFill(['preheader' => 'ভেতরে সব খবর', 'closing' => 'ধন্যবাদ', 'cta_label' => 'পড়ুন'])->save();
+        NewsletterSender::batch(30);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Newsletters\Pages\EditNewsletter::class, ['record' => $n->id])->callAction('duplicate');
+
+        $copy = Newsletter::latest('id')->first();
+        $this->assertNotSame($n->id, $copy->id);
+        $this->assertSame('draft', $copy->status);
+        $this->assertSame([$n->subject, $n->preheader, $n->intro, $n->closing, $n->cta_label, $n->audience, $n->items],
+            [$copy->subject, $copy->preheader, $copy->intro, $copy->closing, $copy->cta_label, $copy->audience, $copy->items]);
+        $this->assertSame([0, 0, 0], [$copy->sent, $copy->failed, $copy->recipients]);
+        $this->assertSame(0, $copy->deliveries()->count());
+        $this->assertSame('sent', $n->fresh()->status, 'The original is untouched');
+    }
 }
