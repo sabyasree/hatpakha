@@ -110,6 +110,24 @@ class EditNewsletter extends EditRecord
                     Notification::make()->title(Bn::num((string) $n).' '.__('জনের কাছে পাঠানো শুরু হলো'))->success()->send();
                     $this->redirect(NewsletterResource::getUrl('edit', ['record' => $record]));
                 }),
+            // Owner (2026-11-11): 149 letters failed and the desk didn't say why.
+            Action::make('why')->label(__('কেন যায়নি'))->icon('heroicon-o-exclamation-triangle')->color('warning')
+                ->visible(fn (Newsletter $record) => $record->failed > 0)
+                ->modalHeading(__('যে চিঠিগুলো যায়নি, তার কারণ'))
+                ->modalContent(fn (Newsletter $record) => new \Illuminate\Support\HtmlString(collect(NewsletterSender::failures($record))
+                    ->map(fn ($c, $err) => '<div style="margin-bottom:1rem"><strong>'.e(Bn::num((string) $c)).'টি:</strong> '.e(NewsletterSender::explain($err))
+                        .'<br><code style="font-size:.8rem;word-break:break-all;opacity:.75">'.e($err).'</code></div>')->implode('')))
+                ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ')),
+            Action::make('retry')->label(__('যেগুলো যায়নি, আবার পাঠান'))->icon('heroicon-o-arrow-path')->color('success')
+                ->visible(fn (Newsletter $record) => $record->failed > 0 || ($record->status === 'cancelled' && $record->deliveries()->whereNull('sent_at')->exists()))
+                ->requiresConfirmation()
+                ->modalDescription(__('আগে কারণটি ঠিক করুন (“কেন যায়নি” দেখুন)। যাঁরা আগেই পেয়েছেন, তাঁরা আবার পাবেন না।'))
+                ->modalSubmitActionLabel(__('হ্যাঁ, আবার পাঠান'))
+                ->action(function (Newsletter $record) {
+                    $n = NewsletterSender::retry($record);
+                    Notification::make()->title(Bn::num((string) $n).' '.__('টি আবার পাঠানোর তালিকায়; প্রতি মিনিটে কয়েকটি করে যাবে'))->success()->send();
+                    $this->redirect(NewsletterResource::getUrl('edit', ['record' => $record]));
+                }),
             Action::make('cancel')->label(__('পাঠানো থামান'))->icon('heroicon-o-stop')->color('danger')->requiresConfirmation()
                 ->visible(fn (Newsletter $record) => in_array($record->status, ['queued', 'sending'], true))
                 ->action(fn (Newsletter $record) => $record->forceFill(['status' => 'cancelled'])->save()),

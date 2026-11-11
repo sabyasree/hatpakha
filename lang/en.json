@@ -209,7 +209,6 @@
     "জমার পরেই বানান, যতিচিহ্ন ও ভাষার খুঁটিনাটি দেখে সম্পাদককে জানায়": "Checks spelling, punctuation and language right after submission and reports to the editor",
     "জানালেই বিজয়ীকে রোজকার রিপোর্টের জন্য বসিয়ে দেওয়া হবে।": "Tell me the winner and it will be set for the daily reports.",
     "টাইপের ভুল": "Typo",
-    "টি": " ",
     "টি ছবি ·": " pictures ·",
     "টি ছবি সাইটে বসানো হয়েছে": " pictures put on the site",
     "টি তৈরি (": " ready (",
@@ -1533,5 +1532,18 @@
     "নতুন বার্তার খবর (আপনার কাছে)": "New message notice (to you)",
     "অনুচ্ছেদের শুরুতে": "Start a paragraph with",
     "লিখলে সেটি বড় শিরোনাম হয় (খবরটা প্রথমে); শুরুতে": "to make it the big headline (the news first); start with",
-    "লিখলে রঙিন বাক্সে দেখায় (যেমন সম্পাদকের কথা)।": "to show it in a coloured box (like the editor's note)."
+    "লিখলে রঙিন বাক্সে দেখায় (যেমন সম্পাদকের কথা)।": "to show it in a coloured box (like the editor's note).",
+    "কেন যায়নি": "Why they failed",
+    "যে চিঠিগুলো যায়নি, তার কারণ": "Why these letters failed",
+    "যেগুলো যায়নি, আবার পাঠান": "Resend the failed ones",
+    "আগে কারণটি ঠিক করুন (“কেন যায়নি” দেখুন)। যাঁরা আগেই পেয়েছেন, তাঁরা আবার পাবেন না।": "Fix the cause first (see “Why they failed”). People who already got it won't get it twice.",
+    "হ্যাঁ, আবার পাঠান": "Yes, resend",
+    "টি আবার পাঠানোর তালিকায়; প্রতি মিনিটে কয়েকটি করে যাবে": "letters queued again; a few go every minute",
+    "Amazon SES এখনও “স্যান্ডবক্সে”: শুধু যাচাই করা ঠিকানায় পাঠাতে দেয়। SES কনসোলে Get set up → Request production access করুন (সাধারণত এক দিনের মধ্যে অনুমতি আসে)।": "Amazon SES is still in its “sandbox”: it only sends to verified addresses. In the SES console: Get set up → Request production access (usually approved within a day).",
+    "Amazon SES-এর দিনের বা সেকেন্ডের সীমা পেরিয়েছে। ENV_FILE-এ MAIL_DAILY_LIMIT সেই সীমায় রাখুন; বাকিগুলো পরদিন যাবে।": "Amazon SES's daily or per-second limit was reached. Set MAIL_DAILY_LIMIT in ENV_FILE to that limit; the rest go the next day.",
+    "ই-মেল সার্ভারের ইউজারনেম বা পাসওয়ার্ড ভুল (MAIL_BULK_USERNAME / MAIL_BULK_PASSWORD, SES-এর SMTP credentials)।": "Wrong user name or password for the mail server (MAIL_BULK_USERNAME / MAIL_BULK_PASSWORD, the SES SMTP credentials).",
+    "ই-মেল সার্ভারে পৌঁছানো যায়নি: MAIL_BULK_HOST বা পোর্ট (587) দেখুন।": "The mail server could not be reached: check MAIL_BULK_HOST and the port (587).",
+    "ই-মেল সার্ভার এত চিঠি একসঙ্গে নিচ্ছে না (সম্ভবত Hostinger-এর সীমা, কারণ চিঠি SES দিয়ে যাচ্ছে না)। ENV_FILE-এ MAIL_BULK_HOST ইত্যাদি আছে কি না দেখুন।": "The mail server won't take this many letters at once (probably Hostinger's limit, because letters are not going through SES). Check that MAIL_BULK_HOST etc. are in ENV_FILE.",
+    "নিচের মূল বার্তাটি দেখুন।": "See the original message below.",
+    "টি": " "
 }

@@ -108,22 +108,65 @@ final class NewsletterSender
         }
         $n->status === 'queued' && $n->forceFill(['status' => 'sending'])->save();
         $done = 0;
+        $failedNow = 0;
+        $lastError = null;
         foreach ($n->deliveries()->whereNull('sent_at')->whereNull('error')->limit($size)->get() as $d) {
             try {
                 Mail::mailer(BulkMail::mailer())->to($d->email)->send(new NewsletterMail($n, self::unsubscribeUrl($d->kind, $d->recipient_id), $d->id));
                 $d->forceFill(['sent_at' => now()])->save();
                 $done++;
             } catch (\Throwable $e) {
-                $d->forceFill(['error' => mb_substr($e->getMessage(), 0, 200)])->save();
+                $d->forceFill(['error' => $lastError = mb_substr($e->getMessage(), 0, 200)])->save();
+                $failedNow++;
             }
         }
         $n->forceFill(['sent' => $n->deliveries()->whereNotNull('sent_at')->count(), 'failed' => $n->deliveries()->whereNotNull('error')->count()])->save();
+        // A whole batch failed: something is wrong with the sending itself (settings, quota, sandbox), not with
+        // the addresses. Pause instead of burning through the whole list; the desk shows why and can resend.
+        if ($done === 0 && $failedNow >= min(10, $size)) {
+            $n->forceFill(['status' => 'cancelled'])->save();
+            AuditLog::record('newsletter.paused', null, ['newsletter' => $n->id, 'error' => $lastError]);
+
+            return 0;
+        }
         if (! $n->deliveries()->whereNull('sent_at')->whereNull('error')->exists()) {
             $n->forceFill(['status' => 'sent', 'sent_at' => now()])->save();
             AuditLog::record('newsletter.sent', null, ['newsletter' => $n->id, 'sent' => $n->sent, 'failed' => $n->failed]);
         }
 
         return $done;
+    }
+
+    /** Why letters did not go: the most common error messages with how many each. */
+    public static function failures(Newsletter $n): array
+    {
+        return $n->deliveries()->whereNotNull('error')->selectRaw('error, count(*) as c')->groupBy('error')->orderByDesc('c')->limit(5)
+            ->pluck('c', 'error')->map(fn ($c) => (int) $c)->all();
+    }
+
+    /** Plain words for the usual causes (the raw message is shown too). */
+    public static function explain(string $error): string
+    {
+        $e = strtolower($error);
+
+        return match (true) {
+            str_contains($e, 'not verified') => __('Amazon SES এখনও “স্যান্ডবক্সে”: শুধু যাচাই করা ঠিকানায় পাঠাতে দেয়। SES কনসোলে Get set up → Request production access করুন (সাধারণত এক দিনের মধ্যে অনুমতি আসে)।'),
+            str_contains($e, 'quota') || str_contains($e, 'maximum sending rate') || str_contains($e, 'throttl') => __('Amazon SES-এর দিনের বা সেকেন্ডের সীমা পেরিয়েছে। ENV_FILE-এ MAIL_DAILY_LIMIT সেই সীমায় রাখুন; বাকিগুলো পরদিন যাবে।'),
+            str_contains($e, 'authenticat') || str_contains($e, '535') => __('ই-মেল সার্ভারের ইউজারনেম বা পাসওয়ার্ড ভুল (MAIL_BULK_USERNAME / MAIL_BULK_PASSWORD, SES-এর SMTP credentials)।'),
+            str_contains($e, 'connection could not be established') || str_contains($e, 'timed out') || str_contains($e, 'getaddrinfo') => __('ই-মেল সার্ভারে পৌঁছানো যায়নি: MAIL_BULK_HOST বা পোর্ট (587) দেখুন।'),
+            str_contains($e, 'limit') || str_contains($e, 'too many') || str_contains($e, '550') || str_contains($e, '554') || str_contains($e, '451') => __('ই-মেল সার্ভার এত চিঠি একসঙ্গে নিচ্ছে না (সম্ভবত Hostinger-এর সীমা, কারণ চিঠি SES দিয়ে যাচ্ছে না)। ENV_FILE-এ MAIL_BULK_HOST ইত্যাদি আছে কি না দেখুন।'),
+            default => __('নিচের মূল বার্তাটি দেখুন।'),
+        };
+    }
+
+    /** After fixing the cause: the letters that failed go again, and a paused letter carries on. */
+    public static function retry(Newsletter $n): int
+    {
+        $count = $n->deliveries()->whereNotNull('error')->whereNull('bounce')->update(['error' => null]);
+        $n->forceFill(['status' => 'sending', 'failed' => $n->deliveries()->whereNotNull('error')->count()])->save();
+        AuditLog::record('newsletter.retry', null, ['newsletter' => $n->id, 'letters' => $count]);
+
+        return $count;
     }
 
     /** "আমাকে একটা পাঠান": the owner sees the real e-mail before sending to everyone. */
