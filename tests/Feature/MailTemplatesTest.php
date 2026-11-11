@@ -67,4 +67,21 @@ class MailTemplatesTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => Role::Editor]));
         $this->assertFalse(MailTemplatesPage::canAccess());
     }
+
+    /** Owner's screenshots (2026-11-11): a long signed link stretched the card wider than the header; the letter had no logo. */
+    public function test_long_links_become_short_labels_and_the_letter_has_the_logo(): void
+    {
+        $long = 'https://hatpakha.com/newsletter/unsubscribe/s/2/1?signature='.str_repeat('ab12', 16);
+        $html = (string) \App\Support\MailTemplates::mail('new_episode', ['{ধারাবাহিক}' => 'লাল কাচ', '{পর্ব}' => 'পর্ব ৪', '{বন্ধের_লিংক}' => $long], 'https://hatpakha.com/x/')->render();
+        $this->assertStringContainsString('>এক চাপে বন্ধ করুন</a>', $html);
+        $this->assertStringNotContainsString('>'.$long, $html, 'The long address is never shown as text');
+        $this->assertStringContainsString('table-layout: fixed', $html);
+
+        $n = \App\Models\Newsletter::create(['subject' => 'হাতপাখা ফিরে এল', 'audience' => 'readers', 'status' => 'draft', 'items' => [],
+            'intro' => "দেখে নিন: https://hatpakha.com/app/\n\n<script>x</script>"]);
+        $letter = (new \App\Mail\NewsletterMail($n, url('/').'/'))->render();
+        $this->assertStringContainsString('images/mail-mark.png', $letter);
+        $this->assertStringContainsString('<a href="https://hatpakha.com/app/"', $letter);
+        $this->assertStringNotContainsString('<script>x', $letter);
+    }
 }
