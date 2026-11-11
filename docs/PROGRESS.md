@@ -228,3 +228,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D127: installable site (home screen, offline reading) + phone notifications for followed serials and writers (docs/APP.md)
 - [ ] Owner: run `php artisan hatpakha:vapid` on the server, put the two lines in production ENV_FILE, redeploy, test on a phone (docs/APP.md)
 - [x] D128: notifications without an account (🔔 on writer and serial pages, daily evening note), /app/ page + footer "যোগ করুন" buttons + menu link, one-time "ফোনে জানাব?" right after adding to the phone
+- [x] Emails: the newsletter has the same logo header as every other e-mail; long links (unsubscribe, stop following) show as "এক চাপে বন্ধ করুন" and can never stretch the card wider than the header; web addresses typed in a letter become links
