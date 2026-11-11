@@ -88,10 +88,15 @@ class EditNewsletter extends EditRecord
                     Notification::make()->title($ok ? __('নতুন করে লেখা হয়েছে; দেখে নিন') : __('এখন হলো না; এআই থামানো আছে কি না দেখুন'))->{$ok ? 'success' : 'warning'}()->send();
                 }),
             Action::make('test')->label(__('আমাকে একটা পাঠান'))->icon('heroicon-o-beaker')->color('gray')
-                ->action(function (Newsletter $record) {
+                // Owner (2026-11-11): send the test to any address, e.g. Gmail or mail-tester.com's one-off address.
+                ->schema([\Filament\Forms\Components\TextInput::make('to')->label(__('কোন ঠিকানায়'))->email()->required()->maxLength(190)
+                    ->default(fn () => auth()->user()->email)
+                    ->helperText(__('যেমন নিজের Gmail, বা mail-tester.com-এর দেওয়া ঠিকানা (স্প্যাম স্কোর আর কারণ দেখায়)।'))])
+                ->modalSubmitActionLabel(__('পাঠান'))
+                ->action(function (Newsletter $record, array $data) {
                     $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
-                    NewsletterSender::test($record->fresh(), auth()->user());
-                    Notification::make()->title(NewsletterSender::realMail() ? __('আপনার ই-মেলে পাঠানো হয়েছে') : __('এই সার্ভারে আসল ই-মেল নেই; লগে লেখা হয়েছে'))->success()->send();
+                    NewsletterSender::test($record->fresh(), auth()->user(), $data['to']);
+                    Notification::make()->title(NewsletterSender::realMail() ? __('পাঠানো হয়েছে').': '.$data['to'] : __('এই সার্ভারে আসল ই-মেল নেই; লগে লেখা হয়েছে'))->success()->send();
                 })->visible(fn (Newsletter $record) => $record->editable()),
             Action::make('send')->label(__('পাঠান'))->icon('heroicon-o-paper-airplane')->color('success')
                 ->visible(fn (Newsletter $record) => $record->editable())

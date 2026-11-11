@@ -175,9 +175,12 @@ final class NewsletterSender
     }
 
     /** "আমাকে একটা পাঠান": the owner sees the real e-mail before sending to everyone. */
-    public static function test(Newsletter $n, User $to): void
+    public static function test(Newsletter $n, User $by, ?string $to = null): void
     {
-        Mail::mailer(BulkMail::mailer())->to($to->email)->send(new NewsletterMail($n, url('/').'/'));
+        // Like a real letter (one-click unsubscribe header included), but the unsubscribe link is the sender's own,
+        // so a spam checker sees the real thing and nobody else can be unsubscribed by it.
+        Mail::mailer(BulkMail::mailer())->to($to ?: $by->email)->send(new NewsletterMail($n, self::unsubscribeUrl('writer', $by->id)));
+        AuditLog::record('newsletter.test', null, ['newsletter' => $n->id, 'to' => $to ?: $by->email]);
     }
 
     public static function unsubscribeUrl(string $kind, int $id): string
