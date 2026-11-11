@@ -144,7 +144,9 @@ class ArchiveController extends Controller
 
         \App\Support\Ads::allow();   // D111
 
-        return view('issue', compact('issue', 'posts', 'seo'));
+        $ebook = \App\Support\IssueEbook::approved($issue);
+
+        return view('issue', compact('issue', 'posts', 'seo', 'ebook'));
     }
 
     private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null, ?string $age = null)
@@ -171,8 +173,11 @@ class ArchiveController extends Controller
         $issue = Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();
         $pieces = \App\Support\IssueBook::pieces($issue);
         abort_if($pieces->isEmpty(), 404);
-        $seo = new Seo(title: $issue->title.' (বই)', canonical: $issue->url(), noindex: true);
+        // Owner (2026-11-12): the issue as a real magazine, full screen, pages that turn in 3D.
+        $editorial = $issue->editorial_post_id ? $pieces->firstWhere('id', $issue->editorial_post_id) : null;
+        $rest = $pieces->reject(fn ($p) => $editorial && $p->id === $editorial->id)->values();
+        $writers = $rest->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id')->values();
 
-        return view('issue-book', compact('issue', 'pieces', 'seo'));
+        return view('magazine', compact('issue', 'pieces', 'editorial', 'rest', 'writers'));
     }
 }

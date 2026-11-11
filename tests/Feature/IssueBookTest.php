@@ -26,7 +26,7 @@ class IssueBookTest extends TestCase
     public function test_reader_book_view_is_noindex_and_linked_from_the_issue(): void
     {
         $issue = $this->issue();
-        $this->get('/sonkha/2026-11/')->assertSee('বই হিসেবে পড়ুন');
+        $this->get('/sonkha/2026-11/')->assertSee('পত্রিকা খুলুন');   // 2026-11-12: the magazine
         $this->get('/sonkha/2026-11/boi/')->assertOk()->assertSee('নবান্ন')->assertSee('সূচি')->assertSee('noindex', false)->assertDontSee('alert(1)', false);
     }
 

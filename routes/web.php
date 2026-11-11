@@ -42,6 +42,13 @@ Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archiv
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
+// Owner (2026-11-12): the issue's e-book, only once the owner has approved it in /desk → ই-বুক.
+Route::get('/sonkha/{slug}/ebook.epub', function (string $slug) {
+    $issue = \App\Models\Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();
+    abort_unless(\App\Support\IssueEbook::approved($issue), 404);
+
+    return \Illuminate\Support\Facades\Storage::disk('local')->download($issue->ebook_public_path, 'hatpakha-'.$issue->slug.'.epub', ['Content-Type' => 'application/epub+zip']);
+})->where('slug', '\d{4}-\d{2}')->name('issue.ebook');
 Route::get('/issue-print/{issue}', function (\App\Models\Issue $issue) {   // D68: print-ready book for "Save as PDF" (editors only)
     abort_unless(auth()->user()?->hasRole(\App\Enums\Role::Editor), 403);
 

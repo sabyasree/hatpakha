@@ -93,6 +93,19 @@ final class IssueBook
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
         }
+        // Owner (2026-11-12): like a printed magazine, the issue's writers and a back page close the book.
+        $writers = $pieces->flatMap(fn (Post $p) => $p->authors->where('is_desk', false))->unique('id')->values();
+        if ($writers->isNotEmpty()) {
+            $zip->addFromString('OEBPS/writers.xhtml', $page('এই সংখ্যার লেখকেরা', '<section class="writers"><h2>এই সংখ্যার লেখকেরা</h2>'
+                .$writers->map(fn ($w) => '<h3>'.e($w->publicName()).'</h3>'.(filled($w->bio) ? '<p>'.e(Str::limit(strip_tags((string) $w->bio), 300)).'</p>' : ''))->implode('').'</section>'));
+            $manifest[] = '<item id="writers" href="writers.xhtml" media-type="application/xhtml+xml"/>';
+            $spine[] = '<itemref idref="writers"/>';
+            $navItems .= '<li><a href="writers.xhtml">এই সংখ্যার লেখকেরা</a></li>';
+        }
+        $zip->addFromString('OEBPS/back.xhtml', $page('হাতপাখা', '<div class="titlepage"><p class="mast">হাতপাখা</p><p>কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা, ২০১২ থেকে</p>'
+            .'<p><b>আপনার লেখাও পাঠান</b> · প্রকাশ সবসময় বিনামূল্যে<br/>hatpakha.com/submit</p><p class="small">ISSN 2321-3035 · hatpakha.com</p></div>'));
+        $manifest[] = '<item id="back" href="back.xhtml" media-type="application/xhtml+xml"/>';
+        $spine[] = '<itemref idref="back"/>';
         $zip->addFromString('OEBPS/nav.xhtml', $page('সূচি', '<nav epub:type="toc" id="toc"><h2>সূচি</h2><ol>'.$navItems.'</ol></nav>'));
 
         $creators = collect(self::contributors($pieces))->map(fn ($n, $i) => '<dc:contributor>'.e($n).'</dc:contributor>')->implode('');
@@ -122,6 +135,7 @@ blockquote { margin: 1em 5%; font-style: italic; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
+.writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
 CSS;
     }
 
