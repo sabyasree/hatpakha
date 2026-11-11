@@ -107,13 +107,15 @@ final class NewsletterSender
             return 0;
         }
         $n->status === 'queued' && $n->forceFill(['status' => 'sending'])->save();
+        $mailer = BulkMail::mailer();
+        $via = BulkMail::provider();
         $done = 0;
         $failedNow = 0;
         $lastError = null;
         foreach ($n->deliveries()->whereNull('sent_at')->whereNull('error')->limit($size)->get() as $d) {
             try {
-                Mail::mailer(BulkMail::mailer())->to($d->email)->send(new NewsletterMail($n, self::unsubscribeUrl($d->kind, $d->recipient_id), $d->id));
-                $d->forceFill(['sent_at' => now()])->save();
+                Mail::mailer($mailer)->to($d->email)->send(new NewsletterMail($n, self::unsubscribeUrl($d->kind, $d->recipient_id), $d->id));
+                $d->forceFill(['sent_at' => now(), 'via' => $via])->save();
                 $done++;
             } catch (\Throwable $e) {
                 $d->forceFill(['error' => $lastError = mb_substr($e->getMessage(), 0, 200)])->save();

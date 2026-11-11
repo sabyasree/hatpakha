@@ -26,6 +26,7 @@ class EditNewsletter extends EditRecord
             .($r->failed ? ' · '.Bn::num((string) $r->failed).' '.__('টি যায়নি') : '')
             .($s ? ' · '.Bn::num((string) $s['clickers']).' '.__('জন লিংকে ক্লিক করেছেন').' ('.Bn::num((string) round(100 * $s['clickers'] / max(1, $r->sent))).'%)' : '')
             .($bounced ? ' · '.Bn::num((string) $bounced).' '.__('টি ঠিকানা অচল বা অভিযোগ, আর পাঠানো হবে না') : '')
+            .(in_array($r->status, ['queued', 'sending'], true) ? ' · '.\App\Support\BulkMail::label().' '.__('দিয়ে যাচ্ছে') : '')
             .($left === 0 ? ' · '.__('আজকের সীমা শেষ; বাকিগুলো কাল যাবে') : '');
     }
 
@@ -63,6 +64,7 @@ class EditNewsletter extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            NewsletterResource::providerAction(),   // D129
             Action::make('results')->label(__('ফলাফল'))->icon('heroicon-o-chart-bar')->color('gray')
                 ->visible(fn () => $this->record->sent > 0)
                 ->modalHeading(__('কে কোন লিংকে ক্লিক করেছেন'))

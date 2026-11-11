@@ -61,6 +61,18 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        // D129: Brevo (free plan: 300 a day) as a second road for newsletters; chosen in /desk → চিঠি → "পাঠানোর পথ".
+        'brevo' => [
+            'transport' => 'smtp',
+            'scheme' => env('MAIL_BREVO_SCHEME', 'smtp'),
+            'host' => env('MAIL_BREVO_HOST'),
+            'port' => env('MAIL_BREVO_PORT', 587),
+            'username' => env('MAIL_BREVO_USERNAME'),
+            'password' => env('MAIL_BREVO_PASSWORD'),
+            'timeout' => 30,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
@@ -133,6 +145,8 @@ return [
     // D117: at most this many bulk e-mails in any 24 hours (0 = no limit). SES starts at 200 a day until Amazon
     // lifts the account out of its "sandbox"; set it to the daily quota the SES console shows.
     'daily_limit' => (int) env('MAIL_DAILY_LIMIT', 0),
+    // D129: Brevo's own limit (free plan 300 a day; a little under it leaves room for test letters).
+    'brevo_daily_limit' => (int) env('MAIL_BREVO_DAILY_LIMIT', 290),
     // Off hatpakha.com (staging), mail goes only to desk staff and bulk mail is off (App\Support\MailGuard).
     // "allow" switches the guard off; only the test suite uses it.
     'off_live' => env('MAIL_OFF_LIVE', 'block'),

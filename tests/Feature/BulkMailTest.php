@@ -221,4 +221,41 @@ class BulkMailTest extends TestCase
         $this->assertSame(0, $copy->deliveries()->count());
         $this->assertSame('sent', $n->fresh()->status, 'The original is untouched');
     }
+
+    /** Owner (2026-11-11): both Amazon SES and Brevo in ENV_FILE, the road chosen in /desk; each with its own daily limit. */
+    public function test_the_owner_chooses_ses_or_brevo_and_each_keeps_its_own_daily_limit(): void
+    {
+        config(['mail.default' => 'smtp', 'mail.mailers.bulk.host' => 'email-smtp.ap-south-1.amazonaws.com', 'mail.mailers.brevo.host' => null]);
+        $this->assertSame(['ses'], BulkMail::available());
+        $this->assertSame('bulk', BulkMail::mailer());
+
+        config(['mail.mailers.brevo.host' => 'smtp-relay.brevo.com', 'mail.brevo_daily_limit' => 3, 'mail.daily_limit' => 0]);
+        $this->assertSame(['ses', 'brevo'], BulkMail::available());
+        $this->assertSame('ses', BulkMail::provider(), 'Amazon SES stays first until the owner picks');
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Newsletters\Pages\ListNewsletters::class)
+            ->assertActionVisible('provider')
+            ->callAction('provider', ['provider' => 'brevo']);
+        $this->assertSame('brevo', BulkMail::provider());
+        $this->assertSame('brevo', BulkMail::mailer());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'mail.provider']);
+
+        Mail::fake();
+        $n = $this->letter(5);
+        $this->assertSame(3, NewsletterSender::batch(30), 'Brevo: 3 a day here');
+        $this->assertSame(3, $n->deliveries()->where('via', 'brevo')->count());
+        $this->assertSame(0, NewsletterSender::batch(30));
+        $this->assertNull(BulkMail::remainingToday('ses'), 'Amazon SES has its own (here: no) limit');
+
+        BulkMail::choose('ses', $admin->id);
+        $this->assertSame($n->fresh()->recipients - 3, NewsletterSender::batch(30), 'Switching road carries on with the same letter');
+        $this->assertSame('sent', $n->fresh()->status);
+        $this->assertSame(3, $n->deliveries()->where('via', 'brevo')->count());
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        BulkMail::choose('postmark', $admin->id);   // only a road that is set up
+    }
 }
