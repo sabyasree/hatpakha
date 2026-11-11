@@ -27,8 +27,25 @@ final class Claude
         return blank(config('ai.anthropic.key')) ? 'No API key for anthropic' : null;
     }
 
-    /** @return array{0: ?array, 1: ?string} */
+    /**
+     * @return array{0: ?array, 1: ?string}
+     * Owner (2026-11-11): an answer cut off for length is asked for once more with three times the room (up to 64,000,
+     * streamed), instead of failing.
+     */
     public static function json(string $purpose, string $system, string $user, array $schema, ?string $model = null, int $maxTokens = 8000, ?int $postId = null): array
+    {
+        $result = self::jsonOnce($purpose, $system, $user, $schema, $model, $maxTokens, $postId);
+        if ($result[1] === self::CUT_OFF && $maxTokens < 64000) {
+            $result = self::jsonOnce($purpose, $system, $user, $schema, $model, min(64000, $maxTokens * 3), $postId);
+        }
+
+        return $result;
+    }
+
+    public const CUT_OFF = 'the answer was too long and got cut off (max_tokens)';
+
+    /** @return array{0: ?array, 1: ?string} */
+    private static function jsonOnce(string $purpose, string $system, string $user, array $schema, ?string $model, int $maxTokens, ?int $postId): array
     {
         if ($why = self::blocked() ?? Team::blockedFor($purpose)) {
             return [null, $why];
@@ -66,7 +83,7 @@ final class Claude
             return [null, 'refusal'];
         }
         if ($message->stopReason === 'max_tokens') {
-            return [null, 'the answer was too long and got cut off (max_tokens)'];   // clearer than "invalid JSON"
+            return [null, self::CUT_OFF];   // clearer than "invalid JSON"
         }
         foreach ($message->content as $block) {
             if ($block->type === 'text') {
@@ -114,7 +131,7 @@ final class Claude
             return [null, 'refusal'];
         }
         if ($stop === 'max_tokens') {
-            return [null, 'the answer was too long and got cut off (max_tokens)'];
+            return [null, self::CUT_OFF];
         }
         $data = json_decode($text, true);
 
