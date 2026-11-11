@@ -3,7 +3,7 @@
 //   Pages:  network first; a guest page (Cache-Control: public) is kept so it can be read again offline (last 40).
 //   Build files and fonts (hashed names): cache first, last 80.  Our own images: cache first, last 150.
 //   A new release changes VERSION, so the browser installs the new worker (and refreshes the offline page).
-//   Push:   shows Hatpakha's notification; a tap opens the piece (only our own addresses).
+//   Push:   shows Hatpakha's notification; a tap opens the piece (only our own addresses); the app icon shows how many wait.
 /* global VERSION */
 const PAGES = 'hp-pages-v1';
 const STATIC = 'hp-static-v1';   // build files have hashed names, so old ones stay valid for pages kept offline
@@ -71,11 +71,23 @@ self.addEventListener('push', (event) => {
         lang: 'bn',
         tag: data.tag || undefined,
         data: { url },
-    }));
+    }).then(updateBadge));
 });
+
+// The number on the app icon (home screen): how many of our notifications are still waiting. iPhone (16.4+, added
+// to the home screen) and Android/desktop Chrome show it; elsewhere this does nothing.
+const updateBadge = async () => {
+    if (!('setAppBadge' in self.navigator)) return;
+    const waiting = (await self.registration.getNotifications()).length;
+    try {
+        if (waiting > 0) await self.navigator.setAppBadge(waiting); else await self.navigator.clearAppBadge();
+    } catch (e) { /* not allowed here */ }
+};
+self.addEventListener('notificationclose', (event) => event.waitUntil(updateBadge()));
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+    event.waitUntil(updateBadge());
     const url = event.notification.data && event.notification.data.url;
     if (!url || !url.startsWith(self.location.origin + '/')) return;
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {

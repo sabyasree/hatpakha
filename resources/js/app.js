@@ -255,6 +255,14 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 }
 
 const hpStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+// Opening Hatpakha clears the number on its icon and the notifications already seen (D128).
+const hpClearBadge = () => {
+    if (document.visibilityState !== 'visible') return;
+    navigator.clearAppBadge?.().catch(() => {});
+    navigator.serviceWorker?.getRegistration().then((r) => r?.getNotifications()).then((list) => list?.forEach((n) => n.close())).catch(() => {});
+};
+hpClearBadge();
+document.addEventListener('visibilitychange', hpClearBadge);
 const hpIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const hpStore = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
