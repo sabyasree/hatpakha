@@ -2,7 +2,7 @@
   "id": "/",
   "name": "হাতপাখা · বাংলা সাহিত্যের অনলাইন পত্রিকা",
   "short_name": "হাতপাখা",
-  "description": "কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। ২০১২ থেকে।",
+  "description": "কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা, ২০১২ থেকে। প্রতি সপ্তাহে ধারাবাহিক, ছোটদের জন্য আলাদা পাতা, আগে পড়া লেখা ইন্টারনেট ছাড়াও পড়া যায়, নতুন লেখার খবর ফোনে। লেখা পাঠানো ও প্রকাশ বিনামূল্যে।",
   "lang": "bn",
   "dir": "ltr",
   "start_url": "/?utm_source=hatpakha-app&utm_medium=app",
@@ -11,14 +11,83 @@
   "orientation": "portrait",
   "background_color": "#FFFBF4",
   "theme_color": "#FFFBF4",
-  "categories": ["books", "magazines", "education"],
+  "categories": [
+    "books",
+    "magazines",
+    "education"
+  ],
   "icons": [
-    { "src": "/images/app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/images/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/images/app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/images/app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/app/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "ধারাবাহিক", "url": "/dharabahik/?utm_source=hatpakha-app&utm_medium=app", "icons": [{ "src": "/images/app/icon-192.png", "sizes": "192x192" }] },
-    { "name": "লেখা পাঠান", "url": "/submit/?utm_source=hatpakha-app&utm_medium=app", "icons": [{ "src": "/images/app/icon-192.png", "sizes": "192x192" }] }
-  ]
+    {
+      "name": "ধারাবাহিক",
+      "url": "/dharabahik/?utm_source=hatpakha-app&utm_medium=app",
+      "icons": [
+        {
+          "src": "/images/app/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "লেখা পাঠান",
+      "url": "/submit/?utm_source=hatpakha-app&utm_medium=app",
+      "icons": [
+        {
+          "src": "/images/app/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/app/screens/home.webp",
+      "sizes": "1080x2254",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "হাতপাখার প্রথম পাতা: আজকের কবিতা, সম্পাদকের পছন্দ"
+    },
+    {
+      "src": "/images/app/screens/serials.webp",
+      "sizes": "1080x2254",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "ধারাবাহিক: সপ্তাহে একটি করে পর্ব"
+    },
+    {
+      "src": "/images/app/screens/piece.webp",
+      "sizes": "1080x2254",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "ছোটদের হাতপাখা: শুনে শেখার বর্ণমালা"
+    }
+  ],
+  "share_target": {
+    "action": "/submit/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

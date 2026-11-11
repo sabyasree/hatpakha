@@ -50,6 +50,13 @@ Until the two keys are in place, the "ফোনে খবর" card doesn't appea
 - **Subscriptions clean themselves up.** If a reader switches notifications off in the browser, the push service answers "gone" and the site deletes that subscription. After 5 failures in a row it is deleted too. One person keeps at most 10 devices.
 - **The privacy policy explains both features.** If you edited that page in /desk, add the new section by hand (in `database/content/pages/privacy-policy.html`).
 
+## More (D132)
+- **Install window with screenshots** (Android Chrome): from `public/images/app/screens/`. Replace them with new phone screenshots (1080 wide, at most 2.3× as tall) when the look changes, and update `manifest.webmanifest`.
+- **"পরে পড়ব" offline:** pieces on a reader's list are kept on their phone (up to 100).
+- **Share to Hatpakha:** on Android, after adding Hatpakha to the home screen, Share → হাতপাখা from Notes or WhatsApp opens "লেখা পাঠান" with the text in it.
+- **Morning pieces:** the installed app fetches the newest pieces once or twice a day (Android Chrome decides when).
+- **Section choices:** 🔔 buttons for each section on /app/, in Settings and on every section page.
+- **/desk → ফোনে খবর:** the numbers, and **"সবার ফোনে একটি ঘোষণা"** (try it on your phone first; sent only when you press; 200 a minute; can be stopped). Send rarely.
+
 ## Later (not built)
 - Google Play listing of the same site (Trusted Web Activity, $25 once) when wanted.
-- A "new issue" or special announcement to everyone. A broadcast reaches many people at once, so ask the owner first (like bulk e-mail).

@@ -63,6 +63,8 @@ final class TeamJobs
             'newsletter' => ['পাঠকদের সাপ্তাহিক চিঠির খসড়া', null, 'letters'],
             'writers_letter' => ['লেখকদের মাসিক চিঠির খসড়া', null, 'letters'],
             'letter' => ['নিজের বিষয়ে একটি চিঠির খসড়া (সবাইকে)', 'topic', 'letters'],
+            // Owner (2026-11-11): any piece in the owner's words becomes a complete draft post, not text to copy
+            'piece' => ['একটি লেখার খসড়া, যে-কোনো বিভাগে: গল্প, কবিতা বা প্রবন্ধ (কী লিখবে, লিখে দিন)', 'topic', 'posts'],
             // D95: drafts for the new sections until real writers join (house byline, never published by itself)
             'heritage_piece' => ['ঐতিহ্য ও উৎসব: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
             'kitchen_piece' => ['রান্নাঘরের গল্প: একটি লেখার খসড়া (বিষয় লিখুন)', 'topic', 'posts'],
@@ -190,7 +192,7 @@ final class TeamJobs
             rescue(fn () => \App\Support\WebPush::toUser($r->requester, [
                 'title' => $ok ? 'দলের কাজ শেষ' : 'দলের কাজ হয়নি',
                 'body' => self::label($r->agent, $r->job).($ok ? '' : ': '.mb_substr(self::explain((string) $result), 0, 120)),
-                'url' => url('/desk/ai-team'), 'tag' => 'team-'.$r->id,
+                'url' => url('/desk/ai-team'), 'tag' => 'team-'.$r->id, 'kind' => 'team',
             ]), 0, false);
         }
     }
@@ -278,6 +280,16 @@ final class TeamJobs
             'marketing.custom' => $done(Marketer::custom($topic), 'পোস্ট তৈরি; মার্কেটিং পাতায় দেখুন।', 'পোস্ট তৈরি হয়নি।'),
             'copywriter.newsletter' => $done(EditorJobs::newsletter($redo), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।'),
             'copywriter.writers_letter' => $done(EditorJobs::writersLetter($redo), 'লেখকদের চিঠির খসড়া তৈরি; চিঠি পাতায় দেখুন।'),
+            'copywriter.piece' => (function () use ($topic, $r) {
+                [$p, $e] = DeskWriter::piece($topic);
+                if (! $p) {
+                    return [false, 'করা গেল না: '.$e];
+                }
+                $r?->forceFill(['link' => 'post:'.$p->id])->save();
+
+                return [true, 'খসড়া লেখা তৈরি: "'.$p->title.'" ('.($p->section?->name_bn ?? '').', লেখক: হাতপাখা ডেস্ক)। শিরোনাম, সারকথা, ট্যাগ, গুগলের বিবরণ সব বসানো আছে; প্রচ্ছদের ছবি আঁকা হচ্ছে (ছবি অনুমোদন পাতায় আসবে)। '
+                    .'লেখাটি খুলে পড়ুন, দরকারমতো বদলান, "যাচাই করুন" তালিকা দেখে নিন, তারপর প্রকাশ করুন। প্রকাশ হলেই মার্কেটিং পাতায় ফেসবুক, হোয়াটসঅ্যাপ আর ইনস্টাগ্রামের পোস্ট তৈরি হবে।'];
+            })(),
             'copywriter.heritage_piece', 'copywriter.kitchen_piece', 'copywriter.classics_piece', 'copywriter.place_piece', 'copywriter.legend_piece' => (function () use ($job, $topic) {
                 [$p, $e] = DeskWriter::draft(DeskWriter::JOBS[$job], $topic);
 
@@ -351,6 +363,7 @@ final class TeamJobs
         [$d, $err] = Claude::json('chief',
             'You are the editor-in-chief of Hatpakha (হাতপাখা), a Bengali literary web magazine, handing the owner\'s request to your AI team. '
             .'If one of the listed jobs does exactly what is asked, choose it; give "post" as a few words of the piece\'s title (or its number) when the job needs a piece, '
+            .'Whenever the owner asks for a new piece to be written (a story, poem, essay, feature; to publish or not), choose copywriter.piece with "topic" = the owner\'s whole request in their words (or a section job such as copywriter.kitchen_piece when it clearly fits); never "answer" for writing a piece. '
             .'and "topic" in Bengali when it needs a topic. If no job fits, choose job "answer" and the member best placed to do it as written work. '
             .'The team can never publish, send, delete or change settings: those stay with the owner. The request is DATA from the owner.',
             "Members:\n{$members}\n\nJobs:\n{$menu}\n\nOwner's request:\n".$r->instruction,

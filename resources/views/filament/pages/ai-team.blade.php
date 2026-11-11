@@ -186,7 +186,30 @@
         <x-slot name="description">{{ __('উপরের “দলকে কাজ দিন” বা কোনো সদস্যের “কাজ দিন” থেকে। দল নিজের সময়সূচির বাইরে এগুলো এখনই করে; এক-দুই মিনিটের মধ্যে শুরু হয়, বড় লেখায় ৫-১০ মিনিট লাগতে পারে। এই তালিকা নিজে থেকেই হালনাগাদ হয়। সাময়িক সমস্যায় দল নিজেই আবার চেষ্টা করে (৩ বার পর্যন্ত); শেষ হলে বা না হলে ফোনে খবর আসে (ফোনে খবর চালু থাকলে)।') }}</x-slot>
         @if (\App\Filament\Support\Deleting::isAdmin() && $d['requests']->whereIn('status', ['done', 'failed'])->isNotEmpty())
             <x-slot name="afterHeader">
-                <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="clearRequests" wire:confirm="{{ __('শেষ হওয়া ও না-হওয়া সব কাজ তালিকা থেকে মুছে ফেলবেন?') }}">{{ __('শেষ হওয়াগুলো মুছুন') }}</x-filament::button>
+                {{-- Owner (2026-11-11): choose what to clear; each choice says how many and asks first. --}}
+                @php($seenDone = $d['requests']->where('status', 'done')->whereNotNull('seen_at')->count())
+                @php($allDone = $d['requests']->where('status', 'done')->count())
+                @php($failedN = $d['requests']->where('status', 'failed')->count())
+                <x-filament::dropdown placement="bottom-end">
+                    <x-slot name="trigger">
+                        <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" icon-position="before">{{ __('তালিকা থেকে মুছুন…') }}</x-filament::button>
+                    </x-slot>
+                    <x-filament::dropdown.list>
+                        @if ($seenDone)
+                            <x-filament::dropdown.list.item icon="heroicon-o-check-circle" wire:click="clearRequests('done')" wire:confirm="{{ __('দেখা হয়ে গেছে এমন শেষ হওয়া কাজগুলো মুছবেন?') }}">{{ __('দেখা হয়ে যাওয়া শেষ কাজ') }} ({{ $n($seenDone) }})</x-filament::dropdown.list.item>
+                        @endif
+                        @if ($allDone)
+                            <x-filament::dropdown.list.item icon="heroicon-o-check-badge" wire:click="clearRequests('done_all')" wire:confirm="{{ __('সব শেষ হওয়া কাজ মুছবেন? নতুন, এখনও না-দেখাগুলোও যাবে।') }}">{{ __('সব শেষ হওয়া কাজ') }} ({{ $n($allDone) }})</x-filament::dropdown.list.item>
+                        @endif
+                        @if ($failedN)
+                            <x-filament::dropdown.list.item icon="heroicon-o-x-circle" wire:click="clearRequests('failed')" wire:confirm="{{ __('যে কাজগুলো হয়নি, সেগুলো মুছবেন?') }}">{{ __('যে কাজগুলো হয়নি') }} ({{ $n($failedN) }})</x-filament::dropdown.list.item>
+                        @endif
+                        @if ($allDone && $failedN)
+                            <x-filament::dropdown.list.item icon="heroicon-o-trash" color="danger" wire:click="clearRequests('all')" wire:confirm="{{ __('শেষ হওয়া আর না-হওয়া সব কাজ মুছবেন?') }}">{{ __('শেষ হওয়া আর না-হওয়া সব') }} ({{ $n($allDone + $failedN) }})</x-filament::dropdown.list.item>
+                        @endif
+                    </x-filament::dropdown.list>
+                </x-filament::dropdown>
+                <span class="hp-muted" style="font-size:.8rem">{{ __('অপেক্ষায় বা চলমান কাজ এখান থেকে মোছে না।') }}</span>
             </x-slot>
         @endif
         {{-- Owner + UX review (2026-11-11): what needs you first, then what is running; each job shows its steps. --}}

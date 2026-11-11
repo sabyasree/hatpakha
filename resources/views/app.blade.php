@@ -48,6 +48,13 @@
             <div class="mt-4 flex flex-wrap gap-3">
                 <x-push-button topic="daily" off="🔔 রোজকার নতুন লেখার খবর চালু করুন" on="✓ রোজকার খবর চালু আছে (বন্ধ করতে ছুঁয়ে দিন)" />
             </div>
+            @php($pushSections = \App\Models\Section::where('is_active', true)->where('slug', '!=', \App\Models\Section::KIDS)->orderBy('sort')->get(['id', 'name_bn']))
+            <p class="mt-4 font-bold">শুধু কিছু বিভাগের নতুন লেখা চান? যেটি চান ছুঁয়ে দিন (প্রতিটি নতুন লেখা প্রকাশ হলেই খবর):</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($pushSections as $ps)
+                    <x-push-button :topic="'section:'.$ps->id" :off="$ps->name_bn" :on="'✓ '.$ps->name_bn" :small="true" />
+                @endforeach
+            </div>
             <p class="mt-3 text-sm" data-push-unsupported hidden>এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Android-এ Chrome ব্যবহার করুন; iPhone-এ আগে হাতপাখা হোম স্ক্রিনে যোগ করে (ওপরে দেখুন) আইকন থেকে খুলুন, তারপর এখানে এসে চালু করুন।</p>
             <p class="mt-3 text-sm text-ink2">কোনো প্রিয় লেখক বা ধারাবাহিক থাকলে, তাঁর বা সেটির পাতায় <strong>🔔 ফোনে জানান</strong> ছুঁয়ে দিন: শুধু তাঁদের নতুন লেখা এলেই খবর আসবে। যে-কোনো সময় একই বোতামে বন্ধ করা যায়।</p>
         </section>
