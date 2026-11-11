@@ -31,9 +31,6 @@
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg>
                             পত্রিকা খুলুন</a>
                     @endif
-                    @if ($ebook)
-                        <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/ebook.epub') }}" class="inline-flex h-14 items-center gap-2 rounded-full border-2 border-paper px-6 font-bold text-paper" download>ই-বুক নামান (EPUB)</a>
-                    @endif
                 </div>
                 <p class="mt-3 text-sm text-peach-light">পাতা উল্টে পড়ুন, পুরো পর্দায়; বা নিচে থেকে যে-কোনো লেখা খুলুন।</p>
             </div>

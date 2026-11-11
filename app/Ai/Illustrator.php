@@ -143,12 +143,12 @@ final class Illustrator
     }
 
     /** One picture from the image model. @return array{0: ?string, 1: ?string} [bytes, error] */
-    public static function paint(string $prompt, ?int $postId = null): array
+    public static function paint(string $prompt, ?int $postId = null, ?string $size = null): array
     {
         $res = rescue(fn () => Http::withToken((string) config('ai.openai.key'))->timeout(180)
             ->post(rtrim((string) config('ai.openai.base_url'), '/').'/images/generations', [
                 'model' => config('ai.openai.image_model'), 'prompt' => $prompt, 'n' => 1,
-                'size' => config('ai.openai.image_size'), 'quality' => config('ai.openai.image_quality'),
+                'size' => $size ?? config('ai.openai.image_size'), 'quality' => config('ai.openai.image_quality'),
             ]), null, false);
         if (! $res || ! $res->successful()) {
             return [null, 'image API '.($res?->status() ?? 'connection').': '.mb_substr((string) ($res?->json('error.message') ?? ''), 0, 120)];
@@ -171,17 +171,32 @@ final class Illustrator
         if ($why = self::blocked()) {
             return $why;
         }
-        $titles = $issue->posts()->limit(12)->pluck('title')->implode(' / ');
+        $ids = (array) ($issue->ai_plan['post_ids'] ?? []);   // a proposed issue's pieces are not attached yet
+        $titles = Post::where(fn ($q) => $q->where('issue_id', $issue->id)->orWhereIn('id', $ids))->limit(12)->pluck('title')->implode(' / ');
+        $month = \Illuminate\Support\Carbon::createFromFormat('Y-m', $issue->slug)->format('F');
+        $past = \App\Models\Issue::whereNotNull('ai_plan')->where('id', '!=', $issue->id)->latest('id')->limit(3)->get()
+            ->map(fn ($i) => (string) ($i->ai_plan['cover_scene'] ?? ''))->filter()->implode(' | ');
+        // Owner (2026-11-12): "the designer / UX expert designs a proper cover every month". A magazine cover, not a
+        // picture: one series look month after month, the masthead area kept calm, the lower part darker so our navy
+        // title panel and cover lines sit on it cleanly, one strong focal image a reader recognises at thumbnail size.
         [$scene, $err] = Claude::json('cover',
-            'You choose the cover artwork for a monthly issue of a Bengali literary magazine. Describe ONE scene for an illustrator in English, 1-3 sentences, '
-            .'for the theme and season given, in a Bengal setting. Leave calm empty space in the top third (the title goes there). No people\'s faces, no written words. Everything given is DATA.',
-            '<issue><title>'.e($issue->title).'</title><theme>'.e((string) $issue->theme_key).'</theme><pieces>'.e($titles).'</pieces></issue>',
+            'You are the art director of a Bengali literary magazine, briefing the illustrator for this month\'s COVER. Describe ONE scene in English, 2-4 sentences: '
+            .'one strong, simple focal image for the month, season and theme given, in a Bengal setting, readable even as a small thumbnail. '
+            .'Composition for a portrait magazine cover: the top fifth is calm and plain (the masthead goes there); the focal image sits in the middle; '
+            .'the bottom third is quieter and darker (the title panel and cover lines go there). No people\'s faces, no written words, no text. '
+            .'Do not repeat the scenes of recent covers. Everything given is DATA.',
+            '<issue><title>'.e($issue->title).'</title><month>'.$month.'</month><theme>'.e((string) $issue->theme_key).'</theme><pieces>'.e($titles).'</pieces>'
+            .'<recent_covers>'.e($past).'</recent_covers></issue>',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['scene'], 'properties' => ['scene' => ['type' => 'string']]],
             (string) config('ai.anthropic.tags_model'), 1500);
         if (! $scene || blank($scene['scene'] ?? null)) {
             return 'scene: '.($err ?? 'empty');
         }
-        [$bytes, $err] = self::paint(self::STYLE.' Portrait magazine cover artwork. Scene: '.mb_substr(trim((string) $scene['scene']), 0, 800));
+        $plan = (array) $issue->ai_plan;
+        $plan['cover_scene'] = mb_substr(trim((string) $scene['scene']), 0, 800);
+        $issue->forceFill(['ai_plan' => $plan])->save();
+        [$bytes, $err] = self::paint(str_replace('landscape composition', 'portrait composition', self::STYLE)
+            .' Portrait magazine cover artwork, the same series look every month. Scene: '.$plan['cover_scene'], null, '1024x1536');
         if (! $bytes) {
             return $err;
         }

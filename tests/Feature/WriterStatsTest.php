@@ -13,7 +13,7 @@ class WriterStatsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_writer_sees_reads_places_likes_saves_and_a_share_card(): void
+    public function test_writer_sees_reads_likes_saves_and_a_share_card_but_not_places(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
         $author = Author::create(['slug' => 'rina', 'display_name' => 'রিনা দাস', 'user_id' => $user->id]);
@@ -27,7 +27,7 @@ class WriterStatsTest extends TestCase
 
         $this->actingAs($user)->get('/account/stats/')->assertOk()
             ->assertSee('আমার পাঠক')->assertSee('নদীর গান')->assertDontSee('অন্যের লেখা')
-            ->assertSee('ঢাকা, বাংলাদেশ')->assertSee('data-share-card', false)->assertSee('hp-share-card.js', false);
+            ->assertDontSee('ঢাকা, বাংলাদেশ')->assertDontSee('কীভাবে পৌঁছেছেন')->assertSee('data-share-card', false)->assertSee('hp-share-card.js', false);
         $this->actingAs($user)->get('/account/')->assertSee('/account/stats/', false);
     }
 

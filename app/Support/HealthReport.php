@@ -70,6 +70,10 @@ final class HealthReport
             'reads' => $now, 'before' => $before, 'change' => $change,
             'search' => (int) ($src->s ?? 0), 'social' => (int) ($src->so ?? 0), 'internal' => (int) ($src->i ?? 0),
             'other' => max(0, (int) ($src->v ?? 0) - (int) ($src->s ?? 0) - (int) ($src->so ?? 0) - (int) ($src->i ?? 0)),
+            // Places (country/city totals) are for the desk only (owner, 2026-11-12).
+            // (all-time totals: places are not kept per day)
+            'places' => DB::table('post_view_places')->selectRaw('place, sum(views) v')->groupBy('place')->orderByDesc('v')->limit(6)->get()
+                ->map(fn ($r) => ['name' => WriterStats::place($r->place), 'n' => (int) $r->v])->all(),
             'top' => $top->map(fn ($v, $id) => ['post' => $topPosts[$id] ?? null, 'n' => (int) $v])->filter(fn ($r) => $r['post'])->values()->all(),
         ];
 
@@ -128,12 +132,14 @@ final class HealthReport
         $queueFailed = Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at', '>=', $utc($from))->count() : 0;
         $backup = collect(glob(storage_path('app/private/backups/*.sql.gz')) ?: [])->map(fn ($f) => filemtime($f))->max();
         $backupHours = $backup ? (int) floor((time() - $backup) / 3600) : null;
-        $ebooks = Issue::where('status', 'published')->whereNotNull('ebook_path')->get()->filter(fn ($i) => IssueEbook::waiting($i))->count();
+        // The month's issue (owner, 2026-11-12): the editorial and the cover must never be missed.
+        $issueNeeds = rescue(fn () => \App\Ai\IssueWatch::current()->mapWithKeys(fn ($i) => [$i->title => \App\Ai\IssueWatch::needs($i)])->filter()->all(), [], false);
+        $ebooks = count($issueNeeds);
         $site = [
             'broken' => $broken, 'checked_at' => $health?->created_at, 'queue_failed' => $queueFailed,
-            'backup_hours' => $backupHours, 'ebooks' => $ebooks,
+            'backup_hours' => $backupHours, 'ebooks' => $ebooks, 'issue_needs' => $issueNeeds,
             'status' => ($backupHours === null || $backupHours > 48) && app()->environment('production') ? self::URGENT
-                : (($broken > 0 || $queueFailed > 0 || $backupHours === null || $backupHours > 48) ? self::LOOK : self::OK),
+                : (($broken > 0 || $queueFailed > 0 || $backupHours === null || $backupHours > 48 || $ebooks > 0) ? self::LOOK : self::OK),
         ];
 
         // ---- What is waiting for a person (D42: nothing goes out without a click) ----
@@ -141,7 +147,7 @@ final class HealthReport
             $publishing['waiting'] ? ['n' => $publishing['waiting'], 'label' => 'লেখা পড়ার অপেক্ষায়', 'url' => '/desk/posts?tableFilters[status][value]=pending'] : null,
             $pendingComments ? ['n' => $pendingComments, 'label' => 'মন্তব্য অনুমোদনের অপেক্ষায়', 'url' => '/desk/comments'] : null,
             $mail['drafts'] ? ['n' => $mail['drafts'], 'label' => 'চিঠির খসড়া পাঠানোর অপেক্ষায়', 'url' => '/desk/newsletters'] : null,
-            $ebooks ? ['n' => $ebooks, 'label' => 'ই-বুক অনুমোদনের অপেক্ষায়', 'url' => '/desk/ebooks'] : null,
+            $ebooks ? ['n' => array_sum(array_map('count', $issueNeeds)), 'label' => 'মাসের পত্রিকায় কাজ বাকি (প্রচ্ছদ বা সম্পাদকীয়)', 'url' => '/desk/ebooks'] : null,
             $broken ? ['n' => $broken, 'label' => 'ভাঙা লিংক বা হারানো ছবি', 'url' => '/desk'] : null,
             $failedJobs ? ['n' => $failedJobs, 'label' => 'এআই দলের কাজ আটকে গেছে', 'url' => '/desk/ai-team'] : null,
         ]));
@@ -161,6 +167,7 @@ final class HealthReport
             $costBefore > 1 && $cost > 2 * $costBefore ? __('খরচ আগের দ্বিগুণের বেশি') : null,
         ]);
         $site['why'] = array_filter([
+            ...array_map(fn ($t, $n) => $t.': '.implode(' · ', $n), array_keys($issueNeeds), $issueNeeds),
             $broken ? __(':nটি ভাঙা লিংক বা হারানো ছবি', ['n' => $num($broken)]) : null,
             $queueFailed ? __('পেছনের :nটি কাজে ভুল হয়েছে', ['n' => $num($queueFailed)]) : null,
             $backupHours === null ? __('কোনো ব্যাকআপ পাওয়া যায়নি; রোজ রাতে হওয়ার কথা') : ($backupHours > 48 ? __('শেষ ব্যাকআপ :n দিন আগে; রোজ রাতে হওয়ার কথা', ['n' => $num(intdiv($backupHours, 24))]) : null),

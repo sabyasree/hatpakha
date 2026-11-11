@@ -38,42 +38,89 @@ class MagazineTest extends TestCase
         $this->get('/sonkha/2026-11/')->assertOk()->assertSee('পত্রিকা খুলুন')->assertDontSee('ই-বুক নামান');
     }
 
-    public function test_the_ebook_is_built_by_itself_and_reaches_readers_only_after_approval(): void
+    private function editorial(Issue $issue, string $status = 'published'): \App\Models\Post
+    {
+        $section = \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $post = $this->makePost(['status' => $status, 'slug' => 'sompadokiyo', 'title' => 'শীতের মুখে', 'section_id' => $section->id, 'format' => 'prose',
+            'issue_id' => $issue->id, 'published_at' => now()->subMinutes(5)]);
+        $issue->forceFill(['editorial_post_id' => $post->id])->save();
+
+        return $post;
+    }
+
+    public function test_the_ebook_has_the_editorial_and_a_cover_and_stays_with_the_owner(): void
     {
         Storage::fake('local');
         $issue = $this->issue();
-        $this->get('/sonkha/2026-11/ebook.epub')->assertNotFound();
-
+        $this->assertSame(0, IssueEbook::buildDue(), 'No editorial yet: no e-book');
+        $editorial = $this->editorial($issue, 'draft');
+        $this->assertSame(0, IssueEbook::buildDue(), 'Editorial still a draft: no e-book');
+        $editorial->update(['status' => 'published']);
         $this->assertSame(1, IssueEbook::buildDue());
         $this->assertSame(0, IssueEbook::buildDue(), 'Nothing changed: not built again');
         $issue->refresh();
-        $this->assertTrue(IssueEbook::waiting($issue));
         Storage::disk('local')->assertExists($issue->ebook_path);
-        $this->get('/sonkha/2026-11/ebook.epub')->assertNotFound('Not for readers until approved');
+
+        // Readers read on the site only.
+        $this->get('/sonkha/2026-11/ebook.epub')->assertNotFound();
+        $this->get('/sonkha/2026-11/')->assertDontSee('ই-বুক নামান')->assertDontSee('ebook.epub');
+
+        $zip = new \ZipArchive;
+        $tmp = tempnam(sys_get_temp_dir(), 'e');
+        file_put_contents($tmp, Storage::disk('local')->get($issue->ebook_path));
+        $zip->open($tmp);
+        foreach (['OEBPS/writers.xhtml', 'OEBPS/back.xhtml', 'OEBPS/cover.xhtml', 'OEBPS/images/cover.svg'] as $f) {
+            $this->assertNotFalse($zip->locateName($f), $f);
+        }
+        $cover = $zip->getFromName('OEBPS/images/cover.svg');
+        $this->assertStringContainsString('অগ্রহায়ণ সংখ্যা', $cover);
+        $this->assertStringContainsString('হাতপাখা', $cover);
+        $this->assertStringContainsString('properties="cover-image"', $zip->getFromName('OEBPS/content.opf'));
+        $this->assertNotFalse(simplexml_load_string($cover), 'The cover is valid XML');
+        $this->assertTrue(collect(range(0, $zip->numFiles - 1))->contains(fn ($k) => str_contains((string) $zip->getFromIndex($k), 'শীতের মুখে')), 'The editorial is inside');
+        $zip->close();
+        @unlink($tmp);
 
         $admin = User::factory()->create(['role' => Role::Admin]);
         $this->actingAs($admin);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('শীতের মুখে')->assertSee('ই-বুক (শুধু আপনার জন্য)')->assertDontSee('অনুমোদন দিন');
+    }
+
+    public function test_the_month_never_misses_its_editorial_or_cover(): void
+    {
+        Storage::fake('local');
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->travelTo(now('Asia/Kolkata')->startOfMonth()->addDays(24)->setTime(9, 0));   // the 25th
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $next = Issue::create(['slug' => now('Asia/Kolkata')->addMonthNoOverflow()->format('Y-m'), 'title' => 'পরের সংখ্যা', 'status' => 'proposed']);
+
+        // AI off: nothing can be made, but the owner sees what is missing.
+        $this->assertSame(['সম্পাদকীয় এখনও লেখা হয়নি', 'প্রচ্ছদ এখনও আঁকা হয়নি'], \App\Ai\IssueWatch::needs($next));
+        $this->assertSame(0, \App\Ai\IssueWatch::run()['editorials']);
+
+        // AI on: the editorial draft is written (once a day at most), and the owner is reminded on the 25th.
+        \Illuminate\Support\Facades\Cache::flush();
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        \App\Ai\Claude::$fake = fn ($purpose, $user, $schema) => ['title' => 'সম্পাদকীয়', 'paragraphs' => ['প্রিয় পাঠক,']];
+        $done = \App\Ai\IssueWatch::run();
+        $this->assertSame(1, $done['editorials']);
+        $this->assertSame(1, $done['reminders']);
+        $this->assertSame('draft', \App\Ai\IssueWatch::status($next->fresh())['editorial']);
+        $this->assertSame(0, \App\Ai\IssueWatch::run()['reminders'], 'One reminder a day');
+        \App\Ai\Claude::$fake = null;
+
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         $this->assertSame('১', \App\Filament\Pages\Ebooks::getNavigationBadge());
-        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('অনুমোদনের অপেক্ষায়')->call('approve', $issue->id);
-        auth()->logout();
-        $this->get('/sonkha/2026-11/ebook.epub')->assertOk()->assertHeader('Content-Type', 'application/epub+zip');
-        $this->get('/sonkha/2026-11/')->assertSee('ই-বুক নামান');
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('পরের সংখ্যা')->assertSee('খসড়া খুলুন')->assertSee('এখনই আঁকান');
+        $this->assertContains('মাসের পত্রিকায় কাজ বাকি (প্রচ্ছদ বা সম্পাদকীয়)', collect(\App\Support\HealthReport::build()['todo'])->pluck('label')->all());
 
-        // The EPUB has the writers and the back page.
-        $zip = new \ZipArchive;
-        $tmp = tempnam(sys_get_temp_dir(), 'e');
-        file_put_contents($tmp, Storage::disk('local')->get($issue->fresh()->ebook_public_path));
-        $zip->open($tmp);
-        $this->assertNotFalse($zip->locateName('OEBPS/writers.xhtml'));
-        $this->assertNotFalse($zip->locateName('OEBPS/back.xhtml'));
-        @unlink($tmp);
-
-        // A piece changes: a new build waits; readers keep the approved one meanwhile.
-        $this->travel(1)->minutes();
-        \App\Models\Post::where('slug', 'kuasha')->first()->update(['title' => 'ঘন কুয়াশা']);
-        $this->assertSame(1, IssueEbook::buildDue());
-        $this->assertTrue(IssueEbook::waiting($issue->fresh()));
-        $this->get('/sonkha/2026-11/ebook.epub')->assertOk();
+        // The designer's proposed cover becomes the cover when the owner picks it.
+        $next->forceFill(['proposed_cover_path' => '/media/covers/x.jpg'])->save();
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('এই প্রচ্ছদ নিন')->call('useCover', $next->id);
+        $this->assertSame('/media/covers/x.jpg', $next->fresh()->cover_path);
+        $this->assertSame('set', \App\Ai\IssueWatch::status($next->fresh())['cover']);
     }
 }

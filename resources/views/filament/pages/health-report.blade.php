@@ -96,6 +96,10 @@
                 <span><i style="background:#13212C"></i>{{ __('সাইটের ভেতর থেকে') }} {{ $n($pct($rd['internal'], $tot)) }}%</span>
                 <span><i style="background:#EFC08D"></i>{{ __('সরাসরি') }} {{ $n($pct($rd['other'], $tot)) }}%</span>
             </div>
+            @if ($rd['places'])
+                <p class="hp-h-line" style="font-weight:700">{{ __('কোথা থেকে পড়ছেন (শুরু থেকে মোট)') }}</p>
+                <p class="hp-muted">@foreach ($rd['places'] as $pl){{ $pl['name'] }} {{ $n($pl['n']) }}@if (! $loop->last) · @endif @endforeach</p>
+            @endif
             @if ($rd['top'])
                 <p class="hp-h-line" style="font-weight:700">{{ __('সবচেয়ে বেশি পড়া') }}</p>
                 <ol>@foreach ($rd['top'] as $t)<li><a class="link" href="{{ $t['post']->url() }}" target="_blank">{{ $t['post']->title }}</a> <span class="hp-muted">{{ $n($t['n']) }}</span></li>@endforeach</ol>
@@ -163,7 +167,8 @@
             <p class="hp-h-line">{{ __('ভাঙা লিংক বা হারানো ছবি') }}: <b>{{ $n($st['broken']) }}</b>@if ($st['checked_at']) <span class="hp-muted">({{ __('দেখা হয়েছে') }} {{ Bn::date($st['checked_at']) }})</span>@endif</p>
             <p class="hp-h-line">{{ __('পেছনের কাজে ভুল') }}: <b>{{ $n($st['queue_failed']) }}</b></p>
             <p class="hp-h-line">{{ __('শেষ ব্যাকআপ') }}: <b>{{ $st['backup_hours'] === null ? __('পাওয়া যায়নি') : ($st['backup_hours'] < 24 ? $n($st['backup_hours']).' '.__('ঘণ্টা আগে') : $n(intdiv($st['backup_hours'], 24)).' '.__('দিন আগে')) }}</b></p>
-            <p class="hp-h-line">{{ __('ই-বুক অনুমোদনের অপেক্ষায়') }}: <b>{{ $n($st['ebooks']) }}</b> @if ($st['ebooks'])<a class="link" href="{{ url('/desk/ebooks') }}">{{ __('দেখুন') }}</a>@endif</p>
+            <p class="hp-h-line">{{ __('মাসের পত্রিকা') }}: <b>{{ $st['issue_needs'] ? __('কাজ বাকি') : __('সব ঠিক') }}</b> @if ($st['issue_needs'])<a class="link" href="{{ url('/desk/ebooks') }}">{{ __('দেখুন') }}</a>@endif</p>
+
         </section>
     </div>
     <p class="hp-muted">{{ __('সব সংখ্যা সাইটের নিজের হিসাব থেকে; কোনো পাঠকের পরিচয় রাখা হয় না। এই পাতা কোথাও পাঠানো হয় না, শুধু এখানে দেখা যায়।') }}</p>

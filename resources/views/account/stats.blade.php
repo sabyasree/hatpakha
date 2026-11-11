@@ -4,15 +4,13 @@
     use App\Support\Bn;
     $n = fn ($v) => Bn::num((string) $v);
     $max = max(1, $s['days']->max());
-    $srcTotal = max(1, array_sum($s['sources']));
-    $placeMax = max(1, (int) ($s['places']->max('n') ?? 1));
     $writerName = $authors->first()?->publicName() ?? $user->name;
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="writings" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
         <a href="{{ \App\Support\Url::to('/account/writings') }}" class="inline-flex min-h-11 items-center text-sm font-bold text-sky-deep underline">← আমার লেখা</a>
         <h2 class="font-display text-3xl font-extrabold">আমার পাঠক</h2>
-        <p class="mt-1 text-ink2">আপনার লেখা কতজন পড়ছেন, কোথা থেকে, কী ভালো লাগছে।</p>
+        <p class="mt-1 text-ink2">আপনার লেখা কতবার পড়া হচ্ছে, কতজনের ভালো লাগছে।</p>
 
         @if ($s['rows']->isEmpty())
             <div class="mt-6 rounded-3xl border-2 border-dashed border-navy p-6 text-center">
@@ -57,29 +55,6 @@
                 <p class="sr-only">গত ৩০ দিনে মোট {{ $n($s['month']) }} বার পড়া হয়েছে; সবচেয়ে বেশি একদিনে {{ $n($max) }} বার।</p>
             </section>
 
-            <div class="mt-8 grid gap-6 md:grid-cols-2">
-                <section aria-labelledby="st-places">
-                    <h3 id="st-places" class="text-lg font-extrabold">কোথা থেকে পড়ছেন</h3>
-                    @forelse ($s['places'] as $pl)
-                        <div class="mt-2">
-                            <div class="flex justify-between gap-2 text-sm"><span>{{ $pl['name'] }}</span><b class="tabular-nums">{{ $n($pl['n']) }}</b></div>
-                            <div class="mt-1 h-2 rounded-full bg-rule"><div class="h-2 rounded-full bg-sky-deep" style="width: {{ round(100 * $pl['n'] / $placeMax) }}%"></div></div>
-                        </div>
-                    @empty
-                        <p class="mt-2 text-sm text-ink2">জায়গার হিসাব রাখা শুরু হয়েছে নভেম্বর ২০২৬ থেকে; কয়েক দিনের মধ্যে এখানে দেখা যাবে।</p>
-                    @endforelse
-                </section>
-                <section aria-labelledby="st-src">
-                    <h3 id="st-src" class="text-lg font-extrabold">কীভাবে পৌঁছেছেন</h3>
-                    @foreach (['social' => 'ফেসবুক, হোয়াটসঅ্যাপ…', 'search' => 'গুগলে খুঁজে', 'internal' => 'হাতপাখার অন্য পাতা থেকে', 'other' => 'সরাসরি বা লিংক থেকে'] as $k => $label)
-                        <div class="mt-2">
-                            <div class="flex justify-between gap-2 text-sm"><span>{{ $label }}</span><b class="tabular-nums">{{ $n(round(100 * $s['sources'][$k] / $srcTotal)) }}%</b></div>
-                            <div class="mt-1 h-2 rounded-full bg-rule"><div class="h-2 rounded-full bg-red" style="width: {{ round(100 * $s['sources'][$k] / $srcTotal) }}%"></div></div>
-                        </div>
-                    @endforeach
-                </section>
-            </div>
-
             {{-- Each piece --}}
             <section class="mt-8" aria-labelledby="st-pieces">
                 <h3 id="st-pieces" class="text-lg font-extrabold">প্রতিটি লেখা</h3>
@@ -98,7 +73,7 @@
                     @endforeach
                 </ul>
             </section>
-            <p class="mt-6 text-sm text-ink2">কীভাবে গোনা হয়: লেখার পাতা কয়েক সেকেন্ড খোলা থাকলে একবার; একই জন আধঘণ্টার মধ্যে আবার খুললে আর গোনা হয় না। কে পড়েছেন, তা রাখা হয় না; শুধু মোট সংখ্যা আর দেশ বা শহর। হিসাব রাখা শুরু নভেম্বর ২০২৬ থেকে।</p>
+            <p class="mt-6 text-sm text-ink2">কীভাবে গোনা হয়: লেখার পাতা কয়েক সেকেন্ড খোলা থাকলে একবার; একই জন আধঘণ্টার মধ্যে আবার খুললে আর গোনা হয় না। কে পড়েছেন, তা রাখা হয় না; শুধু মোট সংখ্যা।</p>
         @endif
 
         {{-- The share card ("আমার লেখা হাতপাখায়"): drawn in the browser, so Bengali letters come out right. --}}

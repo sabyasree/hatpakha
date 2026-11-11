@@ -6,7 +6,8 @@ use App\Models\Author;
 use App\Models\Post;
 use Illuminate\Support\Facades\DB;
 
-/** Writers' own numbers (owner, 2026-11-12): reads, where from, likes, saves, followers. Totals only, never a reader. */
+/** Writers' own numbers (owner, 2026-11-12): reads, likes, saves, followers. Totals only, never a reader.
+ * Places and how readers came are for the desk only (owner, later the same day): see HealthReport. */
 final class WriterStats
 {
     private const COUNTRIES = ['IN' => 'ভারত', 'BD' => 'বাংলাদেশ', 'US' => 'আমেরিকা', 'GB' => 'ব্রিটেন', 'CA' => 'কানাডা', 'AU' => 'অস্ট্রেলিয়া', 'AE' => 'আমিরশাহি',
@@ -41,8 +42,6 @@ final class WriterStats
         $saves = DB::table('saved_posts')->whereIn('post_id', $pids)->selectRaw('post_id, count(*) n')->groupBy('post_id')->pluck('n', 'post_id');
         $daily = DB::table('post_views')->whereIn('post_id', $pids)->where('day', '>=', $since)->selectRaw('day, sum(views) v')->groupBy('day')->pluck('v', 'day');
         $days = collect(range(29, 0))->map(fn ($d) => now('Asia/Kolkata')->subDays($d)->toDateString())->mapWithKeys(fn ($d) => [$d => (int) ($daily[$d] ?? 0)]);
-        $places = DB::table('post_view_places')->whereIn('post_id', $pids)->selectRaw('place, sum(views) v')->groupBy('place')->orderByDesc('v')->limit(8)->get()
-            ->map(fn ($r) => ['name' => self::place($r->place), 'n' => (int) $r->v]);
 
         $rows = $posts->map(fn (Post $p) => [
             'post' => $p,
@@ -60,9 +59,6 @@ final class WriterStats
             'saves' => $rows->sum('saves'),
             'followers' => (int) DB::table('follows')->whereIn('author_id', $ids)->distinct()->count('user_id'),
             'days' => $days,
-            'places' => $places,
-            'sources' => ['search' => (int) $total->sum('s'), 'social' => (int) $total->sum('so'), 'internal' => (int) $total->sum('i'),
-                'other' => max(0, (int) $total->sum('v') - (int) $total->sum('s') - (int) $total->sum('so') - (int) $total->sum('i'))],
             'best' => $rows->sortByDesc('reads')->first(),
         ];
     }

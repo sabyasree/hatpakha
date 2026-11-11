@@ -246,5 +246,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D137: writers' "আমার পাঠক" page (reads, places, sources, likes, saves, followers) + "আমার লেখা হাতপাখায়" share card
 - [x] D138: /desk → সাইটের স্বাস্থ্য, weekly / monthly health report with reasons for every flag (no email)
 - [x] UX review of all of the above; fixes applied (cover contrast, phone page size + bigger letters, page-turn hint, running heads, writer typo search, chart labels, Bengali city names, flag reasons, e-book button order)
-- [ ] Owner: Cloudflare → Rules → Managed Transforms → turn on "Add visitor location headers" (for city names on writers' pages)
+- [x] Owner follow-up (2026-11-12): no e-book download for readers (read on the site only); writers see reads, likes, saves and followers only (places and sources move to /desk → সাইটের স্বাস্থ্য)
+- [x] D139: the month's issue never misses its editorial or cover (IssueWatch: daily retries, reminders on the 25th and 28th and every day after the issue goes live); /desk → মাসের পত্রিকা checklist; every e-book has the editorial and a composed cover
+- [ ] Owner: Cloudflare → Rules → Managed Transforms → turn on "Add visitor location headers" (for city names in the desk health report)
 - [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)

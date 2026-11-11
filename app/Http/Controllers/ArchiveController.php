@@ -144,9 +144,7 @@ class ArchiveController extends Controller
 
         \App\Support\Ads::allow();   // D111
 
-        $ebook = \App\Support\IssueEbook::approved($issue);
-
-        return view('issue', compact('issue', 'posts', 'seo', 'ebook'));
+        return view('issue', compact('issue', 'posts', 'seo'));
     }
 
     private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null, ?string $age = null)
