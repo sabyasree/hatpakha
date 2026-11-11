@@ -3,18 +3,16 @@
 Facebook page: https://www.facebook.com/Hatpakhaonline · Instagram: https://www.instagram.com/hatpakha/
 Pictures are in `docs/social/`. Everything here is true today; nothing invents numbers, names or dates.
 
-**Order of work:** Part A now (the page is refreshed, and readers learn that we're coming back). Part B on launch day, when the new site is live on hatpakha.com.
+**Status (2026-11-11):** the new site is live on hatpakha.com. Do everything below now, top to bottom (about 40 minutes). The old "coming back" post (`post-coming-back-1080x1350.png`) is out of date: don't post it. Use `post-back-1080x1350.png`, which says "নতুন রূপে ফিরে এল" (has come back).
 
 ---
 
-## Part A: now
-
-### 1. One place for both accounts (5 minutes)
+## 1. One place for both accounts (5 minutes)
 1. Open **business.facebook.com** (Meta Business Suite) with the account that manages the page.
 2. Settings → Linked accounts → **Instagram** → connect `hatpakha`. If Instagram asks, switch it to a **professional account** (category *Magazine*); it stays free.
 3. From now on you can post to Facebook and Instagram together from Business Suite → "Create post".
 
-### 2. Facebook page fields
+## 2. Facebook page fields
 Open the page → Edit (or "Edit details"):
 
 | Field | What to put |
@@ -28,13 +26,13 @@ Open the page → Edit (or "Edit details"):
 | Intro / bio (max. 101 characters) | কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। ২০১২ থেকে। ISSN 2321-3035 |
 | Website | https://hatpakha.com/ |
 | Email / phone | Leave empty. Messages go through the site's contact form (D89). |
-| Action button | **Learn more** → https://hatpakha.com/ |
+| Action button | **Learn more** → https://hatpakha.com/ (or **Sign up** → https://hatpakha.com/register/ if you'd rather collect writers) |
 
 **Longer "About" / description** (paste as it is):
 
-> হাতপাখা বাংলা সাহিত্যের একটি অনলাইন পত্রিকা, ২০১২ থেকে (ISSN 2321-3035)। এখানে কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথা প্রকাশিত হয়; লেখা পাঠানো আর প্রকাশ সবসময় বিনামূল্যে। লেখা পাঠানোর নিয়ম: https://hatpakha.com/submissions/ · যোগাযোগ: https://hatpakha.com/contact-us/
+> হাতপাখা বাংলা সাহিত্যের একটি অনলাইন পত্রিকা, ২০১২ থেকে (ISSN 2321-3035)। এখানে কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথা প্রকাশিত হয়; সঙ্গে প্রতি সপ্তাহের ধারাবাহিক আর ছোটদের জন্য আলাদা পাতা, ছোটদের হাতপাখা। লেখা পাঠানো আর প্রকাশ সবসময় বিনামূল্যে। লেখা পাঠানোর নিয়ম: https://hatpakha.com/submissions/ · যোগাযোগ: https://hatpakha.com/contact-us/
 
-### 3. Instagram profile
+## 3. Instagram profile
 Edit profile:
 
 | Field | What to put |
@@ -46,31 +44,21 @@ Edit profile:
 | Link | https://hatpakha.com/ |
 | Category | Magazine |
 
-### 4. The first post: "we're coming back"
-Picture: `post-coming-back-1080x1350.png` (fits both Facebook and Instagram). Post it on both, then on Facebook **Pin to top** (⋯ on the post → Pin).
+## 4. First post: "we're back" (pin it)
+Picture: `post-back-1080x1350.png` (fits both Facebook and Instagram). Post it on both, then on Facebook **Pin to top** (⋯ on the post → Pin).
 
-> হাতপাখা নতুন রূপে ফিরছে।
+> হাতপাখা নতুন রূপে ফিরে এল।
 >
 > ২০১২ থেকে আপনাদের লেখা আর ভালোবাসায় চলেছে এই পত্রিকা। মাঝে অনেকদিন আমরা চুপ ছিলাম, আর অনেকের লেখার উত্তরও দিতে পারিনি। সেজন্য আন্তরিকভাবে দুঃখিত।
 >
-> এবার ফিরছি নতুন ওয়েবসাইট নিয়ে। কবিতা, গল্প, প্রবন্ধ, ভ্রমণকথা তো থাকছেই; সঙ্গে প্রতি সপ্তাহের ধারাবাহিক আর ছোটদের জন্য আলাদা পাতা, ছোটদের হাতপাখা।
+> আজ থেকে হাতপাখা নতুন ওয়েবসাইটে। পুরোনো সব লেখা আছে আগের ঠিকানাতেই; সঙ্গে কবিতা, গল্প, প্রবন্ধ, ভ্রমণকথা, প্রতি সপ্তাহের ধারাবাহিক আর ছোটদের জন্য আলাদা পাতা, ছোটদের হাতপাখা।
 >
-> শীঘ্রই hatpakha.com-এ। পাশে থাকুন।
+> পড়ুন: hatpakha.com
 >
 > #হাতপাখা #বাংলাসাহিত্য #বাংলাকবিতা #বাংলাগল্প #Hatpakha
 
-Don't give a date until the launch day is fixed. Don't promise anything that isn't built.
-
-### 5. Until launch
-- Answer comments and messages within a day; that alone brings the page back into people's feeds.
-- One or two posts a week is enough until launch: a line from an old published piece with its link (the marketing page in /desk makes these, with pictures: /desk → মার্কেটিং).
-
----
-
-## Part B: launch day
-
-1. **New cover?** Not needed; the cover has no dates.
-2. **Second pinned post:** `post-send-writing-1080x1350.png` with:
+## 5. Second post, two or three days later: "send your writing"
+Picture: `post-send-writing-1080x1350.png`. Facebook lets only one pinned post: keep the "we're back" post pinned for the first week, then pin this one.
 
 > লেখা পাঠানোর নতুন ঠিকানা: hatpakha.com/submit
 >
@@ -80,16 +68,17 @@ Don't give a date until the launch day is fixed. Don't promise anything that isn
 >
 > #হাতপাখা #লেখাপাঠান #বাংলাসাহিত্য
 
-3. **Messenger and Instagram automatic reply** (Business Suite → Inbox → Automations → Instant reply):
+## 6. Automatic reply to messages
+Business Suite → Inbox → Automations → **Instant reply** (turn on for Messenger and Instagram):
 
 > নমস্কার, হাতপাখায় লেখার জন্য ধন্যবাদ। লেখা পাঠাতে চাইলে hatpakha.com/submit-এর ফর্ম ব্যবহার করুন; মেসেজে পাঠানো লেখা আমরা প্রকাশের জন্য নিতে পারি না। অন্য কিছু জানাতে চাইলে এখানেই লিখুন, আমরা উত্তর দেব।
 
-4. **Verify the domain with Meta** (lets the page control how hatpakha.com links look, and is needed for ads later):
-   1. business.facebook.com → Settings → Brand safety → **Domains** → Add → `hatpakha.com` → choose "meta tag".
-   2. Copy only the code inside `content="…"`.
-   3. GitHub → Settings → Environments → **production** → `ENV_FILE`: add a line `FACEBOOK_DOMAIN_VERIFICATION=<the code>`, then redeploy.
-   4. Back in Meta, press **Verify**.
-5. **Refresh old link previews:** paste https://hatpakha.com/ into Meta's Sharing Debugger (developers.facebook.com/tools/debug) → "Scrape again". Do the same for any old piece that shows an outdated picture.
+## 7. Finish verifying hatpakha.com with Meta
+The site already carries Meta's verification tag (checked live on 2026-11-11). Only the last click is left:
+business.facebook.com → Settings → Brand safety → **Domains** → `hatpakha.com` → **Verify**. It should turn green.
+
+## 8. Refresh old link previews
+Old shares of hatpakha.com links may still show the WordPress picture. Paste https://hatpakha.com/ into Meta's **Sharing Debugger** (developers.facebook.com/tools/debug) → "Scrape again". Do the same for any old piece that shows an outdated picture when shared.
 
 ---
 
@@ -103,4 +92,5 @@ Don't give a date until the launch day is fixed. Don't promise anything that isn
 ## Site side (done)
 - The site footer links to the Facebook page and Instagram; Google's site data (`Organization.sameAs`) lists both (`config/services.php` → `social`, env `FACEBOOK_PAGE_URL`, `INSTAGRAM_URL`).
 - `FACEBOOK_DOMAIN_VERIFICATION` adds Meta's verification tag to every page (only a plain letters-and-digits code is accepted).
+- `FACEBOOK_APP_ID` (optional) adds `fb:app_id`. The Sharing Debugger lists it as missing, but previews work without it; set it only if a Meta app exists (developers.facebook.com → My Apps → Create app → "Other" → "Business"; the App ID is a number).
 - The pictures were made from the logo palette; the "p" mark is redrawn as a vector in `docs/social/mark.cjs`, so it can be made at any size.

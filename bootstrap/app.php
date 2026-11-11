@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             \Illuminate\Support\Facades\Route::post('/v/{post}', \App\Http\Controllers\ViewController::class)
                 ->whereNumber('post')->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1');
+            // D127: the service worker, outside the web group: no session, cookie or page cache; never stored by Cloudflare.
+            \Illuminate\Support\Facades\Route::get('/sw.js', [\App\Http\Controllers\AppController::class, 'serviceWorker']);
             // D117: Amazon SES bounce/complaint reports via SNS (signed by Amazon; no session or CSRF involved).
             \Illuminate\Support\Facades\Route::post('/webhooks/ses', \App\Http\Controllers\SesWebhookController::class)
                 ->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1');

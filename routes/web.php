@@ -115,6 +115,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/change/{post}', [\App\Http\Controllers\AccountController::class, 'requestChange'])->whereNumber('post')->middleware('throttle:10,1');   // D94
     Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/newsletter', [\App\Http\Controllers\AccountController::class, 'updateNewsletter']);
+    Route::post('/account/push', [\App\Http\Controllers\AppController::class, 'subscribe'])->middleware('throttle:20,1');   // D127: phone notifications
+    Route::post('/account/push/off', [\App\Http\Controllers\AppController::class, 'unsubscribe'])->middleware('throttle:20,1');
+    Route::post('/account/push/test', [\App\Http\Controllers\AppController::class, 'test'])->middleware('throttle:5,1');
     Route::post('/account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->middleware('throttle:5,1');
     Route::post('/account/2fa/start', [\App\Http\Controllers\AccountController::class, 'twoFactorStart'])->middleware('throttle:10,1');
     Route::post('/account/2fa/confirm', [\App\Http\Controllers\AccountController::class, 'twoFactorConfirm'])->middleware('throttle:6,1');
@@ -199,7 +202,7 @@ Route::post('/comment/{post}', [\App\Http\Controllers\CommentController::class, 
 
 // Posts at the root, exactly like WordPress. Reserved words are excluded.
 Route::get('/{slug}', PostController::class)
-    ->where('slug', '(?!(desk|livewire|filament|up|storage|build|search|submit|account|login|logout|register)$)[^/]+')
+    ->where('slug', '(?!(desk|livewire|filament|up|storage|build|search|submit|account|login|logout|register|sw\.js)$)[^/]+')
     ->name('post');
 
 // Old attachment pages /{post}/{attachment}/ → the post (registered after every fixed 2-segment route)

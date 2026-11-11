@@ -7,6 +7,13 @@
     <meta name="theme-color" content="#FFFBF4">
     <x-seo :seo="$seo" />
     <link rel="icon" href="{{ asset('images/logo.png') }}">
+    {{-- D127: installable as an app (home screen, full screen, offline reading of pieces already opened) --}}
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="{{ asset('images/app/apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-title" content="হাতপাখা">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     {{-- Fonts are self-hosted (public/fonts/fonts.css, shared with the admin panel); preload the two Bengali faces used above the fold. --}}
     <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
@@ -147,6 +154,22 @@
         @endforeach
     </nav>
     @endunless
+    {{-- D127: "keep Hatpakha on your phone" hint (phones only, from the third page, never again for 30 days after "পরে") --}}
+    <div data-install hidden role="dialog" aria-labelledby="hp-install-h" class="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border-2 border-navy bg-white p-4 shadow-[4px_4px_0_#CB1B32] md:hidden">
+        <div class="flex items-start gap-3">
+            <img src="{{ asset('images/app/icon-192.png') }}" alt="" width="48" height="48" class="h-12 w-12 flex-none rounded-xl">
+            <div class="min-w-0 flex-1">
+                <strong id="hp-install-h" class="block text-lg leading-snug">হাতপাখা রাখুন ফোনের হোম স্ক্রিনে</strong>
+                <p class="text-sm text-ink2" data-install-android>অ্যাপের মতো এক ছোঁয়ায় খুলবে। আগে পড়া লেখা ইন্টারনেট ছাড়াও পড়া যাবে। কোনো ডাউনলোড বা জায়গা লাগে না।</p>
+                <p class="text-sm text-ink2" data-install-ios hidden>নিচের <strong>শেয়ার</strong> বোতাম (□↑) ছুঁয়ে <strong>Add to Home Screen</strong> বাছুন। অ্যাপের মতো এক ছোঁয়ায় খুলবে।</p>
+            </div>
+        </div>
+        <div class="mt-3 flex justify-end gap-2">
+            <button type="button" class="h-11 rounded-full px-4 font-bold text-ink2" data-install-later>পরে</button>
+            <button type="button" class="h-11 rounded-full bg-red px-5 font-bold text-white" data-install-go>যোগ করুন</button>
+            <button type="button" class="h-11 rounded-full bg-navy px-5 font-bold text-white" data-install-ok hidden>বুঝেছি</button>
+        </div>
+    </div>
     @if (\App\Support\Ads::on())
         {{-- D111: request each ad only when the reader scrolls near it; hidden spots (e.g. the side ad on smaller screens) are never requested --}}
         <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">

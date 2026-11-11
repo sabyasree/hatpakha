@@ -17,6 +17,7 @@
 @if ($seo->publishedAt)<meta property="article:published_time" content="{{ $seo->publishedAt }}">@endif
 <meta name="twitter:card" content="summary_large_image">
 @if (filled($fbv = config('services.social.facebook_domain_verification')) && preg_match('/^[a-z0-9]{10,64}$/', $fbv))<meta name="facebook-domain-verification" content="{{ $fbv }}">@endif
+@if (filled($fbapp = config('services.social.facebook_app_id')) && preg_match('/^\d{5,20}$/', (string) $fbapp))<meta property="fb:app_id" content="{{ $fbapp }}">@endif
 <link rel="alternate" type="application/rss+xml" title="হাতপাখা" href="{{ \App\Support\Url::to('/feed') }}">
 @if ($seo->jsonLd)
 <script type="application/ld+json" nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">{!! \App\Seo\JsonLd::graph($seo->jsonLd) !!}</script>

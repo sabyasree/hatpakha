@@ -246,3 +246,125 @@ document.querySelector('[data-show-follow]')?.addEventListener('click', (e) => {
     document.querySelectorAll('[data-more-follow]').forEach((li) => { li.hidden = false; });
     e.currentTarget.remove();
 });
+
+// ---- D127: Hatpakha as an app -------------------------------------------------------------------------
+// The service worker lets the site open full screen from the home screen and keeps pieces already read for
+// offline reading (never the desk, accounts or forms). /sw.js is served by the app, never cached.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {}));
+}
+
+const hpStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const hpIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const hpStore = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
+
+// "Keep Hatpakha on your phone": phones only, from the third page a reader opens, and not again for 30 days after "পরে".
+(() => {
+    const box = document.querySelector('[data-install]');
+    if (!box || hpStandalone() || !window.matchMedia('(max-width: 767px)').matches) return;
+    const views = Number(hpStore.get('hp.views') || 0) + 1;
+    hpStore.set('hp.views', String(views));
+    const later = Number(hpStore.get('hp.install.later') || 0);
+    if (views < 3 || Date.now() - later < 30 * 864e5) return;
+    const hide = () => { box.hidden = true; hpStore.set('hp.install.later', String(Date.now())); };
+    box.querySelector('[data-install-later]').addEventListener('click', hide);
+    box.querySelector('[data-install-ok]').addEventListener('click', hide);
+    if (hpIos) {
+        // Safari has no install button: show the two taps instead (other iPhone browsers can't add to the home screen).
+        if (!/safari/i.test(navigator.userAgent) || /crios|fxios|edgios/i.test(navigator.userAgent)) return;
+        box.querySelector('[data-install-android]').hidden = true;
+        box.querySelector('[data-install-ios]').hidden = false;
+        box.querySelector('[data-install-go]').hidden = true;
+        box.querySelector('[data-install-ok]').hidden = false;
+        box.hidden = false;
+        return;
+    }
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        box.hidden = false;
+        box.querySelector('[data-install-go]').addEventListener('click', async () => {
+            box.hidden = true;
+            e.prompt();
+            const { outcome } = await e.userChoice;
+            if (outcome !== 'accepted') hpStore.set('hp.install.later', String(Date.now()));
+        }, { once: true });
+    });
+    window.addEventListener('appinstalled', () => { box.hidden = true; });
+})();
+
+// Phone notifications (account → settings → ফোনে খবর). The state shown is this browser's own.
+(() => {
+    const card = document.querySelector('[data-push]');
+    if (!card) return;
+    const status = card.querySelector('[data-push-status]');
+    const on = card.querySelector('[data-push-on]');
+    const off = card.querySelector('[data-push-off]');
+    const test = card.querySelector('[data-push-test]');
+    const base = card.dataset.pushUrl.replace(/\/$/, '');
+    const say = (text, buttons = []) => {
+        status.textContent = text;
+        [on, off, test].forEach((b) => { b.hidden = !buttons.includes(b); b.disabled = false; });
+    };
+    const post = async (url, body) => {
+        const token = await hpFreshToken();
+        const r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token || '' }, body: JSON.stringify(body || {}) });
+        return r.ok ? r.json() : Promise.reject(r.status);
+    };
+    const key = () => {
+        const s = card.dataset.pushKey.replace(/-/g, '+').replace(/_/g, '/');
+        const raw = atob(s + '='.repeat((4 - (s.length % 4)) % 4));
+        return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    };
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        if (hpIos && !hpStandalone()) {
+            card.querySelector('[data-push-ios]').hidden = false;
+            say('আইফোনে খবর পেতে আগে হাতপাখাকে হোম স্ক্রিনে যোগ করতে হয় (নিচে দেখুন)।');
+        } else {
+            say('এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Chrome, Firefox বা Edge-এ খুলে দেখুন।');
+        }
+        return;
+    }
+    const refresh = async () => {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (Notification.permission === 'denied') {
+            say('এই ব্রাউজারে আগে "না" বলা আছে। ব্রাউজারের সেটিংসে hatpakha.com-এর নোটিফিকেশন (Notifications) চালু করে আবার আসুন।');
+        } else if (sub) {
+            say('✓ এই ফোনে চালু আছে।', [test, off]);
+        } else {
+            say('এই ফোনে এখন বন্ধ।', [on]);
+        }
+        return sub;
+    };
+    on.addEventListener('click', async () => {
+        on.disabled = true;
+        try {
+            if ((await Notification.requestPermission()) !== 'granted') { await refresh(); return; }
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key() });
+            await post(base + '/', sub.toJSON());
+            await refresh();
+        } catch (e) {
+            say('চালু করা গেল না। একটু পরে আবার চেষ্টা করুন।', [on]);
+        }
+    });
+    off.addEventListener('click', async () => {
+        off.disabled = true;
+        const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+        if (sub) {
+            await post(base + '/off/', { endpoint: sub.endpoint }).catch(() => {});
+            await sub.unsubscribe().catch(() => {});
+        }
+        await refresh();
+    });
+    test.addEventListener('click', async () => {
+        test.disabled = true;
+        const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+        if (sub) await post(base + '/', sub.toJSON()).catch(() => {});   // make sure the site knows this phone
+        const r = await post(base + '/test/').catch(() => ({ ok: false }));
+        status.textContent = r.ok ? '✓ পাঠানো হল। কয়েক সেকেন্ডের মধ্যে খবরটি আসার কথা।' : 'পাঠানো গেল না। বন্ধ করে আবার চালু করে দেখুন।';
+        test.disabled = false;
+    });
+    refresh().catch(() => say('এই ফোনে এখন বন্ধ।', [on]));
+})();
