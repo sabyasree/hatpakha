@@ -28,6 +28,42 @@
         .hp-bar { height: .4rem; border-radius: 999px; background: rgba(127,127,127,.15); overflow: hidden; margin-top: .35rem; }
         .hp-bar span { display: block; height: 100%; background: #2DAAE2; }
         @media (max-width: 720px) { .hp-member { grid-template-columns: 1fr; gap: .4rem; } }
+        /* Job steps (owner + UX review, 2026-11-11): shape first, colour second; logo palette only. */
+        .hp-req-summary { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .6rem; }
+        .hp-req-pill { font-size: .85rem; font-weight: 600; padding: .2rem .65rem; border-radius: 999px; border: 1px solid rgba(127,127,127,.35); }
+        .hp-req-pill--ready { background: #13212C; color: #FFFBF4; border-color: #13212C; }
+        .hp-req-pill--failed { background: #CB1B32; color: #fff; border-color: #CB1B32; }
+        .hp-req-new { display: inline-block; font-size: .7rem; font-weight: 700; padding: 0 .45rem; border-radius: 999px; background: #CB1B32; color: #fff; vertical-align: middle; }
+        .hp-req-why { margin-top: .35rem; padding: .55rem .7rem; border-left: 3px solid #CB1B32; border-radius: 0 .5rem .5rem 0; background: rgba(239,192,141,.18); white-space: pre-wrap; font-size: .9rem; }
+        .hp-steps { margin-top: .35rem; }
+        .hp-steps-now { display: flex; gap: .5rem; align-items: center; cursor: pointer; list-style: none; }
+        .hp-steps-now::-webkit-details-marker { display: none; }
+        .hp-steps-now::after { content: '▾'; opacity: .6; margin-left: auto; }
+        .hp-steps[open] .hp-steps-now::after { content: '▴'; }
+        .hp-step-list { list-style: none; margin: .5rem 0 0; padding: 0 0 0 .2rem; }
+        .hp-step { position: relative; display: flex; gap: .6rem; padding: 0 0 .7rem; }
+        .hp-step:not(:last-child)::before { content: ''; position: absolute; left: .55rem; top: 1.25rem; bottom: .1rem; border-left: 2px solid rgba(127,127,127,.3); }
+        .hp-step--done:not(:last-child)::before { border-left-color: #13212C; }
+        .hp-step-mark { position: relative; flex: none; width: 1.15rem; height: 1.15rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; line-height: 1; }
+        .hp-step-mark--done { background: #13212C; color: #FFFBF4; }
+        .hp-step-mark--done::after { content: '✓'; }
+        .hp-step-mark--current { border: 3px solid #CB1B32; }
+        .hp-step-mark--pending { border: 2px solid rgba(19,33,44,.4); }
+        .hp-step-mark--skipped { border: 2px dashed rgba(19,33,44,.45); }
+        .hp-step-mark--skipped::after { content: '–'; opacity: .6; }
+        .hp-step-mark--retry { background: #EFC08D; color: #13212C; }
+        .hp-step-mark--retry::after { content: '↻'; }
+        .hp-step-mark--failed { background: #CB1B32; color: #fff; }
+        .hp-step-mark--failed::after { content: '✕'; }
+        .dark .hp-step-mark--done { background: #FFFBF4; color: #13212C; }
+        .dark .hp-step-mark--pending, .dark .hp-step-mark--skipped { border-color: rgba(255,251,244,.45); }
+        .hp-step--current .hp-step-label { font-weight: 700; }
+        .hp-step--pending .hp-step-label, .hp-step--skipped .hp-step-label { opacity: .55; }
+        .hp-step--failed .hp-step-label { color: #CB1B32; font-weight: 700; }
+        @media (prefers-reduced-motion: no-preference) {
+            .hp-step-mark--current { animation: hp-pulse 1.8s ease-in-out infinite; }
+            @keyframes hp-pulse { 50% { box-shadow: 0 0 0 4px rgba(203,27,50,.18); } }
+        }
     </style>
 
     {{-- 1. Status at a glance --}}
@@ -153,22 +189,56 @@
                 <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="clearRequests" wire:confirm="{{ __('শেষ হওয়া ও না-হওয়া সব কাজ তালিকা থেকে মুছে ফেলবেন?') }}">{{ __('শেষ হওয়াগুলো মুছুন') }}</x-filament::button>
             </x-slot>
         @endif
+        {{-- Owner + UX review (2026-11-11): what needs you first, then what is running; each job shows its steps. --}}
+        @php($reqs = $d['requests'])
+        @php($cnt = ['ready' => $reqs->where('status', 'done')->whereNull('seen_at')->count(), 'failed' => $reqs->where('status', 'failed')->whereNull('seen_at')->count(),
+            'running' => $reqs->where('status', 'running')->count(), 'waiting' => $reqs->where('status', 'queued')->count()])
+        @if (array_sum($cnt) > 0)
+            <div class="hp-req-summary" role="status">
+                @if ($cnt['ready'])<span class="hp-req-pill hp-req-pill--ready">✓ {{ __('আপনার দেখার জন্য তৈরি') }} {{ $n($cnt['ready']) }}</span>@endif
+                @if ($cnt['failed'])<span class="hp-req-pill hp-req-pill--failed">✕ {{ __('কাজ হয়নি') }} {{ $n($cnt['failed']) }}</span>@endif
+                @if ($cnt['running'])<span class="hp-req-pill">◉ {{ __('চলছে') }} {{ $n($cnt['running']) }}</span>@endif
+                @if ($cnt['waiting'])<span class="hp-req-pill">○ {{ __('অপেক্ষায়') }} {{ $n($cnt['waiting']) }}</span>@endif
+                @if ($busy)<span class="hp-muted" style="margin-left:auto;font-size:.8rem">{{ __('শেষ দেখা') }}: {{ $n(now()->timezone('Asia/Kolkata')->format('H:i:s')) }}</span>@endif
+            </div>
+        @endif
         <div class="hp-list">
-            @forelse ($d['requests'] as $r)
-                @php($color = ['queued' => '#EFC08D', 'running' => '#2DAAE2', 'done' => '#1A86C2', 'failed' => '#CB1B32'][$r->status] ?? '#13212C')
+            @forelse ($reqs as $r)
+                @php($steps = \App\Filament\Pages\AiTeam::stepsFor($r))
+                @php($current = $r->status === 'failed' ? end($steps) : (collect($steps)->first(fn ($st) => in_array($st['state'], ['current', 'retry'], true)) ?? collect($steps)->last(fn ($st) => $st['state'] === 'done')))
+                @php($new = in_array($r->status, ['done', 'failed'], true) && ! $r->seen_at)
                 <div class="hp-row" wire:key="req-{{ $r->id }}">
-                    <span class="hp-dot" style="background:{{ $color }}"></span>
                     <div style="flex:1;min-width:0">
-                        <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
-                            <strong>{{ $r->agent ? __($agents[$r->agent][0] ?? $r->agent) : __('প্রধান সম্পাদক ঠিক করছে') }} · {{ __(\App\Ai\TeamJobs::label($r->agent, $r->job)) }}@if ($r->redo) · {{ __('আবার') }}@endif</strong>
-                            <span class="hp-muted hp-num">{{ __(['queued' => 'লাইনে অপেক্ষায়', 'running' => 'কাজ চলছে…', 'done' => 'হয়ে গেছে', 'failed' => 'কাজ হয়নি'][$r->status] ?? $r->status) }}@if ($r->attempts > 0 && $r->status !== 'done') · {{ __('চেষ্টা') }} {{ \App\Support\Bn::num(min($r->attempts + ($r->status === 'failed' ? 0 : 1), \App\Ai\TeamJobs::MAX_TRIES).'/'.\App\Ai\TeamJobs::MAX_TRIES) }}@endif · {{ $r->status === 'running' && $r->started_at ? __('শুরু').' '.$ago($r->started_at) : $ago($r->finished_at ?? $r->created_at) }}</span>
+                        <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:baseline">
+                            <strong>@if ($new)<span class="hp-req-new">{{ __('নতুন') }}</span> @endif{{ $r->agent ? __($agents[$r->agent][0] ?? $r->agent) : __('প্রধান সম্পাদক ঠিক করছে') }} · {{ __(\App\Ai\TeamJobs::label($r->agent, $r->job)) }}@if ($r->redo) · {{ __('আবার') }}@endif</strong>
+                            <span class="hp-muted hp-num" style="font-size:.85rem">{{ $ago($r->created_at) }}</span>
                         </div>
                         @if ($r->instruction && ! str_starts_with((string) $r->link, 'post:') && ! ctype_digit((string) $r->instruction))
                             <div class="hp-muted">“{{ \Illuminate\Support\Str::limit($r->instruction, 200) }}”</div>
                         @endif
-                        @if ($r->result)
-                            @if (mb_strlen($r->result) > 300)
-                                <details style="margin-top:.3rem"><summary style="cursor:pointer;font-weight:600">{{ __('দলের লেখা উত্তর দেখুন') }}</summary>
+                        <details class="hp-steps" wire:ignore.self @if (! in_array($r->status, ['done'], true) || $new) open @endif
+                            @if ($new) x-on:toggle="if ($el.open) $wire.markSeen({{ $r->id }})" @endif>
+                            <summary class="hp-steps-now"><span class="hp-step-mark hp-step-mark--{{ $current['state'] }}" aria-hidden="true"></span>
+                                <span><strong>{{ $current['label'] }}</strong>@if ($current['sub']) <span class="hp-muted">· {{ $current['sub'] }}</span>@endif</span></summary>
+                            <ol class="hp-step-list">
+                                @foreach ($steps as $st)
+                                    <li class="hp-step hp-step--{{ $st['state'] }}">
+                                        <span class="hp-step-mark hp-step-mark--{{ $st['state'] }}" aria-hidden="true"></span>
+                                        <div style="min-width:0">
+                                            <div><span class="hp-step-label">{{ $st['label'] }}</span>
+                                                <span class="sr-only">({{ __(['done' => 'হয়ে গেছে', 'current' => 'এখন চলছে', 'pending' => 'বাকি', 'skipped' => 'দরকার হয়নি', 'retry' => 'আবার চেষ্টা হবে', 'failed' => 'হয়নি'][$st['state']]) }})</span>
+                                                @if ($st['at'])<span class="hp-muted hp-num" style="font-size:.8rem"> · {{ $st['at'] }}</span>@endif</div>
+                                            @if ($st['sub'])<div class="hp-muted" style="font-size:.85rem">{{ $st['sub'] }}</div>@endif
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </details>
+                        @if ($r->result && $r->status !== 'running')
+                            @if (in_array($r->status, ['failed', 'queued'], true))
+                                <div class="hp-req-why">{{ $r->result }}</div>
+                            @elseif (mb_strlen($r->result) > 300)
+                                <details style="margin-top:.3rem" @if ($new) x-on:toggle="if ($el.open) $wire.markSeen({{ $r->id }})" @endif><summary style="cursor:pointer;font-weight:600">{{ __('দলের লেখা উত্তর দেখুন') }}</summary>
                                     <div x-data="{ copied: false }">
                                         <div x-ref="t" style="white-space:pre-wrap;line-height:1.7;margin-top:.4rem;padding:.7rem;border-radius:.6rem;background:rgba(127,127,127,.08)">{{ $r->result }}</div>
                                         <x-filament::button size="xs" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem"
@@ -181,10 +251,13 @@
                         @endif
                         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem">
                             @if ($r->status === 'done' && ($l = \App\Filament\Pages\AiTeam::resultLink($r)))
-                                <x-filament::button size="xs" tag="a" :href="$l[1]" icon="heroicon-o-arrow-top-right-on-square">{{ $l[0] }}</x-filament::button>
+                                <x-filament::button size="xs" tag="a" :href="$l[1]" icon="heroicon-o-arrow-top-right-on-square" wire:click="markSeen({{ $r->id }})">{{ $l[0] }}</x-filament::button>
                             @endif
                             @if (in_array($r->status, ['done', 'failed'], true))
                                 <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-path" wire:click="again({{ $r->id }})">{{ __('আবার করুন') }}</x-filament::button>
+                            @endif
+                            @if ($new && $r->status === 'failed')
+                                <x-filament::button size="xs" color="gray" wire:click="markSeen({{ $r->id }})">{{ __('দেখেছি') }}</x-filament::button>
                             @endif
                             @if ($r->status !== 'running' && \App\Filament\Support\Deleting::isAdmin())
                                 <x-filament::button size="xs" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteRequest({{ $r->id }})" wire:confirm="{{ $r->status === 'queued' ? __('এই কাজটি বাতিল করে মুছে ফেলবেন?') : __('এই কাজটি তালিকা থেকে মুছে ফেলবেন?') }}">{{ $r->status === 'queued' ? __('বাতিল করুন') : __('মুছুন') }}</x-filament::button>

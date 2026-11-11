@@ -60,4 +60,35 @@ class TeamRequestRetryTest extends TestCase
         $src = file_get_contents(app_path('Ai/Claude.php'));
         $this->assertStringContainsString('min(64000, $maxTokens * 3)', $src);
     }
+
+    /** Owner + UX review: each job shows its steps; what needs the owner comes first. */
+    public function test_the_page_shows_each_jobs_steps_and_new_results_first(): void
+    {
+        $admin = \App\Models\User::factory()->create(['role' => \App\Enums\Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+
+        $waiting = TeamRequest::create(['instruction' => 'একটি গল্প', 'status' => 'queued']);
+        $working = TeamRequest::create(['agent' => 'copywriter', 'instruction' => 'ভাইফোঁটার গল্প', 'status' => 'running', 'started_at' => now()->subMinutes(3)]);
+        $working->step('route', ['start' => now()->subMinutes(3)->toIso8601String(), 'end' => now()->subMinutes(3)->toIso8601String(), 'note' => 'কপিরাইটার, নিজের কথায় কাজ']);
+        $working->step('work', ['start' => now()->subMinutes(3)->toIso8601String()]);
+        $done = TeamRequest::create(['agent' => 'marketing', 'job' => 'daily', 'status' => 'done', 'result' => 'তিনটি পোস্ট তৈরি', 'finished_at' => now(),
+            'steps' => ['route' => ['skipped' => true], 'work' => ['start' => now()->subMinutes(2)->toIso8601String(), 'end' => now()->toIso8601String()]]]);
+        $failed = TeamRequest::create(['agent' => 'copywriter', 'instruction' => 'চিঠি', 'status' => 'failed', 'attempts' => 3, 'result' => TeamJobs::explain('Overloaded'), 'finished_at' => now(),
+            'steps' => ['route' => ['start' => now()->toIso8601String(), 'end' => now()->toIso8601String(), 'note' => 'কপিরাইটার'], 'work' => ['start' => now()->toIso8601String()]]]);
+
+        $this->assertSame(['done', 'skipped', 'done', 'done'], array_column(\App\Filament\Pages\AiTeam::stepsFor($done), 'state'));
+        $this->assertSame(['done', 'done', 'current', 'pending'], array_column(\App\Filament\Pages\AiTeam::stepsFor($working), 'state'));
+        $this->assertSame(['current', 'pending', 'pending', 'pending'], array_column(\App\Filament\Pages\AiTeam::stepsFor($waiting), 'state'));
+        $this->assertSame(['done', 'done', 'failed', 'failed'], array_column(\App\Filament\Pages\AiTeam::stepsFor($failed), 'state'));
+
+        $html = \Livewire\Livewire::test(\App\Filament\Pages\AiTeam::class)->html();
+        $this->assertStringContainsString('hp-req-pill--ready', $html);
+        $this->assertStringContainsString('ধরে চলছে', $html);
+        $this->assertStringContainsString('দরকার হয়নি', $html);
+        $this->assertLessThan(strpos($html, 'wire:key="req-'.$working->id.'"'), strpos($html, 'wire:key="req-'.$done->id.'"'), 'A new result comes before running work');
+
+        \Livewire\Livewire::test(\App\Filament\Pages\AiTeam::class)->call('markSeen', $done->id);
+        $this->assertNotNull($done->fresh()->seen_at);
+    }
 }

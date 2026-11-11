@@ -133,6 +133,80 @@ class AiTeam extends Page
         Notification::make()->title(__('আবার কাজ দেওয়া হয়েছে'))->success()->send();
     }
 
+    /** A finished job stays marked "new" until the owner opens it. */
+    public function markSeen(int $id): void
+    {
+        \App\Models\TeamRequest::whereKey($id)->whereIn('status', ['done', 'failed'])->whereNull('seen_at')->update(['seen_at' => now()]);
+    }
+
+    /** Agents whose work is long writing (2–10 minutes). */
+    private const LONG = ['copywriter', 'serial_mystery', 'serial_ghost', 'serial_family', 'strategist', 'analyst', 'archivist', 'editor'];
+
+    /**
+     * Owner + UX review (2026-11-11): the four steps of a job, each with its state and a short line.
+     * state: done | current | pending | skipped | retry | failed
+     *
+     * @return list<array{label: string, state: string, sub: ?string, at: ?string}>
+     */
+    public static function stepsFor(\App\Models\TeamRequest $r): array
+    {
+        $n = fn ($v) => \App\Support\Bn::num((string) $v);
+        $t = fn ($iso) => $iso ? \Illuminate\Support\Carbon::parse($iso) : null;
+        $took = function ($a, $b) use ($n) {
+            $m = (int) floor($a->diffInSeconds($b ?? now()) / 60);
+
+            return $m < 1 ? __('এক মিনিটের কম') : $n($m).' '.__('মিনিট');
+        };
+        $clock = fn ($c) => $c ? $n($c->copy()->timezone('Asia/Kolkata')->format('H:i')) : null;
+        $s = $r->steps ?? [];
+        $phase = $r->phase();
+        $member = $r->agent ? __(Team::AGENTS[$r->agent][0] ?? $r->agent) : __('দলের সদস্য');
+
+        // 1. Received
+        $steps = [[
+            'label' => __('পেয়েছি'),
+            'state' => $phase === 'waiting' ? 'current' : 'done',
+            'sub' => $phase === 'waiting' ? __('শুরু হবে এক মিনিটের মধ্যে').' · '.__('অপেক্ষায়').' '.$took($r->created_at, null) : null,
+            'at' => $clock($r->created_at),
+        ]];
+
+        // 2. Who does it (only for a request in the owner's own words)
+        $route = $s['route'] ?? [];
+        $routeFailed = $phase === 'failed' && isset($route['start']) && ! isset($route['end']) && ! ($route['skipped'] ?? false);
+        $steps[] = match (true) {
+            ($route['skipped'] ?? false) || ($r->job && ! isset($route['start'])) => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'skipped', 'sub' => __('দরকার হয়নি'), 'at' => null],
+            isset($route['end']) => ['label' => __('কে করবে ঠিক হল'), 'state' => 'done', 'sub' => __('ঠিক হল').': '.$route['note'], 'at' => $clock($t($route['end']))],
+            $routeFailed => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'failed', 'sub' => null, 'at' => $clock($t($route['start']))],
+            isset($route['start']) && $phase === 'route' => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'current', 'sub' => __('প্রধান সম্পাদক দেখছে কোন সদস্য করবে'), 'at' => $clock($t($route['start']))],
+            default => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'pending', 'sub' => null, 'at' => null],
+        };
+
+        // 3. The member at work
+        $work = $s['work'] ?? [];
+        $start = $t($work['start'] ?? null);
+        $label = $member.' '.__('কাজ করছে');
+        $steps[] = match (true) {
+            $phase === 'ready' => ['label' => $member.' '.__('কাজ করেছে'), 'state' => 'done', 'sub' => $start ? $took($start, $t($work['end'] ?? null) ?? $r->finished_at).' '.__('লেগেছে') : null, 'at' => $clock($t($work['end'] ?? null) ?? $r->finished_at)],
+            $phase === 'retry' => ['label' => $label, 'state' => 'retry', 'sub' => __('আবার চেষ্টা').' ('.$n(($r->attempts + 1).'/'.\App\Ai\TeamJobs::MAX_TRIES).'), '.__('এক মিনিটের মধ্যে'), 'at' => null],
+            $phase === 'failed' && $start !== null => ['label' => $member.' '.__('কাজ শেষ করতে পারেনি'), 'state' => 'failed', 'sub' => null, 'at' => $clock($start)],
+            $phase === 'work' => ['label' => $label, 'state' => 'current',
+                'sub' => $took($start, null).' '.__('ধরে চলছে')
+                    .($start && $start->diffInMinutes(now()) > 12 ? ' · '.__('স্বাভাবিকের চেয়ে বেশি সময় লাগছে; চাইলে অপেক্ষা করুন')
+                        : (in_array($r->agent, self::LONG, true) ? ' · '.__('লম্বা লেখায় সাধারণত ২–১০ মিনিট লাগে') : '')),
+                'at' => $clock($start)],
+            default => ['label' => $label, 'state' => 'pending', 'sub' => null, 'at' => null],
+        };
+
+        // 4. Ready for you (or could not be done)
+        $steps[] = match ($phase) {
+            'ready' => ['label' => __('তৈরি, আপনি দেখুন'), 'state' => 'done', 'sub' => __('প্রকাশ হয়নি; প্রকাশ বা পাঠানো আপনার হাতে'), 'at' => $clock($r->finished_at)],
+            'failed' => ['label' => __('হল না'), 'state' => 'failed', 'sub' => null, 'at' => $clock($r->finished_at)],
+            default => ['label' => __('তৈরি, আপনি দেখুন'), 'state' => 'pending', 'sub' => null, 'at' => null],
+        };
+
+        return $steps;
+    }
+
     /** Remove a finished or failed request from the list (owner, 2026-11-09). A queued one is cancelled the same way. */
     public function deleteRequest(int $id): void
     {
@@ -282,7 +356,11 @@ class AiTeam extends Page
             'strategy' => \App\Ai\Strategist::current(),
             'strategyPending' => Setting::get('strategy.requested') !== null,
             'feed' => self::feed(),
-            'requests' => \App\Models\TeamRequest::latest('id')->limit(15)->get(),
+            // Needs you first (new results), then failed, running, waiting, and older finished work (UX review).
+            'requests' => \App\Models\TeamRequest::latest('id')->limit(20)->get()->sortBy(fn ($r) => [match (true) {
+                $r->status === 'done' && ! $r->seen_at => 0, $r->status === 'failed' && ! $r->seen_at => 1, $r->status === 'running' => 2,
+                $r->status === 'queued' => 3, default => 4,
+            }, -$r->id])->values(),
             'alerts' => EditorTask::where('type', 'alert')->where('status', 'open')->latest()->get(),
             'enabled' => (bool) config('ai.enabled'),
             'teamPaused' => AiSwitch::paused(),

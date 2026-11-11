@@ -235,3 +235,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Newsletter deliverability: the List-Unsubscribe one-click (POST, RFC 8058) now really works (was GET-only, which Gmail counts against the sender)
 - [x] App icon badge: the number of waiting notifications shows on the home-screen icon; opening the app clears it
 - [x] AI team requests: cut-off answers retried with 3× room; passing failures retried by themselves (3 tries); clear status (waiting/working/done/failed, try n/3, started X ago); errors in plain words with what to do; phone notification when done or failed
+- [x] D130: AI team jobs show their steps (received → who → working → ready), auto-retry, plain errors, phone notice

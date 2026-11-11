@@ -160,6 +160,10 @@ final class TeamJobs
 
     public static function run(TeamRequest $r): void
     {
+        if ($r->job) {   // a fixed job: nobody needs to decide who does it
+            $r->step('route', ['skipped' => true]);
+            $r->step('work', ['start' => now()->toIso8601String(), 'end' => null, 'note' => null]);
+        }
         try {
             [$ok, $result] = $r->job ? self::perform($r->agent, $r->job, $r->redo, $r) : self::freeForm($r);
         } catch (\Throwable $e) {
@@ -174,6 +178,9 @@ final class TeamJobs
             \App\Models\AuditLog::record('team.request.retry', null, ['request' => $r->id, 'attempt' => $attempts, 'why' => mb_substr((string) $result, 0, 200)]);
 
             return;
+        }
+        if (isset(($r->steps ?? [])['work']['start'])) {
+            $r->step('work', ['end' => now()->toIso8601String()]);
         }
         $r->forceFill(['status' => $ok ? 'done' : 'failed', 'attempts' => $attempts, 'finished_at' => now(),
             'result' => mb_substr($ok ? (string) $result : self::explain((string) $result), 0, 20000)])->save();
@@ -338,6 +345,7 @@ final class TeamJobs
             return [false, 'এখন করা গেল না: '.$why];
         }
         $agents = $r->agent ? [$r->agent => self::JOBS[$r->agent] ?? []] : self::JOBS;
+        $r->step('route', ['start' => now()->toIso8601String(), 'end' => null, 'skipped' => false]);
         $menu = collect($agents)->flatMap(fn ($jobs, $a) => collect($jobs)->map(fn ($j, $k) => "{$a}.{$k}: ".self::english($a, $k).($j[1] ? ' (needs '.$j[1].')' : '')))->implode("\n");
         $members = collect(Team::AGENTS)->only(array_keys($agents ?: Team::AGENTS))->map(fn ($m, $k) => "{$k}: ".$m[1])->implode("\n");
         [$d, $err] = Claude::json('chief',
@@ -356,6 +364,8 @@ final class TeamJobs
         $agent = (string) $d['agent'];
         $job = (string) $d['job'];
         $r->forceFill(['agent' => $agent])->save();
+        $r->step('route', ['end' => now()->toIso8601String(), 'note' => (Team::AGENTS[$agent][0] ?? $agent).(isset(self::JOBS[$agent][$job]) ? ', '.self::JOBS[$agent][$job][0] : ', নিজের কথায় কাজ')]);
+        $r->step('work', ['start' => now()->toIso8601String(), 'end' => null]);
         if ($job !== 'answer' && isset(self::JOBS[$agent][$job])) {
             $r->forceFill(['job' => $job, 'instruction' => self::JOBS[$agent][$job][1] === 'post' ? (string) $d['post'] : ((string) $d['topic'] ?: $r->instruction)])->save();
             [$ok, $msg] = self::perform($agent, $job, $r->redo, $r);
