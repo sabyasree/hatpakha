@@ -236,3 +236,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] App icon badge: the number of waiting notifications shows on the home-screen icon; opening the app clears it
 - [x] AI team requests: cut-off answers retried with 3× room; passing failures retried by themselves (3 tries); clear status (waiting/working/done/failed, try n/3, started X ago); errors in plain words with what to do; phone notification when done or failed
 - [x] D130: AI team jobs show their steps (received → who → working → ready), auto-retry, plain errors, phone notice
+- [x] D131: "write a story…" requests become a complete draft post (section, tags, SEO, cover request), opened from the request

@@ -91,4 +91,40 @@ class TeamRequestRetryTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\AiTeam::class)->call('markSeen', $done->id);
         $this->assertNotNull($done->fresh()->seen_at);
     }
+
+    /** Owner (2026-11-11): "why ready to copy? It should be a draft post, with all details right." */
+    public function test_a_piece_asked_for_in_words_becomes_a_complete_draft_post(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'sk-test']);
+        \App\Models\Author::firstOrCreate(['slug' => 'hatpakha-desk'], ['display_name' => 'হাতপাখা ডেস্ক', 'is_desk' => true]);
+        $stories = \App\Models\Section::firstOrCreate(['slug' => 'short-stories'], ['name_bn' => 'গল্প', 'format' => 'prose', 'is_active' => true]);
+        \App\Models\Section::firstOrCreate(['slug' => 'poetry'], ['name_bn' => 'কবিতা', 'format' => 'poem', 'is_active' => true]);
+        $tag = \App\Models\Tag::create(['name' => 'ভাইফোঁটা', 'slug' => 'bhaiphota']);
+        Claude::$fake = fn (string $purpose, string $user, array $schema) => match ($purpose) {
+            'chief' => ['agent' => 'copywriter', 'job' => 'piece', 'post' => '', 'topic' => 'ভাইফোঁটা নিয়ে একটি গল্প, আজই প্রকাশ, সঙ্গে সোশ্যাল মিডিয়ার পোস্ট'],
+            default => ['form' => 'story', 'section' => 'short-stories', 'title' => 'ফোঁটার দিন', 'excerpt' => 'এক বোনের অপেক্ষা।',
+                'paragraphs' => ['সকাল থেকে উঠোনে আলো।', 'চন্দনের বাটি হাতে বসে আছে মিনু।'], 'tags' => ['ভাইফোঁটা', 'বানানো-ট্যাগ'],
+                'seo_title' => 'ফোঁটার দিন — ভাইফোঁটার গল্প', 'seo_description' => 'ভাইফোঁটার সকালে এক বোনের অপেক্ষার গল্প।', 'keyphrase' => 'ভাইফোঁটার গল্প',
+                'facts_to_check' => [], 'photo_ideas' => ['চন্দনের বাটি']],
+        };
+        $r = TeamRequest::create(['instruction' => 'We need to write a story on bhai-phota. And publish today. Also, need post to post in social media.', 'status' => 'queued']);
+        TeamJobs::runQueued();
+        $r->refresh();
+
+        $this->assertSame('done', $r->status, (string) $r->result);
+        $this->assertSame('piece', $r->job);
+        $this->assertStringStartsWith('post:', (string) $r->link, 'The result opens the draft');
+        $post = \App\Models\Post::findOrFail((int) substr($r->link, 5));
+        $this->assertSame('draft', $post->status, 'Never published by the team (D42)');
+        $this->assertSame($stories->id, $post->section_id);
+        $this->assertSame('ফোঁটার দিন', $post->title);
+        $this->assertSame('এক বোনের অপেক্ষা।', $post->excerpt);
+        $this->assertStringContainsString('চন্দনের বাটি', $post->body_html);
+        $this->assertSame('ভাইফোঁটার গল্প', $post->seo_keyphrase);
+        $this->assertNotNull($post->seo_description);
+        $this->assertSame([$tag->id], $post->tags()->pluck('tags.id')->all(), 'Only tags the site already has');
+        $this->assertSame('hatpakha-desk', $post->authors()->first()->slug);
+        $this->assertNotNull($post->ai_drafted_at);
+        $this->assertSame(['done', 'done', 'done', 'done'], array_column(\App\Filament\Pages\AiTeam::stepsFor($r), 'state'));
+    }
 }
