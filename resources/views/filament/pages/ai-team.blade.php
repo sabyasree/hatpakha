@@ -55,6 +55,14 @@
         .hp-step-mark--retry::after { content: '↻'; }
         .hp-step-mark--failed { background: #CB1B32; color: #fff; }
         .hp-step-mark--failed::after { content: '✕'; }
+        .hp-step-mark--ask { background: #CB1B32; color: #fff; }
+        .hp-step-mark--ask::after { content: '?'; }
+        .hp-step--ask .hp-step-label { font-weight: 700; }
+        .hp-talk { margin-top: .4rem; display: grid; gap: .3rem; font-size: .92rem; }
+        .hp-talk-chief { padding: .45rem .65rem; border-radius: .6rem; background: rgba(239,192,141,.22); }
+        .hp-talk-owner { padding: .45rem .65rem; border-radius: .6rem; background: rgba(45,170,226,.12); justify-self: end; max-width: 90%; }
+        .hp-talk-reply { margin-top: .5rem; padding: .6rem; border: 2px solid #CB1B32; border-radius: .7rem; }
+        .hp-talk-input { flex: 1; min-width: 0; border: 1px solid rgba(127,127,127,.4); border-radius: .5rem; padding: .35rem .6rem; background: transparent; }
         .dark .hp-step-mark--done { background: #FFFBF4; color: #13212C; }
         .dark .hp-step-mark--pending, .dark .hp-step-mark--skipped { border-color: rgba(255,251,244,.45); }
         .hp-step--current .hp-step-label { font-weight: 700; }
@@ -214,10 +222,11 @@
         @endif
         {{-- Owner + UX review (2026-11-11): what needs you first, then what is running; each job shows its steps. --}}
         @php($reqs = $d['requests'])
-        @php($cnt = ['ready' => $reqs->where('status', 'done')->whereNull('seen_at')->count(), 'failed' => $reqs->where('status', 'failed')->whereNull('seen_at')->count(),
+        @php($cnt = ['ask' => $reqs->where('status', 'asking')->count(), 'ready' => $reqs->where('status', 'done')->whereNull('seen_at')->count(), 'failed' => $reqs->where('status', 'failed')->whereNull('seen_at')->count(),
             'running' => $reqs->where('status', 'running')->count(), 'waiting' => $reqs->where('status', 'queued')->count()])
         @if (array_sum($cnt) > 0)
             <div class="hp-req-summary" role="status">
+                @if ($cnt['ask'])<span class="hp-req-pill hp-req-pill--failed">? {{ __('আপনার উত্তর চাই') }} {{ $n($cnt['ask']) }}</span>@endif
                 @if ($cnt['ready'])<span class="hp-req-pill hp-req-pill--ready">✓ {{ __('আপনার দেখার জন্য তৈরি') }} {{ $n($cnt['ready']) }}</span>@endif
                 @if ($cnt['failed'])<span class="hp-req-pill hp-req-pill--failed">✕ {{ __('কাজ হয়নি') }} {{ $n($cnt['failed']) }}</span>@endif
                 @if ($cnt['running'])<span class="hp-req-pill">◉ {{ __('চলছে') }} {{ $n($cnt['running']) }}</span>@endif
@@ -228,7 +237,7 @@
         <div class="hp-list">
             @forelse ($reqs as $r)
                 @php($steps = \App\Filament\Pages\AiTeam::stepsFor($r))
-                @php($current = $r->status === 'failed' ? end($steps) : (collect($steps)->first(fn ($st) => in_array($st['state'], ['current', 'retry'], true)) ?? collect($steps)->last(fn ($st) => $st['state'] === 'done')))
+                @php($current = $r->status === 'failed' ? end($steps) : (collect($steps)->first(fn ($st) => in_array($st['state'], ['current', 'retry', 'ask'], true)) ?? collect($steps)->last(fn ($st) => $st['state'] === 'done')))
                 @php($new = in_array($r->status, ['done', 'failed'], true) && ! $r->seen_at)
                 <div class="hp-row" wire:key="req-{{ $r->id }}">
                     <div style="flex:1;min-width:0">
@@ -249,7 +258,7 @@
                                         <span class="hp-step-mark hp-step-mark--{{ $st['state'] }}" aria-hidden="true"></span>
                                         <div style="min-width:0">
                                             <div><span class="hp-step-label">{{ $st['label'] }}</span>
-                                                <span class="sr-only">({{ __(['done' => 'হয়ে গেছে', 'current' => 'এখন চলছে', 'pending' => 'বাকি', 'skipped' => 'দরকার হয়নি', 'retry' => 'আবার চেষ্টা হবে', 'failed' => 'হয়নি'][$st['state']]) }})</span>
+                                                <span class="sr-only">({{ __(['done' => 'হয়ে গেছে', 'current' => 'এখন চলছে', 'pending' => 'বাকি', 'skipped' => 'দরকার হয়নি', 'retry' => 'আবার চেষ্টা হবে', 'failed' => 'হয়নি', 'ask' => 'আপনার উত্তর চাই'][$st['state']]) }})</span>
                                                 @if ($st['at'])<span class="hp-muted hp-num" style="font-size:.8rem"> · {{ $st['at'] }}</span>@endif</div>
                                             @if ($st['sub'])<div class="hp-muted" style="font-size:.85rem">{{ $st['sub'] }}</div>@endif
                                         </div>
@@ -257,6 +266,30 @@
                                 @endforeach
                             </ol>
                         </details>
+                        @if ($r->conversation)
+                            {{-- The conversation so far: the editor-in-chief's questions and the owner's replies --}}
+                            <div class="hp-talk">
+                                @foreach ($r->conversation as $c)
+                                    <div class="hp-talk-{{ $c['who'] === 'chief' ? 'chief' : 'owner' }}"><b>{{ $c['who'] === 'chief' ? __('প্রধান সম্পাদক') : __('আপনি') }}:</b> {{ $c['text'] }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if ($q = $r->question())
+                            <div class="hp-talk-reply" x-data="{ reply: '' }" wire:ignore>
+                                @if (! empty($q['options']))
+                                    <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+                                        @foreach ($q['options'] as $o)
+                                            <x-filament::button size="sm" color="gray" wire:click="replyRequest({{ $r->id }}, {{ \Illuminate\Support\Js::from($o) }})">{{ $o }}</x-filament::button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                <div style="display:flex;gap:.4rem;margin-top:.5rem">
+                                    <input type="text" x-model="reply" maxlength="1000" placeholder="{{ __('বা নিজের কথায় উত্তর লিখুন…') }}" class="hp-talk-input"
+                                        x-on:keydown.enter.prevent="if (reply.trim()) { $wire.replyRequest({{ $r->id }}, reply); reply = '' }">
+                                    <x-filament::button size="sm" x-on:click="if (reply.trim()) { $wire.replyRequest({{ $r->id }}, reply); reply = '' }">{{ __('পাঠান') }}</x-filament::button>
+                                </div>
+                            </div>
+                        @endif
                         @if ($r->result && $r->status !== 'running')
                             @if (in_array($r->status, ['failed', 'queued'], true))
                                 <div class="hp-req-why">{{ $r->result }}</div>

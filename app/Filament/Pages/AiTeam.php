@@ -133,6 +133,17 @@ class AiTeam extends Page
         Notification::make()->title(__('আবার কাজ দেওয়া হয়েছে'))->success()->send();
     }
 
+    /** The owner answers the editor-in-chief's question (owner, 2026-11-11: giving work is a conversation). */
+    public function replyRequest(int $id, string $text): void
+    {
+        $r = \App\Models\TeamRequest::findOrFail($id);
+        if ($r->status !== 'asking' || trim($text) === '') {
+            return;
+        }
+        \App\Ai\TeamJobs::reply($r, $text);
+        Notification::make()->title(__('উত্তর পাঠানো হল; প্রধান সম্পাদক এক মিনিটের মধ্যে আবার দেখবে'))->success()->send();
+    }
+
     /** A finished job stays marked "new" until the owner opens it. */
     public function markSeen(int $id): void
     {
@@ -175,6 +186,7 @@ class AiTeam extends Page
         $routeFailed = $phase === 'failed' && isset($route['start']) && ! isset($route['end']) && ! ($route['skipped'] ?? false);
         $steps[] = match (true) {
             ($route['skipped'] ?? false) || ($r->job && ! isset($route['start'])) => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'skipped', 'sub' => __('দরকার হয়নি'), 'at' => null],
+            $phase === 'asking' => ['label' => __('প্রধান সম্পাদকের একটি প্রশ্ন'), 'state' => 'ask', 'sub' => __('আপনার উত্তরের অপেক্ষায়'), 'at' => null],
             isset($route['end']) => ['label' => __('কে করবে ঠিক হল'), 'state' => 'done', 'sub' => (filled($route['why'] ?? null) ? $route['why'].' · ' : '').__('ঠিক হল').': '.$route['note'], 'at' => $clock($t($route['end']))],
             $routeFailed => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'failed', 'sub' => null, 'at' => $clock($t($route['start']))],
             isset($route['start']) && $phase === 'route' => ['label' => __('কে করবে ঠিক হচ্ছে'), 'state' => 'current', 'sub' => __('প্রধান সম্পাদক দেখছে কোন সদস্য করবে'), 'at' => $clock($t($route['start']))],
@@ -406,7 +418,7 @@ class AiTeam extends Page
             'feed' => self::feed(),
             // Needs you first (new results), then failed, running, waiting, and older finished work (UX review).
             'requests' => \App\Models\TeamRequest::latest('id')->limit(20)->get()->sortBy(fn ($r) => [match (true) {
-                $r->status === 'done' && ! $r->seen_at => 0, $r->status === 'failed' && ! $r->seen_at => 1, $r->status === 'running' => 2,
+                $r->status === 'asking' => -1, $r->status === 'done' && ! $r->seen_at => 0, $r->status === 'failed' && ! $r->seen_at => 1, $r->status === 'running' => 2,
                 $r->status === 'queued' => 3, default => 4,
             }, -$r->id])->values(),
             'alerts' => EditorTask::where('type', 'alert')->where('status', 'open')->latest()->get(),

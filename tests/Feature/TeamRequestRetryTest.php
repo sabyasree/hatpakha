@@ -223,4 +223,41 @@ class TeamRequestRetryTest extends TestCase
         $this->assertContains(__('মার্কেটিং'), array_column(\App\Filament\Pages\AiTeam::resultLinks($r), 0));
         @unlink(public_path(ltrim($poster->texts['image'], '/')));
     }
+
+    /** Owner (2026-11-11): "it should be like chat: if the editor is unsure, it asks me back, and I reply". */
+    public function test_the_editor_in_chief_asks_back_and_plans_after_the_reply(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'sk-test']);
+        $admin = \App\Models\User::factory()->create(['role' => \App\Enums\Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $seen = [];
+        Claude::$fake = function (string $purpose, string $user) use (&$seen) {
+            $seen[] = $user;
+            if ($purpose !== 'chief') {
+                return ['facebook' => 'শুভেচ্ছা', 'whatsapp' => 'শুভেচ্ছা', 'instagram' => '#ভাইফোঁটা'];
+            }
+
+            return str_contains($user, 'Owner replied')
+                ? ['why' => 'শুভেচ্ছার পোস্ট পাবেন।', 'question' => '', 'options' => [], 'steps' => [['agent' => 'marketing', 'job' => 'custom', 'post' => '', 'topic' => 'ভাইফোঁটার শুভেচ্ছা']]]
+                : ['why' => '', 'question' => 'গল্প চান, না শুধু শুভেচ্ছার পোস্ট?', 'options' => ['গল্প', 'শুধু শুভেচ্ছার পোস্ট'], 'steps' => []];
+        };
+        $r = TeamRequest::create(['instruction' => 'ভাইফোঁটা নিয়ে কিছু করো', 'status' => 'queued', 'requested_by' => $admin->id]);
+        TeamJobs::runQueued();
+        $r->refresh();
+        $this->assertSame('asking', $r->status);
+        $this->assertSame('গল্প চান, না শুধু শুভেচ্ছার পোস্ট?', $r->question()['text']);
+        $this->assertSame(0, TeamJobs::runQueued(), 'A question waits for the owner; nothing runs');
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\AiTeam::class)->assertSee('গল্প চান, না শুধু শুভেচ্ছার পোস্ট?')->assertSee('শুধু শুভেচ্ছার পোস্ট');
+        $this->assertSame('ask', \App\Filament\Pages\AiTeam::stepsFor($r)[1]['state']);
+
+        $page->call('replyRequest', $r->id, 'শুধু শুভেচ্ছার পোস্ট');
+        $this->assertSame('queued', $r->fresh()->status);
+        TeamJobs::runQueued();
+        $r->refresh();
+        $this->assertSame('done', $r->status, (string) $r->result);
+        $this->assertStringContainsString('Owner replied: শুধু শুভেচ্ছার পোস্ট', end($seen) === null ? '' : collect($seen)->first(fn ($u) => str_contains($u, 'Owner replied')));
+        $this->assertSame(['chief', 'owner'], array_column($r->conversation, 'who'));
+        $this->assertTrue(\App\Models\SocialPost::where('kind', 'custom')->where('title', 'ভাইফোঁটার শুভেচ্ছা')->exists());
+    }
 }

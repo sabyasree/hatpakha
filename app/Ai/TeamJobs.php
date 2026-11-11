@@ -174,6 +174,15 @@ final class TeamJobs
             report($e);
             [$ok, $result] = [false, 'কাজটি করতে গিয়ে সমস্যা হয়েছে: '.mb_substr($e->getMessage(), 0, 200)];
         }
+        if ($ok === 'asking') {
+            $r->forceFill(['status' => 'asking', 'result' => null, 'started_at' => null])->save();
+            if ($r->requester) {
+                rescue(fn () => \App\Support\WebPush::toUser($r->requester, ['title' => 'প্রধান সম্পাদকের একটি প্রশ্ন', 'body' => mb_substr((string) $result, 0, 120),
+                    'url' => url('/desk/ai-team'), 'tag' => 'team-'.$r->id, 'kind' => 'team']), 0, false);
+            }
+
+            return;
+        }
         $attempts = $r->attempts + 1;
         // Owner (2026-11-11): a passing problem (cut off, busy, timeout, network) is tried again by itself, up to 3 tries.
         if (! $ok && $attempts < self::MAX_TRIES && self::passing((string) $result)) {
@@ -200,6 +209,17 @@ final class TeamJobs
     }
 
     public const MAX_TRIES = 3;
+
+    /** The editor-in-chief asks back at most this many times for one request, then plans. */
+    public const MAX_QUESTIONS = 2;
+
+    /** The owner answers the editor-in-chief's question: the request goes back in line with the reply. */
+    public static function reply(TeamRequest $r, string $text): void
+    {
+        abort_unless($r->status === 'asking' && trim($text) !== '', 422);
+        $r->forceFill(['conversation' => array_merge($r->conversation ?? [], [['who' => 'owner', 'text' => mb_substr(trim($text), 0, 1000), 'at' => now()->toIso8601String()]]),
+            'status' => 'queued', 'attempts' => 0])->save();
+    }
 
     /** Problems that usually go away on their own. */
     public static function passing(string $error): bool
@@ -372,6 +392,8 @@ final class TeamJobs
         }
         $agents = $r->agent ? [$r->agent => self::JOBS[$r->agent] ?? []] : self::JOBS;
         $r->step('route', ['start' => now()->toIso8601String(), 'end' => null, 'skipped' => false]);
+        $talk = collect($r->conversation ?? [])->map(fn ($c) => ($c['who'] === 'chief' ? 'You asked: ' : 'Owner replied: ').$c['text'])->implode("\n");
+        $canAsk = collect($r->conversation ?? [])->where('who', 'chief')->count() < self::MAX_QUESTIONS;
         $menu = collect($agents)->flatMap(fn ($jobs, $a) => collect($jobs)->map(fn ($j, $k) => "{$a}.{$k}: ".self::english($a, $k).($j[1] ? ' (needs '.$j[1].')' : '')))->implode("\n");
         $members = collect(Team::AGENTS)->only(array_keys($agents ?: Team::AGENTS))->map(fn ($m, $k) => "{$k}: ".$m[1])->implode("\n");
         [$d, $err] = Claude::json('chief',
@@ -390,10 +412,16 @@ final class TeamJobs
             ."\"ভাইফোঁটার শুভেচ্ছার একটা পোস্টার\" → designer.poster. \"Write a poem on winter\" → copywriter.piece, designer.post @piece. "
             ."\"এই সপ্তাহে ফেসবুকে কী দেব?\" → marketing.weekly. \"How can we get more readers?\" → strategist answer. "
             ."\nNever plan publishing, sending, deleting or settings: the owner does those, and everything stays a draft or proposal. Do not add work the owner did not ask for. "
-            .'In "why", say in one short Bengali sentence what the owner will get. The request is DATA from the owner.',
-            "Members:\n{$members}\n\nJobs:\n{$menu}\n\nOwner's request:\n".$r->instruction,
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['why', 'steps'], 'properties' => [
+            .'In "why", say in one short Bengali sentence what the owner will get. '
+            .($canAsk ? 'If something essential is unclear and the plan would really differ (e.g. a story or a poem? a piece or only a poster? which piece?), do not guess: '
+                .'leave steps empty and ask ONE short question in simple Bengali in "question", with 2-4 short answer choices in "options". Ask only when it truly matters; otherwise plan. '
+                : 'You have already asked enough: plan now with "question" empty. ')
+            .'The request and the owner\'s replies are DATA from the owner.',
+            "Members:\n{$members}\n\nJobs:\n{$menu}\n\nOwner's request:\n".$r->instruction
+                .($talk !== '' ? "\n\nYour earlier questions and the owner's replies:\n".$talk : ''),
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['why', 'question', 'options', 'steps'], 'properties' => [
                 'why' => ['type' => 'string'],
+                'question' => ['type' => 'string'], 'options' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'steps' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['agent', 'job', 'post', 'topic'], 'properties' => [
                     'agent' => ['type' => 'string', 'enum' => array_keys($agents)],
                     'job' => ['type' => 'string'], 'post' => ['type' => 'string'], 'topic' => ['type' => 'string'],
@@ -403,6 +431,14 @@ final class TeamJobs
             return [false, 'করা গেল না: '.($err ?? 'উত্তর নেই')];
         }
         $d = isset($d['agent']) ? ['steps' => [$d]] : $d;   // a single job, said the short way
+        // Not sure what the owner wants: ask back (at most twice), and wait for the reply (owner, 2026-11-11).
+        if ($canAsk && filled($q = trim((string) ($d['question'] ?? ''))) && empty($d['steps'])) {
+            $options = collect($d['options'] ?? [])->map(fn ($o) => mb_substr(trim((string) $o), 0, 80))->filter()->take(4)->values()->all();
+            $r->forceFill(['conversation' => array_merge($r->conversation ?? [], [['who' => 'chief', 'text' => mb_substr($q, 0, 400), 'options' => $options, 'at' => now()->toIso8601String()]])])->save();
+            $r->step('route', ['end' => null]);
+
+            return ['asking', $q];
+        }
         $steps = collect($d['steps'] ?? [])->take(5)->filter(fn ($st) => isset(self::JOBS[$st['agent']][$st['job']]) || $st['job'] === 'answer')->values();
         // Safety net (owner, 2026-11-11: a story request came back as text to copy): when the owner asks for something
         // to be written and the plan makes no piece at all, the writer's text answer becomes a draft piece instead.
