@@ -109,3 +109,15 @@ About 1,720 people × (4 readers' letters + 1 writers' letter) ≈ 8,600 e-mails
 
 ## If the privacy page was edited in /desk
 The update to the privacy policy (counted links; Amazon SES delivers the letters) is applied automatically only if the page was never edited in /desk. If it was, add these two points by hand in /desk → পাতা → গোপনীয়তা নীতি.
+
+
+## Brevo as a second road (D129)
+Both Amazon SES (`MAIL_BULK_*`) and Brevo (`MAIL_BREVO_*`) can be set up in the production ENV_FILE at the same time:
+```
+MAIL_BREVO_HOST=smtp-relay.brevo.com
+MAIL_BREVO_PORT=587
+MAIL_BREVO_USERNAME=<Brevo → SMTP & API → SMTP: Login>
+MAIL_BREVO_PASSWORD=<an SMTP key made there>
+MAIL_BREVO_DAILY_LIMIT=290
+```
+Choose the road in /desk → চিঠি → **পাঠানোর পথ** (admins). Each road's daily limit is counted separately. In Brevo, authenticate the domain hatpakha.com (brevo-code TXT and the two DKIM CNAMEs in Cloudflare, DNS only; don't add a second DMARC) and add editor@hatpakha.com as a sender.

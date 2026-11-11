@@ -1549,5 +1549,16 @@
     "কপি করুন": "Duplicate",
     "এই চিঠির একটি কপি?": "Make a copy of this letter?",
     "একই লেখা, লেখার তালিকা আর প্রাপক নিয়ে একটি নতুন খসড়া হবে। এটি যেমন আছে তেমনই থাকবে।": "A new draft with the same words, pieces and recipients. This letter stays as it is.",
-    "কপি তৈরি হয়েছে; এখন এটি খসড়া": "Copy made; it is a draft now"
+    "কপি তৈরি হয়েছে; এখন এটি খসড়া": "Copy made; it is a draft now",
+    "দিনে": "Up to",
+    "টি পর্যন্ত; আজ আর": "a day; today",
+    "টি যেতে পারে": "more can go",
+    "দিনের কোনো সীমা রাখা নেই": "No daily limit set",
+    "পাঠানোর পথ": "Sending through",
+    "চিঠি কোন পথে যাবে": "Which service sends the letters",
+    "পাঠকদের চিঠি, ধারাবাহিক আর অনুসরণ করা লেখকের খবর এই পথে যায়। অ্যাকাউন্টের ই-মেল (যাচাই, পাসওয়ার্ড) আগের মতো Hostinger দিয়েই যায়। বদলালে পরের চিঠি থেকেই নতুন পথে যাবে, চলতি চিঠিও।": "Newsletters, serial and followed-writer notices go this way. Account e-mails (verification, password) still go through Hostinger. A change applies from the next letter on, including a letter being sent now.",
+    "পথ": "Service",
+    "এখন থেকে চিঠি যাবে": "From now on, letters go through",
+    "দিয়ে": " ",
+    "দিয়ে যাচ্ছে": "is sending"
 }

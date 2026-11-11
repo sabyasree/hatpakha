@@ -110,4 +110,35 @@ class NewsletterResource extends Resource
     {
         return ['index' => ListNewsletters::route('/'), 'create' => CreateNewsletter::route('/create'), 'edit' => EditNewsletter::route('/{record}/edit')];
     }
+
+    /** D129: the owner picks the road for letters: Amazon SES or Brevo (both set up in ENV_FILE). Admins only. */
+    public static function providerAction(): \Filament\Actions\Action
+    {
+        $describe = function (string $p) {
+            $left = \App\Support\BulkMail::remainingToday($p);
+            $limit = \App\Support\BulkMail::limit($p);
+
+            return $limit > 0
+                ? __('দিনে').' '.\App\Support\Bn::num((string) $limit).' '.__('টি পর্যন্ত; আজ আর').' '.\App\Support\Bn::num((string) $left).' '.__('টি যেতে পারে')
+                : __('দিনের কোনো সীমা রাখা নেই');
+        };
+
+        return \Filament\Actions\Action::make('provider')
+            ->label(fn () => __('পাঠানোর পথ').': '.\App\Support\BulkMail::label())
+            ->icon('heroicon-o-arrows-right-left')->color('gray')
+            ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) && \App\Support\BulkMail::available() !== [])
+            ->modalHeading(__('চিঠি কোন পথে যাবে'))
+            ->modalDescription(__('পাঠকদের চিঠি, ধারাবাহিক আর অনুসরণ করা লেখকের খবর এই পথে যায়। অ্যাকাউন্টের ই-মেল (যাচাই, পাসওয়ার্ড) আগের মতো Hostinger দিয়েই যায়। বদলালে পরের চিঠি থেকেই নতুন পথে যাবে, চলতি চিঠিও।'))
+            ->schema([
+                \Filament\Forms\Components\Radio::make('provider')->label(__('পথ'))->required()
+                    ->default(fn () => \App\Support\BulkMail::provider())
+                    ->options(fn () => collect(\App\Support\BulkMail::available())->mapWithKeys(fn ($p) => [$p => \App\Support\BulkMail::label($p)])->all())
+                    ->descriptions(fn () => collect(\App\Support\BulkMail::available())->mapWithKeys(fn ($p) => [$p => $describe($p)])->all()),
+            ])
+            ->modalSubmitActionLabel(__('রাখুন'))
+            ->action(function (array $data) {
+                \App\Support\BulkMail::choose($data['provider'], auth()->id());
+                \Filament\Notifications\Notification::make()->title(__('এখন থেকে চিঠি যাবে').' '.\App\Support\BulkMail::label($data['provider']).' '.__('দিয়ে'))->success()->send();
+            });
+    }
 }
