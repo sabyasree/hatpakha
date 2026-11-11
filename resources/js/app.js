@@ -94,7 +94,10 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
                 if (c) c.textContent = d.count ? new Intl.NumberFormat('bn-BD').format(d.count) : '';
             } else {
                 btn.textContent = d.on ? btn.dataset.on : btn.dataset.off;
-                if (kind === 'save') { btn.classList.toggle('bg-navy', d.on); btn.classList.toggle('text-white', d.on); }
+                if (kind === 'save') {
+                    btn.classList.toggle('bg-navy', d.on); btn.classList.toggle('text-white', d.on);
+                    hpOffline(d.on ? { type: 'keep', urls: [location.pathname] } : { type: 'drop', url: location.pathname });   // "পরে পড়ব" offline
+                }
                 if (kind === 'follow') {
                     btn.classList.toggle('bg-red', !d.on); btn.classList.toggle('text-white', !d.on); btn.classList.toggle('border-2', d.on); btn.classList.toggle('border-navy', d.on);
                 }
@@ -216,6 +219,17 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') document.querySelectorAll('details[data-row-menu][open], details[data-menu][open]').forEach((d) => { d.open = false; });
 });
+// "পরে পড়ব" works offline: the reading list's pieces are handed to the service worker to keep (D132).
+function hpOffline(msg) {
+    navigator.serviceWorker?.ready.then((r) => r.active?.postMessage(msg)).catch(() => {});
+}
+const hpSavedLinks = [...document.querySelectorAll('[data-saved-list] a[href]')].map((a) => new URL(a.href).pathname);
+if (hpSavedLinks.length) hpOffline({ type: 'keep', urls: hpSavedLinks });
+document.querySelectorAll('[data-saved-list] form[data-undoable]').forEach((f) => f.addEventListener('submit', () => {
+    const a = f.closest('[data-row]')?.querySelector('a[href]');
+    if (a) hpOffline({ type: 'drop', url: new URL(a.href).pathname });
+}));
+
 // One-tap remove with "ফিরিয়ে আনুন" (UX review): the row hides, a small message offers undo for a few seconds.
 document.querySelectorAll('form[data-undoable]').forEach((form) => {
     const send = () => fetch(form.action, {
@@ -290,6 +304,14 @@ document.addEventListener('click', async (ev) => {
     ev.preventDefault();
     await hpInstall();
 });
+// Installed app: ask Chrome to fetch the newest pieces once or twice a day, for offline reading (D132).
+if (hpStandalone() && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(async (reg) => {
+        if (!('periodicSync' in reg)) return;
+        const perm = await navigator.permissions?.query({ name: 'periodic-background-sync' }).catch(() => null);
+        if (perm?.state === 'granted') await reg.periodicSync.register('hp-fresh', { minInterval: 12 * 3600 * 1000 }).catch(() => {});
+    }).catch(() => {});
+}
 if (hpStandalone()) {
     // Inside the app: no "add to phone" buttons; /app/ says it's done.
     document.querySelectorAll('[data-app-badges], [data-app-link]').forEach((el) => { el.hidden = true; });

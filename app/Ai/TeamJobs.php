@@ -192,7 +192,7 @@ final class TeamJobs
             rescue(fn () => \App\Support\WebPush::toUser($r->requester, [
                 'title' => $ok ? 'দলের কাজ শেষ' : 'দলের কাজ হয়নি',
                 'body' => self::label($r->agent, $r->job).($ok ? '' : ': '.mb_substr(self::explain((string) $result), 0, 120)),
-                'url' => url('/desk/ai-team'), 'tag' => 'team-'.$r->id,
+                'url' => url('/desk/ai-team'), 'tag' => 'team-'.$r->id, 'kind' => 'team',
             ]), 0, false);
         }
     }

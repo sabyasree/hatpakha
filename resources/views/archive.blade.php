@@ -3,6 +3,10 @@
         @if ($kicker)<div class="font-hand text-2xl text-red">{{ $kicker }}</div>@endif
         <h1 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">{{ $title }}</h1>
         @if (($section ?? null)?->about)<p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed text-ink2">{{ $section->about }}</p>@endif
+        @if ($section ?? null)
+            {{-- D132: every new piece of this section, on the phone (no account needed) --}}
+            <div class="mt-4"><x-push-button :topic="'section:'.$section->id" :off="'🔔 '.$section->name_bn.': নতুন লেখা এলে ফোনে জানান'" :on="'✓ '.$section->name_bn.': নতুন লেখা এলে ফোনে জানাব'" /></div>
+        @endif
         @if (($section ?? null)?->slug === \App\Models\Section::KIDS)
             {{-- D101: by age, and the alphabet --}}
             <nav class="mt-6 flex flex-wrap items-center gap-2" aria-label="বয়স ধরে">

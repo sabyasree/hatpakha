@@ -238,3 +238,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D130: AI team jobs show their steps (received → who → working → ready), auto-retry, plain errors, phone notice
 - [x] D131: "write a story…" requests become a complete draft post (section, tags, SEO, cover request), opened from the request
 - [x] AI team page: "তালিকা থেকে মুছুন…" lets the owner choose (opened finished / all finished / failed / both), each with a count; waiting or running jobs never
+- [x] D132: install screenshots, offline reading list, /desk → ফোনে খবর (numbers + announcements), section choices, share to Hatpakha, morning fetch

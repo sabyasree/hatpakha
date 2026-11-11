@@ -61,6 +61,9 @@
             @php request()->attributes->set('hp.no-bottom-nav', true); @endphp
             {{-- The composer (owner: "as easy as Facebook or Instagram", on phone and web). Field names are unchanged;
                  without JavaScript every part still works as a plain form. --}}
+            @if ($shared ?? false)
+                <p class="mt-4 rounded-2xl bg-sky-tint p-4 font-bold text-sky-night" role="status">শেয়ার করা লেখাটি নিচে বসানো আছে। শিরোনাম আর বিভাগ ঠিক করে, একবার পড়ে নিয়ে পাঠান।</p>
+            @endif
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
                 action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
                 data-autosave-url="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id.'/autosave' : '/submit/autosave') }}"
@@ -104,7 +107,7 @@
                 <div class="rounded-2xl border-2 border-navy bg-white shadow-[4px_4px_0_#13212C] focus-within:border-sky-deep">
                     <label class="block border-b-2 border-rule px-4 pt-3">
                         <span class="sr-only">শিরোনাম</span>
-                        <input name="title" value="{{ old('title', $post->exists ? $post->title : '') }}" maxlength="200" required autocomplete="off" enterkeyhint="next"
+                        <input name="title" value="{{ old('title', $post->exists || filled($post->title) ? $post->title : '') }}" maxlength="200" required autocomplete="off" enterkeyhint="next"
                             placeholder="শিরোনাম" class="block h-14 w-full border-0 bg-transparent p-0 font-display text-2xl font-extrabold placeholder:text-ink2/60 focus:outline-none focus:ring-0">
                     </label>
                     <p data-error="title" hidden class="px-4 pt-1 text-sm font-bold text-red" role="alert">একটি শিরোনাম দিন।</p>

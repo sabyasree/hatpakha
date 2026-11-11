@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->whereNumber('post')->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1');
             // D127: the service worker, outside the web group: no session, cookie or page cache; never stored by Cloudflare.
             \Illuminate\Support\Facades\Route::get('/sw.js', [\App\Http\Controllers\AppController::class, 'serviceWorker']);
+            // D132: a tapped notification is counted (kind only; no session, no person).
+            \Illuminate\Support\Facades\Route::post('/push/opened', [\App\Http\Controllers\AppController::class, 'opened'])
+                ->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':30,1');
             // D117: Amazon SES bounce/complaint reports via SNS (signed by Amazon; no session or CSRF involved).
             \Illuminate\Support\Facades\Route::post('/webhooks/ses', \App\Http\Controllers\SesWebhookController::class)
                 ->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1');

@@ -22,27 +22,31 @@
 <main>
   <img src="/images/app/icon-192.png" alt="">
   <h1>এখন ইন্টারনেট নেই</h1>
-  <p>সংযোগ ফিরলে আবার চেষ্টা করুন। আগে খোলা লেখাগুলো ইন্টারনেট ছাড়াই পড়া যাবে।</p>
+  <p>সংযোগ ফিরলে আবার চেষ্টা করুন। ★ চিহ্নের লেখাগুলো আপনার "পরে পড়ব" তালিকার; সেগুলো আর আগে খোলা লেখা ইন্টারনেট ছাড়াই পড়া যাবে।</p>
   <button type="button" id="retry">আবার চেষ্টা করুন</button>
-  <h2 id="saved-h" hidden>আগে পড়া লেখা</h2>
+  <h2 id="saved-h" hidden>ইন্টারনেট ছাড়া পড়া যাবে</h2>
   <ul id="saved"></ul>
 </main>
 <script>
   document.getElementById('retry').addEventListener('click', () => location.reload());
   (async () => {
     if (!('caches' in window)) return;
-    const names = (await caches.keys()).filter((n) => n.startsWith('hp-pages-'));
     const list = document.getElementById('saved');
-    for (const name of names) {
-      const cache = await caches.open(name);
-      for (const req of (await cache.keys()).reverse()) {
-        const html = await (await cache.match(req)).text();
-        const m = html.match(/<title>([^<]*)<\/title>/);
-        const t = document.createElement('textarea'); t.innerHTML = m ? m[1] : req.url;
-        const a = document.createElement('a'); a.href = req.url; a.textContent = t.value.replace(/\s*[|—]\s*হাতপাখা.*$/, '');
-        const li = document.createElement('li'); li.append(a); list.append(li);
+    const add = async (prefix, mark) => {
+      for (const name of (await caches.keys()).filter((n) => n.startsWith(prefix))) {
+        const cache = await caches.open(name);
+        for (const req of (await cache.keys()).reverse()) {
+          if (list.querySelector('a[href="' + req.url + '"]')) continue;
+          const html = await (await cache.match(req)).text();
+          const m = html.match(/<title>([^<]*)<\/title>/);
+          const t = document.createElement('textarea'); t.innerHTML = m ? m[1] : req.url;
+          const a = document.createElement('a'); a.href = req.url; a.textContent = (mark ? mark + ' ' : '') + t.value.replace(/\s*[|—]\s*হাতপাখা.*$/, '');
+          const li = document.createElement('li'); li.append(a); list.append(li);
+        }
       }
-    }
+    };
+    await add('hp-saved-', '★');   // "পরে পড়ব" first
+    await add('hp-pages-', '');
     document.getElementById('saved-h').hidden = !list.children.length;
   })();
 </script>

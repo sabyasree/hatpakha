@@ -96,8 +96,22 @@ final class WebPush
             return false;
         }
         $sub->forceFill(['failures' => 0, 'last_sent_at' => now()])->save();
+        self::count((string) ($message['kind'] ?? 'other'), 'sent');
 
         return true;
+    }
+
+    public const KINDS = ['post', 'serial', 'section', 'daily', 'announce', 'team', 'test', 'other'];
+
+    /** D132: one more sent or tapped notification of this kind today (numbers only). */
+    public static function count(string $kind, string $what): void
+    {
+        $kind = in_array($kind, self::KINDS, true) ? $kind : 'other';
+        rescue(function () use ($kind, $what) {
+            $day = now()->timezone('Asia/Kolkata')->toDateString();
+            \Illuminate\Support\Facades\DB::table('push_stats')->insertOrIgnore(['day' => $day, 'kind' => $kind]);
+            \Illuminate\Support\Facades\DB::table('push_stats')->where(['day' => $day, 'kind' => $kind])->increment($what);
+        }, null, false);
     }
 
     /** RFC 8291: one aes128gcm record for the browser's key (65-byte point) and auth secret (16 bytes). */

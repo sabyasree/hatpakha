@@ -48,10 +48,19 @@ class SubmissionController extends Controller
         if (! $post->exists && ($pick = self::sections()->firstWhere('slug', (string) $request->query('section')))) {
             $post->section_id = $pick->id;
         }
+        // Owner (2026-11-11): "Share → হাতপাখা" from Notes or WhatsApp (Android share target) opens a new piece with the
+        // shared text already in it. Plain text only (shown escaped in the box, sanitised on save like any submission).
+        $shared = ! $post->exists && $request->query('text') !== null
+            ? trim(mb_substr(str_replace("\r\n", "\n", (string) $request->query('text')), 0, 20000)) : '';
+        if ($shared !== '' && ! $request->old('title') && filled($request->query('title'))) {
+            $post->title = mb_substr(trim((string) $request->query('title')), 0, 200);
+        }
+
         return view('submit', [
             'seo' => new Seo(title: 'লেখা পাঠান', noindex: true),
             'post' => $post,
-            'text' => $post->exists ? self::toText((string) $post->body_html) : '',
+            'text' => $post->exists ? self::toText((string) $post->body_html) : $shared,
+            'shared' => $shared !== '',
             'html' => $post->exists ? self::fromEditor((string) $post->body_html) : '',
             'sections' => self::sections(),
             'editable' => in_array($post->status, ['draft', 'changes'], true),

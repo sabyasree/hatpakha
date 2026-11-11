@@ -122,9 +122,17 @@ class AppController extends Controller
     public function test(Request $request)
     {
         $sub = $this->find($request);
-        $ok = $sub && WebPush::send($sub, ['title' => 'হাতপাখা', 'body' => 'ফোনে খবর চালু আছে। নতুন লেখা এলে এভাবেই জানাব।', 'url' => url('/').'/', 'tag' => 'test']);
+        $ok = $sub && WebPush::send($sub, ['title' => 'হাতপাখা', 'body' => 'ফোনে খবর চালু আছে। নতুন লেখা এলে এভাবেই জানাব।', 'url' => url('/').'/', 'tag' => 'test', 'kind' => 'test']);
 
         return response()->json(['ok' => $ok]);
+    }
+
+    /** D132: a notification was tapped (from the service worker; only its kind is counted, nothing about the person). */
+    public function opened(Request $request)
+    {
+        \App\Support\WebPush::count((string) $request->json('kind', 'other'), 'opened');
+
+        return response()->noContent();
     }
 
     private function find(Request $request): ?PushSubscription
@@ -144,6 +152,7 @@ class AppController extends Controller
                 $t === 'daily' => true,
                 (bool) preg_match('/^serial:(\d+)$/', $t, $m) => Serial::live()->whereKey((int) $m[1])->exists(),
                 (bool) preg_match('/^author:(\d+)$/', $t, $m) => Author::whereKey((int) $m[1])->where('is_desk', false)->exists(),
+                (bool) preg_match('/^section:(\d+)$/', $t, $m) => \App\Models\Section::whereKey((int) $m[1])->where('is_active', true)->exists(),   // D132
                 default => false,
             };
             if (! $ok) {

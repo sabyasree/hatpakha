@@ -6,7 +6,8 @@
         @if ($saved->isEmpty())
             <p class="mt-2 text-ink2">যে লেখা পরে পড়তে চান, লেখার নিচে "পরে পড়ব" চাপলে এখানে জমা থাকবে।</p>
         @else
-            <ul class="mt-3 divide-y divide-rule border-y border-rule" data-list>
+            <p class="mt-1 text-sm text-ink2">ফোনে হাতপাখা রাখা থাকলে এই তালিকার লেখাগুলো ইন্টারনেট ছাড়াও পড়া যায়।</p>
+            <ul class="mt-3 divide-y divide-rule border-y border-rule" data-list data-saved-list>
                 @foreach ($saved as $p)
                     <li class="flex items-center gap-2" data-row>
                         <a href="{{ $p->url() }}" class="min-w-0 flex-1 py-3">

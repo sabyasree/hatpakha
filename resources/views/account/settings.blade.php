@@ -100,6 +100,13 @@
                         <x-push-button topic="daily" off="🔔 রোজ সন্ধ্যায় সব নতুন লেখার খবরও চাই" on="✓ রোজকার খবরও চালু (বন্ধ করতে ছুঁয়ে দিন)" />
                         <button type="button" class="h-11 rounded-full border-2 border-navy px-6 font-bold" data-push-test hidden>একটা পরীক্ষা পাঠান</button>
                     </div>
+                    @php($pushSections = \App\Models\Section::where('is_active', true)->where('slug', '!=', \App\Models\Section::KIDS)->orderBy('sort')->get(['id', 'name_bn']))
+            <p class="mt-5 font-bold">শুধু কিছু বিভাগের নতুন লেখা চান? যেটি চান ছুঁয়ে দিন (প্রতিটি নতুন লেখা প্রকাশ হলেই খবর):</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($pushSections as $ps)
+                    <x-push-button :topic="'section:'.$ps->id" :off="$ps->name_bn" :on="'✓ '.$ps->name_bn" :small="true" />
+                @endforeach
+            </div>
                     <p class="mt-3 text-sm" data-push-unsupported hidden>এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Chrome, Firefox বা Edge-এ খুলে দেখুন।</p>
                     <p class="mt-3 text-sm text-ink2" data-push-ios hidden>আইফোনে: আগে Safari-তে <strong>শেয়ার</strong> (□↑) → <strong>Add to Home Screen</strong>। তারপর হোম স্ক্রিনের হাতপাখা আইকন থেকে খুলে এখানে এসে চালু করুন। <a href="{{ Url::to('/app') }}#iphone" class="underline">ছবিসহ দেখুন</a></p>
                     <p class="mt-3 text-sm text-ink2">প্রতিটি ফোন বা কম্পিউটারে আলাদা করে চালু করতে হয়। কাকে অনুসরণ করছেন, তা দেখুন <a href="{{ Url::to('/account/reading') }}" class="underline">পড়ার তালিকায়</a>।</p>
