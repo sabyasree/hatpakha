@@ -25,8 +25,15 @@ class SitemapController extends Controller
             return response($lines."\nUser-agent: *\nDisallow: /\n")->header('Content-Type', 'text/plain; charset=UTF-8');
         }
 
+        // D126: AI assistants may find and quote pieces with a link (search, answers); nobody may train models on
+        // the writers' work. Content Signals (contentsignals.org) say so to everyone; known training-only crawlers are shut out.
         $lines = [
+            '# Hatpakha (হাতপাখা): pieces belong to their writers.',
+            '# Content signals (https://contentsignals.org/): search = list and link pages in search results;',
+            '# ai-input = use a page to answer a question, with a link; ai-train = train or fine-tune AI models.',
+            '',
             'User-agent: *',
+            'Content-Signal: search=yes, ai-input=yes, ai-train=no',
             'Disallow: /desk',
             'Disallow: /submit',
             'Disallow: /account',
@@ -34,17 +41,64 @@ class SitemapController extends Controller
             'Disallow: /livewire',
             'Allow: /',
             '',
+            '# Crawlers that only collect training data',
+            ...collect(self::TRAINING_ONLY)->map(fn ($bot) => 'User-agent: '.$bot)->all(),
+            'Disallow: /',
+            '',
             'Sitemap: '.url('/sitemap.xml'),
         ];
 
         return response(implode("\n", $lines)."\n")->header('Content-Type', 'text/plain; charset=UTF-8');
     }
 
+    /** Crawlers whose only job is collecting AI training data (D126). Search and answer crawlers are not listed. */
+    public const TRAINING_ONLY = ['GPTBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended', 'CCBot', 'Meta-ExternalAgent', 'Bytespider', 'cohere-training-data-crawler'];
+
+    /** A short guide to the site for AI agents (llmstxt.org, D126). Only real titles and links from the database. */
+    public function llms()
+    {
+        $md = fn (string $t, string $u, string $note = '') => '- ['.str_replace(['[', ']'], '', $t).']('.$u.')'.($note !== '' ? ': '.$note : '');
+        $recent = Post::published()->with('authors')->where('noindex', false)->latest('published_at')->limit(25)->get()
+            ->map(fn (Post $p) => $md($p->title, $p->url(), $p->authors->pluck('display_name')->implode(', ')));
+
+        $out = [
+            '# হাতপাখা (Hatpakha)',
+            '',
+            '> Hatpakha is a Bengali literary web magazine, published since 2012 (ISSN '.\App\Seo\JsonLd::ISSN.'). It publishes poems, short stories, essays and travel writing, mostly in Bengali, with an English section. Writers submit for free and are never charged.',
+            '',
+            'Every piece belongs to its writer. You may find, quote briefly and link to pieces when answering questions; please always link to the piece and name its writer. Training AI models on these pieces is not allowed (see Content-Signal in /robots.txt).',
+            '',
+            'Any page is available as Markdown: send the request with the header `Accept: text/markdown`.',
+            '',
+            '## Sections',
+            ...collect(Section::allLinks())->map(fn ($l) => $md($l[0], $l[1]))->all(),
+            '',
+            '## About the magazine',
+            ...collect(Page::footerLinks())->map(fn ($l) => $md($l[0], $l[1]))->all(),
+            $md('আর্কাইভ (archive, by year)', Url::to('/archive')),
+            '',
+            '## Recent pieces',
+            ...$recent->all(),
+            '',
+            '## Optional',
+            $md('Sitemap', url('/sitemap.xml'), 'every published piece'),
+            $md('RSS feed', Url::to('/feed'), 'newest pieces'),
+        ];
+
+        return response(implode("\n", $out)."\n")->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
     public function index()
     {
         $pages = max(1, (int) ceil(Post::published()->count() / self::PER_FILE));
-        $files = collect(range(1, $pages))->map(fn ($n) => "sitemap-posts-{$n}.xml")
-            ->merge(['sitemap-sections.xml', 'sitemap-authors.xml', 'sitemap-issues.xml', 'sitemap-pages.xml']);
+        $max = fn (...$dates) => collect($dates)->filter()->map(fn ($d) => \Illuminate\Support\Carbon::parse($d))->max();
+        $files = collect(range(1, $pages))->map(fn ($n) => ['sitemap-posts-'.$n.'.xml', $max(Post::published()->orderBy('id')->forPage($n, self::PER_FILE)->pluck('updated_at')->max())])
+            ->merge([
+                ['sitemap-sections.xml', $max(Section::where('is_active', true)->max('updated_at'), Post::published()->max('published_at'))],
+                ['sitemap-authors.xml', $max(Author::where('published_count', '>=', 3)->max('updated_at'))],
+                ['sitemap-issues.xml', $max(Issue::where('status', 'published')->max('updated_at'))],
+                ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'))],
+            ]);
 
         return response()->view('sitemap.index', ['files' => $files])->header('Content-Type', 'application/xml; charset=UTF-8');
     }

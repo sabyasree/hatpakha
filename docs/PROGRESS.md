@@ -223,3 +223,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: review the flagged accounts before the first big letter
 - [x] D122: form receipts, confirmations that survive caches, old CSS builds kept, Cloudflare purge after deploys
 - [x] D123: /desk → ই-মেলের নমুনা (every automatic email: preview, edit, back to the original); Bengali email frame
+- [x] D126: agent-ready production: Content-Signal (search and answers yes, training no) + training crawlers shut out, /llms.txt, Markdown on `Accept: text/markdown`, Link header, sitemap index dates, contact point (form only)
+- [ ] Later (owner said "not now"): a read-only MCP endpoint + Server Card + WebMCP search tool, once agents use them
