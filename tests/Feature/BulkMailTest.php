@@ -171,7 +171,7 @@ class BulkMailTest extends TestCase
         {
             protected function doSend(\Symfony\Component\Mailer\SentMessage $message): void
             {
-                throw new \RuntimeException('Expected response code "250" but got code "554", with message "554 Message rejected: Email address is not verified. The following identities failed the check in region AP-SOUTH-1: r0@example.test".');
+                throw new \RuntimeException('Expected response code "250" but got code "554", with message "554 Message rejected: Email address is not verified. The following identities failed the check in region AP-SOUTH-1: '.$message->getEnvelope()->getRecipients()[0]->getAddress().'".');
             }
 
             public function __toString(): string
@@ -187,6 +187,8 @@ class BulkMailTest extends TestCase
         $this->assertGreaterThanOrEqual(10, $n->failed);
         $why = NewsletterSender::failures($n);
         $this->assertSame($n->failed, array_sum($why));
+        $this->assertCount(1, $why, 'One cause, one line, whatever address each message names');
+        $this->assertStringNotContainsString('@example.test', array_key_first($why));
         $this->assertStringContainsString('স্যান্ডবক্সে', NewsletterSender::explain(array_key_first($why)));
 
         Mail::fake();
