@@ -197,4 +197,26 @@ class BulkMailTest extends TestCase
         $this->assertSame('sent', $n->fresh()->status);
         $this->assertSame(12, $n->fresh()->sent);
     }
+
+    /** Owner (2026-11-11): "add duplicate newsletter option". */
+    public function test_a_letter_can_be_duplicated_as_a_fresh_draft(): void
+    {
+        Mail::fake();
+        $n = $this->letter(2);
+        $n->forceFill(['preheader' => 'ভেতরে সব খবর', 'closing' => 'ধন্যবাদ', 'cta_label' => 'পড়ুন'])->save();
+        NewsletterSender::batch(30);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Newsletters\Pages\EditNewsletter::class, ['record' => $n->id])->callAction('duplicate');
+
+        $copy = Newsletter::latest('id')->first();
+        $this->assertNotSame($n->id, $copy->id);
+        $this->assertSame('draft', $copy->status);
+        $this->assertSame([$n->subject, $n->preheader, $n->intro, $n->closing, $n->cta_label, $n->audience, $n->items],
+            [$copy->subject, $copy->preheader, $copy->intro, $copy->closing, $copy->cta_label, $copy->audience, $copy->items]);
+        $this->assertSame([0, 0, 0], [$copy->sent, $copy->failed, $copy->recipients]);
+        $this->assertSame(0, $copy->deliveries()->count());
+        $this->assertSame('sent', $n->fresh()->status, 'The original is untouched');
+    }
 }

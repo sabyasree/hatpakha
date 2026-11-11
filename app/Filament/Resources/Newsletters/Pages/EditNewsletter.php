@@ -131,6 +131,15 @@ class EditNewsletter extends EditRecord
             Action::make('cancel')->label(__('পাঠানো থামান'))->icon('heroicon-o-stop')->color('danger')->requiresConfirmation()
                 ->visible(fn (Newsletter $record) => in_array($record->status, ['queued', 'sending'], true))
                 ->action(fn (Newsletter $record) => $record->forceFill(['status' => 'cancelled'])->save()),
+            Action::make('duplicate')->label(__('কপি করুন'))->icon('heroicon-o-document-duplicate')->color('gray')
+                ->requiresConfirmation()->modalHeading(__('এই চিঠির একটি কপি?'))
+                ->modalDescription(__('একই লেখা, লেখার তালিকা আর প্রাপক নিয়ে একটি নতুন খসড়া হবে। এটি যেমন আছে তেমনই থাকবে।'))
+                ->modalSubmitActionLabel(__('কপি করুন'))
+                ->action(function (Newsletter $record) {
+                    $copy = $record->duplicate(auth()->user());
+                    Notification::make()->title(__('কপি তৈরি হয়েছে; এখন এটি খসড়া'))->success()->send();
+                    $this->redirect(NewsletterResource::getUrl('edit', ['record' => $copy]));
+                }),
             \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }

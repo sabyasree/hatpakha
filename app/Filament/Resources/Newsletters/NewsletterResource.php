@@ -99,7 +99,10 @@ class NewsletterResource extends Resource
                     ? \App\Support\Bn::num((string) \App\Support\NewsletterLinks::stats($record)['clickers']).' '.__('জন') : '—'),
                 TextColumn::make('updated_at')->label(__('শেষ বদল'))->since(),
             ])
-            ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন')), \App\Filament\Support\Deleting::row()])
+            ->recordActions([EditAction::make()->label(fn (Newsletter $record) => $record->editable() ? __('খুলুন') : __('দেখুন')),
+                \Filament\Actions\Action::make('duplicate')->label(__('কপি করুন'))->icon('heroicon-o-document-duplicate')->color('gray')
+                    ->action(fn (Newsletter $record) => redirect(self::getUrl('edit', ['record' => $record->duplicate(auth()->user())]))),
+                \App\Filament\Support\Deleting::row()])
             ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Newsletter::class)])]);
     }
 
