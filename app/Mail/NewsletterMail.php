@@ -21,7 +21,16 @@ class NewsletterMail extends Mailable
 
     public function headers(): Headers
     {
-        return new Headers(text: ['List-Unsubscribe' => '<'.$this->unsubscribeUrl.'>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click']);
+        // Brevo would otherwise rewrite every link through its own tracking address and add a hidden pixel:
+        // links that say hatpakha.com but go elsewhere look like spam, and the privacy policy promises no hidden
+        // tracking in letters (our own click count stays). Amazon SES ignores these headers.
+        $text = ['X-Mailin-Track' => '0', 'X-Mailin-Track-Clicks' => '0', 'X-Mailin-Track-Opens' => '0', 'X-Mailin-Track-Links' => '0'];
+        // One-click unsubscribe only with a real (signed) unsubscribe link; a test letter has none.
+        if (str_contains($this->unsubscribeUrl, 'unsubscribe')) {
+            $text += ['List-Unsubscribe' => '<'.$this->unsubscribeUrl.'>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click'];
+        }
+
+        return new Headers(text: $text);
     }
 
     public function content(): Content
