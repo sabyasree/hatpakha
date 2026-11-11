@@ -116,6 +116,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account');
     Route::get('/account/writings', [\App\Http\Controllers\AccountController::class, 'writings'])->name('account.writings');
     Route::get('/account/reading', [\App\Http\Controllers\AccountController::class, 'reading'])->name('account.reading');
+    Route::get('/account/stats', [\App\Http\Controllers\AccountController::class, 'stats'])->name('account.stats');   // "আমার পাঠক"
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
     Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
         $request->session()->forget('view_as');

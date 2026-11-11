@@ -87,6 +87,14 @@ class AccountController extends Controller
         ]);
     }
 
+    /** "আমার পাঠক" (owner, 2026-11-12): a writer's own numbers and a card to share each piece. */
+    public function stats(Request $request)
+    {
+        $authors = \App\Models\Author::where('user_id', $request->user()->id)->get();
+
+        return view('account.stats', self::shell($request, 'writings', 'আমার পাঠক') + ['s' => \App\Support\WriterStats::for($authors), 'authors' => $authors]);
+    }
+
     /** Saved pieces (20 a page) and followed writers. */
     public function reading(Request $request)
     {
