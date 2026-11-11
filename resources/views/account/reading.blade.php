@@ -26,7 +26,7 @@
 
         <h2 class="mt-10 font-display text-2xl font-extrabold">যাঁদের অনুসরণ করছেন <span class="text-ink2">({{ Bn::num((string) $following->count()) }})</span></h2>
         @if ($following->isEmpty())
-            <p class="mt-2 text-ink2">পছন্দের লেখকের পাতায় "অনুসরণ করুন" চাপলে তাঁর নতুন লেখা প্রকাশ হলেই ই-মেলে জানাব।</p>
+            <p class="mt-2 text-ink2">পছন্দের লেখকের পাতায় "অনুসরণ করুন" চাপলে তাঁর নতুন লেখা প্রকাশ হলেই ই-মেলে জানাব; চাইলে <a href="{{ \App\Support\Url::to('/account/settings') }}#phone" class="underline">ফোনেও</a>।</p>
         @else
             <ul class="mt-3 grid gap-2 sm:grid-cols-2">
                 @foreach ($following as $f)

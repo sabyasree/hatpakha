@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFBF4">
+<title>ইন্টারনেট নেই · হাতপাখা</title>
+<link rel="stylesheet" href="/fonts/fonts.css?v=1">
+<style>
+  body { margin: 0; background: #FFFBF4; color: #13212C; font-family: "Anek Bangla", "Noto Serif Bengali", system-ui, sans-serif; line-height: 1.6; }
+  main { max-width: 36rem; margin: 0 auto; padding: max(2rem, env(safe-area-inset-top)) 1.25rem 3rem; }
+  img { width: 72px; height: 72px; }
+  h1 { font-size: 1.8rem; margin: 1rem 0 .25rem; }
+  p { color: #4D5A63; margin: .25rem 0 1rem; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li a { display: block; padding: .9rem 1rem; margin-bottom: .6rem; border: 2px solid #13212C; border-radius: 1rem; background: #fff; color: #13212C; text-decoration: none; font-weight: 700; }
+  button { min-height: 3rem; padding: 0 1.5rem; border: 0; border-radius: 999px; background: #CB1B32; color: #fff; font: inherit; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/images/app/icon-192.png" alt="">
+  <h1>এখন ইন্টারনেট নেই</h1>
+  <p>সংযোগ ফিরলে আবার চেষ্টা করুন। আগে খোলা লেখাগুলো ইন্টারনেট ছাড়াই পড়া যাবে।</p>
+  <button type="button" id="retry">আবার চেষ্টা করুন</button>
+  <h2 id="saved-h" hidden>আগে পড়া লেখা</h2>
+  <ul id="saved"></ul>
+</main>
+<script>
+  document.getElementById('retry').addEventListener('click', () => location.reload());
+  (async () => {
+    if (!('caches' in window)) return;
+    const names = (await caches.keys()).filter((n) => n.startsWith('hp-pages-'));
+    const list = document.getElementById('saved');
+    for (const name of names) {
+      const cache = await caches.open(name);
+      for (const req of (await cache.keys()).reverse()) {
+        const html = await (await cache.match(req)).text();
+        const m = html.match(/<title>([^<]*)<\/title>/);
+        const t = document.createElement('textarea'); t.innerHTML = m ? m[1] : req.url;
+        const a = document.createElement('a'); a.href = req.url; a.textContent = t.value.replace(/\s*[|—]\s*হাতপাখা.*$/, '');
+        const li = document.createElement('li'); li.append(a); list.append(li);
+      }
+    }
+    document.getElementById('saved-h').hidden = !list.children.length;
+  })();
+</script>
+</body>
+</html>

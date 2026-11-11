@@ -74,4 +74,11 @@ return [
         ],
     ],
 
+    // D127: phone notifications (Web Push). Keys from `php artisan hatpakha:vapid`; empty = notifications off.
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'https://hatpakha.com/contact-us/'),
+    ],
+
 ];

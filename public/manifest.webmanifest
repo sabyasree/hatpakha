@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "হাতপাখা · বাংলা সাহিত্যের অনলাইন পত্রিকা",
+  "short_name": "হাতপাখা",
+  "description": "কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। ২০১২ থেকে।",
+  "lang": "bn",
+  "dir": "ltr",
+  "start_url": "/?utm_source=hatpakha-app&utm_medium=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFBF4",
+  "theme_color": "#FFFBF4",
+  "categories": ["books", "magazines", "education"],
+  "icons": [
+    { "src": "/images/app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "ধারাবাহিক", "url": "/dharabahik/?utm_source=hatpakha-app&utm_medium=app", "icons": [{ "src": "/images/app/icon-192.png", "sizes": "192x192" }] },
+    { "name": "লেখা পাঠান", "url": "/submit/?utm_source=hatpakha-app&utm_medium=app", "icons": [{ "src": "/images/app/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

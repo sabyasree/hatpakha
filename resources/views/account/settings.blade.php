@@ -84,6 +84,28 @@
             <p class="mt-3 text-sm text-ink2">নিজের লেখার খবর (মনোনয়ন, বদলের অনুরোধ) চিঠি বন্ধ থাকলেও আসবে।</p>
             </div>
         </details>
+        @if ($pushKey = \App\Support\WebPush::publicKey())
+        {{-- D127: phone notifications for followed serials and writers. The button's state is this browser's; the script fills it in. --}}
+        <details id="phone" class="group scroll-mt-20 rounded-3xl border-2 border-navy bg-white" data-settings-card>
+            <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+                <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">ফোনে খবর</span><span class="text-sm text-ink2">নতুন পর্ব আর প্রিয় লেখকের নতুন লেখা</span></span>
+                <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
+            </summary>
+            <div class="border-t-2 border-rule p-3 sm:p-5">
+                <div class="rounded-3xl border-2 border-navy bg-white p-5" data-push data-push-key="{{ $pushKey }}" data-push-url="{{ Url::to('/account/push') }}">
+                    <p>যে ধারাবাহিক বা লেখককে অনুসরণ করছেন, নতুন লেখা এলেই এই ফোনে (বা কম্পিউটারে) একটি ছোট খবর আসবে। ছুঁয়ে দিলেই লেখাটি খুলবে। অন্য কিছু পাঠাব না।</p>
+                    <p class="mt-3 font-bold" data-push-status role="status">দেখে নিচ্ছি…</p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button type="button" class="h-11 rounded-full bg-red px-6 font-bold text-white" data-push-on hidden>এই ফোনে চালু করুন</button>
+                        <button type="button" class="h-11 rounded-full border-2 border-navy px-6 font-bold" data-push-test hidden>একটা পরীক্ষা পাঠান</button>
+                        <button type="button" class="h-11 rounded-full border-2 border-red px-6 font-bold text-red" data-push-off hidden>বন্ধ করুন</button>
+                    </div>
+                    <p class="mt-3 text-sm text-ink2" data-push-ios hidden>আইফোনে: আগে Safari-তে নিচের <strong>শেয়ার</strong> বোতাম (□↑) → <strong>Add to Home Screen</strong> (হোম স্ক্রিনে যোগ করুন)। তারপর হোম স্ক্রিনের হাতপাখা আইকন থেকে খুলে এখানে এসে চালু করুন।</p>
+                    <p class="mt-3 text-sm text-ink2">প্রতিটি ফোন বা কম্পিউটারে আলাদা করে চালু করতে হয়। কাকে অনুসরণ করছেন, তা দেখুন <a href="{{ Url::to('/account/reading') }}" class="underline">পড়ার তালিকায়</a>।</p>
+                </div>
+            </div>
+        </details>
+        @endif
         </div>
         <form method="POST" action="{{ Url::to('/logout') }}" class="mt-10 border-t-2 border-rule pt-6 text-center">@csrf<button class="min-h-11 font-bold text-red underline">লগ-আউট</button></form>
     </x-account-shell>
