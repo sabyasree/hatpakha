@@ -140,8 +140,11 @@ final class NewsletterSender
     /** Why letters did not go: the most common error messages with how many each. */
     public static function failures(Newsletter $n): array
     {
-        return $n->deliveries()->whereNotNull('error')->selectRaw('error, count(*) as c')->groupBy('error')->orderByDesc('c')->limit(5)
-            ->pluck('c', 'error')->map(fn ($c) => (int) $c)->all();
+        // The same cause often names a different address each time ("…failed the check: a@x.com"): group by the
+        // message without addresses, so 149 letters with one cause show as one line.
+        return $n->deliveries()->whereNotNull('error')->pluck('error')
+            ->map(fn ($e) => trim(preg_replace(['/[^\s:;,"<>]+@[^\s:;,"<>]*/u', '/\s+/u'], ['…', ' '], (string) $e)))
+            ->countBy()->sortDesc()->take(5)->all();
     }
 
     /** Plain words for the usual causes (the raw message is shown too). */
