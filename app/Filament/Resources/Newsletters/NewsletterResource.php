@@ -132,8 +132,12 @@ class NewsletterResource extends Resource
             ->schema([
                 \Filament\Forms\Components\Radio::make('provider')->label(__('পথ'))->required()
                     ->default(fn () => \App\Support\BulkMail::provider())
-                    ->options(fn () => collect(\App\Support\BulkMail::available())->mapWithKeys(fn ($p) => [$p => \App\Support\BulkMail::label($p)])->all())
-                    ->descriptions(fn () => collect(\App\Support\BulkMail::available())->mapWithKeys(fn ($p) => [$p => $describe($p)])->all()),
+                    // Every road is listed; one without settings is greyed out and says which ENV_FILE line is missing.
+                    ->options(fn () => collect(\App\Support\BulkMail::PROVIDERS)->mapWithKeys(fn ($v, $p) => [$p => $v[0]])->all())
+                    ->disableOptionWhen(fn (string $value) => ! in_array($value, \App\Support\BulkMail::available(), true))
+                    ->descriptions(fn () => collect(\App\Support\BulkMail::PROVIDERS)->mapWithKeys(fn ($v, $p) => [$p => in_array($p, \App\Support\BulkMail::available(), true)
+                        ? $describe($p)
+                        : __('সেট করা নেই: ENV_FILE-এ').' '.($p === 'brevo' ? 'MAIL_BREVO_HOST' : 'MAIL_BULK_HOST').' '.__('লাইনটি যোগ করে আবার deploy করুন')])->all()),
             ])
             ->modalSubmitActionLabel(__('রাখুন'))
             ->action(function (array $data) {

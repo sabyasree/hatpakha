@@ -1560,5 +1560,7 @@
     "পথ": "Service",
     "এখন থেকে চিঠি যাবে": "From now on, letters go through",
     "দিয়ে": " ",
-    "দিয়ে যাচ্ছে": "is sending"
+    "দিয়ে যাচ্ছে": "is sending",
+    "সেট করা নেই: ENV_FILE-এ": "Not set up: add the line",
+    "লাইনটি যোগ করে আবার deploy করুন": "to ENV_FILE and deploy again"
 }
