@@ -68,7 +68,13 @@ class Post extends Model
                 Redirect::firstOrCreate(['from_path' => '/'.$post->slug.'/'], ['to_path' => null, 'status_code' => 410]);
             }
         });
-        static::restored(function (self $post) {
+        // Spelling-forgiving search (2026-11-12): keep the folded keys fresh whenever a piece is saved.
+        static::saved(function (self $post) {
+            if ($post->wasChanged(['title', 'body_html', 'excerpt', 'status']) || $post->wasRecentlyCreated) {
+                rescue(fn () => \App\Support\BnSearch::index($post), null, false);
+            }
+        });
+                static::restored(function (self $post) {
             if (filled($post->slug)) {
                 Redirect::where('from_path', '/'.$post->slug.'/')->where('status_code', 410)->whereNull('to_path')->delete();
             }
