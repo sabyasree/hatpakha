@@ -26,5 +26,11 @@ class SocialLinksTest extends TestCase
 
         config(['services.social.facebook_domain_verification' => '"><script>x</script>']);
         $this->get('/')->assertDontSee('facebook-domain-verification', false);
+
+        $this->get('/')->assertDontSee('fb:app_id', false);
+        config(['services.social.facebook_app_id' => '1234567890123']);
+        $this->get('/')->assertSee('<meta property="fb:app_id" content="1234567890123">', false);
+        config(['services.social.facebook_app_id' => '12"><script>']);
+        $this->get('/')->assertDontSee('fb:app_id', false);
     }
 }

@@ -24,6 +24,7 @@ return [
         'facebook' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/Hatpakhaonline'),
         'instagram' => env('INSTAGRAM_URL', 'https://www.instagram.com/hatpakha/'),
         'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
+        'facebook_app_id' => env('FACEBOOK_APP_ID'),   // optional: only silences the Sharing Debugger's fb:app_id note
     ],
 
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.

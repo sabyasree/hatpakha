@@ -92,4 +92,5 @@ Old shares of hatpakha.com links may still show the WordPress picture. Paste htt
 ## Site side (done)
 - The site footer links to the Facebook page and Instagram; Google's site data (`Organization.sameAs`) lists both (`config/services.php` → `social`, env `FACEBOOK_PAGE_URL`, `INSTAGRAM_URL`).
 - `FACEBOOK_DOMAIN_VERIFICATION` adds Meta's verification tag to every page (only a plain letters-and-digits code is accepted).
+- `FACEBOOK_APP_ID` (optional) adds `fb:app_id`. The Sharing Debugger lists it as missing, but previews work without it; set it only if a Meta app exists (developers.facebook.com → My Apps → Create app → "Other" → "Business"; the App ID is a number).
 - The pictures were made from the logo palette; the "p" mark is redrawn as a vector in `docs/social/mark.cjs`, so it can be made at any size.
