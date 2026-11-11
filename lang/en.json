@@ -1562,5 +1562,7 @@
     "দিয়ে": " ",
     "দিয়ে যাচ্ছে": "is sending",
     "সেট করা নেই: ENV_FILE-এ": "Not set up: add the line",
-    "লাইনটি যোগ করে আবার deploy করুন": "to ENV_FILE and deploy again"
+    "লাইনটি যোগ করে আবার deploy করুন": "to ENV_FILE and deploy again",
+    "কোন ঠিকানায়": "To which address",
+    "যেমন নিজের Gmail, বা mail-tester.com-এর দেওয়া ঠিকানা (স্প্যাম স্কোর আর কারণ দেখায়)।": "For example your own Gmail, or the address mail-tester.com gives you (it shows the spam score and the reasons)."
 }

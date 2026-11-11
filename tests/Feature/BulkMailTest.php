@@ -289,4 +289,20 @@ class BulkMailTest extends TestCase
         $this->assertStringContainsString('utm_medium=email&utm_campaign', $text);
         $this->assertStringNotContainsString('&amp;', $text);
     }
+
+    /** Owner (2026-11-11): send a test letter to any address (Gmail, mail-tester.com). */
+    public function test_a_test_letter_goes_to_the_address_given(): void
+    {
+        Mail::fake();
+        config(['mail.default' => 'smtp']);
+        $n = Newsletter::create(['subject' => 'চিঠি', 'audience' => 'readers', 'status' => 'draft', 'items' => [], 'intro' => 'নমস্কার']);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Newsletters\Pages\EditNewsletter::class, ['record' => $n->id])
+            ->callAction('test', ['to' => 'test-abc123@srv1.mail-tester.com'])->assertHasNoActionErrors();
+        Mail::assertSent(NewsletterMail::class, fn (NewsletterMail $m) => $m->hasTo('test-abc123@srv1.mail-tester.com')
+            && str_contains($m->headers()->text['List-Unsubscribe'] ?? '', 'unsubscribe/w/'.$admin->id));
+        $this->assertSame(0, $n->deliveries()->count(), 'A test is not a delivery');
+    }
 }

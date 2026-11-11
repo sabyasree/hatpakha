@@ -69,6 +69,7 @@ class AppAndPushTest extends TestCase
             $this->assertStringContainsString($private.'|', $js, $private.' is never touched by the worker');
         }
         $this->assertStringContainsString('\\bpublic\\b', $js, 'Only shared (guest) pages are kept offline, never personal ones');
+        $this->assertStringContainsString('setAppBadge', $js, 'The app icon shows how many notifications wait');
     }
 
     public function test_encryption_matches_rfc_8291(): void
