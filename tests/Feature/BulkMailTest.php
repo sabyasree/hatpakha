@@ -273,4 +273,20 @@ class BulkMailTest extends TestCase
         $this->post(NewsletterSender::unsubscribeUrl('writer', $writer->id), ['List-Unsubscribe' => 'One-Click'])->assertOk();
         $this->assertTrue((bool) $writer->fresh()->mail_opt_out);
     }
+
+    /** From the owner's test (2026-11-11): Brevo rewrote links and added a pixel; the text part showed &amp; in links. */
+    public function test_letters_ask_for_no_provider_tracking_and_have_clean_text_links(): void
+    {
+        $n = Newsletter::create(['subject' => 'চিঠি', 'audience' => 'readers', 'status' => 'draft', 'items' => [], 'intro' => 'নমস্কার']);
+        $real = new NewsletterMail($n, NewsletterSender::unsubscribeUrl('subscriber', 1), 5);
+        $h = $real->headers()->text;
+        $this->assertSame('0', $h['X-Mailin-Track']);
+        $this->assertStringContainsString('unsubscribe', $h['List-Unsubscribe']);
+        $test = (new NewsletterMail($n, url('/').'/'))->headers()->text;
+        $this->assertArrayNotHasKey('List-Unsubscribe', $test, 'A test letter has no real unsubscribe link, so no one-click header');
+
+        $text = view('emails.newsletter-text', ['newsletter' => $n, 'unsubscribeUrl' => url('/').'/', 'deliveryId' => null])->render();
+        $this->assertStringContainsString('utm_medium=email&utm_campaign', $text);
+        $this->assertStringNotContainsString('&amp;', $text);
+    }
 }
