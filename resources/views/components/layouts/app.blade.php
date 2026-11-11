@@ -14,6 +14,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    @if ($pushKey = \App\Support\WebPush::publicKey())<meta name="hp-push-key" content="{{ $pushKey }}">@endif
     {{-- Fonts are self-hosted (public/fonts/fonts.css, shared with the admin panel); preload the two Bengali faces used above the fold. --}}
     <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
@@ -118,6 +119,18 @@
                 @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
             </nav>
         </div>
+        {{-- D128: always a way to keep Hatpakha on a phone, like the store buttons other sites show (hidden inside the app itself) --}}
+        <div data-app-badges class="mx-auto max-w-[1320px] border-t border-white/20 px-5 pb-12 pt-8">
+            <p class="font-bold text-peach-light">হাতপাখা ফোনে রাখুন, অ্যাপের মতো · বিনামূল্যে</p>
+            <div class="mt-3 flex flex-wrap gap-3">
+                @foreach ([['android', 'Android ফোনে', '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/>'], ['iphone', 'iPhone-এ', '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 4.5h4"/>'], ['computer', 'কম্পিউটারে', '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>']] as [$id, $name, $icon])
+                    <a href="{{ \App\Support\Url::to('/app') }}#{{ $id }}" @if ($id === 'android') data-install-now @endif class="inline-flex h-14 items-center gap-3 rounded-2xl bg-paper px-4 text-navy hover:bg-peach-light">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">{!! $icon !!}</svg>
+                        <span class="leading-tight"><span class="block text-xs font-semibold">যোগ করুন</span><span class="block font-extrabold">{{ $name }}</span></span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
     </footer>
 
     {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, "লিখুন" as a raised sticker, safe-area padding. --}}
@@ -160,8 +173,8 @@
             <img src="{{ asset('images/app/icon-192.png') }}" alt="" width="48" height="48" class="h-12 w-12 flex-none rounded-xl">
             <div class="min-w-0 flex-1">
                 <strong id="hp-install-h" class="block text-lg leading-snug">হাতপাখা রাখুন ফোনের হোম স্ক্রিনে</strong>
-                <p class="text-sm text-ink2" data-install-android>অ্যাপের মতো এক ছোঁয়ায় খুলবে। আগে পড়া লেখা ইন্টারনেট ছাড়াও পড়া যাবে। কোনো ডাউনলোড বা জায়গা লাগে না।</p>
-                <p class="text-sm text-ink2" data-install-ios hidden>নিচের <strong>শেয়ার</strong> বোতাম (□↑) ছুঁয়ে <strong>Add to Home Screen</strong> বাছুন। অ্যাপের মতো এক ছোঁয়ায় খুলবে।</p>
+                <p class="text-sm text-ink2" data-install-android>অ্যাপের মতো এক ছোঁয়ায় খুলবে। আগে পড়া লেখা ইন্টারনেট ছাড়াও পড়া যাবে। কোনো ডাউনলোড বা জায়গা লাগে না। পরে চাইলে পাতার একেবারে নিচে "যোগ করুন" বোতাম আছে।</p>
+                <p class="text-sm text-ink2" data-install-ios hidden>Safari-র <strong>শেয়ার</strong> বোতাম (□↑) ছুঁয়ে <strong>Add to Home Screen</strong> বাছুন, তারপর <strong>Add</strong>। এরপর হোম স্ক্রিনের হাতপাখা আইকন থেকে খুললে অ্যাপের মতো দেখাবে। <a href="{{ \App\Support\Url::to('/app') }}#iphone" class="underline">ছবিসহ দেখুন</a></p>
             </div>
         </div>
         <div class="mt-3 flex justify-end gap-2">
@@ -170,6 +183,18 @@
             <button type="button" class="h-11 rounded-full bg-navy px-5 font-bold text-white" data-install-ok hidden>বুঝেছি</button>
         </div>
     </div>
+    @if (\App\Support\WebPush::publicKey())
+    {{-- D128: right after adding Hatpakha to the phone (or on its first opening from the home screen), ask once about notifications --}}
+    <div data-push-ask @auth data-account @endauth hidden role="dialog" aria-labelledby="hp-push-ask-h" class="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border-2 border-navy bg-white p-4 shadow-[4px_4px_0_#CB1B32] md:bottom-6">
+        <strong id="hp-push-ask-h" class="block text-lg leading-snug">🔔 নতুন লেখা এলে ফোনে জানাব?</strong>
+        <p class="mt-1 text-sm text-ink2">দিনে একবার, সন্ধ্যায়: সেদিন যা নতুন লেখা বেরোল।@auth আর যাঁদের অনুসরণ করেন, তাঁদের নতুন লেখা।@endauth ছুঁয়ে দিলেই লেখা খুলবে। যে-কোনো সময় বন্ধ করা যায়।</p>
+        <p class="mt-1 text-sm font-bold" data-push-ask-msg role="status"></p>
+        <div class="mt-3 flex justify-end gap-2">
+            <button type="button" class="h-11 rounded-full px-4 font-bold text-ink2" data-push-ask-no>এখন না</button>
+            <button type="button" class="h-11 rounded-full bg-red px-5 font-bold text-white" data-push-ask-yes>হ্যাঁ, জানান</button>
+        </div>
+    </div>
+    @endif
     @if (\App\Support\Ads::on())
         {{-- D111: request each ad only when the reader scrolls near it; hidden spots (e.g. the side ad on smaller screens) are never requested --}}
         <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">

@@ -5,11 +5,17 @@
   - **Android (Chrome):** from the third page a reader opens, a small box offers "যোগ করুন". If they press "পরে", it stays away for 30 days.
   - **iPhone:** Safari shows the two steps instead (Share □↑ → Add to Home Screen).
 - **Offline reading.** The last 40 pages a guest has opened can be read again without internet. Any other page shows "এখন ইন্টারনেট নেই" with a list of the pieces that can be read offline.
-- **Phone notifications.** Signed-in readers can turn this on in Account → Settings → **ফোনে খবর** (also linked from পড়ার তালিকা).
-  - They get a notification when a serial they follow has a new episode, or a writer they follow publishes a piece. Tapping it opens the piece.
-  - Nothing else is ever sent.
-  - "একটা পরীক্ষা পাঠান" sends a test to that person's own devices.
-  - **iPhone:** works from iOS 16.4, and only after Hatpakha is added to the home screen. The settings card explains this.
+- **Always a way to add it (D128).** The footer of every page has three store-style buttons: "যোগ করুন Android ফোনে / iPhone-এ / কম্পিউটারে". The menu has "📱 ফোনে হাতপাখা". Both lead to **/app/**, which has the steps for each device and the daily-notification button.
+  - On Android Chrome, the Android button installs straight away when the browser allows it.
+  - Inside the installed app these buttons are hidden.
+- **Asked once, right after adding (D128).** Right after Hatpakha is added on Android, or the first time it's opened from the home screen, one box asks "🔔 নতুন লেখা এলে ফোনে জানাব?".
+  - "হ্যাঁ, জানান" turns on the daily note, plus the reader's follows if signed in. "এখন না" never asks again.
+- **Phone notifications, with or without an account (D128).**
+  - **🔔 buttons** on every writer page and serial page (and episode) send a notification only when that writer or serial has something new.
+  - **The daily note:** once a day at 19:40 India time, a short note of the day's new pieces. Nothing new means nothing is sent. Set `PUSH_DAILY=false` in ENV_FILE to stop it.
+  - **Signed-in readers** can also link their follows in Account → Settings → **ফোনে খবর**, where there is a test button.
+  - Each phone hears about a piece only once, however it asked.
+  - **iPhone:** works from iOS 16.4, and only after Hatpakha is added to the home screen and opened from that icon. The buttons lead there.
 
 **Cost:** free. No app store, no new service. Notifications travel through the browsers' own services (Google, Mozilla, Apple, Microsoft).
 
@@ -46,4 +52,4 @@ Until the two keys are in place, the "ফোনে খবর" card doesn't appea
 
 ## Later (not built)
 - Google Play listing of the same site (Trusted Web Activity, $25 once) when wanted.
-- Notifications for guests (without an account), or a "new issue" broadcast. A broadcast reaches many people at once, so ask the owner first (like bulk e-mail).
+- A "new issue" or special announcement to everyone. A broadcast reaches many people at once, so ask the owner first (like bulk e-mail).

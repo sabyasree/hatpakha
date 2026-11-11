@@ -9,7 +9,7 @@ const PAGES = 'hp-pages-v1';
 const STATIC = 'hp-static-v1';   // build files have hashed names, so old ones stay valid for pages kept offline
 const IMAGES = 'hp-img-v1';
 const OFFLINE = '/offline.html';
-const PRIVATE = /^\/(desk|livewire|filament|account|login|logout|register|forgot-password|reset-password|email|submit|search|newsletter|csrf-token|chat|v|like|save|follow|up|issue-print|certificate|webhooks|chithi|view-as|sw\.js)(\/|$)/;
+const PRIVATE = /^\/(push|desk|livewire|filament|account|login|logout|register|forgot-password|reset-password|email|submit|search|newsletter|csrf-token|chat|v|like|save|follow|up|issue-print|certificate|webhooks|chithi|view-as|sw\.js)(\/|$)/;
 
 self.addEventListener('install', (event) => {
     event.waitUntil(caches.open(STATIC).then((c) => c.addAll([OFFLINE, '/images/app/icon-192.png'])).then(() => self.skipWaiting()));

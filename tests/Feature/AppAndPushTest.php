@@ -105,26 +105,59 @@ class AppAndPushTest extends TestCase
         $this->keys();
         $user = User::factory()->create(['role' => Role::Reader, 'email_verified_at' => now()]);
         $b = $this->browser();
-        $this->actingAs($user)->get('/account/settings/')->assertOk()->assertSee('data-push-key="'.config('services.webpush.public_key').'"', false)->assertSee('ফোনে খবর');
+        $keys = ['p256dh' => $b['p256dh'], 'auth' => $b['auth']];
+        $this->actingAs($user)->get('/account/settings/')->assertOk()->assertSee('<meta name="hp-push-key" content="'.config('services.webpush.public_key').'">', false)
+            ->assertSee('data-push-topic="account"', false)->assertSee('ফোনে খবর');
 
-        $this->postJson('/account/push/', ['endpoint' => 'https://evil.example/hook', 'keys' => ['p256dh' => $b['p256dh'], 'auth' => $b['auth']]])->assertStatus(422);
-        $this->postJson('/account/push/', ['endpoint' => 'https://169.254.169.254/x', 'keys' => ['p256dh' => $b['p256dh'], 'auth' => $b['auth']]])->assertStatus(422);
-        $this->postJson('/account/push/', ['endpoint' => self::ENDPOINT, 'keys' => ['p256dh' => 'short', 'auth' => $b['auth']]])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => 'https://evil.example/hook', 'keys' => $keys, 'add' => ['account']])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => 'https://169.254.169.254/x', 'keys' => $keys, 'add' => ['account']])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => ['p256dh' => 'short', 'auth' => $b['auth']], 'add' => ['account']])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['anything']])->assertStatus(422);
         $this->assertSame(0, PushSubscription::count());
 
-        $this->postJson('/account/push/', ['endpoint' => self::ENDPOINT, 'keys' => ['p256dh' => $b['p256dh'], 'auth' => $b['auth']]], ['User-Agent' => 'Mozilla/5.0 (Linux; Android 14)'])->assertOk();
-        $this->postJson('/account/push/', ['endpoint' => self::ENDPOINT, 'keys' => ['p256dh' => $b['p256dh'], 'auth' => $b['auth']]])->assertOk();
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['account']], ['User-Agent' => 'Mozilla/5.0 (Linux; Android 14)'])->assertOk()->assertJson(['topics' => ['account']]);
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['daily']])->assertOk()->assertJson(['topics' => ['account', 'daily']]);
         $this->assertSame(1, PushSubscription::count(), 'The same browser is stored once');
+        $this->assertSame($user->id, PushSubscription::first()->user_id);
+        $this->assertSame('Android', PushSubscription::first()->device);
+        $this->postJson('/push/state/', ['endpoint' => self::ENDPOINT])->assertJson(['topics' => ['account', 'daily']]);
 
-        // Another person can't remove someone else's browser by knowing the address.
-        $other = User::factory()->create(['email_verified_at' => now()]);
-        $this->actingAs($other)->postJson('/account/push/off/', ['endpoint' => self::ENDPOINT])->assertOk();
-        $this->assertSame(1, PushSubscription::count());
-        $this->actingAs($user)->postJson('/account/push/off/', ['endpoint' => self::ENDPOINT])->assertOk();
-        $this->assertSame(0, PushSubscription::count());
+        $this->postJson('/push/off/', ['endpoint' => self::ENDPOINT, 'topics' => ['account']])->assertJson(['topics' => ['daily']]);
+        $this->assertNull(PushSubscription::first()->user_id, 'Turning off the follows unlinks the account');
+        $this->postJson('/push/off/', ['endpoint' => self::ENDPOINT, 'topics' => ['daily']])->assertJson(['topics' => []]);
+        $this->assertSame(0, PushSubscription::count(), 'Nothing left: the browser is forgotten');
+        $this->postJson('/push/state/', ['endpoint' => self::ENDPOINT])->assertJson(['topics' => []]);
+    }
 
-        auth()->logout();
-        $this->postJson('/account/push/', ['endpoint' => self::ENDPOINT, 'keys' => ['p256dh' => $b['p256dh'], 'auth' => $b['auth']]])->assertUnauthorized();
+    public function test_readers_without_an_account_follow_a_writer_a_serial_or_the_daily_note(): void
+    {
+        $this->keys();
+        $writer = Author::create(['slug' => 'mou', 'display_name' => 'মৌ']);
+        $desk = Author::create(['slug' => 'desk', 'display_name' => 'ডেস্ক', 'is_desk' => true]);
+        $this->makePost(['status' => 'published', 'published_at' => now()->subDay()], $writer);
+        $b = $this->browser();
+        $keys = ['p256dh' => $b['p256dh'], 'auth' => $b['auth']];
+
+        $this->get('/author/mou/')->assertOk()->assertSee('data-push-topic="author:'.$writer->id.'"', false);
+        $this->get('/app/')->assertOk()->assertSee('data-push-topic="daily"', false)->assertSee('id="iphone"', false)->assertSee('Add to Home Screen');
+
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['account']])->assertStatus(422);   // no account to link
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['author:'.$desk->id]])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['author:999999']])->assertStatus(422);
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['author:'.$writer->id]])->assertOk();
+        $this->postJson('/push/', ['endpoint' => self::ENDPOINT, 'keys' => $keys, 'add' => ['daily']])->assertOk()->assertJson(['topics' => ['author:'.$writer->id, 'daily']]);
+        $this->assertNull(PushSubscription::first()->user_id);
+    }
+
+    public function test_the_app_page_and_the_footer_buttons(): void
+    {
+        $this->get('/app')->assertRedirect(url('/app').'/');
+        $this->get('/app/')->assertOk()->assertSee('<link rel="canonical" href="'.url('/app').'/">', false)->assertSee('id="android"', false)->assertSee('id="computer"', false);
+        $home = $this->get('/')->getContent();
+        $this->assertStringContainsString('data-app-badges', $home);
+        $this->assertStringContainsString(url('/app').'/#iphone', $home);
+        $this->assertStringContainsString('data-install-now', $home);
+        $this->assertStringContainsString(url('/app').'/', $this->get('/sitemap-pages.xml')->getContent());
     }
 
     public function test_followers_get_a_push_and_dead_subscriptions_are_removed(): void
@@ -134,23 +167,30 @@ class AppAndPushTest extends TestCase
         config(['mail.default' => 'array']);
         $reader = User::factory()->create(['role' => Role::Reader, 'email_verified_at' => now()]);
         $b = $this->browser();
-        PushSubscription::create(['user_id' => $reader->id, 'endpoint' => self::ENDPOINT, 'endpoint_hash' => PushSubscription::hashOf(self::ENDPOINT), 'p256dh' => $b['p256dh'], 'auth' => $b['auth']]);
+        PushSubscription::create(['user_id' => $reader->id, 'endpoint' => self::ENDPOINT, 'endpoint_hash' => PushSubscription::hashOf(self::ENDPOINT), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['account']]);
         $gone = 'https://updates.push.services.mozilla.com/wpush/v2/gone';
-        PushSubscription::create(['user_id' => $reader->id, 'endpoint' => $gone, 'endpoint_hash' => PushSubscription::hashOf($gone), 'p256dh' => $b['p256dh'], 'auth' => $b['auth']]);
+        PushSubscription::create(['user_id' => $reader->id, 'endpoint' => $gone, 'endpoint_hash' => PushSubscription::hashOf($gone), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['account']]);
+        // A guest phone that follows the same writer by topic, and one that follows someone else.
+        $other = 'https://web.push.apple.com/QOther';
+        PushSubscription::create(['endpoint' => $other, 'endpoint_hash' => PushSubscription::hashOf($other), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['author:999999']]);
 
         $writer = Author::create(['slug' => 'mou', 'display_name' => 'মৌ']);
+        $guest = 'https://web.push.apple.com/QGuest';
+        PushSubscription::create(['endpoint' => $guest, 'endpoint_hash' => PushSubscription::hashOf($guest), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['author:'.$writer->id]]);
         DB::table('follows')->insert(['user_id' => $reader->id, 'author_id' => $writer->id, 'created_at' => now()]);
         $post = $this->makePost(['status' => 'published', 'slug' => 'megh', 'title' => 'মেঘ', 'published_at' => now()->subHour()], $writer);
 
-        Http::fake(['fcm.googleapis.com/*' => Http::response('', 201), 'updates.push.services.mozilla.com/*' => Http::response('', 410)]);
+        Http::fake(['fcm.googleapis.com/*' => Http::response('', 201), 'web.push.apple.com/*' => Http::response('', 201), 'updates.push.services.mozilla.com/*' => Http::response('', 410)]);
         FollowNotifier::run();
+        Http::assertSent(fn (Request $r) => $r->url() === $guest);
+        Http::assertNotSent(fn (Request $r) => $r->url() === $other);
 
         Http::assertSent(function (Request $r) {
             return $r->url() === self::ENDPOINT && $r->hasHeader('Content-Encoding', 'aes128gcm') && str_starts_with($r->header('Authorization')[0], 'vapid t=')
                 && $r->hasHeader('TTL') && strlen($r->body()) > 86;
         });
-        $this->assertSame(1, PushSubscription::count(), 'A subscription the browser dropped (410) is removed');
-        $this->assertNotNull(PushSubscription::first()->last_sent_at);
+        $this->assertSame(3, PushSubscription::count(), 'A subscription the browser dropped (410) is removed');
+        $this->assertNotNull(PushSubscription::where('endpoint_hash', PushSubscription::hashOf(self::ENDPOINT))->first()->last_sent_at);
         $this->assertNotNull($post->fresh()->followers_notified_at);
     }
 
@@ -171,6 +211,29 @@ class AppAndPushTest extends TestCase
         $this->assertSame("{\"title\":\"মেঘ\"}\x02", $plain);
     }
 
+    public function test_the_daily_note_lists_the_days_pieces_once(): void
+    {
+        $this->keys();
+        $this->asLiveSite();
+        $b = $this->browser();
+        PushSubscription::create(['endpoint' => self::ENDPOINT, 'endpoint_hash' => PushSubscription::hashOf(self::ENDPOINT), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['daily']]);
+        $no = 'https://web.push.apple.com/QNo';
+        PushSubscription::create(['endpoint' => $no, 'endpoint_hash' => PushSubscription::hashOf($no), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['author:1']]);
+        Http::fake(['*' => Http::response('', 201)]);
+
+        $this->makePost(['status' => 'published', 'title' => 'মেঘ', 'published_at' => now()->subHours(3)]);
+        $this->makePost(['status' => 'published', 'title' => 'নদী', 'published_at' => now()->subHours(2)]);
+        $this->makePost(['status' => 'draft', 'title' => 'খসড়া']);
+        $this->assertSame(1, \App\Support\PushNotifier::daily());
+        Http::assertSentCount(1);
+        $this->assertSame(0, \App\Support\PushNotifier::daily(), 'Nothing new since the last note: nothing sent');
+
+        config(['services.webpush.daily' => false]);
+        $this->makePost(['status' => 'published', 'title' => 'আলো', 'published_at' => now()]);
+        $this->travel(1)->minutes();
+        $this->assertSame(0, \App\Support\PushNotifier::daily(), 'PUSH_DAILY=false stops it');
+    }
+
     public function test_staging_only_pushes_to_desk_staff(): void
     {
         $this->keys();
@@ -179,11 +242,15 @@ class AppAndPushTest extends TestCase
         foreach ([$reader, $editor] as $i => $u) {
             $b = $this->browser();
             $e = self::ENDPOINT.$i;
-            PushSubscription::create(['user_id' => $u->id, 'endpoint' => $e, 'endpoint_hash' => PushSubscription::hashOf($e), 'p256dh' => $b['p256dh'], 'auth' => $b['auth']]);
+            PushSubscription::create(['user_id' => $u->id, 'endpoint' => $e, 'endpoint_hash' => PushSubscription::hashOf($e), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['account', 'daily']]);
         }
+        $g = self::ENDPOINT.'guest';
+        PushSubscription::create(['endpoint' => $g, 'endpoint_hash' => PushSubscription::hashOf($g), 'p256dh' => $b['p256dh'], 'auth' => $b['auth'], 'topics' => ['daily']]);
         Http::fake(['*' => Http::response('', 201)]);
         config(['mail.off_live' => null]);
         $this->assertSame(0, WebPush::toUser($reader, ['title' => 'x']));
         $this->assertSame(1, WebPush::toUser($editor, ['title' => 'x']));
+        $this->makePost(['status' => 'published', 'published_at' => now()->subHour()]);
+        $this->assertSame(1, \App\Support\PushNotifier::daily(), 'Staging: only the editor\'s phone, never guests or readers');
     }
 }
