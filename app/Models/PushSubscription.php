@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** D127: one browser where a reader turned on notifications (keys are the browser's public ones; nothing secret of ours). */
+/** D127/D128: one browser where a reader turned on notifications, with or without an account (keys are the browser's public ones). */
 class PushSubscription extends Model
 {
     protected $guarded = ['id'];
@@ -14,7 +14,7 @@ class PushSubscription extends Model
 
     protected function casts(): array
     {
-        return ['last_sent_at' => 'datetime'];
+        return ['last_sent_at' => 'datetime', 'topics' => 'array'];
     }
 
     public function user(): BelongsTo

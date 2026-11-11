@@ -227,3 +227,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Later (owner said "not now"): a read-only MCP endpoint + Server Card + WebMCP search tool, once agents use them
 - [x] D127: installable site (home screen, offline reading) + phone notifications for followed serials and writers (docs/APP.md)
 - [ ] Owner: run `php artisan hatpakha:vapid` on the server, put the two lines in production ENV_FILE, redeploy, test on a phone (docs/APP.md)
+- [x] D128: notifications without an account (🔔 on writer and serial pages, daily evening note), /app/ page + footer "যোগ করুন" buttons + menu link, one-time "ফোনে জানাব?" right after adding to the phone

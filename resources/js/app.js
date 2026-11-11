@@ -247,7 +247,7 @@ document.querySelector('[data-show-follow]')?.addEventListener('click', (e) => {
     e.currentTarget.remove();
 });
 
-// ---- D127: Hatpakha as an app -------------------------------------------------------------------------
+// ---- D127/D128: Hatpakha as an app -------------------------------------------------------------------
 // The service worker lets the site open full screen from the home screen and keeps pieces already read for
 // offline reading (never the desk, accounts or forms). /sw.js is served by the app, never cached.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -258,10 +258,44 @@ const hpStandalone = () => window.matchMedia('(display-mode: standalone)').match
 const hpIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const hpStore = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
+// Chrome's own "install" offer: kept so any "যোগ করুন" button on the page can use it (the box, the footer, /app/).
+let hpInstallEvent = null;
+const hpInstallButtons = () => document.querySelectorAll('[data-install-now]');
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    hpInstallEvent = e;
+    hpInstallButtons().forEach((b) => { if (b.tagName === 'BUTTON') b.hidden = false; });
+    document.dispatchEvent(new Event('hp:installable'));
+});
+const hpInstall = async () => {
+    if (!hpInstallEvent) return false;
+    const e = hpInstallEvent;
+    hpInstallEvent = null;
+    e.prompt();
+    const { outcome } = await e.userChoice;
+    if (outcome !== 'accepted') hpStore.set('hp.install.later', String(Date.now()));
+    return true;
+};
+document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-install-now]');
+    if (!b || !hpInstallEvent) return;   // no offer from the browser: the link goes to /app/ with the steps
+    ev.preventDefault();
+    await hpInstall();
+});
+if (hpStandalone()) {
+    // Inside the app: no "add to phone" buttons; /app/ says it's done.
+    document.querySelectorAll('[data-app-badges], [data-app-link]').forEach((el) => { el.hidden = true; });
+    document.querySelector('[data-app-installed]')?.removeAttribute('hidden');
+}
+window.addEventListener('appinstalled', () => {
+    document.querySelector('[data-install]')?.setAttribute('hidden', '');
+    hpInstallButtons().forEach((b) => { if (b.tagName === 'BUTTON') b.hidden = true; });
+});
+
 // "Keep Hatpakha on your phone": phones only, from the third page a reader opens, and not again for 30 days after "পরে".
 (() => {
     const box = document.querySelector('[data-install]');
-    if (!box || hpStandalone() || !window.matchMedia('(max-width: 767px)').matches) return;
+    if (!box || hpStandalone() || !window.matchMedia('(max-width: 767px)').matches || location.pathname.startsWith('/app')) return;
     const views = Number(hpStore.get('hp.views') || 0) + 1;
     hpStore.set('hp.views', String(views));
     const later = Number(hpStore.get('hp.install.later') || 0);
@@ -270,7 +304,7 @@ const hpStore = { get: (k) => { try { return localStorage.getItem(k); } catch (e
     box.querySelector('[data-install-later]').addEventListener('click', hide);
     box.querySelector('[data-install-ok]').addEventListener('click', hide);
     if (hpIos) {
-        // Safari has no install button: show the two taps instead (other iPhone browsers can't add to the home screen).
+        // Safari has no install button: show the steps instead (other iPhone browsers rarely can).
         if (!/safari/i.test(navigator.userAgent) || /crios|fxios|edgios/i.test(navigator.userAgent)) return;
         box.querySelector('[data-install-android]').hidden = true;
         box.querySelector('[data-install-ios]').hidden = false;
@@ -279,92 +313,119 @@ const hpStore = { get: (k) => { try { return localStorage.getItem(k); } catch (e
         box.hidden = false;
         return;
     }
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        box.hidden = false;
-        box.querySelector('[data-install-go]').addEventListener('click', async () => {
-            box.hidden = true;
-            e.prompt();
-            const { outcome } = await e.userChoice;
-            if (outcome !== 'accepted') hpStore.set('hp.install.later', String(Date.now()));
-        }, { once: true });
-    });
-    window.addEventListener('appinstalled', () => { box.hidden = true; });
+    const show = () => { box.hidden = false; };
+    if (hpInstallEvent) show(); else document.addEventListener('hp:installable', show, { once: true });
+    box.querySelector('[data-install-go]').addEventListener('click', () => { box.hidden = true; hpInstall(); });
 })();
 
-// Phone notifications (account → settings → ফোনে খবর). The state shown is this browser's own.
-(() => {
-    const card = document.querySelector('[data-push]');
-    if (!card) return;
-    const status = card.querySelector('[data-push-status]');
-    const on = card.querySelector('[data-push-on]');
-    const off = card.querySelector('[data-push-off]');
-    const test = card.querySelector('[data-push-test]');
-    const base = card.dataset.pushUrl.replace(/\/$/, '');
-    const say = (text, buttons = []) => {
-        status.textContent = text;
-        [on, off, test].forEach((b) => { b.hidden = !buttons.includes(b); b.disabled = false; });
-    };
-    const post = async (url, body) => {
+// Phone notifications (D128): any [data-push-topic] button turns one topic on or off for this browser,
+// with or without an account ("account" = the signed-in reader's follows; "daily"; "serial:N"; "author:N").
+const hpPush = (() => {
+    const keyMeta = document.querySelector('meta[name="hp-push-key"]');
+    const supported = !!keyMeta && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const post = async (path, body) => {
         const token = await hpFreshToken();
-        const r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token || '' }, body: JSON.stringify(body || {}) });
+        const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token || '' }, body: JSON.stringify(body || {}) });
         return r.ok ? r.json() : Promise.reject(r.status);
     };
     const key = () => {
-        const s = card.dataset.pushKey.replace(/-/g, '+').replace(/_/g, '/');
-        const raw = atob(s + '='.repeat((4 - (s.length % 4)) % 4));
-        return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+        const s = keyMeta.content.replace(/-/g, '+').replace(/_/g, '/');
+        return Uint8Array.from(atob(s + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0));
     };
+    const subscription = async () => (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    /** Ask permission (needs a tap) and turn these topics on. Returns the browser's topics, or null if not allowed. */
+    const on = async (add) => {
+        if ((await Notification.requestPermission()) !== 'granted') return null;
+        const sub = (await subscription()) || await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key() });
+        return (await post('/push/', { ...sub.toJSON(), add })).topics || [];
+    };
+    const off = async (topic) => {
+        const sub = await subscription();
+        if (!sub) return [];
+        const topics = (await post('/push/off/', { endpoint: sub.endpoint, topics: [topic] })).topics || [];
+        if (!topics.length) await sub.unsubscribe().catch(() => {});
+        return topics;
+    };
+    const state = async () => {
+        const sub = await subscription();
+        return sub ? ((await post('/push/state/', { endpoint: sub.endpoint }).catch(() => ({ topics: [] }))).topics || []) : [];
+    };
+    return { supported, post, subscription, on, off, state };
+})();
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+(() => {
+    const buttons = [...document.querySelectorAll('[data-push-topic]')];
+    if (!buttons.length || !document.querySelector('meta[name="hp-push-key"]')) return;
+    const note = (sel, show) => document.querySelectorAll(sel).forEach((el) => { el.hidden = !show; });
+    if (!hpPush.supported) {
         if (hpIos && !hpStandalone()) {
-            card.querySelector('[data-push-ios]').hidden = false;
-            say('আইফোনে খবর পেতে আগে হাতপাখাকে হোম স্ক্রিনে যোগ করতে হয় (নিচে দেখুন)।');
+            // iPhone: notifications only after "Add to Home Screen". The button shows the way.
+            buttons.forEach((b) => { b.hidden = false; b.addEventListener('click', () => { location.href = '/app/#iphone'; }); });
+            note('[data-push-ios]', true);
         } else {
-            say('এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Chrome, Firefox বা Edge-এ খুলে দেখুন।');
+            note('[data-push-unsupported]', true);
         }
         return;
     }
-    const refresh = async () => {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (Notification.permission === 'denied') {
-            say('এই ব্রাউজারে আগে "না" বলা আছে। ব্রাউজারের সেটিংসে hatpakha.com-এর নোটিফিকেশন (Notifications) চালু করে আবার আসুন।');
-        } else if (sub) {
-            say('✓ এই ফোনে চালু আছে।', [test, off]);
-        } else {
-            say('এই ফোনে এখন বন্ধ।', [on]);
-        }
-        return sub;
+    let topics = [];
+    const testBtn = document.querySelector('[data-push-test]');
+    const status = document.querySelector('[data-push-status]');
+    const say = (t) => { if (status) status.textContent = t; };
+    const paint = () => {
+        buttons.forEach((b) => {
+            const onNow = topics.includes(b.dataset.pushTopic);
+            b.textContent = onNow ? b.dataset.on : b.dataset.off;
+            b.setAttribute('aria-pressed', onNow ? 'true' : 'false');
+            b.hidden = false;
+            b.disabled = false;
+        });
+        if (testBtn) testBtn.hidden = !topics.length;
+        if (Notification.permission === 'denied') say('এই ব্রাউজারে আগে "না" বলা আছে। ব্রাউজারের সেটিংসে hatpakha.com-এর Notifications চালু করে আবার আসুন।');
+        else say(topics.length ? '✓ এই ফোনে খবর চালু আছে।' : 'এই ফোনে এখন বন্ধ।');
     };
-    on.addEventListener('click', async () => {
-        on.disabled = true;
+    document.addEventListener('hp:push', (e) => { topics = e.detail; paint(); });
+    buttons.forEach((b) => b.addEventListener('click', async () => {
+        const topic = b.dataset.pushTopic;
+        b.disabled = true;
         try {
-            if ((await Notification.requestPermission()) !== 'granted') { await refresh(); return; }
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key() });
-            await post(base + '/', sub.toJSON());
-            await refresh();
+            const r = topics.includes(topic) ? await hpPush.off(topic) : await hpPush.on([topic]);
+            if (r) topics = r;
+            paint();
         } catch (e) {
-            say('চালু করা গেল না। একটু পরে আবার চেষ্টা করুন।', [on]);
+            b.disabled = false;
+            say('এখন চালু করা গেল না। একটু পরে আবার চেষ্টা করুন।');
         }
+    }));
+    testBtn?.addEventListener('click', async () => {
+        testBtn.disabled = true;
+        const sub = await hpPush.subscription();
+        const r = sub ? await hpPush.post('/push/test/', { endpoint: sub.endpoint }).catch(() => ({ ok: false })) : { ok: false };
+        say(r.ok ? '✓ পাঠানো হল। কয়েক সেকেন্ডের মধ্যে খবরটি আসার কথা।' : 'পাঠানো গেল না। বন্ধ করে আবার চালু করে দেখুন।');
+        testBtn.disabled = false;
     });
-    off.addEventListener('click', async () => {
-        off.disabled = true;
-        const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
-        if (sub) {
-            await post(base + '/off/', { endpoint: sub.endpoint }).catch(() => {});
-            await sub.unsubscribe().catch(() => {});
-        }
-        await refresh();
+    hpPush.state().then((t) => { topics = t; paint(); }).catch(() => paint());
+})();
+
+// Right after adding Hatpakha to the phone, or on its first opening from the home screen: ask once, with one tap
+// ("হ্যাঁ, জানান" = the daily note, plus the reader's follows when signed in). Never asked again after an answer.
+(() => {
+    const box = document.querySelector('[data-push-ask]');
+    if (!box || !hpPush.supported) return;
+    const answered = () => hpStore.get('hp.push.asked') || Notification.permission !== 'default';
+    const show = async () => {
+        if (answered() || (await hpPush.state()).length) return;
+        document.querySelector('[data-install]')?.setAttribute('hidden', '');
+        box.hidden = false;
+    };
+    box.querySelector('[data-push-ask-no]').addEventListener('click', () => { hpStore.set('hp.push.asked', 'no'); box.hidden = true; });
+    box.querySelector('[data-push-ask-yes]').addEventListener('click', async (e) => {
+        e.currentTarget.disabled = true;
+        hpStore.set('hp.push.asked', 'yes');
+        const topics = await hpPush.on(box.hasAttribute('data-account') ? ['daily', 'account'] : ['daily']).catch(() => null);
+        box.querySelector('[data-push-ask-msg]').textContent = topics ? '✓ চালু হল। সন্ধ্যায় নতুন লেখা থাকলে খবর আসবে।' : 'চালু হল না। পরে "ফোনে হাতপাখা" পাতা থেকে চালু করতে পারবেন।';
+        if (topics) document.dispatchEvent(new CustomEvent('hp:push', { detail: topics }));
+        setTimeout(() => { box.hidden = true; }, 2500);
     });
-    test.addEventListener('click', async () => {
-        test.disabled = true;
-        const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
-        if (sub) await post(base + '/', sub.toJSON()).catch(() => {});   // make sure the site knows this phone
-        const r = await post(base + '/test/').catch(() => ({ ok: false }));
-        status.textContent = r.ok ? '✓ পাঠানো হল। কয়েক সেকেন্ডের মধ্যে খবরটি আসার কথা।' : 'পাঠানো গেল না। বন্ধ করে আবার চালু করে দেখুন।';
-        test.disabled = false;
-    });
-    refresh().catch(() => say('এই ফোনে এখন বন্ধ।', [on]));
+    window.addEventListener('appinstalled', () => setTimeout(show, 800));
+    if (hpStandalone()) setTimeout(show, 1500);
 })();

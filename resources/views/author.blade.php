@@ -65,6 +65,7 @@
                                 <a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($author->url(), PHP_URL_PATH)) }}" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">+ অনুসরণ করুন</a>
                             @endauth
                         </form>
+                        <x-push-button :topic="'author:'.$author->id" off="🔔 ফোনে জানান" on="✓ ফোনে জানাব" />
                     @endif
                     @if ($isOwner)
                         <a href="{{ \App\Support\Url::to('/account/profile') }}" class="flex h-11 items-center rounded-full bg-red px-5 font-bold text-white">প্রোফাইল সাজান</a>

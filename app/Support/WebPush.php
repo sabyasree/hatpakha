@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Phone notifications (Web Push, D127) with PHP's own OpenSSL, no extra package:
  * the message is encrypted for the reader's browser (RFC 8291, aes128gcm) and signed with our VAPID key (RFC 8292).
- * Only to addresses of the browsers' own push services. Off the live site, only to desk staff (like D118).
+ * Only to addresses of the browsers' own push services. Off the live site, only to desk staff's browsers (like D118).
  */
 final class WebPush
 {
@@ -58,6 +58,9 @@ final class WebPush
     /** @param array{title: string, body?: string, url?: string, tag?: string} $message */
     public static function send(PushSubscription $sub, array $message): bool
     {
+        if (! self::configured() || (! MailGuard::live() && ! $sub->user?->hasRole(Role::Editor))) {   // staging: desk staff only (D118)
+            return false;
+        }
         if (! self::allowedEndpoint($sub->endpoint)) {
             $sub->delete();
 

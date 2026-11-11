@@ -79,6 +79,7 @@ return [
         'public_key' => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),
         'subject' => env('VAPID_SUBJECT', 'https://hatpakha.com/contact-us/'),
+        'daily' => (bool) env('PUSH_DAILY', true),   // D128: the evening note of the day's new pieces (PUSH_DAILY=false stops it)
     ],
 
 ];

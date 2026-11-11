@@ -24,17 +24,17 @@ final class FollowNotifier
             if (! $mail && ! WebPush::configured()) {
                 continue;
             }
-            $link = $post->url().'?utm_source=hatpakha-push&utm_medium=push';
             $told = [];
+            if (! $mail) {
+                $sent += (int) rescue(fn () => PushNotifier::forPost($post), 0, false);
+
+                continue;
+            }
             // D108: readers who follow this serial hear about the new episode (once, even if they also follow the writer).
             if ($post->serial_id && $post->serial) {
                 $ids = DB::table('serial_follows')->where('serial_id', $post->serial_id)->limit(2000)->pluck('user_id');
                 foreach (User::whereIn('id', $ids)->whereNotNull('email_verified_at')->get() as $u) {
-                    if ($mail) {
-                        rescue(fn () => $u->notify(new \App\Notifications\NewEpisode($post, URL::signedRoute('serial.unfollow', ['serial' => $post->serial_id, 'user' => $u->id]))), null, false);
-                    }
-                    // D127: and on their phone, if they turned that on
-                    rescue(fn () => WebPush::toUser($u, ['title' => $post->serial->title.': নতুন পর্ব', 'body' => trim($post->episodeLabel().' · '.$post->title, ' ·'), 'url' => $link, 'tag' => 'serial-'.$post->serial_id]), 0, false);
+                    rescue(fn () => $u->notify(new \App\Notifications\NewEpisode($post, URL::signedRoute('serial.unfollow', ['serial' => $post->serial_id, 'user' => $u->id]))), null, false);
                     $told[$u->id] = true;
                     $sent++;
                 }
@@ -42,14 +42,12 @@ final class FollowNotifier
             foreach ($post->authors as $author) {
                 $ids = DB::table('follows')->where('author_id', $author->id)->limit(500)->pluck('user_id');
                 foreach (User::whereIn('id', $ids)->whereNotIn('id', array_keys($told))->whereNotNull('email_verified_at')->get() as $u) {
-                    if ($mail) {
-                        rescue(fn () => $u->notify(new NewFromWriter($post, $author, URL::signedRoute('unfollow', ['author' => $author->id, 'user' => $u->id]))), null, false);
-                    }
-                    rescue(fn () => WebPush::toUser($u, ['title' => $author->publicName().'-এর নতুন লেখা', 'body' => $post->title, 'url' => $link, 'tag' => 'post-'.$post->id]), 0, false);
+                    rescue(fn () => $u->notify(new NewFromWriter($post, $author, URL::signedRoute('unfollow', ['author' => $author->id, 'user' => $u->id]))), null, false);
                     $told[$u->id] = true;
                     $sent++;
                 }
             }
+            $sent += (int) rescue(fn () => PushNotifier::forPost($post), 0, false);   // D127/D128: phones (accounts and topics)
         }
 
         return $sent;
