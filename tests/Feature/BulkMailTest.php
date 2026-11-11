@@ -258,4 +258,19 @@ class BulkMailTest extends TestCase
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         BulkMail::choose('postmark', $admin->id);   // only a road that is set up
     }
+
+    /** Gmail's one-click unsubscribe (RFC 8058) POSTs to the List-Unsubscribe link, without a form token. */
+    public function test_one_click_unsubscribe_by_post_works_and_needs_the_signature(): void
+    {
+        $sub = NewsletterSubscriber::create(['email' => 'one@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
+        $url = NewsletterSender::unsubscribeUrl('subscriber', $sub->id);
+        $this->post(preg_replace('/signature=[a-f0-9]+/', 'signature=00', $url), ['List-Unsubscribe' => 'One-Click'])->assertForbidden();
+        $this->assertSame('subscribed', $sub->fresh()->status);
+        $this->post($url, ['List-Unsubscribe' => 'One-Click'])->assertOk();
+        $this->assertSame('unsubscribed', $sub->fresh()->status);
+
+        $writer = User::factory()->create(['role' => Role::Writer]);
+        $this->post(NewsletterSender::unsubscribeUrl('writer', $writer->id), ['List-Unsubscribe' => 'One-Click'])->assertOk();
+        $this->assertTrue((bool) $writer->fresh()->mail_opt_out);
+    }
 }

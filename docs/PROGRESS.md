@@ -232,3 +232,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Newsletter sending: a batch where every letter fails pauses the letter; /desk shows "কেন যায়নি" (reasons in plain words) and "যেগুলো যায়নি, আবার পাঠান"
 - [x] Newsletters: "কপি করুন" (duplicate) on the letter page and in the list: a new draft with the same words, pieces and audience
 - [x] D129: newsletters through Amazon SES or Brevo, chosen in /desk → চিঠি → পাঠানোর পথ (each with its own daily limit)
+- [x] Newsletter deliverability: the List-Unsubscribe one-click (POST, RFC 8058) now really works (was GET-only, which Gmail counts against the sender)
