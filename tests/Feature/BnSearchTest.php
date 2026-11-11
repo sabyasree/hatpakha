@@ -33,4 +33,17 @@ class BnSearchTest extends TestCase
         $this->get('/search/?q=শ্রাবণের মেঝ')->assertSee('কিছু পাওয়া গেল না')->assertSee('আপনি কি খুঁজছিলেন');
         $this->get('/search/?q=%25%25')->assertOk();
     }
+
+    public function test_misspelled_writer_is_found_even_with_a_stale_count_and_snippet_is_one_sentence(): void
+    {
+        $mou = Author::create(['slug' => 'mou', 'display_name' => 'মৌ চক্রবর্তী', 'published_count' => 0]);   // count not yet refreshed
+        $this->makePost(['slug' => 'nodi', 'title' => 'নদীর ধারে', 'format' => 'prose',
+            'body_html' => '<p>সকালে বৃষ্টি হয়েছিল অনেকক্ষণ ধরে, মাঠ ভিজে গেছে পুরো। দুপুরে কুয়াশা নামে মাঠের ওপর আস্তে আস্তে। সন্ধ্যায় সব পরিষ্কার হয়ে আসে আবার, আকাশে তারা ফোটে।</p>'], $mou);
+        $this->get('/search/?q=মৌ চক্রবর্তি')->assertSee('নদীর ধারে');
+        $this->get('/search/?q=কুয়াসা')->assertSee('দুপুরে কুয়াশা নামে মাঠের ওপর আস্তে আস্তে।', false)->assertSee('কাছাকাছি বানানের')->assertDontSee('সন্ধ্যায় সব পরিষ্কার', false);
+
+        $post = $this->makePost(['slug' => 'later', 'status' => 'pending'], $mou);
+        $post->update(['status' => 'published', 'published_at' => now()]);
+        $this->assertSame(2, $mou->fresh()->published_count, 'Publishing from anywhere refreshes the count');
+    }
 }

@@ -27,7 +27,8 @@
         .hp-h-big { font-size: 2rem; font-weight: 800; line-height: 1.1; margin-top: .4rem; font-variant-numeric: tabular-nums; }
         .hp-h-line { margin-top: .35rem; }
         .hp-muted { font-size: .85rem; opacity: .75; }
-        .hp-up { color: #1A86C2; font-weight: 700; } .hp-down { color: #CB1B32; font-weight: 700; }
+        .hp-up { font-weight: 800; } .hp-down { color: #CB1B32; font-weight: 800; }
+        .hp-h-why { margin-top: .4rem; padding: .35rem .6rem; border-left: 4px solid #CB1B32; background: rgba(203,27,50,.07); font-weight: 700; font-size: .9rem; }
         .hp-h-split { display: flex; height: .6rem; border-radius: 999px; overflow: hidden; margin-top: .6rem; background: rgba(127,127,127,.2); }
         .hp-h-legend { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .82rem; margin-top: .4rem; }
         .hp-h-legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .25rem; vertical-align: -1px; }
@@ -81,9 +82,10 @@
         @php($rd = $r['readers'])
         <section class="hp-h-card">
             <h3>{{ __('পাঠক') }} <span class="hp-h-chip hp-{{ $rd['status'] }}">{{ $verdict[$rd['status']][1] }}</span></h3>
+            @foreach ($rd['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">{{ $n($rd['reads']) }}</div>
             <div class="hp-muted">{{ __('বার লেখা পড়া হয়েছে') }}
-                @if ($rd['change'] !== null) · <span class="{{ $rd['change'] >= 0 ? 'hp-up' : 'hp-down' }}">{{ $rd['change'] >= 0 ? '▲' : '▼' }} {{ $n(abs($rd['change'])) }}%</span> ({{ __('আগে') }} {{ $n($rd['before']) }})@endif</div>
+                @if ($rd['change'] !== null)<br><span class="{{ $rd['change'] >= 0 ? 'hp-up' : 'hp-down' }}">{{ $rd['change'] >= 0 ? '▲' : '▼' }} {{ $isWeek ? __('আগের সপ্তাহের চেয়ে') : __('আগের মাসের চেয়ে') }} {{ $n(abs($rd['change'])) }}% {{ $rd['change'] >= 0 ? __('বেশি') : __('কম') }}</span> ({{ __('আগে') }} {{ $n($rd['before']) }})@endif</div>
             @php($tot = max(1, $rd['search'] + $rd['social'] + $rd['internal'] + $rd['other']))
             <div class="hp-h-split" aria-hidden="true">
                 <span style="width:{{ $pct($rd['search'], $tot) }}%;background:#1A86C2"></span><span style="width:{{ $pct($rd['social'], $tot) }}%;background:#CB1B32"></span><span style="width:{{ $pct($rd['internal'], $tot) }}%;background:#13212C"></span><span style="width:{{ $pct($rd['other'], $tot) }}%;background:#EFC08D"></span>
@@ -104,6 +106,7 @@
         @php($pb = $r['publishing'])
         <section class="hp-h-card">
             <h3>{{ __('লেখা ও জমা') }} <span class="hp-h-chip hp-{{ $pb['status'] }}">{{ $verdict[$pb['status']][1] }}</span></h3>
+            @foreach ($pb['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">{{ $n($pb['published']) }}</div>
             <div class="hp-muted">{{ __('টি লেখা প্রকাশ হয়েছে') }}</div>
             <p class="hp-h-line">{{ __('নতুন জমা') }}: <b>{{ $n($pb['received']) }}</b> · {{ __('মনোনীত') }} {{ $n($pb['approved']) }} · {{ __('বদল চাওয়া') }} {{ $n($pb['changes']) }} · {{ __('ফেরত') }} {{ $n($pb['rejected']) }}</p>
@@ -115,6 +118,7 @@
         @php($cm = $r['comments'])
         <section class="hp-h-card">
             <h3>{{ __('মন্তব্য') }} <span class="hp-h-chip hp-{{ $cm['status'] }}">{{ $verdict[$cm['status']][1] }}</span></h3>
+            @foreach ($cm['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">{{ $n($cm['new']) }}</div>
             <div class="hp-muted">{{ __('টি নতুন মন্তব্য') }}</div>
             <p class="hp-h-line">{{ __('অনুমোদনের অপেক্ষায়') }}: <b>{{ $n($cm['pending']) }}</b> @if ($cm['pending'])<a class="link" href="{{ url('/desk/comments') }}">{{ __('দেখুন') }}</a>@endif</p>
@@ -124,6 +128,7 @@
         @php($ml = $r['mail'])
         <section class="hp-h-card">
             <h3>{{ __('চিঠি') }} <span class="hp-h-chip hp-{{ $ml['status'] }}">{{ $verdict[$ml['status']][1] }}</span></h3>
+            @foreach ($ml['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">{{ $n($ml['sent']) }}</div>
             <div class="hp-muted">{{ __('জনের কাছে পৌঁছেছে') }} ({{ $n($ml['letters']) }} {{ __('টি চিঠি') }})</div>
             <p class="hp-h-line">{{ __('যায়নি') }}: <b>{{ $n($ml['failed']) }}</b> · {{ __('ফেরত এসেছে') }} {{ $n($ml['bounced']) }} · {{ __('লিংকে ছুঁয়েছেন') }} {{ $n($ml['clicked']) }}</p>
@@ -134,6 +139,7 @@
         @php($ph = $r['phones'])
         <section class="hp-h-card">
             <h3>{{ __('ফোনে খবর') }} <span class="hp-h-chip hp-{{ $ph['status'] }}">{{ $verdict[$ph['status']][1] }}</span></h3>
+            @foreach ($ph['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">{{ $n($ph['phones']) }}</div>
             <div class="hp-muted">{{ __('টি ফোন/কম্পিউটারে চালু') }}</div>
             <p class="hp-h-line">{{ __('পাঠানো') }} {{ $n($ph['sent']) }} · {{ __('ছুঁয়ে খুলেছেন') }} {{ $n($ph['opened']) }}@if ($ph['sent']) ({{ $n($pct($ph['opened'], $ph['sent'])) }}%)@endif</p>
@@ -143,6 +149,7 @@
         @php($ai = $r['ai'])
         <section class="hp-h-card">
             <h3>{{ __('এআই দল') }} <span class="hp-h-chip hp-{{ $ai['status'] }}">{{ $verdict[$ai['status']][1] }}</span></h3>
+            @foreach ($ai['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <div class="hp-h-big">${{ number_format($ai['cost'], 2) }}</div>
             <div class="hp-muted">{{ __('খরচ') }} ({{ __('আগে') }} ${{ number_format($ai['before'], 2) }})</div>
             <p class="hp-h-line">{{ __('কাজ শেষ') }} {{ $n($ai['done']) }} · {{ __('আটকে গেছে') }} <b>{{ $n($ai['failed']) }}</b> @if ($ai['failed'])<a class="link" href="{{ url('/desk/ai-team') }}">{{ __('দেখুন') }}</a>@endif</p>
@@ -152,6 +159,7 @@
         @php($st = $r['site'])
         <section class="hp-h-card">
             <h3>{{ __('সাইট') }} <span class="hp-h-chip hp-{{ $st['status'] }}">{{ $verdict[$st['status']][1] }}</span></h3>
+            @foreach ($st['why'] as $why)<p class="hp-h-why">⚠ {{ $why }}</p>@endforeach
             <p class="hp-h-line">{{ __('ভাঙা লিংক বা হারানো ছবি') }}: <b>{{ $n($st['broken']) }}</b>@if ($st['checked_at']) <span class="hp-muted">({{ __('দেখা হয়েছে') }} {{ Bn::date($st['checked_at']) }})</span>@endif</p>
             <p class="hp-h-line">{{ __('পেছনের কাজে ভুল') }}: <b>{{ $n($st['queue_failed']) }}</b></p>
             <p class="hp-h-line">{{ __('শেষ ব্যাকআপ') }}: <b>{{ $st['backup_hours'] === null ? __('পাওয়া যায়নি') : ($st['backup_hours'] < 24 ? $n($st['backup_hours']).' '.__('ঘণ্টা আগে') : $n(intdiv($st['backup_hours'], 24)).' '.__('দিন আগে')) }}</b></p>

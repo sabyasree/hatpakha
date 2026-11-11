@@ -13,9 +13,17 @@ final class WriterStats
         'SG' => 'সিঙ্গাপুর', 'DE' => 'জার্মানি', 'SA' => 'সৌদি আরব', 'QA' => 'কাতার', 'KW' => 'কুয়েত', 'OM' => 'ওমান', 'MY' => 'মালয়েশিয়া', 'NP' => 'নেপাল',
         'JP' => 'জাপান', 'FR' => 'ফ্রান্স', 'IT' => 'ইতালি', 'SE' => 'সুইডেন', 'NL' => 'নেদারল্যান্ডস', 'NZ' => 'নিউজিল্যান্ড', 'IE' => 'আয়ারল্যান্ড'];
 
+    /** Cities readers come from most often, in Bengali (UX review); any other city keeps its English name. */
+    private const CITIES = ['Kolkata' => 'কলকাতা', 'Calcutta' => 'কলকাতা', 'Dhaka' => 'ঢাকা', 'Siliguri' => 'শিলিগুড়ি', 'Howrah' => 'হাওড়া', 'Durgapur' => 'দুর্গাপুর',
+        'Asansol' => 'আসানসোল', 'Bardhaman' => 'বর্ধমান', 'Kharagpur' => 'খড়্গপুর', 'Agartala' => 'আগরতলা', 'Guwahati' => 'গুয়াহাটি', 'Silchar' => 'শিলচর',
+        'Chittagong' => 'চট্টগ্রাম', 'Chattogram' => 'চট্টগ্রাম', 'Sylhet' => 'সিলেট', 'Khulna' => 'খুলনা', 'Rajshahi' => 'রাজশাহী', 'Delhi' => 'দিল্লি', 'New Delhi' => 'দিল্লি',
+        'Mumbai' => 'মুম্বই', 'Bengaluru' => 'বেঙ্গালুরু', 'Bangalore' => 'বেঙ্গালুরু', 'Chennai' => 'চেন্নাই', 'Hyderabad' => 'হায়দরাবাদ', 'Pune' => 'পুনে',
+        'London' => 'লন্ডন', 'New York' => 'নিউ ইয়র্ক', 'Toronto' => 'টরন্টো', 'Dubai' => 'দুবাই', 'Singapore' => 'সিঙ্গাপুর', 'Sydney' => 'সিডনি'];
+
     public static function place(string $place): string
     {
         [$city, $cc] = array_pad(explode('|', $place, 2), 2, '');
+        $city = self::CITIES[$city] ?? $city;
         $country = self::COUNTRIES[$cc] ?? $cc;
 
         return $city !== '' ? $city.', '.$country : $country;

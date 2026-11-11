@@ -57,8 +57,11 @@
         ctx.fillStyle = '#4D5A63'; ctx.font = '700 50px "Anek Bangla"';
         ctx.fillText('— ' + d.by, 80, y);
         // footer
-        ctx.fillStyle = '#13212C'; ctx.font = '700 44px "Anek Bangla"';
-        ctx.fillText('পড়ুন: hatpakha.com', 80, H - 90);
+        // UX review: tell a Facebook reader how to find the piece, not just the site.
+        ctx.fillStyle = '#4D5A63'; ctx.font = '700 36px "Anek Bangla"';
+        ctx.fillText('পুরো লেখাটি পড়ুন', 80, H - 150);
+        ctx.fillStyle = '#13212C'; ctx.font = '800 50px "Anek Bangla"';
+        ctx.fillText('hatpakha.com', 80, H - 88);
     };
 
     const blob = () => new Promise((res) => cv.toBlob(res, 'image/png'));

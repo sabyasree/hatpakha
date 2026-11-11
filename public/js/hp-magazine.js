@@ -7,18 +7,22 @@
     if (!root || !source) return;
     const book = root.querySelector('[data-mag-book]');
     const count = root.querySelector('[data-mag-count]');
+    const prevBtn = root.querySelector('[data-mag-prev]');
+    const nextBtn = root.querySelector('[data-mag-next]');
     const bn = new Intl.NumberFormat('bn-BD');
     const key = 'hp.mag.' + root.dataset.mag;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let pages = [], leaves = [], cur = 0, spread = false, size = 17, busy = false;
-    try { size = Number(localStorage.getItem('hp.mag.size')) || 17; } catch (e) { /* private mode */ }
+    const phone = window.innerWidth < 760;
+    size = phone ? 19 : 17;   // UX review: bigger letters on phones
+    try { size = Number(localStorage.getItem('hp.mag.size')) || size; } catch (e) { /* private mode */ }
 
     // ---- 1. Page size: an A5-like page that fits the screen ----------------------------------------------------
     const measure = () => {
-        const bar = 112, availH = window.innerHeight - bar, availW = window.innerWidth - 24;
+        const bar = [...root.querySelectorAll('.mag-bar, .mag-nav, .mag-hint')].reduce((t, el) => t + (el.hidden ? 0 : el.offsetHeight), 0) + 16, availH = window.innerHeight - bar, availW = window.innerWidth - 24;
         let h = Math.min(availH, 1000), w = Math.round(h / 1.41);
         spread = availW >= 2 * w + 40 && window.innerWidth >= 900;
-        if (!spread && w > availW) { w = availW; h = Math.min(availH, Math.round(w * 1.41)); }
+        if (!spread && w > availW) { w = availW; h = Math.min(availH, Math.round(w * 1.75)); }   // phones: use the height
         if (spread && 2 * w > availW) { w = Math.floor(availW / 2); h = Math.round(w * 1.41); }
         return { w, h };
     };
@@ -32,7 +36,8 @@
             head.className = 'mag-head';
             head.innerHTML = '<span></span><span></span>';
             head.children[0].textContent = root.dataset.title || '';
-            head.children[1].textContent = sec.dataset.section || '';
+            // After a piece's first page: its title and writer, so a reader never gets lost in a long story.
+            head.children[1].textContent = (cls || '').includes('mag-next') && sec.dataset.running ? sec.dataset.running : (sec.dataset.section || '');
             p.appendChild(head);
         }
         const body = document.createElement('div');
@@ -164,6 +169,10 @@
         book.classList.toggle('mag-closed-back', spread && cur >= leaves.length);
         const first = spread ? Math.max(0, cur * 2 - 1) : cur;
         const shown = spread ? (cur === 0 ? '১' : bn.format(first) + '–' + bn.format(Math.min(pages.length - 1, first + 1))) : bn.format(cur);
+        const last = spread ? leaves.length : leaves.length - 1;
+        prevBtn.disabled = cur === 0;
+        nextBtn.disabled = cur >= last;
+        nextBtn.textContent = cur >= last ? 'শেষ পাতা' : 'পরের →';
         count.textContent = cur === 0 ? 'প্রচ্ছদ' : 'পাতা ' + shown + ' / ' + bn.format(pages.length - 1);
         try { localStorage.setItem(key, String(cur)); } catch (e) { /* private mode */ }
     };
@@ -175,7 +184,9 @@
         place();
         setTimeout(() => { busy = false; }, reduce ? 0 : 650);
     };
-    const next = () => turn(cur + 1);
+    const hint = root.querySelector('[data-mag-hint]');
+    const hideHint = () => { if (hint && !hint.hidden) { hint.hidden = true; try { localStorage.setItem('hp.mag.hint', '1'); } catch (e) { /* private mode */ } setTimeout(render, 50); } };
+    const next = () => { hideHint(); turn(cur + 1); };
     const prev = () => turn(cur - 1);
     const goPage = (n) => turn(spread ? Math.ceil(n / 2) : n);
 
@@ -189,8 +200,12 @@
     };
 
     // ---- 4. Controls ----------------------------------------------------------------------------------------------
-    root.querySelector('[data-mag-next]').addEventListener('click', next);
-    root.querySelector('[data-mag-prev]').addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+    prevBtn.addEventListener('click', prev);
+    if (hint) {
+        try { hint.hidden = localStorage.getItem('hp.mag.hint') === '1'; } catch (e) { hint.hidden = false; }
+        root.querySelector('[data-mag-hint-close]').addEventListener('click', hideHint);
+    }
     root.querySelector('[data-mag-contents]').addEventListener('click', () => {
         const i = pages.findIndex((p) => p.classList.contains('mag-contents'));
         goPage(Math.max(0, i));

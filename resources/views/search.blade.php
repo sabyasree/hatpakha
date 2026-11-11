@@ -23,6 +23,10 @@
                 </ul>
             @endif
             <h2 class="mt-8 text-sm font-extrabold uppercase tracking-wide text-ink2">লেখা · {{ \App\Support\Bn::num((string) $posts->total()) }}টি</h2>
+            {{-- UX review: say so when the spelling was forgiven, so readers trust the results --}}
+            @if ($posts->total() > 0 && $authors->isEmpty() && $posts->getCollection()->every(fn ($p) => mb_stripos($p->title.' '.$p->search_snippet, $q) === false))
+                <p class="mt-2 text-sm text-ink2">বানান একটু আলাদা হলেও কাছাকাছি বানানের লেখাগুলোও দেখানো হচ্ছে।</p>
+            @endif
             @forelse ($posts as $p)
                 <a href="{{ $p->url() }}" class="mt-3 flex gap-4 rounded-2xl border-2 border-rule bg-white p-3 hover:border-navy">
                     @if ($p->featured_image_path)

@@ -53,7 +53,19 @@ final class BnSearch
         foreach (preg_split('/\n+/u', self::plain((string) $post->body_html)) as $line) {
             $k = self::key($line);
             if ($k !== '' && collect($words)->every(fn ($w) => str_contains($k, $w))) {
-                return mb_strlen($line) > 160 ? mb_substr(trim($line), 0, 157).'…' : trim($line);
+                // A long paragraph: just the sentence that holds the words (UX review: one short line, not four).
+                $line = trim($line);
+                if (mb_strlen($line) > 110) {
+                    foreach (preg_split('/(?<=[।?!৷])\s+/u', $line) as $sentence) {
+                        $sk = self::key($sentence);
+                        if (collect($words)->every(fn ($w) => str_contains($sk, $w))) {
+                            $line = trim($sentence);
+                            break;
+                        }
+                    }
+                }
+
+                return mb_strlen($line) > 110 ? mb_substr($line, 0, 107).'…' : $line;
             }
         }
 

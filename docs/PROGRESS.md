@@ -241,3 +241,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D132: install screenshots, offline reading list, /desk → ফোনে খবর (numbers + announcements), section choices, share to Hatpakha, morning fetch
 - [x] D133: the editor-in-chief plans each request across members (writer, designer, marketing…), with new poster and piece-posts jobs; each step shown
 - [x] D134: the editor-in-chief asks back when unsure (choices + reply box), then plans
+- [x] D135: spelling-forgiving Bengali search (রবীন্দ্রনাথ = রবিন্দ্রনাথ), writer names, poem lines, did-you-mean
+- [x] D136: issues as a real magazine (cover, contents, editorial, openers, writers, back) in a full-screen 3D flip-book; issue e-books built nightly, owner approves in /desk → ই-বুক
+- [x] D137: writers' "আমার পাঠক" page (reads, places, sources, likes, saves, followers) + "আমার লেখা হাতপাখায়" share card
+- [x] D138: /desk → সাইটের স্বাস্থ্য, weekly / monthly health report with reasons for every flag (no email)
+- [x] UX review of all of the above; fixes applied (cover contrast, phone page size + bigger letters, page-turn hint, running heads, writer typo search, chart labels, Bengali city names, flag reasons, e-book button order)
+- [ ] Owner: Cloudflare → Rules → Managed Transforms → turn on "Add visitor location headers" (for city names on writers' pages)
+- [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)

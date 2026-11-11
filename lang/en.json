@@ -1727,5 +1727,22 @@
     "লেখা পড়ার অপেক্ষায়": "pieces waiting to be read",
     "মন্তব্য অনুমোদনের অপেক্ষায়": "comments waiting for approval",
     "চিঠির খসড়া পাঠানোর অপেক্ষায়": "letter drafts waiting to be sent",
-    "এআই দলের কাজ আটকে গেছে": "AI team jobs stuck"
+    "এআই দলের কাজ আটকে গেছে": "AI team jobs stuck",
+    "আগের চেয়ে :n% কম পড়া হয়েছে": ":n% fewer reads than before",
+    "একটি লেখা :n দিন ধরে পড়ার অপেক্ষায়; লেখকেরা দুই সপ্তাহের মধ্যে উত্তর আশা করেন": "A piece has waited :n days to be read; writers expect an answer within two weeks",
+    ":nটি মন্তব্য অনুমোদনের অপেক্ষায়": ":n comments waiting for approval",
+    ":nটি চিঠি পৌঁছায়নি": ":n letters were not delivered",
+    ":nটি ঠিকানা থেকে চিঠি ফেরত এসেছে": ":n addresses bounced",
+    "এআই দলের :nটি কাজ আটকে গেছে": ":n AI team jobs are stuck",
+    "খরচ আগের দ্বিগুণের বেশি": "Cost is more than double the previous period",
+    ":nটি ভাঙা লিংক বা হারানো ছবি": ":n broken links or missing pictures",
+    "পেছনের :nটি কাজে ভুল হয়েছে": ":n background jobs failed",
+    "কোনো ব্যাকআপ পাওয়া যায়নি; রোজ রাতে হওয়ার কথা": "No backup found; one should run every night",
+    "শেষ ব্যাকআপ :n দিন আগে; রোজ রাতে হওয়ার কথা": "Last backup :n days ago; one should run every night",
+    "আগের সপ্তাহের চেয়ে": "than the previous week",
+    "আগের মাসের চেয়ে": "than the previous month",
+    "বেশি": "more",
+    "কম": "fewer",
+    "না চাপলেও আজ রাতে নিজেই তৈরি হবে।": "If you don’t, it will be built on its own tonight.",
+    "পাঠকেরা নামাতে পারছেন": "Readers can download it"
 }

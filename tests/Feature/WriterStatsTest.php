@@ -27,7 +27,7 @@ class WriterStatsTest extends TestCase
 
         $this->actingAs($user)->get('/account/stats/')->assertOk()
             ->assertSee('আমার পাঠক')->assertSee('নদীর গান')->assertDontSee('অন্যের লেখা')
-            ->assertSee('Dhaka, বাংলাদেশ')->assertSee('data-share-card', false)->assertSee('hp-share-card.js', false);
+            ->assertSee('ঢাকা, বাংলাদেশ')->assertSee('data-share-card', false)->assertSee('hp-share-card.js', false);
         $this->actingAs($user)->get('/account/')->assertSee('/account/stats/', false);
     }
 

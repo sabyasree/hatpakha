@@ -47,7 +47,8 @@
             {{-- 30 days --}}
             <section class="mt-8" aria-labelledby="st-days">
                 <h3 id="st-days" class="text-lg font-extrabold">গত ৩০ দিন</h3>
-                <div class="mt-3 flex h-32 items-end gap-[2px] rounded-2xl border-2 border-rule bg-white p-3" aria-hidden="true">
+                <p class="mt-2 text-sm text-ink2">সবচেয়ে বেশি একদিনে: <b class="text-navy">{{ $n($max) }} বার</b> · আজ এখনও পর্যন্ত: <b class="text-red">{{ $n($s['days']->last()) }} বার</b></p>
+                <div class="mt-2 flex h-32 items-end gap-[2px] rounded-2xl border-2 border-rule bg-white p-3" aria-hidden="true">
                     @foreach ($s['days'] as $day => $v)
                         <span class="flex-1 rounded-t-sm {{ $loop->last ? 'bg-red' : 'bg-navy' }}" style="height: {{ max(2, round(100 * $v / $max)) }}%" title="{{ Bn::date(\Illuminate\Support\Carbon::parse($day)) }}: {{ $n($v) }}"></span>
                     @endforeach
@@ -88,7 +89,8 @@
                             <div class="min-w-0 flex-1">
                                 <a href="{{ $r['post']->url() }}" class="block font-serif text-lg font-bold leading-snug hover:text-red">{{ $r['post']->title }}</a>
                                 <p class="text-sm text-ink2">{{ Bn::date($r['post']->published_at) }} · {{ $r['post']->section?->name_bn }}</p>
-                                <p class="mt-1 text-sm"><b class="tabular-nums">{{ $n($r['reads']) }}</b> বার পড়া · গত ৩০ দিনে {{ $n($r['month']) }} · ♥ {{ $n($r['likes']) }} · পরে পড়বেন {{ $n($r['saves']) }}</p>
+                                <p class="mt-1 text-sm"><b class="tabular-nums">{{ $n($r['reads']) }}</b> বার পড়া · গত ৩০ দিনে {{ $n($r['month']) }}</p>
+                                <p class="text-sm text-ink2">ভালো লেগেছে {{ $n($r['likes']) }} জনের · পরে পড়বেন বলে রেখেছেন {{ $n($r['saves']) }} জন</p>
                             </div>
                             <button type="button" class="h-11 flex-none rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light" data-share-card
                                 data-title="{{ $r['post']->title }}" data-by="{{ $writerName }}" data-section="{{ $r['post']->section?->name_bn }}" data-url="{{ $r['post']->url() }}">শেয়ার কার্ড</button>
@@ -107,9 +109,9 @@
                     <button type="button" data-card-close class="h-10 w-10 rounded-full border-2 border-navy font-bold" aria-label="বন্ধ করুন">✕</button>
                 </div>
                 <canvas data-card-canvas width="1080" height="1350" class="mt-3 w-full rounded-xl border border-rule" role="img" aria-label="শেয়ার কার্ড"></canvas>
-                <p class="mt-2 text-sm text-ink2">ছবিটি ফেসবুকে পোস্ট করুন, সঙ্গে লেখার লিংক দিন। লিংক কপি করে রাখা যায় নিচ থেকে।</p>
+                <p class="mt-2 text-sm text-ink2">ছবিটি ফেসবুকে পোস্ট করুন, সঙ্গে লেখার লিংকটিও দিন (“লিংক কপি” চাপলেই কপি হয়ে যাবে)।</p>
                 <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                    <button type="button" data-card-share hidden class="h-12 rounded-full bg-red font-bold text-white">শেয়ার করুন</button>
+                    <button type="button" data-card-share hidden class="h-12 rounded-full bg-red px-3 font-bold text-white sm:col-span-3">ফেসবুক / হোয়াটসঅ্যাপে পাঠান</button>
                     <button type="button" data-card-download class="h-12 rounded-full bg-navy font-bold text-white">ছবি নামান</button>
                     <button type="button" data-card-copy class="h-12 rounded-full border-2 border-navy font-bold">লিংক কপি</button>
                 </div>
@@ -117,5 +119,5 @@
             </div>
         </dialog>
     </x-account-shell>
-    <script src="{{ asset('js/hp-share-card.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-share-card.js') }}?v=2" defer></script>
 </x-layouts.app>

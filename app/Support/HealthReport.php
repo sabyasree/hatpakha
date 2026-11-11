@@ -146,6 +146,26 @@ final class HealthReport
             $failedJobs ? ['n' => $failedJobs, 'label' => 'এআই দলের কাজ আটকে গেছে', 'url' => '/desk/ai-team'] : null,
         ]));
 
+        // UX review: every flag says why it was raised.
+        $num = fn ($v) => Bn::num((string) $v);
+        $readers['why'] = array_filter([$readers['status'] !== self::OK ? __('আগের চেয়ে :n% কম পড়া হয়েছে', ['n' => $num(abs((int) $change))]) : null]);
+        $publishing['why'] = array_filter([$publishing['status'] !== self::OK ? __('একটি লেখা :n দিন ধরে পড়ার অপেক্ষায়; লেখকেরা দুই সপ্তাহের মধ্যে উত্তর আশা করেন', ['n' => $num($oldestDays)]) : null]);
+        $comments['why'] = array_filter([$pendingComments ? __(':nটি মন্তব্য অনুমোদনের অপেক্ষায়', ['n' => $num($pendingComments)]) : null]);
+        $mail['why'] = array_filter([
+            $failRate > 0.05 ? __(':nটি চিঠি পৌঁছায়নি', ['n' => $num($failed)]) : null,
+            $bounced > 10 ? __(':nটি ঠিকানা থেকে চিঠি ফেরত এসেছে', ['n' => $num($bounced)]) : null,
+        ]);
+        $phones['why'] = [];
+        $ai['why'] = array_filter([
+            $failedJobs ? __('এআই দলের :nটি কাজ আটকে গেছে', ['n' => $num($failedJobs)]) : null,
+            $costBefore > 1 && $cost > 2 * $costBefore ? __('খরচ আগের দ্বিগুণের বেশি') : null,
+        ]);
+        $site['why'] = array_filter([
+            $broken ? __(':nটি ভাঙা লিংক বা হারানো ছবি', ['n' => $num($broken)]) : null,
+            $queueFailed ? __('পেছনের :nটি কাজে ভুল হয়েছে', ['n' => $num($queueFailed)]) : null,
+            $backupHours === null ? __('কোনো ব্যাকআপ পাওয়া যায়নি; রোজ রাতে হওয়ার কথা') : ($backupHours > 48 ? __('শেষ ব্যাকআপ :n দিন আগে; রোজ রাতে হওয়ার কথা', ['n' => $num(intdiv($backupHours, 24))]) : null),
+        ]);
+
         $parts = compact('readers', 'publishing', 'comments', 'mail', 'phones', 'ai', 'site');
         $worst = collect($parts)->pluck('status');
 

@@ -23,13 +23,18 @@
         body { margin: 0; background: #13212C; color: #13212C; overflow: hidden; }
         .mag { position: fixed; inset: 0; display: flex; flex-direction: column; }
         .mag-bar { display: flex; align-items: center; gap: .5rem; padding: .5rem max(.75rem, env(safe-area-inset-left)); color: #FFFBF4; min-height: 52px; }
-        .mag-bar a, .mag-bar button { color: #FFFBF4; border: 2px solid rgba(255,251,244,.35); border-radius: 999px; min-height: 40px; min-width: 40px; padding: 0 .8rem; font-weight: 700; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
+        .mag-bar a, .mag-bar button { color: #FFFBF4; border: 2px solid rgba(255,251,244,.35); border-radius: 999px; min-height: 44px; min-width: 44px; padding: 0 .8rem; font-weight: 700; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
         .mag-bar .mag-title { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
         .mag-stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .mag-nav { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: .4rem 0 max(.6rem, env(safe-area-inset-bottom)); color: #FFFBF4; }
         .mag-nav button { min-height: 44px; padding: 0 1.2rem; border-radius: 999px; font-weight: 700; }
         .mag-nav [data-mag-prev] { border: 2px solid rgba(255,251,244,.5); color: #FFFBF4; }
         .mag-nav [data-mag-next] { background: #CB1B32; color: #fff; }
+        .mag-nav button:disabled { opacity: .4; cursor: default; }
+        .mag-wide { display: none; }
+        @media (min-width: 760px) { .mag-wide { display: inline; } .mag-narrow { display: none; } }
+        .mag-hint { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: .5rem 1rem; background: #FBEBD8; color: #13212C; font-weight: 700; text-align: center; }
+        .mag-hint button { min-height: 44px; min-width: 44px; border: 2px solid #13212C; border-radius: 999px; background: transparent; color: #13212C; font-weight: 700; padding: 0 .9rem; }
         .mag-count { min-width: 9rem; text-align: center; font-variant-numeric: tabular-nums; font-size: .9rem; }
 
         /* The book and its leaves */
@@ -77,7 +82,9 @@
         .mag-cover-lines li { border-top: 1px solid rgba(255,251,244,.35); padding: .35em 0; }
         .mag-cover-lines b { display: block; font-size: 1.05em; }
         .mag-cover-lines span { color: #EFC08D; font-size: .85em; }
-        .mag-fanbg { position: absolute; right: -20%; bottom: -15%; width: 90%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
+        /* UX review: cover lines sit on a navy panel, never on the pink fan or a photo */
+        .mag-cover-in > div:last-child { background: #13212C; margin: 0 calc(-8% - 4px) -8%; padding: 6% calc(8% + 4px) 8% 8%; }
+        .mag-fanbg { position: absolute; right: -30%; top: 22%; width: 85%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
         .mag-inside .mag-body { display: flex; flex-direction: column; justify-content: center; text-align: center; font-family: 'Anek Bangla', sans-serif; }
         .mag-opener-in { height: 100%; background: #FBEBD8; display: flex; flex-direction: column; justify-content: flex-end; padding: 10% 9%; box-sizing: border-box; }
         .mag-opener-in p { margin: 0; font: 700 .9em 'Anek Bangla', sans-serif; color: #CB1B32; }
@@ -85,7 +92,7 @@
         .mag-back-in { height: 100%; background: #13212C; color: #FFFBF4; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 10%; box-sizing: border-box; font-family: 'Anek Bangla', sans-serif; }
         .mag-back-in a { color: #EFC08D; }
         .mag-contents ol { list-style: none; padding: 0; margin: 0; font-family: 'Anek Bangla', sans-serif; }
-        .mag-contents li a { display: flex; gap: .6em; align-items: baseline; padding: .28em 0; color: inherit; text-decoration: none; }
+        .mag-contents li a { display: flex; gap: .6em; align-items: baseline; padding: .28em 0; min-height: 44px; box-sizing: border-box; color: inherit; text-decoration: none; }
         .mag-contents li a .t { flex: 1; min-width: 0; }
         .mag-contents li a .t small { display: block; color: #4D5A63; }
         .mag-contents li a .dots { flex: 1; border-bottom: 1px dotted #4D5A63; transform: translateY(-.3em); min-width: 1em; }
@@ -100,14 +107,18 @@
 <body>
 <div class="mag" data-mag="{{ $issue->slug }}" data-title="{{ $issue->title }}">
     <div class="mag-bar">
-        <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="hidden sm:inline">ফিরুন</span></a>
+        <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="mag-wide">ফিরুন</span></a>
         <div class="mag-title">হাতপাখা · {{ $issue->title }}</div>
         <button type="button" data-mag-contents aria-label="সূচি">সূচি</button>
-        <button type="button" data-mag-font="-1" aria-label="লেখা ছোট">অ-</button>
-        <button type="button" data-mag-font="1" aria-label="লেখা বড়">অ+</button>
+        <button type="button" data-mag-font="-1" aria-label="অক্ষর ছোট করুন"><span class="mag-narrow">অ-</span><span class="mag-wide">ছোট অক্ষর</span></button>
+        <button type="button" data-mag-font="1" aria-label="অক্ষর বড় করুন"><span class="mag-narrow">অ+</span><span class="mag-wide">বড় অক্ষর</span></button>
         <button type="button" data-mag-fullscreen hidden aria-pressed="false" aria-label="পুরো পর্দায়"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     </div>
     <div class="mag-stage"><div class="mag-book" data-mag-book aria-live="polite"></div></div>
+    <div class="mag-hint" data-mag-hint hidden>
+        <span>পাতা ওল্টাতে আঙুল দিয়ে ডানে-বাঁয়ে টানুন, বা ‘পরের’ চাপুন।</span>
+        <button type="button" data-mag-hint-close aria-label="বুঝেছি, বন্ধ করুন">বুঝেছি</button>
+    </div>
     <div class="mag-nav">
         <button type="button" data-mag-prev>← আগের</button>
         <span class="mag-count" data-mag-count></span>
@@ -170,7 +181,7 @@
             <section data-kind="opener" data-head="none"><div class="mag-opener-in"><p>{{ $issue->title }}</p><h2>{{ $sec }}</h2></div></section>
             @foreach ($list as $p)
                 {{-- body_html is sanitised on save; IssueBook::xhtml leaves out pictures and embeds --}}
-                <section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }}" data-section="{{ $sec }}" data-anchor="piece-{{ $p->id }}">
+                <section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }}" data-section="{{ $sec }}" data-running="{{ $p->title }} · {{ $p->authors->map->publicName()->implode(', ') }}" data-anchor="piece-{{ $p->id }}">
                     <p class="mag-kicker">{{ $sec }}</p>
                     <h2 class="mag-h">{{ $p->title }}</h2>
                     <p class="mag-by">{{ $p->authors->map->publicName()->implode(', ') }}</p>
@@ -199,6 +210,6 @@
         </section>
     </div>
 </div>
-<script src="{{ asset('js/hp-magazine.js') }}?v=1" defer></script>
+<script src="{{ asset('js/hp-magazine.js') }}?v=2" defer></script>
 </body>
 </html>

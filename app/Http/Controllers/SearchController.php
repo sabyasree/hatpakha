@@ -25,7 +25,7 @@ class SearchController extends Controller
         $words = array_values(array_filter(explode(' ', BnSearch::key($q)), fn ($w) => mb_strlen($w) >= 1));
         if (mb_strlen($q) >= 2 && $words) {
             // Writers: the folded name holds every word (রবিন্দ্রনাথ finds রবীন্দ্রনাথ ঠাকুর).
-            $writers = Author::where('published_count', '>', 0)->orderByDesc('published_count')->get(['id', 'slug', 'display_name', 'display_name_bn', 'avatar_path', 'published_count', 'is_desk'])
+            $writers = Author::whereHas('posts', fn ($p) => $p->published())->orderByDesc('published_count')->get(['id', 'slug', 'display_name', 'display_name_bn', 'avatar_path', 'published_count', 'is_desk'])
                 ->filter(fn ($a) => collect($words)->every(fn ($w) => str_contains(BnSearch::key($a->display_name.' '.$a->display_name_bn), $w)))->values();
             $authors = $writers->take(6);
             $writerIds = $writers->pluck('id')->all();
@@ -67,7 +67,7 @@ class SearchController extends Controller
         if (mb_strlen($key) < 3) {
             return null;
         }
-        $names = \Illuminate\Support\Facades\Cache::remember('search.names', 3600, fn () => Author::where('published_count', '>', 0)->pluck('display_name')
+        $names = \Illuminate\Support\Facades\Cache::remember('search.names', 3600, fn () => Author::whereHas('posts', fn ($p) => $p->published())->pluck('display_name')
             ->merge(Post::published()->pluck('title'))->filter()->unique()->values()->all());
         $best = null;
         $bestScore = 0;

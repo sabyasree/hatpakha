@@ -73,6 +73,9 @@ class Post extends Model
             if ($post->wasChanged(['title', 'body_html', 'excerpt', 'status']) || $post->wasRecentlyCreated) {
                 rescue(fn () => \App\Support\BnSearch::index($post), null, false);
             }
+            if ($post->wasChanged('status')) {   // writers' counts follow publishing from anywhere
+                rescue(fn () => $post->authors()->get()->each->refreshCount(), null, false);
+            }
         });
                 static::restored(function (self $post) {
             if (filled($post->slug)) {

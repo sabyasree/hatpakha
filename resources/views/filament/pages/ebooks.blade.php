@@ -7,7 +7,7 @@
         .hp-eb-cover img { width: 100%; height: 100%; object-fit: cover; }
         .hp-eb-cover span { position: absolute; left: .35rem; top: .3rem; color: #fff; font-family: 'Galada', cursive; font-size: .95rem; }
         .hp-eb-badge { display: inline-block; font-size: .78rem; font-weight: 700; padding: .1rem .55rem; border-radius: 999px; margin: .25rem 0; }
-        .hp-eb-wait { background: #CB1B32; color: #fff; }
+        .hp-eb-wait { background: #EFC08D; color: #13212C; }
         .hp-eb-ok { background: #13212C; color: #FFFBF4; }
         .hp-eb-none { border: 1px solid rgba(127,127,127,.4); }
         .hp-muted { font-size: .85rem; opacity: .75; }
@@ -26,7 +26,7 @@
                     @if ($waiting)
                         <span class="hp-eb-badge hp-eb-wait">{{ $approved ? __('নতুন সংস্করণ অনুমোদনের অপেক্ষায়') : __('তৈরি; অনুমোদনের অপেক্ষায়') }}</span>
                     @elseif ($approved)
-                        <span class="hp-eb-badge hp-eb-ok">✓ {{ __('পাঠকদের জন্য খোলা') }}</span>
+                        <span class="hp-eb-badge hp-eb-ok">✓ {{ __('পাঠকেরা নামাতে পারছেন') }}</span>
                     @else
                         <span class="hp-eb-badge hp-eb-none">{{ __('এখনও তৈরি হয়নি') }}</span>
                     @endif
@@ -35,18 +35,23 @@
                         @if ($i->ebook_approved_at) · {{ __('অনুমোদন') }}: {{ \App\Support\Bn::date($i->ebook_approved_at) }}@endif
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">
-                        <x-filament::button size="xs" tag="a" :href="\App\Support\Url::to('/sonkha/'.$i->slug.'/boi')" target="_blank" icon="heroicon-o-book-open">{{ __('পত্রিকা দেখুন') }}</x-filament::button>
-                        @if ($i->ebook_path)
-                            <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-down-tray" wire:click="download({{ $i->id }})">EPUB</x-filament::button>
-                        @endif
+                        {{-- UX review: the next step is the main button (build → check → approve). --}}
                         @if ($waiting && auth()->user()->hasRole(\App\Enums\Role::Admin))
-                            <x-filament::button size="xs" color="success" icon="heroicon-o-check" wire:click="approve({{ $i->id }})" wire:confirm="{{ __('এই ই-বুক পাঠকদের জন্য খুলে দেবেন?') }}">{{ __('অনুমোদন দিন') }}</x-filament::button>
+                            <x-filament::button size="sm" color="danger" icon="heroicon-o-check" wire:click="approve({{ $i->id }})" wire:confirm="{{ __('এই ই-বুক পাঠকদের জন্য খুলে দেবেন?') }}">{{ __('অনুমোদন দিন') }}</x-filament::button>
                         @endif
-                        <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-path" wire:click="rebuild({{ $i->id }})">{{ $i->ebook_path ? __('আবার তৈরি করুন') : __('এখনই তৈরি করুন') }}</x-filament::button>
+                        @if (! $i->ebook_path)
+                            <x-filament::button size="sm" icon="heroicon-o-arrow-path" wire:click="rebuild({{ $i->id }})">{{ __('এখনই তৈরি করুন') }}</x-filament::button>
+                        @endif
+                        <x-filament::button size="sm" :color="$waiting ? 'gray' : 'primary'" :outlined="(bool) $waiting" tag="a" :href="\App\Support\Url::to('/sonkha/'.$i->slug.'/boi')" target="_blank" icon="heroicon-o-book-open">{{ __('পত্রিকা দেখুন') }}</x-filament::button>
+                        @if ($i->ebook_path)
+                            <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-down-tray" wire:click="download({{ $i->id }})">EPUB</x-filament::button>
+                            <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-path" wire:click="rebuild({{ $i->id }})">{{ __('আবার তৈরি করুন') }}</x-filament::button>
+                        @endif
                         @if ($approved && auth()->user()->hasRole(\App\Enums\Role::Admin))
-                            <x-filament::button size="xs" color="danger" outlined wire:click="withdraw({{ $i->id }})" wire:confirm="{{ __('পাঠকদের কাছ থেকে ই-বুক সরিয়ে নেবেন?') }}">{{ __('সরিয়ে নিন') }}</x-filament::button>
+                            <x-filament::button size="sm" color="danger" outlined wire:click="withdraw({{ $i->id }})" wire:confirm="{{ __('পাঠকদের কাছ থেকে ই-বুক সরিয়ে নেবেন?') }}">{{ __('সরিয়ে নিন') }}</x-filament::button>
                         @endif
                     </div>
+                    @if (! $i->ebook_path)<p class="hp-muted" style="margin-top:.4rem">{{ __('না চাপলেও আজ রাতে নিজেই তৈরি হবে।') }}</p>@endif
                 </div>
             </div>
         @empty
