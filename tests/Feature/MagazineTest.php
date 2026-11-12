@@ -180,4 +180,26 @@ class MagazineTest extends TestCase
         Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'proposed']);
         $this->get('/')->assertDontSee('পৌষ সংখ্যা', false);   // a proposal is never shown
     }
+
+    public function test_the_desk_previews_an_unpublished_issue_and_cover_paths_are_absolute(): void
+    {
+        $section = \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $piece = $this->makePost(['status' => 'scheduled', 'slug' => 'kak', 'title' => 'পাঁচিলের ওপর কাক', 'published_at' => now()->addDays(10)]);
+        $ed = $this->makePost(['status' => 'draft', 'slug' => 'ed-draft', 'title' => 'হেমন্তের আলো', 'section_id' => $section->id, 'format' => 'prose', 'published_at' => null]);
+        $issue = Issue::create(['slug' => '2026-12', 'title' => 'হেমন্ত সংখ্যা', 'status' => 'proposed', 'editorial_post_id' => $ed->id,
+            'proposed_cover_path' => 'media/covers/2026/11/x.jpg', 'ai_plan' => ['post_ids' => [$piece->id]]]);
+
+        $this->get('/issue-preview/'.$issue->id.'/')->assertRedirect();   // not for readers
+        $this->actingAs(User::factory()->create())->get('/issue-preview/'.$issue->id.'/')->assertForbidden();   // nor writers
+        $this->actingAs(User::factory()->create(['role' => Role::Editor]));
+        $res = $this->get('/issue-preview/'.$issue->id.'/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $res->assertSee('খসড়া দেখছেন')->assertSee('পাঁচিলের ওপর কাক')->assertSee('হেমন্তের আলো')->assertSee('src="'.url('/media/covers/2026/11/x.jpg').'"', false);
+        $this->assertStringContainsString('no-store', $res->headers->get('Cache-Control'));
+        $this->get('/sonkha/2026-12/boi/')->assertNotFound();   // the public magazine still waits for publishing
+
+        // The desk's own pages print cover paths from the site root, never relative to /desk/.
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('src="'.url('/media/covers/2026/11/x.jpg').'"', false)->assertSee('পত্রিকা কেমন দেখাবে');
+    }
 }

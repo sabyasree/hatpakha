@@ -43,6 +43,7 @@ Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where(
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
 // Owner (2026-11-12, later): readers read the issue on the site only; no e-book download for now (the EPUB stays in /desk).
+Route::get('/issue-preview/{issue}', [ArchiveController::class, 'issuePreview'])->middleware('auth')->name('issue.preview');   // desk preview before publishing (2026-11-12)
 Route::get('/issue-print/{issue}', function (\App\Models\Issue $issue) {   // D68: print-ready book for "Save as PDF" (editors only)
     abort_unless(auth()->user()?->hasRole(\App\Enums\Role::Editor), 403);
 

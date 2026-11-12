@@ -73,6 +73,9 @@ class EditIssue extends EditRecord
                     Notification::make()->title(__('সংখ্যা অনুমোদিত'))->body($draft ? __('সম্পাদকীয়টি এখনও খসড়া: সম্পাদনা করে প্রকাশ করুন।') : null)->success()->send();
                     $this->refreshFormData(['status']);
                 }),
+            // Owner (2026-11-12): the magazine as it will look, before readers see it.
+            Action::make('previewMagazine')->label(__('পত্রিকা কেমন দেখাবে'))->icon('heroicon-o-eye')->color('gray')
+                ->url(fn (Issue $record) => \App\Support\Url::to('/issue-preview/'.$record->id), shouldOpenInNewTab: true),
             Action::make('editorial')->label(__('সম্পাদকীয় খসড়া'))->icon('heroicon-o-pencil')->color('gray')
                 ->visible(fn (Issue $record) => $record->editorial_post_id !== null)
                 ->url(fn (Issue $record) => PostResource::getUrl('edit', ['record' => $record->editorial_post_id])),

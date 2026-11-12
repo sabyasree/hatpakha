@@ -38,7 +38,7 @@
             <div class="hp-mz-card">
                 <div>
                     <div class="hp-mz-cover" aria-hidden="true">
-                        @if ($img)<img src="{{ $img }}" alt="">@else<div class="fan"></div>@endif
+                        @if ($img)<img src="{{ asset(ltrim($img, '/')) }}" alt="">@else<div class="fan"></div>@endif
                         <span class="m">হাতপাখা</span>
                         <span class="t">{{ $i->title }}</span>
                     </div>
@@ -87,6 +87,8 @@
                                     @if ($i->status === 'published')
                                         <x-filament::button size="sm" color="gray" tag="a" :href="\App\Support\Url::to('/sonkha/'.$i->slug.'/boi')" target="_blank" icon="heroicon-o-book-open">{{ __('পত্রিকা দেখুন') }}</x-filament::button>
                                     @else
+                                        {{-- Owner (2026-11-12): see the magazine before it is published --}}
+                                        <x-filament::button size="sm" tag="a" :href="\App\Support\Url::to('/issue-preview/'.$i->id)" target="_blank" icon="heroicon-o-eye">{{ __('পত্রিকা কেমন দেখাবে') }}</x-filament::button>
                                         <x-filament::button size="sm" color="gray" tag="a" :href="\App\Filament\Resources\Issues\IssueResource::getUrl('edit', ['record' => $i->id])" icon="heroicon-o-document-text">{{ __('সংখ্যার প্রস্তাব দেখুন') }}</x-filament::button>
                                     @endif
                                     @if ($i->ebook_path)

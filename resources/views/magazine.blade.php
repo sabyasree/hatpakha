@@ -22,6 +22,7 @@
         html, body { height: 100%; }
         body { margin: 0; background: #13212C; color: #13212C; overflow: hidden; }
         .mag { position: fixed; inset: 0; display: flex; flex-direction: column; }
+        .mag-preview { background: #EFC08D; color: #13212C; font: 700 .9rem/1.4 'Anek Bangla', sans-serif; text-align: center; padding: .45rem 1rem; }
         .mag-bar { display: flex; align-items: center; gap: .5rem; padding: .5rem max(.75rem, env(safe-area-inset-left)); color: #FFFBF4; min-height: 52px; }
         .mag-bar a, .mag-bar button { color: #FFFBF4; border: 2px solid rgba(255,251,244,.35); border-radius: 999px; min-height: 44px; min-width: 44px; padding: 0 .8rem; font-weight: 700; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
         .mag-bar .mag-title { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
@@ -139,9 +140,18 @@
     </style>
 </head>
 <body>
-<div class="mag" data-mag="{{ $issue->slug }}" data-title="{{ $issue->title }}">
+@php($preview = $preview ?? false)
+<div class="mag" data-mag="{{ $preview ? 'preview-' : '' }}{{ $issue->slug }}" data-title="{{ $issue->title }}">
+    @if ($preview)
+        {{-- Desk preview (owner, 2026-11-12): how the issue will look, before readers can see it --}}
+        <div class="mag-preview" role="status">খসড়া দেখছেন: পাঠকেরা এখনও এটি দেখতে পান না। খসড়া লেখা আর প্রস্তাবিত প্রচ্ছদও এখানে দেখানো হচ্ছে।</div>
+    @endif
     <div class="mag-bar">
-        <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="mag-wide">ফিরুন</span></a>
+        @if ($preview)
+            <a href="{{ url('/desk/ebooks') }}" aria-label="ডেস্কে ফিরুন">← <span class="mag-wide">ডেস্কে ফিরুন</span></a>
+        @else
+            <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="mag-wide">ফিরুন</span></a>
+        @endif
         <div class="mag-title">হাতপাখা · {{ $issue->title }}</div>
         <button type="button" data-mag-contents aria-label="সূচি">সূচি</button>
         <button type="button" data-mag-font="-1" aria-label="অক্ষর ছোট করুন"><span class="mag-narrow">অ-</span><span class="mag-wide">ছোট অক্ষর</span></button>
@@ -163,7 +173,7 @@
     <div class="mag-source" data-mag-source>
         <section data-kind="cover" data-head="none">
             <div class="mag-cover-in">
-                @if ($issue->cover_path)<img src="{{ $issue->cover_path }}" alt="">@else<div class="mag-fanbg" aria-hidden="true"></div>@endif
+                @if ($coverImg = $issue->cover_path ?: (($preview ?? false) ? $issue->proposed_cover_path : null))<img src="{{ asset(ltrim($coverImg, '/')) }}" alt="">@else<div class="mag-fanbg" aria-hidden="true"></div>@endif
                 <div>
                     <p class="mag-mast">হাতপাখা</p>
                     <p class="mag-mast-sub">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</p>
