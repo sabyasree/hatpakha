@@ -15,6 +15,22 @@ class LegacyController extends Controller
         abort(410);
     }
 
+    /** /wp-json/wp/v2/posts/{id} (or pages/{id}) → that piece or page by its old WordPress number; the rest → home. */
+    public function wpJson(\Illuminate\Http\Request $request, ?string $rest = null)
+    {
+        abort_unless(in_array($request->method(), ['GET', 'HEAD'], true), 410);
+        if (preg_match('#^wp/v2/(posts|pages)/(\d+)#', (string) $rest, $m)) {
+            $target = $m[1] === 'posts'
+                ? \App\Models\Post::whereIn('status', ['published', 'archived'])->where('legacy_wp_id', (int) $m[2])->first()
+                : \App\Models\Page::where('legacy_wp_id', (int) $m[2])->first();
+            if ($target && (! $target instanceof \App\Models\Post || $target->isLive() || $target->status === 'archived')) {
+                return redirect($target->url(), 301);
+            }
+        }
+
+        return redirect(Url::to('/'), 301);
+    }
+
     public function amp(string $slug)
     {
         return redirect(Url::to('/'.Slug::encode(Slug::normalize($slug))), 301);

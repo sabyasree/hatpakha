@@ -33,10 +33,24 @@ class SecurityTest extends TestCase
 
     public function test_old_wordpress_attack_paths_are_gone(): void
     {
-        foreach (['/wp-login.php', '/xmlrpc.php', '/wp-admin/', '/wp-json/wp/v2/users', '/wp-content/plugins/x/y.php'] as $path) {
+        foreach (['/wp-login.php', '/xmlrpc.php', '/wp-admin/', '/wp-content/plugins/x/y.php'] as $path) {
             $this->get($path)->assertStatus(410);
         }
         $this->post('/xmlrpc.php')->assertStatus(410);
+        // D153 (owner): old API addresses are read, not attacked: an old piece's number → that piece, the rest → home. Writes stay refused.
+        $post = $this->makePost(['slug' => 'purono', 'status' => 'published', 'legacy_wp_id' => 17618]);
+        $this->get('/wp-json/wp/v2/posts/17618')->assertRedirect($post->url())->assertStatus(301);
+        $this->get('/wp-json/wp/v2/users')->assertRedirect(url('/').'/')->assertStatus(301);
+        $this->get('/wp-json/')->assertStatus(301);
+        $this->post('/wp-json/wp/v2/posts')->assertStatus(410);
+    }
+
+    public function test_double_slashes_and_page_junk_lead_to_the_clean_address(): void
+    {
+        $this->get(url('/').'//tag/atithi/')->assertRedirect(url('/tag/atithi').'/')->assertStatus(301);   // full URL: a bare "//" reads as a host
+        $this->get(url('/').'//wp-json/wp/v2/posts/1')->assertStatus(301);
+        $this->get('/page/34/=1/')->assertRedirect(url('/page/34').'/')->assertStatus(301);
+        $this->get('/page/53/=1&fbclid=IwAR1')->assertRedirect(url('/page/53').'/')->assertStatus(301);
     }
 
     public function test_sanitizer_strips_scripts_handlers_and_js_links(): void

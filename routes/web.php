@@ -57,7 +57,10 @@ Route::get('/certificate/{code}', CertificateController::class)->where('code', '
 
 // Old WordPress attack surface → 410 Gone (docs/SECURITY.md §5)
 Route::any('/{path}', [LegacyController::class, 'gone'])
-    ->where('path', 'wp-login\.php|xmlrpc\.php|wp-admin(/.*)?|wp-json(/.*)?|wp-includes(/.*)?|wp-content/plugins(/.*)?|wp-content/themes(/.*)?');
+    ->where('path', 'wp-login\.php|xmlrpc\.php|wp-admin(/.*)?|wp-includes(/.*)?|wp-content/plugins(/.*)?|wp-content/themes(/.*)?');
+// Owner (2026-11-12): old WordPress API addresses (/wp-json/…) were being read: an old piece's address goes to that piece,
+// everything else to the home page (301). Anything but a read is still refused.
+Route::any('/wp-json/{rest?}', [LegacyController::class, 'wpJson'])->where('rest', '.*');
 
 // Old AMP URLs → canonical post
 Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]+');
