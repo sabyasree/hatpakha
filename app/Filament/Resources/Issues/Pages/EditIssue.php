@@ -60,6 +60,12 @@ class EditIssue extends EditRecord
                 ->visible(fn (Issue $record) => $isAdmin() && $record->status === 'proposed')
                 ->modalHeading(fn (Issue $record) => __('অনুমোদন: ').$record->title)
                 ->schema([
+                    // Owner (2026-11-12): never publish without knowing the editorial or the cover is not ready.
+                    \Filament\Forms\Components\Placeholder::make('not_ready')->hiddenLabel()
+                        ->visible(fn (Issue $record) => (bool) array_filter(\App\Ai\IssueWatch::needs($record)))
+                        ->content(fn (Issue $record) => new \Illuminate\Support\HtmlString('<div style="border-left:4px solid #CB1B32;padding:.6rem .8rem;background:rgba(203,27,50,.08);font-weight:700">⚠ '
+                            .e(__('এখনও বাকি')).': '.e(implode(' · ', array_filter(\App\Ai\IssueWatch::needs($record), fn ($n) => $n !== __('পাঠক আর লেখকদের খবর দিন'))))
+                            .'<br><span style="font-weight:400">'.e(__('অনুমোদন দিলে সংখ্যাটি এখনই পাঠকেরা দেখবেন। আগে ঠিক করতে:')).' <a style="text-decoration:underline" href="'.e(\App\Filament\Pages\Ebooks::getUrl()).'">'.e(__('মাসের পত্রিকা')).'</a> · <a style="text-decoration:underline" target="_blank" href="'.e(\App\Support\Url::to('/issue-preview/'.$record->id)).'">'.e(__('পত্রিকা কেমন দেখাবে')).'</a></span></div>')),
                     CheckboxList::make('posts')->label(__('লেখা (টিক তুলে দিলে বাদ যাবে)'))
                         ->options(fn (Issue $record) => \App\Models\Post::whereIn('id', (array) ($record->ai_plan['post_ids'] ?? []))->pluck('title', 'id')->all())
                         ->default(fn (Issue $record) => (array) ($record->ai_plan['post_ids'] ?? []))->columns(1)->bulkToggleable(),

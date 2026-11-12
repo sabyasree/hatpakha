@@ -57,6 +57,10 @@ final class IssueWatch
                 'proposed' => __('ডিজাইনারের প্রচ্ছদ দেখে বেছে নিন'),
                 default => null,
             },
+            // Owner (2026-11-12): a live issue is news for readers and for its writers.
+            $issue->status === 'published' && ((! \App\Support\IssueNews::announced($issue) && \App\Support\WebPush::configured())
+                || (! \App\Support\IssueNews::writersTold($issue) && \App\Support\IssueNews::writers($issue)->isNotEmpty()))
+                ? __('পাঠক আর লেখকদের খবর দিন') : null,
         ]));
     }
 

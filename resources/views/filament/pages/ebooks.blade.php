@@ -98,6 +98,37 @@
                                 @if ($i->status === 'published' && $s['editorial'] !== 'live')<p class="hp-muted">{{ __('সম্পাদকীয় প্রকাশ হলেই ই-বুক তৈরি হবে; প্রতিটি ই-বুকে সম্পাদকীয় থাকে।') }}</p>@endif
                             </div>
                         </li>
+                        {{-- 4. Tell readers and writers (owner, 2026-11-12): only once the issue is live, each once, on a click --}}
+                        @if ($i->status === 'published')
+                            @php($told = \App\Support\IssueNews::writersTold($i))
+                            @php($announced = \App\Support\IssueNews::announced($i))
+                            @php($nWriters = \App\Support\IssueNews::writers($i)->count())
+                            <li class="hp-mz-step">
+                                <span class="hp-mz-dot {{ $told && $announced ? 'hp-mz-ok' : 'hp-mz-wait' }}" aria-hidden="true">{{ $told && $announced ? '✓' : '৪' }}</span>
+                                <div>
+                                    <b>{{ __('খবর দিন') }}: {{ $told && $announced ? __('পাঠক আর লেখকেরা জেনেছেন') : __('পাঠকদের ফোনে আর লেখকদের জানান') }}</b>
+                                    @if ($admin)
+                                        <div class="hp-mz-btns">
+                                            @if ($announced)
+                                                <span class="hp-muted">✓ {{ __('পাঠকদের ফোনে পাঠানো হয়েছে') }}</span>
+                                            @elseif (\App\Support\WebPush::configured())
+                                                @php($msg = \App\Support\IssueNews::message($i))
+                                                <x-filament::button size="sm" icon="heroicon-o-megaphone" wire:click="announce({{ $i->id }})"
+                                                    wire:confirm="{{ __('সবার ফোনে যাবে') }} ({{ Bn::num((string) \App\Support\PushNotifier::audience('all')->count()) }}): “{{ $msg['title'] }}”, {{ $msg['body'] }}">{{ __('পাঠকদের ফোনে জানান') }}</x-filament::button>
+                                            @endif
+                                            @if ($told)
+                                                <span class="hp-muted">✓ {{ __('লেখকদের জানানো হয়েছে') }}</span>
+                                            @elseif ($nWriters)
+                                                <x-filament::button size="sm" icon="heroicon-o-envelope" wire:click="tellWriters({{ $i->id }})"
+                                                    wire:confirm="{{ Bn::num((string) $nWriters) }} {{ __('জন লেখক ই-মেল আর ফোনে জানবেন যে তাঁদের লেখা এই সংখ্যায় আছে। পাঠাবেন?') }}">{{ __('লেখকদের জানান') }} ({{ Bn::num((string) $nWriters) }})</x-filament::button>
+                                            @else
+                                                <span class="hp-muted">{{ __('জানানোর মতো লেখক নেই (অ্যাকাউন্ট নেই)') }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            </li>
+                        @endif
                     </ol>
                 </div>
             </div>

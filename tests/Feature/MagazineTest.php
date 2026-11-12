@@ -202,4 +202,54 @@ class MagazineTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('src="'.url('/media/covers/2026/11/x.jpg').'"', false)->assertSee('পত্রিকা কেমন দেখাবে');
     }
+
+    public function test_issue_news_for_readers_and_writers_on_a_click_and_once(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        config(['mail.default' => 'smtp']);
+        [$pub, $priv] = \App\Support\WebPush::newKeys();
+        config(['services.webpush.public_key' => $pub, 'services.webpush.private_key' => $priv, 'services.webpush.subject' => 'mailto:x@example.com']);
+        $issue = $this->issue();
+        $writer = User::factory()->create(['email_verified_at' => now()]);
+        $mine = Author::create(['slug' => 'lekhok', 'display_name' => 'রিনা দাস', 'user_id' => $writer->id]);
+        $this->makePost(['status' => 'published', 'slug' => 'rina', 'title' => 'শীতের নদী', 'issue_id' => $issue->id, 'published_at' => now()->subHour()], $mine);
+
+        $this->assertSame(['রিনা দাস'], \App\Support\IssueNews::writers($issue)->pluck('name')->all(), 'Only writers with an account');
+        $this->assertContains('পাঠক আর লেখকদের খবর দিন', \App\Ai\IssueWatch::needs($issue));
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('পাঠকদের ফোনে জানান')->assertSee('লেখকদের জানান')
+            ->call('announce', $issue->id)->call('tellWriters', $issue->id);
+        $a = \App\Models\PushAnnouncement::sole();
+        $this->assertSame('নতুন সংখ্যা: অগ্রহায়ণ সংখ্যা', $a->title);
+        $this->assertSame($issue->url(), $a->url);
+        if (\App\Support\NewsletterSender::realMail()) {
+            \Illuminate\Support\Facades\Notification::assertSentTo($writer, \App\Notifications\TemplateMail::class, fn ($n) => $n->key === 'issue_piece');
+        }
+        // Once only.
+        $this->assertNull(\App\Support\IssueNews::announce($issue->fresh(), $admin));
+        $this->assertSame(0, \App\Support\IssueNews::tellWriters($issue->fresh(), $admin));
+        $this->assertSame(1, \App\Models\PushAnnouncement::count());
+        $this->assertNotContains('পাঠক আর লেখকদের খবর দিন', \App\Ai\IssueWatch::needs($issue->fresh()));
+        \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('পাঠকদের ফোনে পাঠানো হয়েছে')->assertSee('লেখকদের জানানো হয়েছে');
+    }
+
+    public function test_approval_warns_when_the_editorial_or_cover_is_not_ready_and_sonkha_lists_issues(): void
+    {
+        $this->get('/sonkha/')->assertRedirect(url('/archive').'/#issues');
+        $issue = Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'proposed', 'ai_plan' => ['post_ids' => []]]);
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Issues\Pages\EditIssue::class, ['record' => $issue->id])
+            ->mountAction('approveIssue')->assertActionMounted('approveIssue')
+            ->assertSchemaComponentExists('not_ready', 'mountedActionSchema0', function ($c) {
+                $html = (string) $c->getContent();
+                $this->assertStringContainsString('সম্পাদকীয় এখনও লেখা হয়নি', $html);
+                $this->assertStringContainsString('/issue-preview/', $html);
+
+                return $c->isVisible();
+            });
+    }
 }

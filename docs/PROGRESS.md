@@ -256,6 +256,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D146: no certificates for the desk's own pieces (classics, desk drafts, editorials); one-click withdrawal of those already given
 - [x] D147: no empty drafts from a title alone; writers' unsent drafts in their own desk tab, labelled as drafts
 - [x] D148: desk preview of an unpublished issue's magazine; issue cover paths fixed in the desk and the magazine
+- [x] D149: approval warns if editorial/cover not ready; new-issue phone notification and writers' note on a click (once each); /sonkha/ → archive issues
 - [ ] Owner: /desk → শংসাপত্র → "ডেস্কের লেখার শংসাপত্র সরান" once after deploy
 - [x] Owner report (2026-11-12): issue page cover read as a broken red line and the button shadow looked broken: cover redesigned (cream edge, fan in its corner, name on a navy panel), clean পত্রিকা খুলুন + সূচি দেখুন; the magazine crashed phone browsers on long issues: only the leaves around the open page are drawn (427-page test issue: 2–4 drawn), pictures load lazily, "পাতা সাজানো হচ্ছে…" while laying out
  → turn on "Add visitor location headers" (for city names in the desk health report)

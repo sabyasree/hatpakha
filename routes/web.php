@@ -40,6 +40,8 @@ Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
+// Owner (2026-11-12): /sonkha/ had no page; all the issues are listed in the archive.
+Route::get('/sonkha', fn () => redirect(\App\Support\Url::to('/archive').'#issues', 301))->name('issues');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
 // Owner (2026-11-12, later): readers read the issue on the site only; no e-book download for now (the EPUB stays in /desk).
