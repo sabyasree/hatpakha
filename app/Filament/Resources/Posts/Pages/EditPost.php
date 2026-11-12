@@ -128,7 +128,7 @@ class EditPost extends EditRecord
             // D71: the writer's certificate for this piece: issue (one per writer, e-mail with the link), open, withdraw.
             ActionGroup::make([
                 Action::make('issueCertificate')->label(__('শংসাপত্র দিন / পাঠান'))->icon('heroicon-o-academic-cap')->color('success')
-                    ->visible(fn (Post $record) => $record->isLive() && $record->authors()->where('is_desk', false)->exists())
+                    ->visible(fn (Post $record) => $record->isLive() && $record->isCertifiable())   // not for the desk's own pieces (2026-11-12)
                     ->modalHeading(__('এই লেখার প্রকাশনা শংসাপত্র'))
                     ->modalDescription(__('প্রত্যেক লেখকের জন্য একটি শংসাপত্র (আগে দেওয়া থাকলে সেটাই)। অ্যাকাউন্ট থাকলে লেখক ই-মেল পান আর "আমার লেখা"-তে দেখেন। অ্যাকাউন্ট না থাকলে নিচে ই-মেল দিন।'))
                     ->schema([\Filament\Forms\Components\TextInput::make('email')->label(__('ই-মেলেও পাঠান (ঐচ্ছিক)'))->email()->maxLength(190)])

@@ -100,8 +100,7 @@ class Certificate extends Model
         }
         $have = self::where('kind', 'publication')->select('post_id');
         $n = 0;
-        foreach (Post::published()->where('published_at', '>=', \Illuminate\Support\Carbon::parse($since))->whereNotIn('id', $have)
-            ->whereHas('authors', fn ($q) => $q->where('is_desk', false))->oldest('published_at')->limit($limit)->get() as $post) {
+        foreach (Post::published()->certifiable()->where('published_at', '>=', \Illuminate\Support\Carbon::parse($since))->whereNotIn('id', $have)->oldest('published_at')->limit($limit)->get() as $post) {
             $n += count(self::issueFor($post));
         }
 
@@ -118,8 +117,8 @@ class Certificate extends Model
      */
     public static function issueFor(Post $post, bool $tell = true): array
     {
-        if (! $post->isLive()) {
-            return [];
+        if (! $post->isLive() || ! $post->isCertifiable()) {
+            return [];   // the desk's own pieces and editorials get none
         }
         $new = [];
         foreach ($post->loadMissing('authors', 'issue')->authors as $author) {
