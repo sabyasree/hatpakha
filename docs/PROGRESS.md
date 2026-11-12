@@ -265,6 +265,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: /desk → শংসাপত্র → "ডেস্কের লেখার শংসাপত্র সরান" once after deploy
 - [x] D153/D154: Search Console 404 list (251 addresses): wp-json, double slashes, `/page/N/=1` share links, theme `{{…}}` placeholders, child-category pages, WordPress picture pages → their piece
 - [x] D155: deploy warms the main pages after the Cloudflare purge (520 seen right after a deploy)
+- [x] D159: Cloudflare may serve its last copy when the server is down; owner turned on Always Online
+- [x] D160: the writer's e-mail and edit page list the small corrections (ভুল → ঠিক)
 - [x] D158: the writer's e-mail shown in full inside each decision dialog before sending
 - [x] D157: AI note to the writer written as a literary editor's letter; "resubmit as it is" in the changes e-mail and page
 - [ ] Owner: if “বদল চাওয়া” was edited in /desk → ই-মেলের নমুনা, add the "resubmit as it is" line there too (an edited template keeps the owner's text)

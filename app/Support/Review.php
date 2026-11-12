@@ -77,7 +77,7 @@ final class Review
 
     public static function reject(Post $post, User $editor, string $note): void
     {
-        $post->forceFill(['status' => 'rejected', 'review_note' => $note, 'reviewed_at' => now(), 'reviewed_by' => $editor->id])->save();
+        $post->forceFill(['status' => 'rejected', 'review_fixes' => null, 'review_note' => $note, 'reviewed_at' => now(), 'reviewed_by' => $editor->id])->save();
         self::finish($post, $editor, 'rejected');
     }
 

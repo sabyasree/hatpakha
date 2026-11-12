@@ -19,7 +19,8 @@
             <div role="alert" class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold text-red-dark">@foreach ($errors->all() as $e)<p>{{ $e }}</p>@endforeach</div>
         @endif
         @if ($post->status === 'changes' && $post->review_note)
-            <div class="mt-5 whitespace-pre-line rounded-xl border-2 border-red bg-peach-light p-4"><strong>সম্পাদকের মন্তব্য:</strong> {{ $post->review_note }}<p class="mt-3 text-sm text-ink2">যেমন আছে তেমনই রাখতে চাইলে কিছু না বদলেই আবার জমা দিতে পারেন; আমরা আবার মন দিয়ে পড়ব।</p></div>
+            <div class="mt-5 whitespace-pre-line rounded-xl border-2 border-red bg-peach-light p-4"><strong>সম্পাদকের মন্তব্য:</strong> {{ $post->review_note }}@if ($post->review_fixes)<p class="mt-3 text-sm"><strong>আমাদের ছোট সংশোধন</strong> (শুধু বানান আর যতিচিহ্ন, লেখায় বসানো আছে):
+{{ $post->fixesText() }}</p>@endif<p class="mt-3 text-sm text-ink2">যেমন আছে তেমনই রাখতে চাইলে কিছু না বদলেই আবার জমা দিতে পারেন; আমরা আবার মন দিয়ে পড়ব।</p></div>
         @endif
         @if ($needsVerification)
             <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">জমা দেওয়ার আগে ইমেল যাচাই করুন। খসড়া এখনই লিখে রাখতে পারেন।</div>

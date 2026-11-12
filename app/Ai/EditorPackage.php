@@ -69,7 +69,7 @@ final class EditorPackage
         $safe = array_values(array_filter($chosen, fn ($i) => $edits[$i]['kind'] !== 'word'));
         $word = array_values(array_filter($chosen, fn ($i) => $edits[$i]['kind'] === 'word'));
 
-        self::applyEdits($post, array_intersect_key($edits, array_flip($safe)));
+        self::rememberFixes($post, self::applyEdits($post, array_intersect_key($edits, array_flip($safe))));
         if ($titleFix = ($post->proof['title_fix'] ?? '')) {
             if ($applyTitleFix) {
                 $post->forceFill(['title' => $titleFix])->save();
@@ -107,9 +107,10 @@ final class EditorPackage
     {
         $edits = self::edits($post);
         $keep = array_intersect(array_map('intval', $chosen), self::safeIndexes($post));
-        self::applyEdits($post, array_intersect_key($edits, array_flip($keep)));
+        $applied = self::applyEdits($post, array_intersect_key($edits, array_flip($keep)));
+        self::rememberFixes($post, $applied);
 
-        return count($keep);
+        return count($applied);
     }
 
     /** The writer accepts the word changes: apply them and publish as the owner decided. */
@@ -130,16 +131,35 @@ final class EditorPackage
         AuditLog::record('submission.writer_objected', $post);
     }
 
-    public static function applyEdits(Post $post, array $edits): void
+    /** @return list<array> the edits that were found and put in */
+    public static function applyEdits(Post $post, array $edits): array
     {
         if (! $edits) {
-            return;
+            return [];
         }
-        $result = CopyEdit::apply((string) $post->body_html, array_values($edits));
+        $edits = array_values($edits);
+        $result = CopyEdit::apply((string) $post->body_html, $edits);
         if ($result['applied']) {
             $post->forceFill(['body_html' => $result['html']])->save();   // sanitised + tidied on save
         }
         AuditLog::record('post.copyedits_applied', $post, ['applied' => count($result['applied']), 'not_found' => count($result['missing'])]);
+
+        return array_values(array_intersect_key($edits, array_flip($result['applied'])));
+    }
+
+    /** Remember the small fixes, so the writer's e-mail and page can list them (D160). */
+    private static function rememberFixes(Post $post, array $applied): void
+    {
+        $post->forceFill(['review_fixes' => $applied ? array_map(fn ($e) => ['original' => $e['original'], 'replacement' => $e['replacement']], $applied) : null])->save();
+    }
+
+    /** "ভুল → ঠিক" lines for the ticked small fixes, for the e-mail preview before anything is applied. */
+    public static function fixesPreview(Post $post, array $chosen): string
+    {
+        $edits = self::edits($post);
+        $keep = array_intersect(array_map('intval', $chosen), self::safeIndexes($post));
+
+        return collect($keep)->map(fn ($i) => $edits[$i]['original'].' → '.$edits[$i]['replacement'])->implode("\n");
     }
 
     public static function applyMetadata(Post $post, array $r): void
