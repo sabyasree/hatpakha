@@ -98,6 +98,7 @@ class AiEditorTest extends TestCase
         // From the AI report straight to the decision it recommends.
         $page->mountAction('aiReport')->callMountedAction(['next' => 'requestChanges'])->assertActionMounted('requestChanges')
             ->assertSchemaStateSet(['note' => $message, 'edits' => [0]], 'mountedActionSchema0')
+            ->assertSchemaComponentExists('email_preview', 'mountedActionSchema0')   // the e-mail, before sending
             ->callMountedAction()->assertHasNoFormErrors();
 
         $post->refresh();

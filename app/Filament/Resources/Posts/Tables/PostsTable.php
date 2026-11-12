@@ -183,8 +183,9 @@ class PostsTable
                     TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/')->suffix('/')->maxLength(120)
                         ->default(fn (Post $record) => Transliterate::slug($record->title))
                         ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText(__('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।')),
-                    Textarea::make('note')->label(__('লেখককে বার্তা (ঐচ্ছিক)'))->rows(3)->maxLength(1500)
+                    Textarea::make('note')->label(__('লেখককে বার্তা (ঐচ্ছিক)'))->rows(3)->maxLength(1500)->live(onBlur: true)
                         ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'publish' ? EditorPackage::report($record)['note_to_writer'] : null),
+                    self::emailPreview('approved'),
                 ])
                 ->action(function (Post $record, array $data) {
                     if ($data['use_ai_image'] ?? false) {
@@ -199,18 +200,19 @@ class PostsTable
                 ->modalHeading(fn (Post $record) => __('বদল চাই: ').$record->title)->modalSubmitActionLabel(__('লেখককে পাঠান'))
                 ->modalDescription(fn (Post $record) => self::whatHappens($record, 'changes'))
                 ->schema([
-                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(10)->maxLength(4000)
-                        ->helperText(__('এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন। ই-মেলে নিজে থেকেই যোগ হয়: “যেমন আছে তেমনই রাখতে চাইলে না বদলেও আবার জমা দিতে পারেন।”'))
+                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(10)->maxLength(4000)->live(onBlur: true)
+                        ->helperText(__('এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; নিচে পুরো ই-মেলটি দেখুন।'))
                         ->default(fn (Post $record) => Review::changesMessage($record)),
+                    Select::make('template')->label(__('এআই-এর খসড়ার বদলে তৈরি বার্তা নিতে চাইলে'))->placeholder(__('দরকার নেই'))
+                        ->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_map('__', array_keys(Review::CHANGE_TEMPLATES))))
+                        ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::CHANGE_TEMPLATES[$state] ?? '') : null),
+                    self::emailPreview('changes'),
                     CheckboxList::make('edits')->label(__('ছোট সংশোধনগুলো এখনই লেখায় বসান'))
                         ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।'))
                         ->options(fn (Post $record) => array_intersect_key(EditorPackage::editOptions($record), array_flip(EditorPackage::safeIndexes($record))))
                         ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
                         ->bulkToggleable()->columns(1)
                         ->visible(fn (Post $record) => EditorPackage::safeIndexes($record) !== []),
-                    Select::make('template')->label(__('এআই-এর খসড়ার বদলে তৈরি বার্তা নিতে চাইলে'))->placeholder(__('দরকার নেই'))
-                        ->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_map('__', array_keys(Review::CHANGE_TEMPLATES))))
-                        ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::CHANGE_TEMPLATES[$state] ?? '') : null),
                 ])
                 ->action(function (Post $record, array $data) {
                     $fixed = EditorPackage::applySafeEdits($record, (array) ($data['edits'] ?? []));
@@ -223,11 +225,12 @@ class PostsTable
                 ->modalHeading(fn (Post $record) => __('এবার নয়: ').$record->title)->modalSubmitActionLabel(__('লেখককে পাঠান'))
                 ->modalDescription(fn (Post $record) => self::whatHappens($record, 'rejected'))
                 ->schema([
-                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(5)->maxLength(2000)
+                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(5)->maxLength(2000)->live(onBlur: true)
                         ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'decline' ? EditorPackage::report($record)['note_to_writer'] : null),
                     Select::make('template')->label(__('তৈরি বার্তা নিতে চাইলে'))->placeholder(__('দরকার নেই'))
                         ->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_map('__', array_keys(Review::REJECT_TEMPLATES))))
                         ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::REJECT_TEMPLATES[$state] ?? '') : null),
+                    self::emailPreview('rejected'),
                 ])
                 ->action(function (Post $record, array $data) {
                     Review::reject($record, auth()->user(), $data['note']);
@@ -287,15 +290,37 @@ class PostsTable
         return $first ? array_values(array_unique([$first, ...$all])) : $all;
     }
 
+    /**
+     * The writer's e-mail inside the decision dialog, exactly as it will be sent, with the message as typed
+     * (owner, 2026-11-12: "what email will go? where is the review before sending").
+     */
+    public static function emailPreview(string $decision): \Filament\Forms\Components\Placeholder
+    {
+        return \Filament\Forms\Components\Placeholder::make('email_preview')
+            ->label(__('লেখক ঠিক এই ই-মেলটি পাবেন'))
+            ->visible(fn (Post $record) => $record->submittedBy !== null)
+            ->content(function (Post $record, $get) use ($decision) {
+                $copy = clone $record;
+                $copy->review_note = (string) $get('note');
+                if ($decision === 'approved' && $get('at')) {
+                    $copy->published_at = rescue(fn () => \Illuminate\Support\Carbon::parse($get('at')), now(), false);
+                }
+                $mail = (new \App\Notifications\SubmissionDecision($copy, $decision))->toMail($record->submittedBy);
+
+                return new \Illuminate\Support\HtmlString('<p style="margin:0 0 .4rem;font-size:.9rem"><b>'.e(__('বিষয়:')).'</b> '.e((string) $mail->subject).'</p>'
+                    .view('filament.partials.mail-preview', ['html' => (string) $mail->render(), 'height' => '28rem'])->render());
+            });
+    }
+
     /** Plain words for the dialog: what this button does, and who gets an e-mail. */
     public static function whatHappens(Post $p, string $decision): string
     {
         $who = $p->submittedBy ? __('লেখক (').$p->submittedBy->email.__(') ই-মেল পাবেন') : __('লেখকের অ্যাকাউন্ট নেই, তাই কোনও ই-মেল যাবে না');
 
         return match ($decision) {
-            'changes' => __('লেখাটি লেখকের কাছে ফিরে যাবে। ').$who.__(': নিচের বার্তা আর লেখাটি খুলে ঠিক করার বোতাম। তিনি ঠিক করে আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।'),
+            'changes' => __('লেখাটি লেখকের কাছে ফিরে যাবে। ').$who.__('; ই-মেলটি নিচে হুবহু দেখানো আছে। “লেখককে পাঠান” না চাপা পর্যন্ত কিছু যায় না। লেখক ঠিক করে (বা না বদলেই) আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।'),
             'approved' => __('লেখাটি নিচের দিনে-সময়ে সাইটে প্রকাশ হবে। ').$who.__('। টিক দেওয়া সংশোধনগুলো বসবে; “শব্দ বদল” টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ।'),
-            'rejected' => __('লেখাটি এবার নেওয়া হবে না, সাইটে উঠবে না। ').$who.__(': নিচের বার্তাটি, সঙ্গে নতুন লেখা পাঠানোর আমন্ত্রণ।'),
+            'rejected' => __('লেখাটি এবার নেওয়া হবে না, সাইটে উঠবে না। ').$who.__('; ই-মেলটি নিচে হুবহু দেখানো আছে।'),
             default => '',
         };
     }
