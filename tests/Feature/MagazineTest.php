@@ -142,4 +142,29 @@ class MagazineTest extends TestCase
         $this->assertSame('/media/covers/x.jpg', $next->fresh()->cover_path);
         $this->assertSame('set', \App\Ai\IssueWatch::status($next->fresh())['cover']);
     }
+
+    public function test_the_desk_has_an_editorial_section(): void
+    {
+        $issue = $this->issue();
+        \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $admin = User::factory()->create(['role' => Role::Admin, 'name' => 'সম্পাদক']);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+
+        $this->assertTrue(\App\Filament\Pages\Editorials::canAccess());
+        $this->assertSame('১', \App\Filament\Pages\Editorials::getNavigationBadge(), 'This month\'s issue has no editorial yet');
+        \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('অগ্রহায়ণ সংখ্যা')->assertSee('এখনও লেখা হয়নি')
+            ->assertSee('নিজে লিখুন')->call('write', $issue->id)->assertRedirect();
+        $post = $issue->fresh()->editorialPost();
+        $this->assertSame('draft', $post->status);
+        $this->assertSame($issue->id, $post->issue_id);
+        $this->assertSame('editorial', $post->section->slug);
+        $this->assertSame($admin->id, $post->authors->first()->user_id, 'Under my name');
+        $this->get('/sonkha/2026-11/boi/')->assertDontSee('সম্পাদকীয়: অগ্রহায়ণ', false);   // a draft is never shown to readers
+
+        \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('খসড়া খুলুন')->call('write', $issue->id)->assertRedirect();
+        $this->assertSame(1, \App\Models\Post::whereHas('section', fn ($q) => $q->where('slug', 'editorial'))->count(), 'Never two');
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class, ['activeTab' => 'editorial'])->assertCanSeeTableRecords([$post]);
+        \Livewire\Livewire::test(\App\Filament\Resources\Issues\Pages\EditIssue::class, ['record' => $issue->id])->assertFormFieldExists('editorial_post_id');
+    }
 }
