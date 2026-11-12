@@ -1871,11 +1871,9 @@
     ") ই-মেল পাবেন": ") gets an e-mail",
     "লেখকের অ্যাকাউন্ট নেই, তাই কোনও ই-মেল যাবে না": "The writer has no account, so no e-mail is sent",
     "লেখাটি লেখকের কাছে ফিরে যাবে। ": "The piece goes back to the writer. ",
-    ": নিচের বার্তা আর লেখাটি খুলে ঠিক করার বোতাম। তিনি ঠিক করে আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।": ": the message below and a button to open and fix the piece. When they resubmit, it comes back to \"Waiting for your approval\" and the AI reads it again.",
     "লেখাটি নিচের দিনে-সময়ে সাইটে প্রকাশ হবে। ": "The piece goes live on the date and time below. ",
     "। টিক দেওয়া সংশোধনগুলো বসবে; “শব্দ বদল” টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ।": ". The ticked corrections go in; if you tick a \"word change\", the writer sees and agrees first, then it goes live.",
     "লেখাটি এবার নেওয়া হবে না, সাইটে উঠবে না। ": "The piece is not taken this time and won't go on the site. ",
-    ": নিচের বার্তাটি, সঙ্গে নতুন লেখা পাঠানোর আমন্ত্রণ।": ": the message below, with an invitation to send new work.",
     "প্রকাশের দিন বেছে নেবেন; ছোট সংশোধনগুলো বসবে; লেখক ই-মেলে খবর পাবেন।": "You pick the publishing date; the small corrections go in; the writer gets an e-mail.",
     "লেখাটি লেখকের কাছে ফেরে, সঙ্গে আপনার বার্তা (এআই-এর খসড়া তৈরি থাকে)। লেখক ঠিক করে আবার জমা দিলে এখানে ফিরবে।": "The piece goes back to the writer with your message (the AI's draft is ready). When they resubmit, it comes back here.",
     "লেখাটি নেওয়া হবে না। লেখক একটি সদয় ই-মেল পাবেন।": "The piece is not taken. The writer gets a kind e-mail.",
@@ -1891,5 +1889,10 @@
     "তারপর একটি সিদ্ধান্ত দিন। কোনও বোতাম চাপার পরেও আগে বার্তাটি দেখাবে; “পাঠান” না চাপা পর্যন্ত লেখকের কাছে কিছু যায় না।": "Then choose a decision. Each button first shows you the message; nothing reaches the writer until you press \"Send\" (or \"Approve\") in it.",
     "লেখকের ই-মেল:": "Writer's e-mail:",
     "এই লেখার লেখকের অ্যাকাউন্ট নেই (পুরনো ওয়ার্ডপ্রেস জমা), তাই কোনও ই-মেল যাবে না।": "This writer has no account (an old WordPress submission), so no e-mail is sent.",
-    "এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন। ই-মেলে নিজে থেকেই যোগ হয়: “যেমন আছে তেমনই রাখতে চাইলে না বদলেও আবার জমা দিতে পারেন।”": "The AI's letter is filled in. Change anything; the writer gets exactly these words. The e-mail always adds: \"If you'd like to keep it as it is, you can resubmit without changes.\""
+    "এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; নিচে পুরো ই-মেলটি দেখুন।": "The AI's letter is filled in. Change anything; the whole e-mail is shown below.",
+    "; ই-মেলটি নিচে হুবহু দেখানো আছে। “লেখককে পাঠান” না চাপা পর্যন্ত কিছু যায় না। লেখক ঠিক করে (বা না বদলেই) আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।": "; the e-mail is shown below exactly as it will go. Nothing is sent until you press \"Send to the writer\". When the writer resubmits (with or without changes), it comes back to \"Waiting for your approval\" and the AI reads it again.",
+    "; ই-মেলটি নিচে হুবহু দেখানো আছে।": "; the e-mail is shown below exactly as it will go.",
+    "লেখক ঠিক এই ই-মেলটি পাবেন": "The writer gets exactly this e-mail",
+    "বিষয়:": "Subject:",
+    "রিপোর্ট বন্ধ করুন": "Close"
 }
