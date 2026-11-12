@@ -76,6 +76,7 @@ class SitemapController extends Controller
             '## About the magazine',
             ...collect(Page::footerLinks())->map(fn ($l) => $md($l[0], $l[1]))->all(),
             $md('আর্কাইভ (archive, by year)', Url::to('/archive')),
+            $md('সব সংখ্যা (all issues)', Url::to('/sonkha')),
             '',
             '## Recent pieces',
             ...$recent->all(),
@@ -113,6 +114,7 @@ class SitemapController extends Controller
                 ->map(fn (Post $p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => $p->featured_image_path && $p->featured_image_width >= 400 ? asset($p->featured_image_path) : null]),
             $type === 'sections' => Section::where('is_active', true)->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->updated_at, 'image' => null])
                 ->push(['loc' => Url::to('/archive'), 'lastmod' => now(), 'image' => null])
+                ->when(ArchiveController::liveIssues()->isNotEmpty(), fn ($c) => $c->push(['loc' => Url::to('/sonkha'), 'lastmod' => now(), 'image' => null]))   // all issues (2026-11-12)
                 ->merge(collect(array_keys(ArchiveController::yearCounts()))->map(fn ($y) => ['loc' => Url::to("/archive/{$y}"), 'lastmod' => null, 'image' => null])),
             $type === 'authors' => Author::where('published_count', '>=', 3)->get()->map(fn ($a) => ['loc' => $a->url(), 'lastmod' => $a->updated_at, 'image' => null]),
             $type === 'pages' => Page::published()->where('noindex', false)->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => null])

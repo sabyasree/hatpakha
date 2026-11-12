@@ -266,6 +266,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D153/D154: Search Console 404 list (251 addresses): wp-json, double slashes, `/page/N/=1` share links, theme `{{…}}` placeholders, child-category pages, WordPress picture pages → their piece
 - [x] D155: deploy warms the main pages after the Cloudflare purge (520 seen right after a deploy)
 - [x] D159: Cloudflare may serve its last copy when the server is down; owner turned on Always Online
+- [x] D162: archive redesign (issues, collections, year timeline, year page filters and most-read picks) and /sonkha/ as the all-issues page
+- [ ] Next (needs owner): writers shown by old WordPress login names (e.g. kolomsainak007): propose real display names for the owner to approve
 - [x] D161: /desk → পাঠানো চিঠি: a copy of every letter to a writer, exactly as sent
 - [x] D160: the writer's e-mail and edit page list the small corrections (ভুল → ঠিক)
 - [x] D158: the writer's e-mail shown in full inside each decision dialog before sending

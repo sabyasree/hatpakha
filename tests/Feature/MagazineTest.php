@@ -238,7 +238,7 @@ class MagazineTest extends TestCase
 
     public function test_approval_warns_when_the_editorial_or_cover_is_not_ready_and_sonkha_lists_issues(): void
     {
-        $this->get('/sonkha/')->assertRedirect(url('/archive').'/#issues');
+        $this->get('/sonkha/')->assertOk()->assertSee('সব সংখ্যা')->assertSee('এখনও কোনও সংখ্যা প্রকাশিত হয়নি')->assertSee('noindex', false);   // its own page since 2026-11-12
         $issue = Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'proposed', 'ai_plan' => ['post_ids' => []]]);
         $this->actingAs(User::factory()->create(['role' => Role::Admin]));
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));

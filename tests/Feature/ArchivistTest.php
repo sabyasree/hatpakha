@@ -33,7 +33,8 @@ class ArchivistTest extends TestCase
         $this->assertSame(1, EditorTask::where('type', 'collection')->count());
         $this->get('/archive/')->assertOk()->assertDontSee('বর্ষার লেখা');
         $c->forceFill(['status' => 'approved', 'approved_at' => now()])->save();
-        $this->get('/archive/')->assertOk()->assertSee('বর্ষার লেখা')->assertSee('পুরনো 1');
+        $this->get('/archive/')->assertOk()->assertSee('বর্ষার লেখা');
+        $this->get($c->url())->assertOk()->assertSee('পুরনো 1');
     }
 
     public function test_tag_tidy_up_and_merge_redirects_the_old_tag(): void
