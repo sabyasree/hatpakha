@@ -251,5 +251,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D142: magazine page designer: piece pictures (feature / band / vignette), pictures inside the text with captions, name + ISSN on every page; page-break fixes (page number line, fonts loaded before measuring)
 - [x] Owner: Cloudflare visitor location headers turned on (2026-11-12)
 - [x] D143: the editorial as its own section (opener page, contents heading, issue page card), found even when not linked
+- [x] D144: /desk → সম্পাদকীয় (every issue's editorial, write / AI draft / open), লেখা tab, issue form picker
+- [x] D145: full check of site + desk (all pages, all roles, phone + laptop) and end-to-end flows; fixed guest-copy-after-login, search pictures, home + menu way into the month's issue
  → turn on "Add visitor location headers" (for city names in the desk health report)
 - [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)

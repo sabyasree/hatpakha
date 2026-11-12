@@ -17,6 +17,9 @@
     @if (\App\Models\Collection::live())
         <a href="{{ \App\Support\Url::to('/sonkolon') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">সংকলন</a>
     @endif
+    @if ($menuIssue = \App\Models\Issue::latestLive())
+        <a href="{{ $menuIssue->url() }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white">এই মাসের সংখ্যা</a>
+    @endif
     <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">আর্কাইভ</a>
     <a href="{{ \App\Support\Url::to('/app') }}" data-app-link class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">📱 ফোনে হাতপাখা</a>
 </div>

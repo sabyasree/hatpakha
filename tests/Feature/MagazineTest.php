@@ -167,4 +167,14 @@ class MagazineTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class, ['activeTab' => 'editorial'])->assertCanSeeTableRecords([$post]);
         \Livewire\Livewire::test(\App\Filament\Resources\Issues\Pages\EditIssue::class, ['record' => $issue->id])->assertFormFieldExists('editorial_post_id');
     }
+
+    public function test_readers_find_the_months_issue_from_the_home_page_and_the_menu(): void
+    {
+        $this->issue();
+        $home = $this->get('/')->assertOk();
+        $home->assertSee('এই মাসের সংখ্যা')->assertSee('অগ্রহায়ণ সংখ্যা')->assertSee('পত্রিকা খুলুন')->assertSee('/sonkha/2026-11/boi/', false);
+        $this->get('/archive/')->assertSee('এই মাসের সংখ্যা');   // the menu, on every page
+        Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'proposed']);
+        $this->get('/')->assertDontSee('পৌষ সংখ্যা', false);   // a proposal is never shown
+    }
 }

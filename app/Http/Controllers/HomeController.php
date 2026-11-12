@@ -107,6 +107,10 @@ class HomeController extends Controller
             'serials' => \App\Models\Serial::live()->limit(3)->get(),
             // D101: ছোটদের হাতপাখা — the alphabet and the newest children's piece
             'kids' => $kids = \App\Models\Section::where('slug', \App\Models\Section::KIDS)->where('is_active', true)->first(),
+            // Owner (2026-11-12, found in the full check): the month's issue had no way in from the home page.
+            'issue' => $issue = \App\Models\Issue::latestLive(),
+            'issueEditorial' => $issue?->liveEditorial(),
+            'issueCount' => $issue ? $issue->posts()->published()->count() : 0,
             'kidsPosts' => $kids ? $kids->posts()->published()->with('authors')->latest('published_at')->limit(2)->get() : collect(),
         ];
 

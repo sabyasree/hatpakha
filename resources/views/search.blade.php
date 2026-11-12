@@ -31,7 +31,7 @@
                 <a href="{{ $p->url() }}" class="mt-3 flex gap-4 rounded-2xl border-2 border-rule bg-white p-3 hover:border-navy">
                     @if ($p->featured_image_path)
                         @php($v = \App\Support\Images::variants($p->featured_image_path))
-                        <img src="{{ $v ? reset($v) : $p->featured_image_path }}" alt="" loading="lazy" width="112" height="80" class="h-20 w-28 flex-none rounded-xl object-cover">
+                        <img src="{{ $v ? reset($v) : asset(ltrim($p->featured_image_path, '/')) }}" alt="" loading="lazy" width="112" height="80" class="h-20 w-28 flex-none rounded-xl object-cover">
                     @endif
                     <span class="min-w-0">
                         <span class="block font-serif text-lg font-bold leading-snug">{{ $p->title }}</span>
