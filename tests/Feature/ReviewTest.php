@@ -31,6 +31,32 @@ class ReviewTest extends TestCase
         return [$post, $writer, User::factory()->create(['role' => Role::Editor])];
     }
 
+    /** D161: every letter to a writer is kept exactly as sent, and the desk can read it. */
+    public function test_letters_to_writers_are_kept_and_readable_in_the_desk(): void
+    {
+        config(['app.url' => 'https://hatpakha.com', 'mail.default' => 'array']);
+        [$post, $writer, $editor] = $this->submission('তিন দেশের গল্প');
+        $writer->forceFill(['email' => 'lekhok@example.test'])->save();
+        Review::requestChanges($post, $editor, 'শেষ লাইনে আর একটু থামা যায়?');
+
+        $letter = \App\Models\SentLetter::sole();
+        $this->assertSame('decision_changes', $letter->kind);
+        $this->assertSame($post->id, $letter->post_id);
+        $this->assertSame($writer->id, $letter->user_id);
+        $this->assertSame('lekhok@example.test', $letter->to_email);
+        $this->assertStringContainsString('শেষ লাইনে আর একটু থামা যায়?', $letter->html);
+
+        $this->actingAs($editor);
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(\App\Filament\Resources\SentLetters\Pages\ListSentLetters::class)->assertOk()
+            ->assertCanSeeTableRecords([$letter])->assertSee('lekhok@example.test');
+        Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])->assertSee('চিঠিগুলো পড়ুন');
+
+        // A reader's or a staff password mail is not a letter to a writer.
+        \Illuminate\Support\Facades\Mail::raw('hello', fn ($m) => $m->to('lekhok@example.test')->subject('hi'));
+        $this->assertSame(1, \App\Models\SentLetter::count());
+    }
+
     public function test_bengali_titles_get_readable_latin_urls(): void
     {
         $this->assertSame('brishtir-din', Transliterate::slug('বৃষ্টির দিন'));

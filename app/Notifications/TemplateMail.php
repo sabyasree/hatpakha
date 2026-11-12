@@ -18,6 +18,9 @@ class TemplateMail extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return \App\Support\MailTemplates::mail($this->key, ['{নাম}' => (string) ($notifiable->name ?? '')] + $this->values, $this->url);
+        $mail = \App\Support\MailTemplates::mail($this->key, ['{নাম}' => (string) ($notifiable->name ?? '')] + $this->values, $this->url);
+
+        // Letters to writers keep a copy for the desk (D161).
+        return isset(\App\Support\WriterLetters::KINDS[$this->key]) ? \App\Support\WriterLetters::mark($mail, $this->key) : $mail;
     }
 }

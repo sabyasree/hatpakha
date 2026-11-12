@@ -67,6 +67,18 @@ class PostForm
                         ->content(fn (Post $record) => $record->latestAiReview?->score !== null ? \App\Support\Bn::num($record->latestAiReview->score).__('/১০ (উপরে "এআই রিপোর্ট")') : __('নেই')),
                     Placeholder::make('last_note')->label(__('শেষ বার্তা লেখককে'))
                         ->content(fn (Post $record) => $record->review_note ?: '—'),
+                    // D161: the letters that actually went to the writer about this piece, exactly as sent.
+                    Placeholder::make('letters')->label(__('লেখককে পাঠানো চিঠি'))
+                        ->content(function (Post $record) {
+                            $letters = \App\Models\SentLetter::where('post_id', $record->id)->latest('sent_at')->limit(5)->get(['kind', 'sent_at']);
+                            if ($letters->isEmpty()) {
+                                return __('এখনও কোনও চিঠি যায়নি');
+                            }
+                            $url = \App\Filament\Resources\SentLetters\SentLetterResource::getUrl('index').'?post='.$record->id;
+
+                            return new \Illuminate\Support\HtmlString($letters->map(fn ($l) => e(__(\App\Support\WriterLetters::KINDS[$l->kind] ?? $l->kind)).' · '.e(\App\Support\Bn::num((string) $l->sent_at?->diffForHumans())))->implode('<br>')
+                                .'<br><a href="'.e($url).'" style="text-decoration:underline">'.e(__('চিঠিগুলো পড়ুন')).'</a>');
+                        }),
                 ]),
                 // D113: human readers' feedback on this AI-written piece, and the rewrite waiting beside the current text.
                 Section::make(__('মানুষের মতামত'))->collapsible()->visible(fn (?Post $record) => $record && ($record->rewrite_html || \App\Models\WritingFeedback::where('post_id', $record->id)->exists()))
