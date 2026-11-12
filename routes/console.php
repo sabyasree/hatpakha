@@ -54,3 +54,9 @@ Schedule::call(function () {
 // D92: nightly database backup (plain PHP, no child process), kept 7 nights in storage/app/private/backups.
 Schedule::call(fn () => \Illuminate\Support\Facades\Artisan::call('hatpakha:backup-db', ['--label' => 'nightly', '--keep' => 7]))
     ->name('nightly db backup')->dailyAt('02:40')->withoutOverlapping(60);
+
+// Facebook Page (owner, 2026-11-12): posts the owner timed, every 5 minutes; automatic mode (a desk switch, off by default)
+// posts one ready post at 10:05 and 19:35, good reading times in Bengal. Live site only (App\Support\FacebookPage::ready).
+Schedule::call(fn () => \App\Support\FacebookPage::due())->name('facebook timed posts')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto morning')->dailyAt('10:05')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto evening')->dailyAt('19:35')->timezone('Asia/Kolkata');

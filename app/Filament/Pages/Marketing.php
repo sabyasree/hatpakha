@@ -104,6 +104,47 @@ class Marketing extends Page
         self::undoable($id, __('"পোস্ট করা / বাদ"-এ সরানো হলো'));
     }
 
+    /** Facebook Page (owner, 2026-11-12): post this one now. */
+    public function facebookNow(int $id): void
+    {
+        [$ok, $msg] = \App\Support\FacebookPage::publish(SocialPost::findOrFail($id), auth()->id());
+        $ok ? Notification::make()->title(__('ফেসবুক পেজে পোস্ট হয়েছে'))->success()->send()
+            : Notification::make()->title(__('ফেসবুকে যায়নি'))->body($msg)->danger()->send();
+    }
+
+    /** Post it at the owner's chosen time (Kolkata); the scheduler checks every 5 minutes. */
+    public function facebookSchedule(int $id, string $at): void
+    {
+        $s = SocialPost::findOrFail($id);
+        $when = rescue(fn () => \Illuminate\Support\Carbon::parse($at, 'Asia/Kolkata'), null, false);
+        if (! $when || $when->isPast()) {
+            Notification::make()->title(__('ভবিষ্যতের একটি সময় বেছে নিন'))->warning()->send();
+
+            return;
+        }
+        $s->forceFill(['fb_scheduled_at' => $when->utc(), 'fb_error' => null])->save();
+        AuditLog::record('marketing.facebook_scheduled', null, ['social_post' => $s->id, 'at' => $when->toIso8601String()]);
+        Notification::make()->title(__('সময়মতো ফেসবুকে যাবে'))->success()->send();
+    }
+
+    public function facebookUnschedule(int $id): void
+    {
+        SocialPost::findOrFail($id)->forceFill(['fb_scheduled_at' => null])->save();
+        Notification::make()->title(__('সময় বাতিল হয়েছে'))->send();
+    }
+
+    /** Automatic mode: the owner's switch (D42), admins only. */
+    public function toggleFacebookAuto(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $on = ! \App\Support\FacebookPage::auto();
+        \App\Models\Setting::put(\App\Support\FacebookPage::AUTO, $on ? '1' : '0');
+        AuditLog::record('marketing.facebook_auto', null, ['on' => $on]);
+        Notification::make()->title($on ? __('নিজে থেকে পোস্ট চালু হয়েছে') : __('নিজে থেকে পোস্ট বন্ধ হয়েছে'))->success()->send();
+    }
+
     public function dismiss(int $id): void
     {
         SocialPost::findOrFail($id)->forceFill(['status' => 'dismissed'])->save();

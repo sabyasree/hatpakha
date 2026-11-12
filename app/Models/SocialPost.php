@@ -12,7 +12,7 @@ class SocialPost extends Model
 
     protected function casts(): array
     {
-        return ['texts' => 'array', 'posted_at' => 'datetime'];
+        return ['texts' => 'array', 'posted_at' => 'datetime', 'fb_scheduled_at' => 'datetime'];
     }
 
     public function subject(): MorphTo

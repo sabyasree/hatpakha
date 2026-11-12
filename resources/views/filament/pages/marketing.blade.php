@@ -13,6 +13,28 @@
     </style>
 
     {{-- How this page works (D70): plain steps, so the buttons are never a puzzle. --}}
+    {{-- Facebook Page (owner, 2026-11-12): post now, at a time, or by itself (automatic mode, the owner's switch) --}}
+    @if (\App\Support\FacebookPage::configured())
+        @php($fbAuto = \App\Support\FacebookPage::auto())
+        <x-filament::section icon="heroicon-o-globe-alt">
+            <x-slot name="heading">{{ __('ফেসবুক পেজে পোস্ট') }}</x-slot>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between">
+                <div style="max-width:46rem">
+                    <b>{{ $fbAuto ? __('নিজে থেকে পোস্ট: চালু') : __('নিজে থেকে পোস্ট: বন্ধ') }}</b>
+                    <p class="hp-muted" style="margin-top:.2rem">{{ $fbAuto
+                        ? __('রোজ সকাল ১০টা আর সন্ধ্যা সাড়ে ৭টায় নিচের তালিকার সবচেয়ে পুরোনো তৈরি পোস্টটি নিজে থেকে পেজে যায় (দিনে বড়জোর দুটি)। কোনোটি না চাইলে “পোস্ট করব না” টিপুন।')
+                        : __('এখন প্রতিটি পোস্ট আপনি “ফেসবুকে দিন” বা “সময় ঠিক করুন” টিপলেই যায়। চালু করলে রোজ দুটি পোস্ট নিজে থেকে যাবে।') }}</p>
+                    @if ($fbNext = \App\Support\FacebookPage::nextAuto())<p style="margin-top:.2rem">{{ __('পরের পোস্ট') }}: <b>{{ $fbNext->title }}</b></p>@endif
+                    @unless (\App\Support\FacebookPage::ready())<p class="hp-muted" style="margin-top:.2rem">⚠ {{ __('এটি আসল সাইট নয়: এখান থেকে ফেসবুকে কিছু যায় না।') }}</p>@endunless
+                </div>
+                @if ($isAdmin)
+                    <x-filament::button :color="$fbAuto ? 'gray' : 'primary'" icon="heroicon-o-bolt" wire:click="toggleFacebookAuto"
+                        wire:confirm="{{ $fbAuto ? __('নিজে থেকে পোস্ট বন্ধ করবেন?') : __('চালু করলে রোজ দুটি তৈরি পোস্ট আপনার না দেখে পেজে যাবে। চালু করবেন?') }}">{{ $fbAuto ? __('বন্ধ করুন') : __('নিজে থেকে পোস্ট চালু করুন') }}</x-filament::button>
+                @endif
+            </div>
+        </x-filament::section>
+    @endif
+
     <x-filament::section icon="heroicon-o-question-mark-circle" collapsible>
         <x-slot name="heading">{{ __('এই পাতায় কী করবেন') }}</x-slot>
         <ol style="margin:0;padding-left:1.2rem;line-height:1.9">
@@ -134,6 +156,20 @@
                     </div>
                 @endif
                 @if ($s->status === 'ready')
+                    @if (\App\Support\FacebookPage::configured() && filled($s->texts['facebook'] ?? ''))
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center" x-data="{ at: '' }">
+                            <x-filament::button size="sm" icon="heroicon-o-paper-airplane" wire:click="facebookNow({{ $s->id }})"
+                                wire:confirm="{{ __('এখনই হাতপাখার ফেসবুক পেজে যাবে। পাঠাবেন?') }}">{{ __('ফেসবুকে দিন') }}</x-filament::button>
+                            @if ($s->fb_scheduled_at)
+                                <span class="hp-muted">⏰ {{ __('ফেসবুকে যাবে') }}: {{ \App\Support\Bn::date($s->fb_scheduled_at->timezone('Asia/Kolkata')) }} {{ \App\Support\Bn::num($s->fb_scheduled_at->timezone('Asia/Kolkata')->format('H:i')) }}</span>
+                                <x-filament::button size="sm" color="gray" wire:click="facebookUnschedule({{ $s->id }})">{{ __('সময় বাতিল') }}</x-filament::button>
+                            @else
+                                <input type="datetime-local" x-model="at" aria-label="{{ __('কখন ফেসবুকে যাবে') }}" style="border:1px solid rgba(127,127,127,.4);border-radius:.5rem;padding:.25rem .5rem;background:transparent">
+                                <x-filament::button size="sm" color="gray" icon="heroicon-o-clock" x-on:click="at && $wire.facebookSchedule({{ $s->id }}, at)">{{ __('সময় ঠিক করুন') }}</x-filament::button>
+                            @endif
+                        </div>
+                        @if ($s->fb_error)<p style="color:#CB1B32;font-weight:700;margin:.2rem 0 0">⚠ {{ __('ফেসবুকে যায়নি') }}: {{ $s->fb_error }}</p>@endif
+                    @endif
                     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
                         <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="posted({{ $s->id }})">{{ __('পোস্ট করেছি') }}</x-filament::button>
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-x-mark" wire:click="dismiss({{ $s->id }})">{{ __('পোস্ট করব না') }}</x-filament::button>
@@ -144,7 +180,8 @@
                     </div>
                 @else
                     <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-                        <span class="hp-muted">{{ $s->status === 'posted' ? '✓ '.__('পোস্ট করা হয়েছে') : __('বাদ দেওয়া') }}</span>
+                        <span class="hp-muted">{{ $s->status === 'posted' ? '✓ '.($s->fb_post_id ? __('ফেসবুক পেজে পোস্ট হয়েছে') : __('পোস্ট করা হয়েছে')) : __('বাদ দেওয়া') }}</span>
+                        @if ($s->fb_post_id)<a class="hp-muted" style="text-decoration:underline" target="_blank" rel="noopener" href="https://www.facebook.com/{{ $s->fb_post_id }}">{{ __('ফেসবুকে দেখুন') }}</a>@endif
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-uturn-left" wire:click="restore({{ $s->id }})">{{ __('ফিরিয়ে আনুন') }}</x-filament::button>
                         @if ($isAdmin)
                             <x-filament::button size="sm" color="danger" outlined icon="heroicon-o-trash" wire:click="deleteSocial({{ $s->id }})" wire:confirm="{{ __('এই পোস্টটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।') }}">{{ __('মুছুন') }}</x-filament::button>
