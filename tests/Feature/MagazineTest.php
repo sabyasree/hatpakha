@@ -34,6 +34,9 @@ class MagazineTest extends TestCase
             $this->assertStringContainsString($part, $html);
         }
         $this->assertStringContainsString('data-goto="piece-', $html, 'Contents link to the pieces');
+        $this->assertStringContainsString('পাতা সাজানো হচ্ছে', $html, 'Something to read while a long issue is laid out');
+        $js = file_get_contents(public_path('js/hp-magazine.js'));
+        $this->assertStringContainsString("classList.toggle('far'", $js, 'Only the leaves near the open page are drawn (phones crashed on long issues)');
         $this->assertStringContainsString('কবিতা লেখেন।', $html, 'The issue\'s writers with their own bios');
         $this->get('/sonkha/2026-11/')->assertOk()->assertSee('পত্রিকা খুলুন')->assertDontSee('ই-বুক নামান');
     }

@@ -80,7 +80,7 @@ final class PageDesigner
         $r = round($pic['w'] / $pic['h'], 4);
         $style = 'aspect-ratio: '.$pic['w'].' / '.$pic['h'].'; width: min(100%, '.$pic['w'].'px, calc(var(--ph) * '.$maxH.' * '.$r.'));';
 
-        return '<img src="'.e($pic['src']).'" alt="'.e($pic['alt']).'" width="'.$pic['w'].'" height="'.$pic['h'].'" decoding="async"'
+        return '<img src="'.e($pic['src']).'" alt="'.e($pic['alt']).'" width="'.$pic['w'].'" height="'.$pic['h'].'" loading="lazy" decoding="async"'
             .($class ? ' class="'.$class.'"' : '').' style="'.$style.'"/>';
     }
 
