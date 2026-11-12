@@ -15,7 +15,8 @@ class BrevoWebhookController extends Controller
 {
     /** Brevo event → why we stop. Soft bounces, opens, clicks and deliveries are ignored. */
     public const EVENTS = [
-        'hard_bounce' => 'bounced', 'hardBounce' => 'bounced', 'invalid_email' => 'bounced', 'blocked' => 'bounced',
+        'hard_bounce' => 'bounced', 'hardbounce' => 'bounced', 'hardBounce' => 'bounced', 'hard_bounced' => 'bounced',
+        'invalid_email' => 'bounced', 'invalid' => 'bounced', 'blocked' => 'bounced',
         'spam' => 'complaint', 'complaint' => 'complaint', 'unsubscribed' => 'complaint', 'unsubscribe' => 'complaint',
     ];
 
@@ -29,10 +30,22 @@ class BrevoWebhookController extends Controller
         if (! is_array($body)) {
             return response('ok');
         }
-        $events = array_is_list($body) ? $body : [$body];
+        // The classic transactional webhook sends {"event","email"}; Brevo's newer webhooks may wrap events in a list,
+        // in "events"/"data", or name the fields differently. Accept all of them.
+        $events = array_is_list($body) ? $body : ($body['events'] ?? $body['data'] ?? [$body]);
+        $events = is_array($events) ? (array_is_list($events) ? $events : [$events]) : [];
         foreach (array_slice($events, 0, 200) as $e) {
-            $why = self::EVENTS[(string) ($e['event'] ?? '')] ?? null;
-            $email = mb_strtolower(trim((string) ($e['email'] ?? '')));
+            if (! is_array($e)) {
+                continue;
+            }
+            $name = (string) ($e['event'] ?? $e['event_type'] ?? $e['eventType'] ?? $e['type'] ?? '');
+            // The first time each kind of event arrives (once a day), the activity log shows that Brevo reached us.
+            if ($name !== '' && \Illuminate\Support\Facades\Cache::add('brevo.seen.'.md5($name), 1, 86400)) {
+                \App\Models\AuditLog::record('brevo.connected', null, ['event' => mb_substr($name, 0, 40)]);
+            }
+            $why = self::EVENTS[$name] ?? self::EVENTS[str_replace(['-', ' '], '_', strtolower($name))] ?? null;
+            $email = $e['email'] ?? $e['recipient'] ?? $e['to'] ?? $e['contact_email'] ?? $e['contact']['email'] ?? '';
+            $email = mb_strtolower(trim(is_array($email) ? (string) ($email[0]['email'] ?? $email[0] ?? '') : (string) $email));
             if ($why && $email !== '') {
                 SesWebhookController::suppress($email, $why, 'brevo');
             }
