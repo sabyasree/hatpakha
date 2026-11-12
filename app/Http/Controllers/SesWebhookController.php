@@ -57,7 +57,7 @@ class SesWebhookController extends Controller
     }
 
     /** Never mail this address again in bulk. Account mail (password reset) still works for a real user. */
-    public static function suppress(string $email, string $why): void
+    public static function suppress(string $email, string $why, string $source = 'ses'): void
     {
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return;
@@ -65,7 +65,7 @@ class SesWebhookController extends Controller
         NewsletterSubscriber::whereRaw('LOWER(email) = ?', [$email])->update(['suppressed' => true, 'status' => $why === 'complaint' ? 'unsubscribed' : 'bounced']);
         User::whereRaw('LOWER(email) = ?', [$email])->update(['mail_opt_out' => true]);
         NewsletterDelivery::whereRaw('LOWER(email) = ?', [$email])->whereNull('bounce')->latest('id')->limit(1)->update(['bounce' => $why]);
-        AuditLog::record('ses.'.$why, null, ['email_hash' => substr(hash('sha256', $email), 0, 16)]);
+        AuditLog::record($source.'.'.$why, null, ['email_hash' => substr(hash('sha256', $email), 0, 16)]);
     }
 
     public static function snsHost(string $url): bool

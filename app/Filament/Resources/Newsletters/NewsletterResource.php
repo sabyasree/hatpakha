@@ -138,6 +138,11 @@ class NewsletterResource extends Resource
                     ->descriptions(fn () => collect(\App\Support\BulkMail::PROVIDERS)->mapWithKeys(fn ($v, $p) => [$p => in_array($p, \App\Support\BulkMail::available(), true)
                         ? $describe($p)
                         : __('সেট করা নেই: ENV_FILE-এ').' '.($p === 'brevo' ? 'MAIL_BREVO_HOST' : 'MAIL_BULK_HOST').' '.__('লাইনটি যোগ করে আবার deploy করুন')])->all()),
+                // D164: where Brevo reports hard bounces and complaints. Admins only; the address holds a secret.
+                \Filament\Forms\Components\Placeholder::make('brevo_webhook')->label(__('Brevo-র ফেরত চিঠির খবর'))
+                    ->visible(fn () => in_array('brevo', \App\Support\BulkMail::available(), true))
+                    ->content(fn () => new \Illuminate\Support\HtmlString('<span style="font-size:.9rem">'.e(__('Brevo → Transactional → Settings → Webhook-এ এই ঠিকানাটি বসান, আর Hard bounce, Spam, Invalid email, Blocked, Unsubscribed টিক দিন। ঠিকানাটি কাউকে দেখাবেন না।'))
+                        .'</span><code style="display:block;margin-top:.5rem;padding:.5rem .75rem;border-radius:.5rem;background:rgba(127,127,127,.15);word-break:break-all;user-select:all">'.e(\App\Http\Controllers\BrevoWebhookController::address()).'</code>')),
             ])
             ->modalSubmitActionLabel(__('রাখুন'))
             ->action(function (array $data) {

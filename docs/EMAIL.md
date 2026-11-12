@@ -121,3 +121,9 @@ MAIL_BREVO_PASSWORD=<an SMTP key made there>
 MAIL_BREVO_DAILY_LIMIT=290
 ```
 Choose the road in /desk → চিঠি → **পাঠানোর পথ** (admins). Each road's daily limit is counted separately. In Brevo, authenticate the domain hatpakha.com (brevo-code TXT and the two DKIM CNAMEs in Cloudflare, DNS only; don't add a second DMARC) and add editor@hatpakha.com as a sender.
+
+## Brevo bounce reports (D164)
+Brevo sends no signed reports, so the webhook address itself carries a secret: `/webhooks/brevo/<token>`. The token is `BREVO_WEBHOOK_TOKEN` from ENV_FILE if set, otherwise derived from `APP_KEY` (rotating the app key changes the address).
+1. /desk → চিঠি → **পাঠানোর পথ** (admins): copy the address under "Brevo-র ফেরত চিঠির খবর".
+2. Brevo → Transactional → Settings → **Webhook** → Add a new webhook → paste the address → tick **Hard bounce, Spam, Invalid email, Blocked, Unsubscribed** → Save.
+3. From then on each such event marks the address bounced/unsubscribed and it is never mailed in bulk again (same as SES). Soft bounces are ignored. The activity log shows "চিঠি ফেরত (Brevo)".
