@@ -110,7 +110,10 @@ final class FacebookPage
         }
         $n = 0;
         foreach (SocialPost::whereNotNull('fb_scheduled_at')->where('fb_scheduled_at', '<=', now())->whereNull('fb_post_id')->where('status', 'ready')->oldest('fb_scheduled_at')->limit(3)->get() as $s) {
-            $n += self::publish($s)[0] ? 1 : 0;
+            if (self::publish($s)[0]) {
+                $n++;
+                self::alsoInstagram($s);
+            }
         }
 
         return $n;
@@ -123,8 +126,20 @@ final class FacebookPage
             return null;
         }
         $s = self::nextAuto();
+        if (! $s || ! self::publish($s)[0]) {
+            return null;
+        }
+        self::alsoInstagram($s);
 
-        return $s && self::publish($s)[0] ? $s : null;   // one per run
+        return $s;   // one per run
+    }
+
+    /** A timed or automatic post goes to Instagram too, when there is a picture Instagram accepts (owner, 2026-11-12). */
+    private static function alsoInstagram(SocialPost $s): void
+    {
+        if (InstagramPage::ready() && InstagramPage::postable($s->fresh()) === null) {
+            rescue(fn () => InstagramPage::publish($s->fresh()), null, false);
+        }
     }
 
     /** Which post automatic mode sends next (shown to the owner on the marketing page). */
@@ -132,6 +147,7 @@ final class FacebookPage
     {
         $candidates = SocialPost::with('subject')->where('kind', '!=', 'weekly')->where('status', 'ready')->whereNull('fb_post_id')
             ->whereNull('fb_scheduled_at')->whereNull('fb_error')->where('created_at', '>=', now()->subDays(14))->oldest()->limit(20)->get();
+
         return $candidates->first(fn (SocialPost $s) => self::postable($s) === null);
     }
 }

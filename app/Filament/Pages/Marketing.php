@@ -19,8 +19,12 @@ use Filament\Support\Icons\Heroicon;
 class Marketing extends Page
 {
     use \App\Filament\Concerns\TranslatedPageLabels;
+    use \Livewire\WithFileUploads;
 
     protected string $view = 'filament.pages.marketing';
+
+    /** The card the browser drew, as a JPEG, on its way to Instagram (owner, 2026-11-12). */
+    public $cardJpeg = null;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
@@ -110,6 +114,33 @@ class Marketing extends Page
         [$ok, $msg] = \App\Support\FacebookPage::publish(SocialPost::findOrFail($id), auth()->id());
         $ok ? Notification::make()->title(__('ফেসবুক পেজে পোস্ট হয়েছে'))->success()->send()
             : Notification::make()->title(__('ফেসবুকে যায়নি'))->body($msg)->danger()->send();
+    }
+
+    /** Instagram: keep the card the browser just uploaded with the post (also done ahead of time for automatic posts). */
+    public function storeCard(int $id): bool
+    {
+        $s = SocialPost::findOrFail($id);
+        $ok = false;
+        if ($this->cardJpeg instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            $ok = \App\Support\InstagramPage::saveCard($s, $this->cardJpeg->getRealPath()) !== null;
+            $this->cardJpeg->delete();
+        }
+        $this->cardJpeg = null;
+
+        return $ok;
+    }
+
+    /** Instagram: post it now, with the card just uploaded (or the piece's own picture). */
+    public function instagramNow(int $id, bool $withCard = false): void
+    {
+        if ($withCard && ! $this->storeCard($id)) {
+            Notification::make()->title(__('কার্ডের ছবি রাখা গেল না'))->danger()->send();
+
+            return;
+        }
+        [$ok, $msg] = \App\Support\InstagramPage::publish(SocialPost::findOrFail($id), auth()->id());
+        $ok ? Notification::make()->title(__('ইনস্টাগ্রামে পোস্ট হয়েছে'))->success()->send()
+            : Notification::make()->title(__('ইনস্টাগ্রামে যায়নি'))->body($msg)->danger()->send();
     }
 
     /** Post it at the owner's chosen time (Kolkata); the scheduler checks every 5 minutes. */

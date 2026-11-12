@@ -260,7 +260,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D150: বর্ষসেরা (1 Dec proposal, fair scoring, designer cover, magazine view, news on a click); any collection as a magazine
 - [x] D151: Facebook Page posting (now, timed, automatic mode switch); keys added by the owner 2026-11-12
 - [ ] Owner: after deploy, /desk → মার্কেটিং: press “ফেসবুকে দিন” on one post to test, then turn on “নিজে থেকে পোস্ট” if wanted
-- [ ] Later: Instagram (Business account linked to the Page, instagram_content_publish, server-made card picture)
+- [x] D152: Instagram posting (card from the browser, or the piece's picture); keys added by the owner 2026-11-12
+- [ ] Owner: after deploy, press “ইনস্টাগ্রামে দিন” on one post to test
 - [ ] Owner: /desk → শংসাপত্র → "ডেস্কের লেখার শংসাপত্র সরান" once after deploy
 - [x] Owner report (2026-11-12): issue page cover read as a broken red line and the button shadow looked broken: cover redesigned (cream edge, fan in its corner, name on a navy panel), clean পত্রিকা খুলুন + সূচি দেখুন; the magazine crashed phone browsers on long issues: only the leaves around the open page are drawn (427-page test issue: 2–4 drawn), pictures load lazily, "পাতা সাজানো হচ্ছে…" while laying out
  → turn on "Add visitor location headers" (for city names in the desk health report)

@@ -34,6 +34,8 @@ return [
         'token' => env('FACEBOOK_PAGE_TOKEN'),
         'app_secret' => env('FACEBOOK_APP_SECRET'),
         'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v23.0'),
+        // Instagram (owner, 2026-11-12): the professional account linked to the Page; posted with the same Page token.
+        'instagram_id' => env('INSTAGRAM_ACCOUNT_ID'),
     ],
 
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.

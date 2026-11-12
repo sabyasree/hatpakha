@@ -170,6 +170,21 @@
                         </div>
                         @if ($s->fb_error)<p style="color:#CB1B32;font-weight:700;margin:.2rem 0 0">⚠ {{ __('ফেসবুকে যায়নি') }}: {{ $s->fb_error }}</p>@endif
                     @endif
+                    {{-- Instagram (owner, 2026-11-12): the card the browser draws goes up as the picture --}}
+                    @if (\App\Support\InstagramPage::configured() && filled($s->texts['instagram'] ?? ''))
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+                            @if ($s->ig_media_id)
+                                <span class="hp-muted">✓ {{ __('ইনস্টাগ্রামে পোস্ট হয়েছে') }}</span>
+                                @if ($s->ig_permalink)<a class="hp-muted" style="text-decoration:underline" target="_blank" rel="noopener" href="{{ $s->ig_permalink }}">{{ __('ইনস্টাগ্রামে দেখুন') }}</a>@endif
+                            @else
+                                <x-filament::button size="sm" color="gray" icon="heroicon-o-camera" data-ig-post="{{ $s->id }}" data-needs-card="{{ $card && blank($s->texts['card_image'] ?? null) && \App\Support\FacebookPage::auto() ? '1' : '0' }}"
+                                    x-data="{ busy: false }" x-bind:disabled="busy"
+                                    x-on:click="if (! confirm({{ \Illuminate\Support\Js::from(__('এখনই হাতপাখার ইনস্টাগ্রামে যাবে (কার্ডের ছবি আর ইনস্টাগ্রামের লেখা)। পাঠাবেন?')) }})) return; busy = true; window.hpIg.post($el, {{ $s->id }}).finally(() => busy = false)">{{ __('ইনস্টাগ্রামে দিন') }}</x-filament::button>
+                                @if (! \App\Support\InstagramPage::picture($s) && ! $card)<span class="hp-muted">{{ __('এই পোস্টে ছবি নেই, তাই ইনস্টাগ্রামে যাবে না') }}</span>@endif
+                            @endif
+                        </div>
+                        @if ($s->ig_error && ! $s->ig_media_id)<p style="color:#CB1B32;font-weight:700;margin:.2rem 0 0">⚠ {{ __('ইনস্টাগ্রামে যায়নি') }}: {{ $s->ig_error }}</p>@endif
+                    @endif
                     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
                         <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="posted({{ $s->id }})">{{ __('পোস্ট করেছি') }}</x-filament::button>
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-x-mark" wire:click="dismiss({{ $s->id }})">{{ __('পোস্ট করব না') }}</x-filament::button>
@@ -193,6 +208,32 @@
             <x-filament::section><div class="hp-muted">{{ $filter === 'done' ? __('এখনও কিছু পোস্ট করা বা বাদ দেওয়া হয়নি।') : __('এখন কিছু নেই। নতুন লেখা প্রকাশ হলে মার্কেটিং বিশেষজ্ঞ এখানে পোস্ট তৈরি রাখবে; উপরের "নতুন পোস্ট তৈরি করুন" দিয়ে এখনই চাইতেও পারেন।') }}</div></x-filament::section>
         @endforelse
     </div>
-    <script src="{{ asset('js/hp-card.js') }}?v=2"></script>
+    <script src="{{ asset('js/hp-card.js') }}?v=3"></script>
+    @if (\App\Support\InstagramPage::configured())
+        <script>
+            // Instagram (owner, 2026-11-12): the browser draws the share card as a JPEG and uploads it with the post.
+            // Ready posts without a saved card get one quietly when this page is open, so automatic posts have it too.
+            window.hpIg = window.hpIg || {
+                cardOf(el) { return el.closest('.hp-mk-item')?.querySelector('.hp-card-wrap .hp-card') || null; },
+                async upload(card, id) {
+                    const file = await window.hpCard.jpeg(card, 'hatpakha-' + id + '.jpg');
+                    await new Promise((ok, fail) => @this.upload('cardJpeg', file, ok, fail));
+                },
+                async post(el, id) {
+                    const card = this.cardOf(el);
+                    if (card) { await this.upload(card, id); return @this.instagramNow(id, true); }
+                    return @this.instagramNow(id, false);
+                },
+            };
+            document.addEventListener('DOMContentLoaded', () => setTimeout(async () => {
+                const todo = [...document.querySelectorAll('[data-ig-post][data-needs-card="1"]')].slice(0, 5);
+                for (const b of todo) {
+                    const card = window.hpIg.cardOf(b);
+                    if (!card) continue;
+                    try { await window.hpIg.upload(card, b.dataset.igPost); await @this.storeCard(Number(b.dataset.igPost)); } catch (e) { /* next time */ }
+                }
+            }, 2500));
+        </script>
+    @endif
     <script src="{{ asset('js/hp-share.js') }}?v=2"></script>
 </x-filament-panels::page>
