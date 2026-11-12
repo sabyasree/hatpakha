@@ -152,6 +152,8 @@ return [
     'off_live' => env('MAIL_OFF_LIVE', 'block'),
     // The SNS topic SES reports bounces and complaints to; webhooks from any other topic are refused.
     'ses_topic_arn' => env('SES_SNS_TOPIC_ARN'),
+    // D164: the secret part of the Brevo webhook address (/webhooks/brevo/<token>); empty = derived from APP_KEY.
+    'brevo_webhook_token' => env('BREVO_WEBHOOK_TOKEN'),
 
     // D104: apology letters to old writers, per hour (old addresses: go slowly so bounces don't hurt the site's mail).
     'relaunch_per_hour' => (int) env('MAIL_RELAUNCH_PER_HOUR', 20),

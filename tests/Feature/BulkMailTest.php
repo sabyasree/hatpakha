@@ -146,6 +146,35 @@ class BulkMailTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), 'Action=ConfirmSubscription'));
     }
 
+    /** D164: Brevo reports hard bounces and complaints to a secret address; the same addresses are never mailed again. */
+    public function test_brevo_bounces_and_complaints_stop_bulk_mail_and_a_wrong_token_is_refused(): void
+    {
+        $token = str_repeat('k', 40);
+        config(['mail.brevo_webhook_token' => $token]);
+        $gone = NewsletterSubscriber::create(['email' => 'gone@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
+        $full = NewsletterSubscriber::create(['email' => 'full@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
+        $angry = User::factory()->create(['email' => 'angry@example.test']);
+
+        $this->postJson('/webhooks/brevo/'.str_repeat('x', 40), ['event' => 'hard_bounce', 'email' => 'gone@example.test'])->assertForbidden();
+        $this->assertFalse($gone->fresh()->suppressed, 'a wrong token changes nothing');
+
+        $this->postJson('/webhooks/brevo/'.$token, ['event' => 'hard_bounce', 'email' => 'Gone@Example.test', 'message-id' => '<x@brevo>'])->assertOk();
+        $this->assertTrue($gone->fresh()->suppressed);
+        $this->assertSame('bounced', $gone->fresh()->status);
+
+        // Brevo's batched form: a list of events; a soft bounce changes nothing.
+        $this->postJson('/webhooks/brevo/'.$token, [['event' => 'spam', 'email' => 'angry@example.test'], ['event' => 'soft_bounce', 'email' => 'full@example.test']])->assertOk();
+        $this->assertTrue($angry->fresh()->mail_opt_out);
+        $this->assertFalse($full->fresh()->suppressed);
+
+        // Without BREVO_WEBHOOK_TOKEN the site makes its own secret from the app key; the address shown in /desk works.
+        config(['mail.brevo_webhook_token' => '']);
+        $this->postJson('/webhooks/brevo/'.$token, ['event' => 'hard_bounce', 'email' => 'full@example.test'])->assertForbidden();
+        $this->assertStringStartsWith(url('/webhooks/brevo').'/', \App\Http\Controllers\BrevoWebhookController::address());
+        $this->postJson(\App\Http\Controllers\BrevoWebhookController::address(), ['event' => 'invalid_email', 'email' => 'full@example.test'])->assertOk();
+        $this->assertTrue($full->fresh()->suppressed);
+    }
+
     public function test_forged_or_foreign_reports_are_refused(): void
     {
         config(['mail.ses_topic_arn' => self::TOPIC]);

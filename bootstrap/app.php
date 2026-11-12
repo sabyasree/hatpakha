@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // D117: Amazon SES bounce/complaint reports via SNS (signed by Amazon; no session or CSRF involved).
             \Illuminate\Support\Facades\Route::post('/webhooks/ses', \App\Http\Controllers\SesWebhookController::class)
                 ->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1');
+            // D164: Brevo's reports of hard bounces and spam complaints (the secret token in the address is the proof).
+            \Illuminate\Support\Facades\Route::post('/webhooks/brevo/{token}', \App\Http\Controllers\BrevoWebhookController::class)
+                ->where('token', '[A-Za-z0-9_-]{20,128}')->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

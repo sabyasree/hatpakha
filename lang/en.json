@@ -1908,5 +1908,11 @@
     "সম্মান": "Honour",
     "সংখ্যায় লেখা": "Piece in an issue",
     "সংকলনে লেখা": "Piece in a collection",
-    "লেখকের নাম প্রোফাইল থেকে": "Writer names from profiles"
+    "লেখকের নাম প্রোফাইল থেকে": "Writer names from profiles",
+    "চিঠি ফেরত (SES), আর পাঠানো হবে না": "Bounced (SES), never mailed again",
+    "স্প্যাম অভিযোগ (SES)": "Spam complaint (SES)",
+    "চিঠি ফেরত (Brevo), আর পাঠানো হবে না": "Bounced (Brevo), never mailed again",
+    "স্প্যাম অভিযোগ বা চিঠি বন্ধ (Brevo)": "Spam complaint or unsubscribe (Brevo)",
+    "Brevo-র ফেরত চিঠির খবর": "Brevo bounce reports",
+    "Brevo → Transactional → Settings → Webhook-এ এই ঠিকানাটি বসান, আর Hard bounce, Spam, Invalid email, Blocked, Unsubscribed টিক দিন। ঠিকানাটি কাউকে দেখাবেন না।": "Paste this address in Brevo → Transactional → Settings → Webhook and tick Hard bounce, Spam, Invalid email, Blocked and Unsubscribed. Don't show the address to anyone."
 }

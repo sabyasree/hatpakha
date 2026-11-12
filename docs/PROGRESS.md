@@ -267,6 +267,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D155: deploy warms the main pages after the Cloudflare purge (520 seen right after a deploy)
 - [x] D159: Cloudflare may serve its last copy when the server is down; owner turned on Always Online
 - [x] D162: archive redesign (issues, collections, year timeline, year page filters and most-read picks) and /sonkha/ as the all-issues page
+- [x] D164: Brevo webhook: hard bounces and complaints suppress the address (like SES)
+- [ ] Owner: after deploy, copy the address from /desk → চিঠি → পাঠানোর পথ into Brevo → Transactional → Settings → Webhook (tick Hard bounce, Spam, Invalid email, Blocked, Unsubscribed)
 - [x] D163: writers shown by an old login get the name from their own profile (or keep it); runs once on deploy
 - [x] D161: /desk → পাঠানো চিঠি: a copy of every letter to a writer, exactly as sent
 - [x] D160: the writer's e-mail and edit page list the small corrections (ভুল → ঠিক)
