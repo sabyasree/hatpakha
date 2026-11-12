@@ -80,9 +80,14 @@ class AiEditorTest extends TestCase
         $review = $post->latestAiReview()->first();
         $review->forceFill(['report' => ['suggestions' => ['শেষটা আগে থেকে আভাসে রাখুন', 'তথ্যভারী অংশ ছোট করুন']] + $review->report])->save();
 
+        // A newer report's letter already carries the advice; an older report's short note gets its points added.
+        $this->assertSame('অভিনন্দন! লেখাটি ভালো লেগেছে।', \App\Support\Review::changesMessage($post->fresh()));
+        $old = $review->report;
+        unset($old['letter']);
+        $review->forceFill(['report' => $old])->save();
         $message = \App\Support\Review::changesMessage($post->fresh());
-        $this->assertStringContainsString('অভিনন্দন! লেখাটি ভালো লেগেছে।', $message);
-        $this->assertStringContainsString("১. শেষটা আগে থেকে আভাসে রাখুন\n২. তথ্যভারী অংশ ছোট করুন", $message);
+        $this->assertStringContainsString("আর একবার ফিরে দেখলে ভালো হয়:\n— শেষটা আগে থেকে আভাসে রাখুন\n— তথ্যভারী অংশ ছোট করুন", $message);
+        $this->assertStringContainsString('personal letter', \App\Ai\Prompt::system());
         $this->assertSame(['requestChanges', 'approve', 'reject'], \App\Filament\Resources\Posts\Tables\PostsTable::decisionOrder($post->fresh()));
 
         $this->actingAs($owner);
@@ -100,7 +105,10 @@ class AiEditorTest extends TestCase
         $this->assertSame($message, $post->review_note);
         $this->assertStringContainsString('করি না', $post->body_html, 'The small fix goes in before the piece goes back');
         $this->assertStringContainsString('মেঘলা আকাশ', $post->body_html, 'Never a word change without the writer');
-        \Illuminate\Support\Facades\Notification::assertSentTo($writer, \App\Notifications\SubmissionDecision::class);
+        \Illuminate\Support\Facades\Notification::assertSentTo($writer, \App\Notifications\SubmissionDecision::class, function ($n) use ($writer) {
+            return str_contains(implode(' ', array_map('strval', $n->toMail($writer)->introLines)), 'কিছু না বদলে আবার জমা দিন');
+        });
+        $this->actingAs($writer)->get('/submit/'.$post->id.'/')->assertSee('কিছু না বদলেই আবার জমা দিতে পারেন');
     }
 
     public function test_word_changes_wait_for_the_writer(): void

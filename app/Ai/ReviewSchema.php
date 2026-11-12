@@ -22,7 +22,7 @@ final class ReviewSchema
                 'summary' => ['type' => 'string', 'description' => 'One or two sentences for the editor, in Bengali'],
                 'genre' => $str,
                 'strengths' => $list,
-                'suggestions' => ['type' => 'array', 'items' => $str, 'description' => 'Exactly 3 kind, specific suggestions for the writer, in the language of the piece'],
+                'suggestions' => ['type' => 'array', 'items' => $str, 'description' => 'Exactly 3 specific points for the editor, one plain line each, in the language of the piece; the same points are already woven into note_to_writer'],
                 // Copy-edits only (D42): applied by the server as exact find → replace, never by the model.
                 'edits' => ['type' => 'array', 'items' => [
                     'type' => 'object', 'additionalProperties' => false, 'required' => ['original', 'replacement', 'kind'],
@@ -33,7 +33,7 @@ final class ReviewSchema
                     ],
                 ]],
                 'decision' => ['type' => 'string', 'enum' => ['publish', 'changes', 'decline'], 'description' => 'Your recommendation to the human editor'],
-                'note_to_writer' => ['type' => 'string', 'description' => 'Kind, specific message to the writer in the language of the piece, matching the decision (2-5 sentences)'],
+                'note_to_writer' => ['type' => 'string', 'description' => 'A short personal letter from the literary editor to the writer, in the language of the piece, matching the decision and carrying the whole advice in prose (2 short paragraphs, no lists)'],
                 'excerpt' => ['type' => 'string', 'description' => 'One-line teaser for cards, in the language of the piece, at most 160 characters, no spoilers'],
                 'suggested_section' => ['type' => 'string', 'enum' => array_values($sections)],
                 'tags' => ['type' => 'array', 'items' => $str, 'description' => 'At most 5 short topic tags in Bengali'],
@@ -56,6 +56,7 @@ final class ReviewSchema
         $r['seo_description'] = mb_substr((string) ($r['seo_description'] ?? ''), 0, 160);
         $r['decision'] = in_array($r['decision'] ?? null, ['publish', 'changes', 'decline'], true) ? $r['decision'] : 'changes';
         $r['note_to_writer'] = mb_substr(trim((string) ($r['note_to_writer'] ?? '')), 0, 1500);
+        $r['letter'] = 2;   // the note is a whole letter (suggestions woven in); older reports had a short note
         $r['excerpt'] = mb_substr(trim(strip_tags((string) ($r['excerpt'] ?? ''))), 0, 200);
         $edits = [];
         foreach ((array) ($r['edits'] ?? []) as $e) {

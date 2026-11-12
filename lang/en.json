@@ -1860,7 +1860,6 @@
     "এখনই হাতপাখার ইনস্টাগ্রামে যাবে (কার্ডের ছবি আর ইনস্টাগ্রামের লেখা)। পাঠাবেন?": "This goes to the Hatpakha Instagram now (the card picture and the Instagram text). Send?",
     "এই পোস্টে ছবি নেই, তাই ইনস্টাগ্রামে যাবে না": "This post has no picture, so it can’t go to Instagram",
     "লেখককে পাঠান": "Send to the writer",
-    "এআই-এর খসড়া বসানো আছে: তার বার্তা আর পরামর্শগুলো। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন।": "The AI's draft is filled in: its message and its suggestions. Change anything; the writer gets exactly these words.",
     "ছোট সংশোধনগুলো এখনই লেখায় বসান": "Put the small corrections into the text now",
     "বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।": "Spelling, punctuation, spacing and typos. The writer gets the corrected text and revises from there. No word changes here.",
     "এআই-এর খসড়ার বদলে তৈরি বার্তা নিতে চাইলে": "Use a ready-made message instead of the AI's draft",
@@ -1891,5 +1890,6 @@
     "নিজে কিছু বদলাতে চাইলে নিচের লেখায় বদলে আগে “সংরক্ষণ” চাপুন।": "If you change anything in the text yourself, press \"Save changes\" first.",
     "তারপর একটি সিদ্ধান্ত দিন। কোনও বোতাম চাপার পরেও আগে বার্তাটি দেখাবে; “পাঠান” না চাপা পর্যন্ত লেখকের কাছে কিছু যায় না।": "Then choose a decision. Each button first shows you the message; nothing reaches the writer until you press \"Send\" (or \"Approve\") in it.",
     "লেখকের ই-মেল:": "Writer's e-mail:",
-    "এই লেখার লেখকের অ্যাকাউন্ট নেই (পুরনো ওয়ার্ডপ্রেস জমা), তাই কোনও ই-মেল যাবে না।": "This writer has no account (an old WordPress submission), so no e-mail is sent."
+    "এই লেখার লেখকের অ্যাকাউন্ট নেই (পুরনো ওয়ার্ডপ্রেস জমা), তাই কোনও ই-মেল যাবে না।": "This writer has no account (an old WordPress submission), so no e-mail is sent.",
+    "এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন। ই-মেলে নিজে থেকেই যোগ হয়: “যেমন আছে তেমনই রাখতে চাইলে না বদলেও আবার জমা দিতে পারেন।”": "The AI's letter is filled in. Change anything; the writer gets exactly these words. The e-mail always adds: \"If you'd like to keep it as it is, you can resubmit without changes.\""
 }

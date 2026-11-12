@@ -20,9 +20,25 @@ final class Prompt
         .'no stock phrases such as "বলা বাহুল্য", "সব মিলিয়ে", "এক কথায়", "অপরিসীম", "অবিচ্ছেদ্য অংশ", "আজও অমলিন", "সমৃদ্ধ ঐতিহ্য", "এক অদ্ভুত", "ভোলা যায় না", "সাহিত্যপ্রেমী", "অনন্য সম্ভার". '
         .'End on an image or a quiet line, not a slogan.';
 
+    /**
+     * Owner, 2026-11-12: the note to the writer read like a report, "the users will not like the writing".
+     * It is a letter from a literary editor to a fellow writer, and it carries the whole advice.
+     */
+    public const LETTER = 'note_to_writer is a short personal letter from the magazine\'s literary editor to a fellow writer, in natural চলিত বাংলা (আপনি), '
+        .'the way a senior editor of a little magazine writes by hand: warm, respectful, unhurried, never official. '
+        .'Begin from something particular in this piece that moved you (a line, an image, a moment; quote a few words of it), not from praise in general. '
+        .'For "changes", go on to the two or three things you would like the writer to look at again, woven into the letter in prose, each tied to a place in the piece, '
+        .'offered as a reader\'s feeling or a question ("পড়তে পড়তে মনে হল…", "এখানে কি আর একটু থামা যায়?"), never as an order or a verdict. '
+        .'The letter is the whole message: the writer reads nothing else. 2 short paragraphs, at most about 170 words. '
+        .'Never use report or workshop words: no "তথ্যভারী", "গতি কমায়", "সুসংহত", "কাঠামো", "জোরালো হবে", "প্রকাশযোগ্য", "পরিমার্জন", "উন্নত", "দুর্বলতা", "মান", no scores, no lists or numbering, no headings. '
+        .'Do not mention spelling or punctuation corrections, the AI, or how to resubmit: the magazine adds those itself. '
+        .'For "publish", a few lines of real delight in the piece; for "decline", a gentle, honest letter that leaves the door open. '
+        .'suggestions (shown to the editor only) are the same points in one plain line each.';
+
     /** Stable system prompt (cached): role + the editable rubric. Nothing per-request goes in here. */
     public static function system(): string
     {
+        $letter = self::LETTER;
         $rubric = Setting::get('ai.rubric') ?: (string) file_get_contents(resource_path('ai/rubric.md'));
 
         return <<<TXT
@@ -45,6 +61,8 @@ must change for a reason other than spelling; avoid it. Propose no edits rather 
 
 decision: "publish" if it fits the magazine as it is (after copy-edits), "changes" if a specific revision by the
 writer would make it publishable, "decline" if not suitable. note_to_writer must match the decision.
+
+The letter to the writer: {$letter}
 
 Editorial rubric:
 {$rubric}

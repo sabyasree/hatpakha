@@ -37,11 +37,12 @@ final class Review
             return null;
         }
         $note = trim((string) ($r['note_to_writer'] ?? ''));
-        $tips = array_values(array_filter(array_map(fn ($s) => trim((string) $s), (array) ($r['suggestions'] ?? []))));
+        // Newer reports write one letter that already carries the advice; older ones had a short note, so add their points.
+        $tips = ($r['letter'] ?? 1) >= 2 ? [] : array_values(array_filter(array_map(fn ($s) => trim((string) $s), (array) ($r['suggestions'] ?? []))));
         if ($tips) {
-            $note .= ($note === '' ? '' : "\n\n").'যে কথাগুলো ভেবে দেখতে বলছি:';
-            foreach ($tips as $i => $tip) {
-                $note .= "\n".Bn::num((string) ($i + 1)).'. '.$tip;
+            $note .= ($note === '' ? '' : "\n\n").'পড়তে পড়তে কয়েকটি জায়গায় মনে হল, আর একবার ফিরে দেখলে ভালো হয়:';
+            foreach ($tips as $tip) {
+                $note .= "\n— ".$tip;
             }
         }
 
