@@ -33,9 +33,13 @@ class ListPosts extends ListRecords
             'backlog' => Tab::make(__('পুরনো জমা'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNull('submitted_by')->reorder()->orderBy('backlog_tier')->orderByDesc('submitted_at')),
             // Owner (2026-11-08): drafts had no tab; the AI desk drafts (D95) and classics (D101) land here, newest first.
+            // The desk's own drafts. Writers' unsent drafts are theirs until they press "জমা দিন" (owner, 2026-11-12):
+            // they live in their own quiet tab, never in the counts.
             'drafts' => Tab::make(__('খসড়া'))
-                ->badge(fn () => Post::where('status', 'draft')->count() ?: null)
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->reorder()->orderByDesc('updated_at')),
+                ->badge(fn () => Post::where('status', 'draft')->whereNull('submitted_by')->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->whereNull('submitted_by')->reorder()->orderByDesc('updated_at')),
+            'writer_drafts' => Tab::make(__('লেখকের অসমাপ্ত খসড়া'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->whereNotNull('submitted_by')->reorder()->orderByDesc('updated_at')),
             // Owner (2026-11-12): the editorials, apart (they are also listed per issue in /desk → সম্পাদকীয়).
             'editorial' => Tab::make(__('সম্পাদকীয়'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('section', fn ($s) => $s->where('slug', 'editorial'))->reorder()->orderByDesc('updated_at')),

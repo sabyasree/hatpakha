@@ -111,6 +111,11 @@ class SubmissionController extends Controller
         if (blank($data['title'] ?? null) && blank($data['body'] ?? null)) {
             return response()->json(['saved' => false]);
         }
+        // Owner (2026-11-12): a title alone made an empty draft. A new draft starts only once some text is written;
+        // until then nothing is kept (the title is easy to type again).
+        if (! $post && mb_strlen(trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($data['body'] ?? ''))))) < 10) {
+            return response()->json(['saved' => false]);
+        }
         $post ??= new Post(['status' => 'draft']);
         $this->fill($request, $post, $data['title'] ?? '', $data['body'] ?? '', $data['section_id'] ?? null);
 
