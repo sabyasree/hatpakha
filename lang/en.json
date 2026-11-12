@@ -1894,5 +1894,18 @@
     "লেখক ঠিক এই ই-মেলটি পাবেন": "The writer gets exactly this e-mail",
     "বিষয়:": "Subject:",
     "রিপোর্ট বন্ধ করুন": "Close",
-    "বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন; ই-মেলে টিক দেওয়া সংশোধনগুলোর তালিকা থাকে। শব্দ বদল এখানে নেই।": "Spelling, punctuation, spacing and typos. The writer gets the corrected text; the e-mail lists the ticked corrections. No word changes here."
+    "বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন; ই-মেলে টিক দেওয়া সংশোধনগুলোর তালিকা থাকে। শব্দ বদল এখানে নেই।": "Spelling, punctuation, spacing and typos. The writer gets the corrected text; the e-mail lists the ticked corrections. No word changes here.",
+    "এখনও কোনও চিঠি যায়নি": "No letters sent yet",
+    "লেখককে মনোনয়ন, বদল চাওয়া, এবার নয়, শংসাপত্র বা সম্পাদকের চিঠি পাঠালে এখানে হুবহু থাকবে।": "Every letter to a writer (approval, changes, not this time, certificate or an editor's note) is kept here exactly as sent.",
+    "কী চিঠি": "Letter",
+    "কোন লেখা": "Piece",
+    "পাঠানো হয়েছে: ": "Sent to: ",
+    "লেখককে পাঠানো চিঠি": "Letters sent to the writer",
+    "চিঠিগুলো পড়ুন": "Read the letters",
+    "পাঠানো চিঠি": "Sent letters",
+    "সম্মতি চাওয়া": "Agreement asked",
+    "সম্পাদকের চিঠি": "Editor's note",
+    "সম্মান": "Honour",
+    "সংখ্যায় লেখা": "Piece in an issue",
+    "সংকলনে লেখা": "Piece in a collection"
 }

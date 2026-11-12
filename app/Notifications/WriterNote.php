@@ -18,10 +18,10 @@ class WriterNote extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return (new MailMessage)->subject($this->subject)
+        return \App\Support\WriterLetters::mark((new MailMessage)->subject($this->subject)
             ->greeting('নমস্কার, '.$notifiable->name)
             ->line($this->message)
             ->action($this->button, $this->link ?: Url::to('/account'))
-            ->salutation('— হাতপাখা সম্পাদকমণ্ডলী');
+            ->salutation('— হাতপাখা সম্পাদকমণ্ডলী'), 'writer_note');
     }
 }

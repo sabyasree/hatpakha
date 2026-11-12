@@ -22,12 +22,12 @@ class SubmissionDecision extends Notification
         $p = $this->post;
         $v = ['{নাম}' => $notifiable->name, '{লেখা}' => $p->title, '{সম্পাদকের_কথা}' => (string) $p->review_note, '{সংশোধন}' => $p->fixesText()];
 
-        return match ($this->decision) {
+        return \App\Support\WriterLetters::mark(match ($this->decision) {
             'approved' => \App\Support\MailTemplates::mail('decision_approved', $v + ['{প্রকাশ}' => $p->published_at?->isFuture() ? 'প্রকাশের তারিখ: '.\App\Support\Bn::date($p->published_at) : 'লেখাটি এখন হাতপাখায় পড়া যাচ্ছে।'],
                 $p->published_at?->isFuture() ? Url::to('/account') : $p->url()),
             'confirm' => \App\Support\MailTemplates::mail('decision_confirm', $v, Url::to('/submit/'.$p->id)),
             'changes' => \App\Support\MailTemplates::mail('decision_changes', $v, Url::to('/submit/'.$p->id)),
             default => \App\Support\MailTemplates::mail('decision_declined', $v, Url::to('/account')),
-        };
+        }, 'decision_'.(in_array($this->decision, ['approved', 'confirm', 'changes'], true) ? $this->decision : 'declined'), $p);
     }
 }
