@@ -96,11 +96,23 @@ class SubmissionTest extends TestCase
     public function test_autosave_creates_a_draft_and_preview_matches_the_site(): void
     {
         $this->actingAs($this->writer);
+        // Owner (2026-11-12): a title alone makes no draft.
+        $this->postJson('/submit/autosave/', ['title' => 'Swami Vivekananda', 'body' => ''])->assertOk()->assertJson(['saved' => false]);
+        $this->postJson('/submit/autosave/', ['title' => 'Swami Vivekananda', 'body' => 'এক'])->assertOk()->assertJson(['saved' => false]);
+        $this->assertSame(0, Post::where('submitted_by', $this->writer->id)->count());
         $res = $this->postJson('/submit/autosave/', ['title' => 'অর্ধেক লেখা', 'body' => "প্রথম লাইন\nদ্বিতীয় লাইন", 'section_id' => $this->poetry->id])->assertOk()->json();
         $this->assertTrue($res['saved']);
         $this->assertSame('draft', Post::find($res['id'])->status);
 
         $this->postJson('/submit/'.$res['id'].'/autosave/', ['title' => 'পুরো লেখা', 'body' => 'আরও লেখা'])->assertOk();
+        // A writer's unsent draft is theirs: not among the desk's drafts, but in its own tab.
+        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $draft = Post::find($res['id']);
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class, ['activeTab' => 'drafts'])->assertCanNotSeeTableRecords([$draft]);
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class, ['activeTab' => 'writer_drafts'])->assertCanSeeTableRecords([$draft]);
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $draft->getRouteKey()])->assertSee('খসড়া, এখনও জমা দেননি');
+        $this->actingAs($this->writer);
         $this->assertSame('পুরো লেখা', Post::find($res['id'])->title);
 
         $preview = $this->postJson('/submit/preview/', ['title' => 't', 'body' => "এক\nদুই", 'section_id' => $this->poetry->id])->json();

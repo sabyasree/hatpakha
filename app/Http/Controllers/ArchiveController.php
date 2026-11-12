@@ -165,6 +165,27 @@ class ArchiveController extends Controller
         return view('archive', compact('title', 'posts', 'seo', 'kicker', 'section', 'age'));
     }
 
+    /**
+     * Desk preview of an issue's magazine before it is published (owner, 2026-11-12): the pieces chosen for it (attached
+     * or in the AI editor's proposal, whatever their state), the editorial even as a draft, the designer's proposed cover.
+     * Editors only, never cached, never indexed.
+     */
+    public function issuePreview(Request $request, Issue $issue)
+    {
+        abort_unless($request->user()?->hasRole(\App\Enums\Role::Editor), 403);
+        $ids = (array) ($issue->ai_plan['post_ids'] ?? []);
+        $editorial = $issue->editorialPost()?->loadMissing('authors', 'section');
+        $rest = Post::with(['authors', 'section'])->where(fn ($q) => $q->where('issue_id', $issue->id)->orWhereIn('id', $ids))
+            ->whereNotIn('status', ['rejected', 'archived'])
+            ->when($editorial, fn ($q) => $q->whereKeyNot($editorial->id))
+            ->orderByRaw('published_at is null')->orderBy('published_at')->get();
+        $pieces = ($editorial ? collect([$editorial]) : collect())->concat($rest)->values();
+        $writers = $rest->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id')->values();
+
+        return response()->view('magazine', compact('issue', 'pieces', 'editorial', 'rest', 'writers') + ['preview' => true])
+            ->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
     /** The issue as a book (D68). Same text as the pieces' own pages, so noindex with the issue as canonical. */
     public function issueBook(string $slug)
     {

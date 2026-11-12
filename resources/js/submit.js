@@ -170,7 +170,8 @@ if (form) {
         dirty = false;
         status.textContent = 'রাখা হচ্ছে…';
         post(autosaveUrl, payload()).then((res) => {
-            if (!res.saved) { status.textContent = ''; return; }
+            // Owner (2026-11-12): a title alone is not kept; say so, so nobody thinks their work is saved.
+            if (!res.saved) { status.textContent = title.value.trim() ? 'কয়েকটি লাইন লিখলেই খসড়া নিজে থেকে রাখা হবে।' : ''; return; }
             setSaved(`✓ খসড়া রাখা হয়েছে · ${res.at}`);
             if (res.id && form.dataset.new) {
                 // First autosave of a new piece: from now on keep editing that draft.

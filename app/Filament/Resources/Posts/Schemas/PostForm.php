@@ -53,8 +53,11 @@ class PostForm
                         ->content(fn (Post $record) => \App\Support\Bn::num((int) $record->authors->sum('published_count')).__('টি লেখা')),
                     Placeholder::make('words')->label(__('দৈর্ঘ্য'))
                         ->content(fn (Post $record) => \App\Support\Bn::num(count(preg_split('/\s+/u', trim(strip_tags((string) $record->body_html)), -1, PREG_SPLIT_NO_EMPTY))).__(' শব্দ')),
-                    Placeholder::make('submitted')->label(__('জমা'))
-                        ->content(fn (Post $record) => \App\Support\Bn::num((string) ($record->submitted_at ?? $record->updated_at)?->diffForHumans()) ?: '—'),
+                    // A draft is not a submission: say when it was started and last changed (owner, 2026-11-12).
+                    Placeholder::make('submitted')->label(fn (Post $record) => $record->submitted_at ? __('জমা') : __('খসড়া, এখনও জমা দেননি'))
+                        ->content(fn (Post $record) => $record->submitted_at
+                            ? \App\Support\Bn::num((string) $record->submitted_at->diffForHumans())
+                            : __('শুরু').' '.\App\Support\Bn::num((string) $record->created_at?->diffForHumans()).' · '.__('শেষ বদল').' '.\App\Support\Bn::num((string) $record->updated_at?->diffForHumans())),
                     Placeholder::make('original')->label(__('মৌলিকতার ঘোষণা'))
                         ->content(fn (Post $record) => $record->originality_confirmed_at ? __('লেখক নিশ্চিত করেছেন') : __('নেই')),
                     Placeholder::make('ai')->label(__('এআই পরামর্শ'))

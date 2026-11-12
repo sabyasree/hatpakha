@@ -19,7 +19,7 @@
 
     // ---- 1. Page size: an A5-like page that fits the screen ----------------------------------------------------
     const measure = () => {
-        const bar = [...root.querySelectorAll('.mag-bar, .mag-nav, .mag-hint')].reduce((t, el) => t + (el.hidden ? 0 : el.offsetHeight), 0) + 16, availH = window.innerHeight - bar, availW = window.innerWidth - 24;
+        const bar = [...root.querySelectorAll('.mag-preview, .mag-bar, .mag-nav, .mag-hint')].reduce((t, el) => t + (el.hidden ? 0 : el.offsetHeight), 0) + 16, availH = window.innerHeight - bar, availW = window.innerWidth - 24;
         let h = Math.min(availH, 1000), w = Math.round(h / 1.41);
         spread = availW >= 2 * w + 40 && window.innerWidth >= 900;
         if (!spread && w > availW) { w = availW; h = Math.min(availH, Math.round(w * 1.75)); }   // phones: use the height
