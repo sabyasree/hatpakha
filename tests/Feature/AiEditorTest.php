@@ -107,9 +107,12 @@ class AiEditorTest extends TestCase
         $this->assertStringContainsString('করি না', $post->body_html, 'The small fix goes in before the piece goes back');
         $this->assertStringContainsString('মেঘলা আকাশ', $post->body_html, 'Never a word change without the writer');
         \Illuminate\Support\Facades\Notification::assertSentTo($writer, \App\Notifications\SubmissionDecision::class, function ($n) use ($writer) {
-            return str_contains(implode(' ', array_map('strval', $n->toMail($writer)->introLines)), 'কিছু না বদলে আবার জমা দিন');
+            $mail = implode(' ', array_map('strval', $n->toMail($writer)->introLines));
+
+            return str_contains($mail, 'কিছু না বদলে আবার জমা দিন') && str_contains($mail, 'করিনা → করি না') && ! str_contains($mail, 'কালো আকাশ');
         });
-        $this->actingAs($writer)->get('/submit/'.$post->id.'/')->assertSee('কিছু না বদলেই আবার জমা দিতে পারেন');
+        $this->actingAs($writer)->get('/submit/'.$post->id.'/')->assertSee('কিছু না বদলেই আবার জমা দিতে পারেন')->assertSee('করিনা → করি না');
+        $this->assertSame([['original' => 'করিনা', 'replacement' => 'করি না']], $post->review_fixes);
     }
 
     public function test_word_changes_wait_for_the_writer(): void

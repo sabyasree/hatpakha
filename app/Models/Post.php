@@ -20,6 +20,12 @@ class Post extends Model
 
     protected $guarded = ['id'];
 
+    /** The small corrections put into this submission at the last decision, one "ভুল → ঠিক" per line (D160). */
+    public function fixesText(): string
+    {
+        return collect((array) $this->review_fixes)->map(fn ($e) => ($e['original'] ?? '').' → '.($e['replacement'] ?? ''))->implode("\n");
+    }
+
     protected function casts(): array
     {
         return [
@@ -32,6 +38,7 @@ class Post extends Model
             'reviewed_at' => 'datetime',
             'originality_confirmed_at' => 'datetime',
             'pending_edits' => 'array',
+            'review_fixes' => 'array',
             'ai_drafted_at' => 'datetime',
             'glossary' => 'array',
             'audio_ai' => 'boolean',

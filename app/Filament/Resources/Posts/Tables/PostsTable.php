@@ -161,7 +161,7 @@ class PostsTable
                     CheckboxList::make('edits')->label(__('এআই-এর সংশোধন (টিক দেওয়াগুলো লেখায় বসবে)'))
                         ->options(fn (Post $record) => EditorPackage::editOptions($record))
                         ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
-                        ->bulkToggleable()->columns(1)
+                        ->bulkToggleable()->columns(1)->live()
                         ->helperText(__('"শব্দ বদল" টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ হবে।'))
                         ->visible(fn (Post $record) => EditorPackage::edits($record) !== []),
                     // Proofreader (D50): a typo fix in the title, and its note for the editor.
@@ -208,10 +208,10 @@ class PostsTable
                         ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::CHANGE_TEMPLATES[$state] ?? '') : null),
                     self::emailPreview('changes'),
                     CheckboxList::make('edits')->label(__('ছোট সংশোধনগুলো এখনই লেখায় বসান'))
-                        ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।'))
+                        ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন; ই-মেলে টিক দেওয়া সংশোধনগুলোর তালিকা থাকে। শব্দ বদল এখানে নেই।'))
                         ->options(fn (Post $record) => array_intersect_key(EditorPackage::editOptions($record), array_flip(EditorPackage::safeIndexes($record))))
                         ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
-                        ->bulkToggleable()->columns(1)
+                        ->bulkToggleable()->columns(1)->live()
                         ->visible(fn (Post $record) => EditorPackage::safeIndexes($record) !== []),
                 ])
                 ->action(function (Post $record, array $data) {
@@ -302,6 +302,10 @@ class PostsTable
             ->content(function (Post $record, $get) use ($decision) {
                 $copy = clone $record;
                 $copy->review_note = (string) $get('note');
+                // The small fixes as ticked, listed in the e-mail (D160); none when not this time.
+                $copy->review_fixes = null;
+                $fixes = $decision === 'rejected' ? '' : EditorPackage::fixesPreview($record, (array) ($get('edits') ?? []));
+                $copy->review_fixes = $fixes === '' ? null : array_map(fn ($l) => array_combine(['original', 'replacement'], explode(' → ', $l, 2)), explode("\n", $fixes));
                 if ($decision === 'approved' && $get('at')) {
                     $copy->published_at = rescue(fn () => \Illuminate\Support\Carbon::parse($get('at')), now(), false);
                 }

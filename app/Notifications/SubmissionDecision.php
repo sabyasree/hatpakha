@@ -20,7 +20,7 @@ class SubmissionDecision extends Notification
     public function toMail($notifiable): MailMessage
     {
         $p = $this->post;
-        $v = ['{নাম}' => $notifiable->name, '{লেখা}' => $p->title, '{সম্পাদকের_কথা}' => (string) $p->review_note];
+        $v = ['{নাম}' => $notifiable->name, '{লেখা}' => $p->title, '{সম্পাদকের_কথা}' => (string) $p->review_note, '{সংশোধন}' => $p->fixesText()];
 
         return match ($this->decision) {
             'approved' => \App\Support\MailTemplates::mail('decision_approved', $v + ['{প্রকাশ}' => $p->published_at?->isFuture() ? 'প্রকাশের তারিখ: '.\App\Support\Bn::date($p->published_at) : 'লেখাটি এখন হাতপাখায় পড়া যাচ্ছে।'],

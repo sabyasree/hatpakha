@@ -1861,7 +1861,6 @@
     "এই পোস্টে ছবি নেই, তাই ইনস্টাগ্রামে যাবে না": "This post has no picture, so it can’t go to Instagram",
     "লেখককে পাঠান": "Send to the writer",
     "ছোট সংশোধনগুলো এখনই লেখায় বসান": "Put the small corrections into the text now",
-    "বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।": "Spelling, punctuation, spacing and typos. The writer gets the corrected text and revises from there. No word changes here.",
     "এআই-এর খসড়ার বদলে তৈরি বার্তা নিতে চাইলে": "Use a ready-made message instead of the AI's draft",
     "দরকার নেই": "No thanks",
     "লেখককে ই-মেল পাঠানো হয়েছে": "E-mail sent to the writer",
@@ -1894,5 +1893,6 @@
     "; ই-মেলটি নিচে হুবহু দেখানো আছে।": "; the e-mail is shown below exactly as it will go.",
     "লেখক ঠিক এই ই-মেলটি পাবেন": "The writer gets exactly this e-mail",
     "বিষয়:": "Subject:",
-    "রিপোর্ট বন্ধ করুন": "Close"
+    "রিপোর্ট বন্ধ করুন": "Close",
+    "বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন; ই-মেলে টিক দেওয়া সংশোধনগুলোর তালিকা থাকে। শব্দ বদল এখানে নেই।": "Spelling, punctuation, spacing and typos. The writer gets the corrected text; the e-mail lists the ticked corrections. No word changes here."
 }
