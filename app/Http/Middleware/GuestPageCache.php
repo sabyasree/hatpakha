@@ -34,9 +34,11 @@ class GuestPageCache
         // Browsers re-check every time and never show a stale copy (must-revalidate: a reader who has just signed in
         // must not get the guest page they or the app saw a moment ago); Cloudflare may keep it 10 minutes (home and
         // lists 5) and serve it a minute longer while it fetches a new one (CDN-Cache-Control is for Cloudflare only).
+        // When the server is down (host maintenance, 521/522 on 2026-11-12), Cloudflare may keep showing its last copy
+        // for up to a day instead of an error page (stale-if-error).
         $edge = $request->is('/', 'category/*', 'tag/*', 'archive*') ? 300 : 600;
         $response->headers->set('Cache-Control', "public, max-age=0, must-revalidate, s-maxage={$edge}");
-        $response->headers->set('CDN-Cache-Control', "max-age={$edge}, stale-while-revalidate=60");
+        $response->headers->set('CDN-Cache-Control', "max-age={$edge}, stale-while-revalidate=60, stale-if-error=86400");
         $response->headers->set('Vary', 'Accept-Encoding');
 
         return $response;
