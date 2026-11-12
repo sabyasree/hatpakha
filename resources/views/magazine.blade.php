@@ -46,7 +46,9 @@
         .mag-spread .mag-leaf { left: 50%; width: 50%; }
         .mag-leaf.turned { transform: rotateY(-180deg); }
         .mag-leaf.gone { visibility: hidden; }
+        .mag-leaf.far { display: none; }
         .mag-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; background: #FFFBF4; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        @media (max-width: 759px) { .mag-face { box-shadow: 0 4px 14px rgba(0,0,0,.3); } }
         .mag-back-face { transform: rotateY(180deg); }
         .mag-front::after { content: ''; position: absolute; inset: 0 auto 0 0; width: 26px; background: linear-gradient(90deg, rgba(19,33,44,.22), transparent); pointer-events: none; }
         .mag-back-face::after { content: ''; position: absolute; inset: 0 0 0 auto; width: 26px; background: linear-gradient(270deg, rgba(19,33,44,.22), transparent); pointer-events: none; }
@@ -153,7 +155,7 @@
     </div>
     <div class="mag-nav">
         <button type="button" data-mag-prev>← আগের</button>
-        <span class="mag-count" data-mag-count></span>
+        <span class="mag-count" data-mag-count role="status">পাতা সাজানো হচ্ছে…</span>
         <button type="button" data-mag-next>পরের →</button>
     </div>
 
@@ -242,6 +244,6 @@
         </section>
     </div>
 </div>
-<script src="{{ asset('js/hp-magazine.js') }}?v=4" defer></script>
+<script src="{{ asset('js/hp-magazine.js') }}?v=5" defer></script>
 </body>
 </html>

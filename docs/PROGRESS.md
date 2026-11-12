@@ -253,5 +253,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D143: the editorial as its own section (opener page, contents heading, issue page card), found even when not linked
 - [x] D144: /desk → সম্পাদকীয় (every issue's editorial, write / AI draft / open), লেখা tab, issue form picker
 - [x] D145: full check of site + desk (all pages, all roles, phone + laptop) and end-to-end flows; fixed guest-copy-after-login, search pictures, home + menu way into the month's issue
+- [x] D146: no certificates for the desk's own pieces (classics, desk drafts, editorials); one-click withdrawal of those already given
+- [ ] Owner: /desk → শংসাপত্র → "ডেস্কের লেখার শংসাপত্র সরান" once after deploy
+- [x] Owner report (2026-11-12): issue page cover read as a broken red line and the button shadow looked broken: cover redesigned (cream edge, fan in its corner, name on a navy panel), clean পত্রিকা খুলুন + সূচি দেখুন; the magazine crashed phone browsers on long issues: only the leaves around the open page are drawn (427-page test issue: 2–4 drawn), pictures load lazily, "পাতা সাজানো হচ্ছে…" while laying out
  → turn on "Add visitor location headers" (for city names in the desk health report)
 - [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)

@@ -49,6 +49,25 @@ class CertificateTest extends TestCase
         $desk = Author::create(['display_name' => 'হাতপাখা ডেস্ক', 'slug' => 'desk', 'is_desk' => true]);
         $this->assertSame([], Certificate::issueFor($this->makePost(['status' => 'published', 'slug' => 'd', 'published_at' => now()->subDay()], $desk)));
         $this->assertSame([], Certificate::issueFor($this->makePost(['status' => 'draft', 'slug' => 'e'])));
+
+        // Owner (2026-11-12): the desk's own pieces (classics, desk drafts) and editorials get none; a guest writer's piece does.
+        $sukumar = Author::create(['display_name' => 'সুকুমার রায়', 'slug' => 'sukumar', 'is_guest' => true]);
+        $classic = $this->makePost(['status' => 'published', 'slug' => 'abol', 'published_at' => now()->subDay()], $sukumar);
+        $classic->forceFill(['ai_drafted_at' => now()->subWeek()])->saveQuietly();
+        $this->assertSame([], Certificate::issueFor($classic->fresh()));
+        $edSection = \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $owner = Author::create(['display_name' => 'সম্পাদক', 'slug' => 'ed']);
+        $this->assertSame([], Certificate::issueFor($this->makePost(['status' => 'published', 'slug' => 'sompadokiyo', 'section_id' => $edSection->id, 'published_at' => now()->subDay()], $owner)));
+        $guest = Author::create(['display_name' => 'অতিথি', 'slug' => 'otithi', 'is_guest' => true]);
+        $this->assertCount(1, Certificate::issueFor($this->makePost(['status' => 'published', 'slug' => 'g', 'published_at' => now()->subDay()], $guest)));
+
+        // Those already given to the desk's pieces are withdrawn in one click (and can be brought back one by one).
+        $wrong = Certificate::create(['author_id' => $sukumar->id, 'post_id' => $classic->id, 'kind' => 'publication', 'title_snapshot' => 't', 'author_name_snapshot' => 'সুকুমার রায়']);
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(\App\Filament\Pages\Certificates::class)->assertActionVisible('withdrawDesk')->callAction('withdrawDesk');
+        $this->assertNotNull($wrong->fresh()->revoked_at);
+        $this->assertSame(1, Certificate::whereNull('revoked_at')->count(), 'The guest writer keeps theirs');
     }
 
     /** D73: automatic for new pieces, a writer's own request, four designs, QR code, signature. */

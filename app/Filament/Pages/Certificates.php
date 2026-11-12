@@ -56,7 +56,7 @@ class Certificates extends Page
                 ->modalDescription(__('পুরনো বা নতুন যেকোনো প্রকাশিত লেখা। লেখকের অ্যাকাউন্ট থাকলে তিনি ই-মেল পাবেন; না থাকলে নিচে ই-মেল দিলে সেখানে লিংক যাবে।'))
                 ->schema([
                     Select::make('post')->label(__('লেখা'))->required()->searchable()
-                        ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.$search.'%')->latest('published_at')->limit(30)->pluck('title', 'id'))
+                        ->getSearchResultsUsing(fn (string $search) => Post::published()->certifiable()->where('title', 'like', '%'.$search.'%')->latest('published_at')->limit(30)->pluck('title', 'id'))
                         ->getOptionLabelUsing(fn ($value) => Post::find($value)?->title),
                     TextInput::make('email')->label(__('ই-মেলেও পাঠান (ঐচ্ছিক)'))->email()->maxLength(190),
                 ])
@@ -64,6 +64,19 @@ class Certificates extends Page
                 ->action(function (array $data) {
                     $post = Post::published()->findOrFail($data['post']);
                     self::give($post, $data['email'] ?? null);
+                }),
+            // Owner (2026-11-12): certificates given to the desk's own pieces (classics, desk drafts, editorials) are
+            // withdrawn in one click; each can still be brought back from its row ("ফিরিয়ে আনুন").
+            Action::make('withdrawDesk')->label(fn () => __('ডেস্কের লেখার শংসাপত্র সরান').' ('.\App\Support\Bn::num((string) self::deskCertificates()->count()).')')
+                ->icon('heroicon-o-x-circle')->color('danger')
+                ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) && self::deskCertificates()->exists())
+                ->requiresConfirmation()
+                ->modalDescription(__('হাতপাখা ডেস্কের নিজের লেখা (ক্লাসিক, ডেস্কের খসড়া, সম্পাদকীয়) কোনো লেখকের জমা নয়, তাই শংসাপত্র লাগে না। এগুলো বাতিল হবে; দরকারে প্রতিটি আবার ফিরিয়ে আনা যায়।'))
+                ->action(function () {
+                    $ids = self::deskCertificates()->pluck('id');
+                    Certificate::whereIn('id', $ids)->update(['revoked_at' => now()]);
+                    AuditLog::record('certificate.revoked_desk', null, ['count' => $ids->count()]);
+                    Notification::make()->title(__('ডেস্কের লেখার শংসাপত্র সরানো হয়েছে').': '.\App\Support\Bn::num((string) $ids->count()))->success()->send();
                 }),
             Action::make('settings')->label(__('সই ও নিয়ম'))->icon('heroicon-o-pencil-square')->color('gray')
                 ->fillForm(fn () => [
@@ -103,9 +116,21 @@ class Certificates extends Page
         ];
     }
 
+    /** Valid certificates of pieces that should not have one (the desk's own work). */
+    public static function deskCertificates()
+    {
+        return Certificate::whereNull('revoked_at')->where('kind', 'publication')
+            ->whereNotIn('post_id', Post::query()->certifiable()->select('id'));
+    }
+
     /** Issue for a piece (all its writers), tell those with accounts, and optionally mail a link to an address. */
     public static function give(Post $post, ?string $email = null): void
     {
+        if (! $post->isCertifiable()) {
+            Notification::make()->title(__('এটি হাতপাখা ডেস্কের নিজের লেখা; শংসাপত্র লাগে না'))->warning()->send();
+
+            return;
+        }
         $new = Certificate::issueFor($post);
         $all = Certificate::where('post_id', $post->id)->where('kind', 'publication')->whereNull('revoked_at')->get();
         if (filled($email) && $all->isNotEmpty()) {

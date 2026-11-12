@@ -71,7 +71,7 @@ final class EditorJobs
             return null;
         }
         $have = \App\Models\Certificate::where('kind', 'publication')->select('post_id');
-        $posts = Post::published()->whereNotNull('submitted_by')->where('published_at', '>=', now()->subDays(30))->whereNotIn('id', $have)->pluck('title', 'id');
+        $posts = Post::published()->certifiable()->where('published_at', '>=', now()->subDays(30))->whereNotIn('id', $have)->pluck('title', 'id');
         if ($posts->isEmpty()) {
             return null;
         }

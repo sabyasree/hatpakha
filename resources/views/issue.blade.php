@@ -11,15 +11,20 @@
     <section class="bg-navy text-paper">
         <div class="mx-auto grid max-w-[1100px] items-center gap-8 px-5 py-10 md:grid-cols-[minmax(0,320px)_1fr] md:py-14">
             {{-- The cover, like a magazine on a stand --}}
-            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="group relative mx-auto block aspect-[1/1.41] w-56 overflow-hidden rounded-md shadow-[10px_10px_0_#CB1B32] transition md:w-full md:group-hover:-translate-y-1" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
+            {{-- Owner (2026-11-12): the cover read as a broken red line (navy on navy). Now a magazine on the stand: a cream
+                 edge, the fan in its corner, the name on its own navy panel, like the cover inside the magazine. --}}
+            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block aspect-[1/1.41] w-56 overflow-hidden rounded-md border-4 border-paper bg-sky-night shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
                 @if ($issue->cover_path)
-                    <img src="{{ $issue->cover_path }}" alt="" class="absolute inset-0 h-full w-full object-cover">
-                    <span class="absolute inset-0 bg-gradient-to-b from-navy/60 via-transparent to-navy/80"></span>
+                    <img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover">
                 @else
-                    <span class="absolute -bottom-[15%] -right-[20%] aspect-square w-[90%] rounded-full" style="background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg)"></span>
+                    <span class="absolute -right-[30%] top-[24%] aspect-square w-[80%] rounded-full" style="background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg)" aria-hidden="true"></span>
                 @endif
-                <span class="absolute inset-x-4 top-4 font-hand text-5xl leading-none text-white">হাতপাখা</span>
-                <span class="absolute inset-x-4 bottom-4 font-display text-xl font-extrabold leading-tight text-white">{{ $issue->title }}</span>
+                <span class="absolute inset-x-0 top-0 px-4 pt-3 font-hand text-5xl leading-none text-white [text-shadow:0_2px_6px_rgba(19,33,44,.7)]">হাতপাখা</span>
+                <span class="absolute inset-x-0 bottom-0 bg-navy px-4 pb-4 pt-3">
+                    <span class="block h-1 w-10 bg-red" aria-hidden="true"></span>
+                    <span class="mt-2 block font-display text-xl font-extrabold leading-tight text-white">{{ $issue->title }}</span>
+                    <span class="mt-0.5 block text-xs text-peach">ISSN 2321-3035</span>
+                </span>
             </a>
             <div>
                 <p class="font-hand text-2xl text-peach">সংখ্যা</p>
@@ -27,9 +32,10 @@
                 <p class="mt-3 text-peach-light">{{ Bn::num((string) $posts->count()) }}টি লেখা · {{ Bn::num((string) $writers->count()) }} জন লেখক @if ($issue->published_at)· {{ Bn::date($issue->published_at) }}@endif</p>
                 <div class="mt-6 flex flex-wrap gap-3">
                     @if ($posts->isNotEmpty())
-                        <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="inline-flex h-14 items-center gap-2 rounded-full bg-red px-7 text-lg font-bold text-white shadow-[4px_4px_0_#FFFBF4]">
+                        <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="inline-flex h-14 items-center gap-2 rounded-full bg-red px-7 text-lg font-bold text-white hover:bg-red-dark">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg>
                             পত্রিকা খুলুন</a>
+                        <a href="#contents" class="inline-flex h-14 items-center rounded-full border-2 border-paper px-6 text-lg font-bold text-paper hover:bg-paper hover:text-navy">সূচি দেখুন</a>
                     @endif
                 </div>
                 <p class="mt-3 text-sm text-peach-light">পাতা উল্টে পড়ুন, পুরো পর্দায়; বা নিচে থেকে যে-কোনো লেখা খুলুন।</p>
@@ -52,7 +58,7 @@
             </div>
         @endif
 
-        <h2 class="mt-12 font-display text-3xl font-extrabold">এই সংখ্যায়</h2>
+        <h2 id="contents" class="mt-12 scroll-mt-24 font-display text-3xl font-extrabold">এই সংখ্যায়</h2>
         <div class="mt-4 grid gap-8 md:grid-cols-2">
             @if ($editorial)
                 <div>

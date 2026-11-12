@@ -191,6 +191,9 @@
             leaf.classList.toggle('turned', turned);
             leaf.style.zIndex = turned ? String(i + 1) : String(leaves.length - i + 1);
             leaf.classList.toggle('gone', !spread && i < cur - 1);
+            // Owner (2026-11-12): a long issue crashed phone browsers. Every leaf is a full-page 3D layer, and hundreds of
+            // them do not fit in a phone's graphics memory: only the leaves around the open page are drawn at all.
+            leaf.classList.toggle('far', i < cur - 2 || i > cur + 1);
         });
         book.classList.toggle('mag-closed-front', spread && cur === 0);
         book.classList.toggle('mag-closed-back', spread && cur >= leaves.length);
@@ -269,9 +272,12 @@
     // itself, and measuring with a stand-in font would push lines off the page later); lay out again if one comes late.
     const faces = ['400 17px "Noto Serif Bengali"', '700 17px "Noto Serif Bengali"', '600 17px "Anek Bangla"', '700 17px "Anek Bangla"', '800 17px "Anek Bangla"', '400 17px "Galada"'];
     const fontsReady = document.fonts ? Promise.all(faces.map((f) => document.fonts.load(f, 'অক').catch(() => null))).then(() => document.fonts.ready) : Promise.resolve();
-    if (document.fonts) document.fonts.addEventListener('loadingdone', () => { clearTimeout(t); t = setTimeout(render, 100); });
+    // A font that arrives late: lay out once more (not for every font, and not while the first layout is pending).
+    let laidOut = false;
+    if (document.fonts) document.fonts.addEventListener('loadingdone', () => { if (!laidOut) return; clearTimeout(t); t = setTimeout(render, 300); });
     fontsReady.then(() => {
         try { cur = Number(localStorage.getItem(key)) || 0; } catch (e) { cur = 0; }
         render();
+        laidOut = true;
     });
 })();

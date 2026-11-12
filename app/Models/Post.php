@@ -152,6 +152,23 @@ class Post extends Model
     }
 
     /** Live for readers: published, or scheduled whose time has come (no cron needed; 3c). */
+    /**
+     * Pieces that get a publication certificate (owner, 2026-11-12: "no certificate if written by the Hatpakha desk"):
+     * a writer's own work. Not what the desk made itself (classics, desk drafts, AI drafts: they carry ai_drafted_at),
+     * not the desk byline, not editorials.
+     */
+    public function scopeCertifiable(Builder $q): Builder
+    {
+        return $q->whereNull('ai_drafted_at')
+            ->whereDoesntHave('section', fn ($s) => $s->where('slug', 'editorial'))
+            ->whereHas('authors', fn ($a) => $a->where('is_desk', false));
+    }
+
+    public function isCertifiable(): bool
+    {
+        return static::whereKey($this->id)->certifiable()->exists();
+    }
+
     public function scopePublished(Builder $q): Builder
     {
         return $q->whereIn('status', ['published', 'scheduled'])->where('published_at', '<=', now());
