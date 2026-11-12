@@ -11,7 +11,7 @@ class Collection extends Model
 
     protected function casts(): array
     {
-        return ['post_ids' => 'array', 'months' => 'array', 'approved_at' => 'datetime'];
+        return ['post_ids' => 'array', 'months' => 'array', 'news' => 'array', 'approved_at' => 'datetime'];
     }
 
     protected static function booted(): void

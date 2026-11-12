@@ -17,7 +17,7 @@ class GuestPageCache
 {
     /** Never shared: the desk, accounts, sign-in, writing, search, newsletter links, chat, beacons. */
     public const PRIVATE = ['desk', 'desk/*', 'certificate/*', 'livewire*', 'filament/*', 'account*', 'login*', 'logout', 'register*', 'forgot-password*',
-        'reset-password*', 'email/*', 'submit*', 'search*', 'newsletter/*', 'csrf-token', 'chat', 'v/*', 'like/*', 'save/*', 'follow/*', 'up', 'issue-print/*', 'issue-preview/*'];
+        'reset-password*', 'email/*', 'submit*', 'search*', 'newsletter/*', 'csrf-token', 'chat', 'v/*', 'like/*', 'save/*', 'follow/*', 'up', 'issue-print/*', 'issue-preview/*', 'collection-preview/*'];
 
     public function handle(Request $request, Closure $next): Response
     {

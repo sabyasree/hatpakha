@@ -63,6 +63,11 @@ class CollectionResource extends Resource
         $postLabel = fn ($value) => ($p = Post::with('authors')->find($value)) ? $p->title.' — '.($p->authors->first()?->publicName() ?? '') : (string) $value;
 
         return $schema->columns(1)->components([
+            // বর্ষসেরা (owner, 2026-11-12): the designer's cover, chosen with the button at the top.
+            \Filament\Forms\Components\Placeholder::make('cover')->label(__('প্রচ্ছদ'))
+                ->visible(fn (?Collection $record) => $record && ($record->cover_path || $record->proposed_cover_path))
+                ->content(fn (Collection $record) => new \Illuminate\Support\HtmlString('<img src="'.e(asset(ltrim((string) ($record->cover_path ?: $record->proposed_cover_path), '/'))).'" alt="" style="width:180px;aspect-ratio:1/1.41;object-fit:cover;border-radius:.4rem">'
+                    .(! $record->cover_path ? '<div style="font-size:.85rem;opacity:.75;margin-top:.3rem">'.e(__('ডিজাইনারের প্রস্তাব')).'</div>' : ''))),
             TextInput::make('title')->label(__('নাম'))->required()->maxLength(150),
             TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkolon/')->suffix('/')->maxLength(120)->regex('/^[a-z0-9-]+$/')
                 ->unique(ignoreRecord: true)->disabled(fn (?Collection $record) => $record?->status === 'approved')
@@ -117,6 +122,9 @@ class CollectionResource extends Resource
     public static function approve(Collection $c): void
     {
         $c->forceFill(['status' => 'approved', 'approved_at' => $c->approved_at ?? now()])->save();
+        if (! $c->cover_path && $c->proposed_cover_path) {   // the designer's proposal becomes the cover when published
+            $c->forceFill(['cover_path' => $c->proposed_cover_path, 'proposed_cover_path' => null])->save();
+        }
         EditorTask::open('collection')->where('subject_type', $c->getMorphClass())->where('subject_id', $c->id)->get()->each->close();
         AuditLog::record('collection.approved', null, ['collection' => $c->id]);
         Notification::make()->title(__('প্রকাশিত হয়েছে'))->body($c->url())->success()->send();

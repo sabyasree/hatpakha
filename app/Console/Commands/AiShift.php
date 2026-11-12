@@ -185,7 +185,7 @@ class AiShift extends Command
         \App\Ai\Chief::teamReview();
         \App\Ai\Archivist::seasonal();   // D98: the seasonal calendar (replaces the old random monthly collection)
         \App\Ai\Archivist::tags();
-        if (now('Asia/Kolkata')->month === 1) {
+        if (in_array(now('Asia/Kolkata')->month, [12, 1], true)) {   // বর্ষসেরা: December for this year, January catches a missed one
             \App\Ai\Archivist::anthology();
         }
         \App\Ai\SeoExpert::refresh();

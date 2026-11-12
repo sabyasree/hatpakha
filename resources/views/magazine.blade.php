@@ -3,6 +3,8 @@
      Without JavaScript the same content reads as one long page. Only real data: titles, writers, bios, the editor's note. --}}
 @php
     use App\Support\Bn;
+    // An issue by default; a collection (বর্ষসেরা) passes its own words (App\Support\MagazineBook::WORDS).
+    $w = ($words ?? []) + ['in' => 'এই সংখ্যায়', 'of' => 'এই সংখ্যার', 'back' => 'সংখ্যার পাতায় ফিরুন', 'ed' => 'সম্পাদকীয়', 'note' => 'সম্পাদকের কথা'];
     $bySection = $rest->groupBy(fn ($p) => $p->section?->name_bn ?? 'অন্যান্য');
     $coverLines = $rest->take(3);
 @endphp
@@ -148,9 +150,9 @@
     @endif
     <div class="mag-bar">
         @if ($preview)
-            <a href="{{ url('/desk/ebooks') }}" aria-label="ডেস্কে ফিরুন">← <span class="mag-wide">ডেস্কে ফিরুন</span></a>
+            <a href="{{ $backUrl ?? url('/desk/ebooks') }}" aria-label="ডেস্কে ফিরুন">← <span class="mag-wide">ডেস্কে ফিরুন</span></a>
         @else
-            <a href="{{ $issue->url() }}" aria-label="সংখ্যার পাতায় ফিরুন">← <span class="mag-wide">ফিরুন</span></a>
+            <a href="{{ $issue->url() }}" aria-label="{{ $w['back'] }}">← <span class="mag-wide">ফিরুন</span></a>
         @endif
         <div class="mag-title">হাতপাখা · {{ $issue->title }}</div>
         <button type="button" data-mag-contents aria-label="সূচি">সূচি</button>
@@ -190,21 +192,21 @@
             <p style="font-family:'Galada',cursive;font-size:2.4em;color:#CB1B32;margin:0">হাতপাখা</p>
             <p style="margin:.2em 0 1.2em">বাংলা সাহিত্যের ওয়েব পত্রিকা, ২০১২ থেকে</p>
             <p><b>{{ $issue->title }}</b></p>
-            <p>এই সংখ্যায় {{ Bn::num((string) $pieces->count()) }}টি লেখা · {{ Bn::num((string) count($writers)) }} জন লেখক</p>
+            <p>{{ $w['in'] }} {{ Bn::num((string) $pieces->count()) }}টি লেখা · {{ Bn::num((string) count($writers)) }} জন লেখক</p>
             @if ($issue->published_at)<p>প্রকাশ: {{ Bn::date($issue->published_at) }}</p>@endif
             <p style="margin-top:2em;font-size:.85em;color:#4D5A63">ISSN 2321-3035 · hatpakha.com<br>প্রতিটি লেখার স্বত্ব তার লেখকের। লেখা পাঠানো ও প্রকাশ বিনামূল্যে।</p>
         </section>
         <section data-kind="contents" data-section="সূচি" data-anchor="contents">
-            <p class="mag-kicker">এই সংখ্যায়</p>
+            <p class="mag-kicker">{{ $w['in'] }}</p>
             <h2 class="mag-h">সূচি</h2>
             <ol>
                 {{-- The editorial is its own section, first (owner, 2026-11-12) --}}
                 @if ($editorial)
-                    <li><h3>সম্পাদকীয়</h3></li>
+                    <li><h3>{{ $w['ed'] }}</h3></li>
                     <li><a href="#" data-goto="piece-{{ $editorial->id }}"><span class="t">{{ $editorial->title }}<small>{{ $editorial->authors->map->publicName()->implode(', ') }}</small></span><span class="dots"></span><span data-pn="piece-{{ $editorial->id }}"></span></a></li>
                 @elseif ($issue->editor_note)
-                    <li><h3>সম্পাদকীয়</h3></li>
-                    <li><a href="#" data-goto="editor-note"><span class="t">সম্পাদকের কথা</span><span class="dots"></span><span data-pn="editor-note"></span></a></li>
+                    <li><h3>{{ $w['ed'] }}</h3></li>
+                    <li><a href="#" data-goto="editor-note"><span class="t">{{ $w['note'] }}</span><span class="dots"></span><span data-pn="editor-note"></span></a></li>
                 @endif
                 @foreach ($bySection as $sec => $list)
                     <li><h3>{{ $sec }}</h3></li>
@@ -212,18 +214,18 @@
                         <li><a href="#" data-goto="piece-{{ $p->id }}"><span class="t">{{ $p->title }}<small>{{ $p->authors->map->publicName()->implode(', ') }}</small></span><span class="dots"></span><span data-pn="piece-{{ $p->id }}"></span></a></li>
                     @endforeach
                 @endforeach
-                @if ($writers)<li><a href="#" data-goto="writers"><span class="t">এই সংখ্যার লেখকেরা</span><span class="dots"></span><span data-pn="writers"></span></a></li>@endif
+                @if ($writers)<li><a href="#" data-goto="writers"><span class="t">{{ $w['of'] }} লেখকেরা</span><span class="dots"></span><span data-pn="writers"></span></a></li>@endif
             </ol>
         </section>
         @if ($editorial || $issue->editor_note)
-            <section data-kind="opener" data-head="none"><div class="mag-opener-in mag-opener-ed"><p>{{ $issue->title }}</p><h2>সম্পাদকীয়</h2><div class="mag-mark" style="left:auto;right:9%;top:6%;bottom:auto"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div></section>
+            <section data-kind="opener" data-head="none"><div class="mag-opener-in mag-opener-ed"><p>{{ $issue->title }}</p><h2>{{ $w['ed'] }}</h2><div class="mag-mark" style="left:auto;right:9%;top:6%;bottom:auto"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div></section>
         @endif
         @if ($editorial)
-            @include('partials.magazine-piece', ['p' => $editorial, 'sec' => 'সম্পাদকীয়'])
+            @include('partials.magazine-piece', ['p' => $editorial, 'sec' => $w['ed']])
         @elseif ($issue->editor_note)
-            <section data-kind="piece" data-section="সম্পাদকীয়" data-anchor="editor-note">
-                <p class="mag-kicker">সম্পাদকীয়</p>
-                <h2 class="mag-h">সম্পাদকের কথা</h2>
+            <section data-kind="piece" data-section="{{ $w['ed'] }}" data-anchor="editor-note">
+                <p class="mag-kicker">{{ $w['ed'] }}</p>
+                <h2 class="mag-h">{{ $w['note'] }}</h2>
                 @foreach (preg_split('/\n{2,}/', trim($issue->editor_note)) as $para)<p>{{ trim($para) }}</p>@endforeach
             </section>
         @endif
@@ -235,7 +237,7 @@
         @endforeach
         @if ($writers)
             <section data-kind="writers" data-section="লেখকেরা" data-anchor="writers">
-                <p class="mag-kicker">এই সংখ্যার</p>
+                <p class="mag-kicker">{{ $w['of'] }}</p>
                 <h2 class="mag-h">লেখকেরা</h2>
                 @foreach ($writers as $w)
                     <h3>{{ $w->publicName() }}</h3>

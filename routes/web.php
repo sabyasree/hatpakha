@@ -75,6 +75,8 @@ Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class,
 Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');
 Route::get('/sonkolon', [\App\Http\Controllers\CollectionController::class, 'index']);
 Route::get('/sonkolon/{slug}', [\App\Http\Controllers\CollectionController::class, 'show'])->where('slug', '[a-z0-9-]+');
+Route::get('/sonkolon/{slug}/boi', [\App\Http\Controllers\CollectionController::class, 'book'])->name('collection.book');   // বর্ষসেরা as a magazine (2026-11-12)
+Route::get('/collection-preview/{collection}', [\App\Http\Controllers\CollectionController::class, 'bookPreview'])->middleware('auth')->name('collection.preview');
 
 // Old member-profile pages (Ultimate Member plugin: /user/{login}/?profiletab=…) → the writer's page (D93).
 // The profile slug was the WordPress login, which is also the writer page's slug; the old site account → desk byline.
