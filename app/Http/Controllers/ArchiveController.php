@@ -86,39 +86,87 @@ class ArchiveController extends Controller
     public function archiveIndex()
     {
         $years = self::yearCounts();
-        $issues = Issue::where('status', 'published')->orderByDesc('slug')->get();
-        $sections = \App\Models\Section::where('is_active', true)->orderBy('sort')->get();
         $total = array_sum($years);
+        // Owner-approved redesign (2026-11-12): issues first (this month's large, the five before it small), then
+        // collections, then a timeline of years (only years with published pieces), then sections.
+        $issues = self::liveIssues();
+        $latestIssue = $issues->first();
+        $olderIssues = $issues->slice(1, 5)->values();
+        $sections = \App\Models\Section::where('is_active', true)->orderBy('sort')->get();
         $seo = new Seo(
             title: 'আর্কাইভ',
-            description: 'হাতপাখার '.\App\Support\Bn::num($total).'টি লেখা, ২০১২ থেকে আজ পর্যন্ত — বছর, সংখ্যা আর বিভাগ ধরে খুঁজুন।',
+            description: 'হাতপাখার '.\App\Support\Bn::num($total).'টি লেখা, ২০১২ থেকে আজ পর্যন্ত — সংখ্যা, সংকলন, বছর আর বিভাগ ধরে খুঁজুন।',
             canonical: \App\Support\Url::to('/archive'),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')]])],
         );
 
-        // The archivist's approved themed collections (D55), newest first.
-        $collections = \App\Models\Collection::seasonOrder(\App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->get())->take(6);   // D100
+        // The archivist's approved themed collections (D55), in season first (D100).
+        $collections = \App\Models\Collection::seasonOrder(\App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->get())->take(4);
 
-        return view('archive-index', compact('years', 'issues', 'sections', 'total', 'seo', 'collections'));
+        return view('archive-index', compact('years', 'issues', 'latestIssue', 'olderIssues', 'sections', 'total', 'seo', 'collections'));
     }
 
-    public function archiveYear(int $year)
+    /** /sonkha/: every issue, newest first, grouped by year (owner, 2026-11-12). */
+    public function issues()
+    {
+        $issues = self::liveIssues();
+        $byYear = $issues->groupBy(fn (Issue $i) => (int) ($i->published_at ?? $i->created_at)->format('Y'));
+        $seo = new Seo(
+            title: 'সব সংখ্যা',
+            description: 'হাতপাখার সব সংখ্যা, নতুন থেকে পুরনো: প্রতিটি সংখ্যা পত্রিকার মতো পড়া যায়।',
+            canonical: \App\Support\Url::to('/sonkha'),
+            noindex: $issues->isEmpty(),
+            jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')], ['সব সংখ্যা', \App\Support\Url::to('/sonkha')]])],
+        );
+
+        return view('issues', compact('issues', 'byYear', 'seo'));
+    }
+
+    /** Published issues that are out, newest first, with the number of their live pieces. */
+    public static function liveIssues(): \Illuminate\Support\Collection
+    {
+        return Issue::where('status', 'published')->where(fn ($q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()))
+            ->withCount(['posts' => fn ($q) => $q->published()])->get()
+            ->sortByDesc(fn (Issue $i) => $i->published_at?->timestamp ?? 0)->values();
+    }
+
+    public function archiveYear(Request $request, int $year)
     {
         $years = self::yearCounts();
         abort_unless(isset($years[$year]), 404);
-        $posts = Post::published()->with(['authors', 'section'])
+        $all = Post::published()->with(['authors', 'section'])
             ->whereBetween('published_at', ["{$year}-01-01 00:00:00", "{$year}-12-31 23:59:59"])
             ->orderBy('published_at')->get();
+
+        // Owner-approved redesign: narrow the year to one section (?section=poetry). A filtered list stays out of
+        // Google and points to the whole year (docs/SEO.md: filtered lists).
+        $sectionCounts = $all->filter(fn ($p) => $p->section)->groupBy(fn ($p) => $p->section->slug)
+            ->map(fn ($g) => ['section' => $g->first()->section, 'n' => $g->count()])->sortByDesc('n');
+        $filter = $sectionCounts->has((string) $request->query('section')) ? (string) $request->query('section') : null;
+        $posts = $filter ? $all->filter(fn ($p) => $p->section?->slug === $filter)->values() : $all;
         $months = $posts->groupBy(fn ($p) => (int) $p->published_at->format('n'));
+
+        // "এ বছরের বাছাই": the year's four most-read pieces with a cover (only the ids are cached, D18).
+        $pickIds = \Illuminate\Support\Facades\Cache::remember("archive:picks:{$year}:v1", 86400, fn () => \Illuminate\Support\Facades\DB::table('post_views')
+            ->whereIn('post_id', $all->whereNotNull('featured_image_path')->pluck('id'))
+            ->selectRaw('post_id, sum(views) as n')->groupBy('post_id')->orderByDesc('n')->limit(4)->pluck('post_id')->all());
+        $picks = $filter ? collect() : $all->whereIn('id', $pickIds)->sortBy(fn ($p) => array_search($p->id, $pickIds))->values();
+
+        $keys = array_keys($years);   // newest first
+        $i = array_search($year, $keys, true);
+        $older = $keys[$i + 1] ?? null;
+        $newer = $i > 0 ? $keys[$i - 1] : null;
+
         $y = \App\Support\Bn::year($year);
         $seo = new Seo(
             title: "{$y} সালের লেখা — আর্কাইভ",
-            description: "{$y} সালে হাতপাখায় প্রকাশিত ".\App\Support\Bn::num($posts->count()).'টি কবিতা, গল্প ও প্রবন্ধ, মাস ধরে।',
+            description: "{$y} সালে হাতপাখায় প্রকাশিত ".\App\Support\Bn::num($all->count()).'টি কবিতা, গল্প ও প্রবন্ধ, মাস ধরে।',
             canonical: \App\Support\Url::to("/archive/{$year}"),
+            noindex: $filter !== null,
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')], [$y, \App\Support\Url::to("/archive/{$year}")]])],
         );
 
-        return view('archive-year', compact('year', 'years', 'months', 'posts', 'seo'));
+        return view('archive-year', compact('year', 'years', 'months', 'posts', 'all', 'seo', 'sectionCounts', 'filter', 'picks', 'older', 'newer'));
     }
 
     /** @return array<int,int> year → published post count, newest first */

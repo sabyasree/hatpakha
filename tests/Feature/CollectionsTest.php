@@ -130,9 +130,10 @@ class CollectionsTest extends TestCase
     {
         Collection::create(['kind' => 'theme', 'title' => 'শীতের লেখা', 'slug' => 'shiter-lekha', 'intro' => 'শীতের ভূমিকা।', 'status' => 'approved', 'approved_at' => now(),
             'post_ids' => array_map(fn ($p) => $p->id, array_slice($this->posts, 0, 5))]);
+        // 2026-11-12 redesign: the archive card is title, intro and count only; /sonkolon/ still names the first pieces.
         $this->get('/archive/')->assertOk()->assertSee('শীতের লেখা')->assertSee('সব সংকলন')->assertSee('৫টি লেখা')
-            ->assertSee('শীতের সকাল')->assertDontSee('শীত এল')->assertDontSee('হেমন্তের শেষে');
-        $this->get('/sonkolon/')->assertOk()->assertSee('৫টি লেখা')->assertDontSee('হেমন্তের শেষে');
+            ->assertDontSee('শীতের সকাল')->assertDontSee('হেমন্তের শেষে');
+        $this->get('/sonkolon/')->assertOk()->assertSee('৫টি লেখা')->assertSee('শীতের সকাল')->assertDontSee('শীত এল')->assertDontSee('হেমন্তের শেষে');
     }
 
     /** D100 (owner): in season first, then by how soon the season starts, then year-round; ties newest first. */

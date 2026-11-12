@@ -133,12 +133,15 @@ class ImportWordPress extends Command
     {
         $roles = $this->wp->table('usermeta')->where('meta_key', $this->wp->getTablePrefix().'capabilities')->pluck('meta_value', 'user_id');
         $bios = $this->wp->table('usermeta')->where('meta_key', 'description')->pluck('meta_value', 'user_id');
+        // Owner (2026-11-12): a writer shown by a login gets the first and last name from their own profile.
+        $profileNames = $this->wp->table('usermeta')->whereIn('meta_key', ['first_name', 'last_name'])->get(['user_id', 'meta_key', 'meta_value'])
+            ->groupBy('user_id')->map(fn ($m) => [$m->firstWhere('meta_key', 'first_name')->meta_value ?? '', $m->firstWhere('meta_key', 'last_name')->meta_value ?? '']);
         $postAuthors = $this->wp->table('posts')->where('post_type', 'post')->distinct()->pluck('post_author')->flip();
         $commenters = $this->wp->table('comments')->where('user_id', '>', 0)->distinct()->pluck('user_id')->flip();
         // Panel roles granted by a person (console or /desk) are logged; only those survive a re-import.
         $explicitRoles = \App\Models\AuditLog::where('action', 'user.role_changed')->where('subject_type', (new User)->getMorphClass())->pluck('subject_id')->flip();
 
-        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $postAuthors, $commenters, $explicitRoles) {
+        $this->wp->table('users')->orderBy('ID')->chunk(500, function ($rows) use ($roles, $bios, $profileNames, $postAuthors, $commenters, $explicitRoles) {
             foreach ($rows as $u) {
                 $email = strtolower(trim($u->user_email)) ?: "wp-user-{$u->ID}@invalid.hatpakha.local";
                 if (User::where('email', $email)->where('legacy_wp_id', '!=', $u->ID)->exists()) {
@@ -167,12 +170,18 @@ class ImportWordPress extends Command
 
                 if (isset($postAuthors[$u->ID])) {
                     $isDesk = (int) $u->ID === 1 || str_contains(strtolower($u->display_name), 'hatpakha');
+                    // The byline: a name kept in /desk wins; else WordPress's display name, unless that is only a login,
+                    // then the profile's first and last name (D163); else the login as before.
+                    $wpName = html_entity_decode($u->display_name ?: $u->user_login);
+                    $current = Author::where('legacy_wp_user_id', $u->ID)->value('display_name');
+                    $byline = $current && ! \App\Support\WriterNames::loginLike($current) ? $current
+                        : (\App\Support\WriterNames::loginLike($wpName) ? (\App\Support\WriterNames::fromProfile(...($profileNames[$u->ID] ?? ['', '']), login: $wpName) ?? $wpName) : $wpName);
                     $author = $isDesk
                         ? Author::where('slug', 'hatpakha-desk')->first()
                         : Author::updateOrCreate(['legacy_wp_user_id' => $u->ID], [
                             'user_id' => $user->id,
                             'slug' => $this->uniqueSlug(Author::class, Slug::normalize($u->user_nicename) ?: 'writer-'.$u->ID, $u->ID, 'legacy_wp_user_id'),
-                            'display_name' => html_entity_decode($u->display_name ?: $u->user_login),
+                            'display_name' => $byline,
                             'bio' => isset($bios[$u->ID]) ? strip_tags($bios[$u->ID]) : null,
                         ]);
                     $this->authorByWpUser[$u->ID] = $author->id;
