@@ -173,6 +173,12 @@ class BulkMailTest extends TestCase
         $this->assertStringStartsWith(url('/webhooks/brevo').'/', \App\Http\Controllers\BrevoWebhookController::address());
         $this->postJson(\App\Http\Controllers\BrevoWebhookController::address(), ['event' => 'invalid_email', 'email' => 'full@example.test'])->assertOk();
         $this->assertTrue($full->fresh()->suppressed);
+
+        // Brevo's newer webhooks: events wrapped in "events", other field names; the activity log shows Brevo reached us.
+        $other = NewsletterSubscriber::create(['email' => 'new@example.test', 'status' => 'subscribed', 'consented_at' => now()]);
+        $this->postJson(\App\Http\Controllers\BrevoWebhookController::address(), ['events' => [['event_type' => 'Hard Bounce', 'recipient' => 'new@example.test']]])->assertOk();
+        $this->assertTrue($other->fresh()->suppressed);
+        $this->assertTrue(\App\Models\AuditLog::where('action', 'brevo.connected')->exists());
     }
 
     public function test_forged_or_foreign_reports_are_refused(): void
