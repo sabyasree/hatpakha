@@ -19,7 +19,7 @@
             <div role="alert" class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold text-red-dark">@foreach ($errors->all() as $e)<p>{{ $e }}</p>@endforeach</div>
         @endif
         @if ($post->status === 'changes' && $post->review_note)
-            <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4"><strong>সম্পাদকের মন্তব্য:</strong> {{ $post->review_note }}</div>
+            <div class="mt-5 whitespace-pre-line rounded-xl border-2 border-red bg-peach-light p-4"><strong>সম্পাদকের মন্তব্য:</strong> {{ $post->review_note }}</div>
         @endif
         @if ($needsVerification)
             <div class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">জমা দেওয়ার আগে ইমেল যাচাই করুন। খসড়া এখনই লিখে রাখতে পারেন।</div>

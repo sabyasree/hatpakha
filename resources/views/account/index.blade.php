@@ -52,7 +52,7 @@
                             <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full bg-red px-4 font-bold text-white">{{ ['changes' => 'ঠিক করুন', 'confirm' => 'দেখে সম্মতি দিন'][$p->status] }}</a>
                         </div>
                         @if ($p->status === 'changes' && $p->review_note)
-                            <div class="mt-3 rounded-xl bg-white p-3 text-sm"><strong>সম্পাদকের মন্তব্য:</strong> {{ $p->review_note }}</div>
+                            <div class="mt-3 whitespace-pre-line rounded-xl bg-white p-3 text-sm"><strong>সম্পাদকের মন্তব্য:</strong> {{ $p->review_note }}</div>
                         @endif
                     </li>
                 @endforeach

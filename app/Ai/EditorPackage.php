@@ -97,6 +97,21 @@ final class EditorPackage
         return 'published';
     }
 
+    /**
+     * Before a piece goes back to its writer ("বদল চাই"): put in the small fixes the editor ticked, so the writer
+     * revises the corrected text. Never a word change (those need the writer's OK, D42).
+     *
+     * @param array<int,int|string> $chosen
+     */
+    public static function applySafeEdits(Post $post, array $chosen): int
+    {
+        $edits = self::edits($post);
+        $keep = array_intersect(array_map('intval', $chosen), self::safeIndexes($post));
+        self::applyEdits($post, array_intersect_key($edits, array_flip($keep)));
+
+        return count($keep);
+    }
+
     /** The writer accepts the word changes: apply them and publish as the owner decided. */
     public static function writerAccepts(Post $post): void
     {

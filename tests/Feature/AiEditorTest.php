@@ -68,6 +68,41 @@ class AiEditorTest extends TestCase
         $this->assertEqualsCanonicalizing(['বৃষ্টি', 'বর্ষা'], $post->tags->pluck('name')->all());
     }
 
+    /** Owner, 2026-11-12: "whats next?" The piece's page says what to do; "বদল চাই" carries the AI's whole advice and fixes. */
+    public function test_review_guide_and_request_changes_carry_the_whole_advice(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $writer = User::factory()->create(['email' => 'lekhok@example.com']);
+        $post = $this->makePost(['slug' => 'draft-z', 'title' => 'তিন দেশের গল্প', 'status' => 'pending', 'published_at' => null, 'body_html' => '<p>আমি করিনা ভয়, মেঘলা আকাশ</p>']);
+        $post->forceFill(['submitted_by' => $writer->id])->save();
+        $this->packageFor($post, [['original' => 'করিনা', 'replacement' => 'করি না', 'kind' => 'spelling'], ['original' => 'মেঘলা আকাশ', 'replacement' => 'কালো আকাশ', 'kind' => 'word']], 'changes');
+        $review = $post->latestAiReview()->first();
+        $review->forceFill(['report' => ['suggestions' => ['শেষটা আগে থেকে আভাসে রাখুন', 'তথ্যভারী অংশ ছোট করুন']] + $review->report])->save();
+
+        $message = \App\Support\Review::changesMessage($post->fresh());
+        $this->assertStringContainsString('অভিনন্দন! লেখাটি ভালো লেগেছে।', $message);
+        $this->assertStringContainsString("১. শেষটা আগে থেকে আভাসে রাখুন\n২. তথ্যভারী অংশ ছোট করুন", $message);
+        $this->assertSame(['requestChanges', 'approve', 'reject'], \App\Filament\Resources\Posts\Tables\PostsTable::decisionOrder($post->fresh()));
+
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $page = \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])
+            ->assertSee('এই লেখা নিয়ে কী করবেন')->assertSee('এআই-এর প্রস্তাব')->assertSee('lekhok@example.com');
+
+        // From the AI report straight to the decision it recommends.
+        $page->mountAction('aiReport')->callMountedAction(['next' => 'requestChanges'])->assertActionMounted('requestChanges')
+            ->assertSchemaStateSet(['note' => $message, 'edits' => [0]], 'mountedActionSchema0')
+            ->callMountedAction()->assertHasNoFormErrors();
+
+        $post->refresh();
+        $this->assertSame('changes', $post->status);
+        $this->assertSame($message, $post->review_note);
+        $this->assertStringContainsString('করি না', $post->body_html, 'The small fix goes in before the piece goes back');
+        $this->assertStringContainsString('মেঘলা আকাশ', $post->body_html, 'Never a word change without the writer');
+        \Illuminate\Support\Facades\Notification::assertSentTo($writer, \App\Notifications\SubmissionDecision::class);
+    }
+
     public function test_word_changes_wait_for_the_writer(): void
     {
         $owner = User::factory()->create(['role' => Role::Admin]);
