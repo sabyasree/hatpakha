@@ -1782,5 +1782,16 @@
     "সম্পাদকীয় নেই; ই-বুক হবে না": "No editorial; no e-book",
     "সম্পাদকীয় প্রকাশ হলেই ই-বুক তৈরি হবে; প্রতিটি ই-বুকে সম্পাদকীয় থাকে।": "The e-book is built as soon as the editorial is published; every e-book has the editorial.",
     "সম্পাদকীয়র খসড়া দেখে প্রকাশ করুন": "Read the editorial draft and publish it",
-    "সম্পাদকীয়র খসড়া লেখা হচ্ছে; দু-তিন মিনিট পরে পাতাটি আবার খুলুন": "The editorial draft is being written; reopen this page in two or three minutes"
+    "সম্পাদকীয়র খসড়া লেখা হচ্ছে; দু-তিন মিনিট পরে পাতাটি আবার খুলুন": "The editorial draft is being written; reopen this page in two or three minutes",
+    "অন্য সম্পাদকীয় (কোনো সংখ্যার সঙ্গে যুক্ত নয়)": "Other editorials (not tied to an issue)",
+    "এআই খসড়া লিখুক": "Have the AI draft it",
+    "এই সংখ্যার সম্পাদকীয় আগেই আছে; খুলে বদলান": "This issue already has an editorial; open it to change it",
+    "এখনও কোনো সংখ্যা নেই।": "No issues yet.",
+    "কোনো সংখ্যা নেই": "No issue",
+    "কোনো সংখ্যায় যুক্ত করতে: সংখ্যা → খুলুন → “সম্পাদকীয়” ঘরে বেছে নিন।": "To tie one to an issue: Issues → open → choose it in “Editorial”.",
+    "প্রকাশিত সংখ্যা": "Published issue",
+    "প্রতিটি সংখ্যার শুরুতে থাকে সম্পাদকীয়। এখানে দেখুন কোনটি লেখা হয়েছে, কোনটি খসড়া, কোনটি বাকি। নিজে লিখতে পারেন, বা এআই সম্পাদককে খসড়া লিখতে বলে নিজে বদলে প্রকাশ করতে পারেন। প্রকাশ না করা পর্যন্ত পাঠকেরা দেখতে পান না।": "Every issue opens with an editorial. See here which are written, which are drafts and which are still to do. Write one yourself, or have the AI editor draft one for you to edit and publish. Readers see nothing until you publish.",
+    "সম্পাদকীয় প্রকাশিত": "Editorial published",
+    "সম্পাদকীয় বিভাগ পাওয়া যায়নি": "The editorial section was not found",
+    "সম্পাদকীয় বিভাগের একটি লেখা বেছে নিন। নতুন লিখতে: বাঁ দিকের মেনু → সম্পাদকীয়।": "Choose a piece from the editorial section. To write a new one: left menu → Editorial."
 }

@@ -68,7 +68,9 @@ const keep = async (cacheName, path) => {
     const url = new URL(path, self.location.origin);
     if (url.origin !== self.location.origin || PRIVATE.test(url.pathname)) return false;
     try {
-        const res = await fetch(url.origin + url.pathname, { credentials: 'omit' });
+        // cache: 'no-store': this guest copy goes only into our offline store, never into the browser's own cache,
+        // or a reader who has just signed in could be shown it (2026-11-12, found in the end-to-end check).
+        const res = await fetch(url.origin + url.pathname, { credentials: 'omit', cache: 'no-store' });
         if (!keepable(res)) return false;
         await (await caches.open(cacheName)).put(url.origin + url.pathname, res);
         return true;
@@ -94,7 +96,7 @@ self.addEventListener('periodicsync', (event) => {
     if (event.tag !== 'hp-fresh') return;
     event.waitUntil((async () => {
         try {
-            const xml = await (await fetch('/feed/', { credentials: 'omit' })).text();
+            const xml = await (await fetch('/feed/', { credentials: 'omit', cache: 'no-store' })).text();
             const links = [...xml.matchAll(/<item>[\s\S]*?<link>([^<]+)<\/link>/g)].map((m) => m[1].trim()).slice(0, 8);
             for (const l of links) await keep(PAGES, l);
             await trim(PAGES, 40);

@@ -17,6 +17,27 @@
         </div>
     </section>
 
+    @if ($issue)
+    {{-- The month's issue, as a magazine on the stand: cover, name, editorial, and "পত্রিকা খুলুন" (owner, 2026-11-12) --}}
+    <section class="border-b-2 border-navy bg-navy text-paper" aria-labelledby="issue-h">
+        <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-5 px-5 py-6 sm:flex-nowrap">
+            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative block aspect-[1/1.41] w-24 flex-none overflow-hidden rounded-md border-2 border-paper bg-navy shadow-[4px_4px_0_#CB1B32] sm:w-28" aria-hidden="true" tabindex="-1">
+                @if ($issue->cover_path)<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">@else<x-fan class="absolute -bottom-3 -right-6 w-28" stroke="#FFFBF4" />@endif
+                <span class="absolute left-1.5 top-1 font-hand text-lg text-paper [text-shadow:0_1px_3px_#13212C]">হাতপাখা</span>
+            </a>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-bold text-peach">এই মাসের সংখ্যা</p>
+                <h2 id="issue-h" class="font-display text-3xl font-extrabold leading-tight">{{ $issue->title }}</h2>
+                <p class="mt-1 text-peach-light">{{ \App\Support\Bn::num((string) $issueCount) }}টি লেখা@if ($issueEditorial) · সম্পাদকীয়: {{ $issueEditorial->title }}@endif</p>
+            </div>
+            <div class="flex w-full flex-wrap gap-3 sm:w-auto">
+                <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="flex h-12 items-center rounded-full bg-red px-6 font-bold text-white">পত্রিকা খুলুন</a>
+                <a href="{{ $issue->url() }}" class="flex h-12 items-center rounded-full border-2 border-paper px-5 font-bold text-paper">সূচি দেখুন</a>
+            </div>
+        </div>
+    </section>
+    @endif
+
     @if ($onThisDay)
     <section class="border-b-2 border-dashed border-navy">
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4">

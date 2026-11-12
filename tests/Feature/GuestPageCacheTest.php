@@ -18,6 +18,11 @@ class GuestPageCacheTest extends TestCase
         $res->assertOk();
         $this->assertStringContainsString('s-maxage=600', $res->headers->get('Cache-Control'));
         $this->assertStringContainsString('public', $res->headers->get('Cache-Control'));
+        // A browser never shows a stale guest copy (a reader who just signed in would see it); only the edge may.
+        $this->assertStringContainsString('must-revalidate', $res->headers->get('Cache-Control'));
+        $this->assertStringNotContainsString('stale-while-revalidate', $res->headers->get('Cache-Control'));
+        $this->assertSame('max-age=600, stale-while-revalidate=60', $res->headers->get('CDN-Cache-Control'));
+        $this->assertSame(2, substr_count($this->get('/sw.js')->getContent(), "credentials: 'omit', cache: 'no-store'"), 'The app\'s guest copies never enter the browser cache');
         $this->assertSame([], $res->headers->getCookies(), 'No session cookie on a shareable page');
         $this->assertStringContainsString('s-maxage=300', $this->get('/')->headers->get('Cache-Control'));
     }

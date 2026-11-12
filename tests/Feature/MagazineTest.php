@@ -48,6 +48,25 @@ class MagazineTest extends TestCase
         return $post;
     }
 
+    public function test_the_editorial_is_its_own_section_even_without_a_link(): void
+    {
+        $issue = $this->issue();
+        // Made by hand or imported from WordPress: the editorial is a piece of the issue in the সম্পাদকীয় section, not linked.
+        $section = \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $ed = $this->makePost(['status' => 'published', 'slug' => 'ed', 'title' => 'হেমন্তের কথা', 'section_id' => $section->id, 'format' => 'prose',
+            'issue_id' => $issue->id, 'published_at' => now()->subDays(2)]);
+        $this->assertSame($ed->id, $issue->liveEditorial()?->id);
+
+        $html = $this->get('/sonkha/2026-11/boi/')->assertOk()->getContent();
+        $this->assertStringContainsString('<h2>সম্পাদকীয়</h2>', $html, 'An opener page of its own');
+        $this->assertStringContainsString('<li><h3>সম্পাদকীয়</h3></li>', $html, 'Its own heading in the contents');
+        $this->assertSame(1, substr_count($html, 'data-anchor="piece-'.$ed->id.'"'), 'Shown once');
+        $this->assertLessThan(strpos($html, 'নদীর ধারে</h2>'), strpos($html, 'হেমন্তের কথা</h2>'), 'Before the other pieces');
+        $this->get('/sonkha/2026-11/')->assertSeeInOrder(['সম্পাদকীয়', 'হেমন্তের কথা', 'এই সংখ্যায়', 'সম্পাদকীয়', 'হেমন্তের কথা']);
+        $this->assertSame('live', \App\Ai\IssueWatch::status($issue)['editorial']);
+        $this->assertSame($ed->id, \App\Support\IssueBook::pieces($issue)->first()->id, 'First in the e-book too');
+    }
+
     public function test_the_ebook_has_the_editorial_and_a_cover_and_stays_with_the_owner(): void
     {
         Storage::fake('local');
@@ -122,5 +141,40 @@ class MagazineTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\Ebooks::class)->assertSee('এই প্রচ্ছদ নিন')->call('useCover', $next->id);
         $this->assertSame('/media/covers/x.jpg', $next->fresh()->cover_path);
         $this->assertSame('set', \App\Ai\IssueWatch::status($next->fresh())['cover']);
+    }
+
+    public function test_the_desk_has_an_editorial_section(): void
+    {
+        $issue = $this->issue();
+        \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $admin = User::factory()->create(['role' => Role::Admin, 'name' => 'সম্পাদক']);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+
+        $this->assertTrue(\App\Filament\Pages\Editorials::canAccess());
+        $this->assertSame('১', \App\Filament\Pages\Editorials::getNavigationBadge(), 'This month\'s issue has no editorial yet');
+        \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('অগ্রহায়ণ সংখ্যা')->assertSee('এখনও লেখা হয়নি')
+            ->assertSee('নিজে লিখুন')->call('write', $issue->id)->assertRedirect();
+        $post = $issue->fresh()->editorialPost();
+        $this->assertSame('draft', $post->status);
+        $this->assertSame($issue->id, $post->issue_id);
+        $this->assertSame('editorial', $post->section->slug);
+        $this->assertSame($admin->id, $post->authors->first()->user_id, 'Under my name');
+        $this->get('/sonkha/2026-11/boi/')->assertDontSee('সম্পাদকীয়: অগ্রহায়ণ', false);   // a draft is never shown to readers
+
+        \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('খসড়া খুলুন')->call('write', $issue->id)->assertRedirect();
+        $this->assertSame(1, \App\Models\Post::whereHas('section', fn ($q) => $q->where('slug', 'editorial'))->count(), 'Never two');
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class, ['activeTab' => 'editorial'])->assertCanSeeTableRecords([$post]);
+        \Livewire\Livewire::test(\App\Filament\Resources\Issues\Pages\EditIssue::class, ['record' => $issue->id])->assertFormFieldExists('editorial_post_id');
+    }
+
+    public function test_readers_find_the_months_issue_from_the_home_page_and_the_menu(): void
+    {
+        $this->issue();
+        $home = $this->get('/')->assertOk();
+        $home->assertSee('এই মাসের সংখ্যা')->assertSee('অগ্রহায়ণ সংখ্যা')->assertSee('পত্রিকা খুলুন')->assertSee('/sonkha/2026-11/boi/', false);
+        $this->get('/archive/')->assertSee('এই মাসের সংখ্যা');   // the menu, on every page
+        Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'proposed']);
+        $this->get('/')->assertDontSee('পৌষ সংখ্যা', false);   // a proposal is never shown
     }
 }

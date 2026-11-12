@@ -34,7 +34,7 @@ final class IssueWatch
     /** @return array{editorial: string, cover: string, post: ?Post, ready: bool} editorial: missing|draft|live; cover: missing|proposed|set */
     public static function status(Issue $issue): array
     {
-        $post = $issue->editorial_post_id ? Post::find($issue->editorial_post_id) : null;
+        $post = $issue->editorialPost();
         $editorial = ! $post ? 'missing' : ($post->isLive() ? 'live' : 'draft');
         $cover = $issue->cover_path ? 'set' : ($issue->proposed_cover_path ? 'proposed' : 'missing');
 

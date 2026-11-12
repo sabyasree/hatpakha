@@ -36,6 +36,9 @@ class ListPosts extends ListRecords
             'drafts' => Tab::make(__('খসড়া'))
                 ->badge(fn () => Post::where('status', 'draft')->count() ?: null)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->reorder()->orderByDesc('updated_at')),
+            // Owner (2026-11-12): the editorials, apart (they are also listed per issue in /desk → সম্পাদকীয়).
+            'editorial' => Tab::make(__('সম্পাদকীয়'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('section', fn ($s) => $s->where('slug', 'editorial'))->reorder()->orderByDesc('updated_at')),
             'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
             'published' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ['published', 'scheduled'])),
             'all' => Tab::make(__('সব')),
