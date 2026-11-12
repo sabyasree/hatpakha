@@ -133,6 +133,19 @@ jobs:
             -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data '{"purge_everything":true}' \
             | grep -q '"success":true' && echo "Cloudflare cache purged" || echo "::warning::Cloudflare purge failed (check the token's permission)"
 
+      # After a release both caches are empty, and the first rush of readers and crawlers can make the server drop
+      # connections (Cloudflare 520/522, seen 2026-11-12). Fill the busiest pages one at a time first. Never fails.
+      - name: Warm the main pages
+        env:
+          SITE: ${{ github.ref_name == 'main' && 'https://hatpakha.com' || 'https://new.hatpakha.com' }}
+        run: |
+          urls="$SITE/ $SITE/archive/ $SITE/sitemap.xml"
+          urls="$urls $(curl -s --max-time 30 "$SITE/sitemap-sections.xml" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g' | head -20)"
+          for u in $urls; do
+            curl -s -o /dev/null --max-time 30 -w "%{http_code} %{time_total}s $u\n" "$u" || true
+            sleep 1
+          done
+
       # Staging only, and only when the commit message contains [run-blind-test] (owner asked to run it).
       # The command estimates first and stops above $6 (≈ ₹500); see docs/AI.md.
       - name: AI blind test (on request)
