@@ -242,7 +242,7 @@ class PostsTable
                 ->visible(fn (Post $record) => $record->latestAiReview !== null)
                 ->modalHeading(fn (Post $record) => __('এআই রিপোর্ট: ').$record->title)
                 ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
-                ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন'))
+                ->modalSubmitAction(false)->modalCancelActionLabel(__('রিপোর্ট বন্ধ করুন'))
                 ->extraModalFooterActions(fn (Action $action, Post $record) => $record->status !== 'pending' ? [] : array_map(
                     fn (string $next) => $action->makeModalSubmitAction('go_'.$next, ['next' => $next])
                         ->label(__(self::DECISIONS[$next][0]))

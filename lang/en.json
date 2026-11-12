@@ -1893,5 +1893,6 @@
     "; ই-মেলটি নিচে হুবহু দেখানো আছে। “লেখককে পাঠান” না চাপা পর্যন্ত কিছু যায় না। লেখক ঠিক করে (বা না বদলেই) আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।": "; the e-mail is shown below exactly as it will go. Nothing is sent until you press \"Send to the writer\". When the writer resubmits (with or without changes), it comes back to \"Waiting for your approval\" and the AI reads it again.",
     "; ই-মেলটি নিচে হুবহু দেখানো আছে।": "; the e-mail is shown below exactly as it will go.",
     "লেখক ঠিক এই ই-মেলটি পাবেন": "The writer gets exactly this e-mail",
-    "বিষয়:": "Subject:"
+    "বিষয়:": "Subject:",
+    "রিপোর্ট বন্ধ করুন": "Close"
 }
