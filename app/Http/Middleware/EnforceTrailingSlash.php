@@ -22,6 +22,13 @@ class EnforceTrailingSlash
             if (str_contains($path, '//')) {
                 return redirect()->to($request->getSchemeAndHttpHost().$request->getBaseUrl().preg_replace('#/{2,}#', '/', $path).($qs ? '?'.$qs : ''), 301);
             }
+            // The old theme's unfilled placeholders ("/romance/{{post_cat_link}}") → the address before them.
+            $decoded = rawurldecode($path);
+            if (str_contains($decoded, '{{')) {
+                $clean = preg_replace('#/[^/]*\{\{.*$#s', '/', $decoded);
+
+                return redirect()->to($request->getSchemeAndHttpHost().$request->getBaseUrl().implode('/', array_map('rawurlencode', explode('/', $clean))), 301);
+            }
             // Old share links "/page/34/=1&fbclid=…" → the clean list page.
             if (preg_match('#^(.*/page/\d+)/=[^/]*/?$#', $path, $m)) {
                 return redirect()->to($request->getSchemeAndHttpHost().$request->getBaseUrl().$m[1].'/', 301);

@@ -85,7 +85,41 @@ class LegacyController extends Controller
 
             return redirect(Url::to($hit->to_path), $hit->status_code);
         }
+        // Old WordPress image pages ("/img_20190731_092351_057/", "/images-4-2/"): the piece that shows that picture.
+        if ($post = self::pieceWithPicture($path)) {
+            return redirect($post->url(), 301);
+        }
 
         abort(404);
+    }
+
+    /**
+     * Search Console 404s (owner, 2026-11-12): WordPress gave every uploaded picture its own page, named after the file.
+     * The file's name is still in the piece that used it (its text or its cover), so that piece is where the reader goes.
+     * Only for file-like names; the answer is cached for a day either way.
+     */
+    public static function pieceWithPicture(string $path): ?Post
+    {
+        $slug = trim($path, '/');
+        if (! preg_match('/^[a-z0-9_-]{5,120}$/i', $slug)) {
+            return null;
+        }
+        $id = \Illuminate\Support\Facades\Cache::remember('legacy-pic:'.$slug, 86400, function () use ($slug) {
+            foreach (array_unique([$slug, preg_replace('/-\d+$/', '', $slug)]) as $name) {   // WordPress added "-2" to repeated names
+                if (strlen($name) < 5) {
+                    continue;
+                }
+                $like = fn (string $tail) => '%/'.$name.$tail.'%';   // the name is letters, digits, _ and - only; an _ matching any one letter is harmless
+                $hit = Post::published()->where(fn ($q) => $q->where('featured_image_path', 'like', $like('.'))->orWhere('featured_image_path', 'like', $like('-'))
+                    ->orWhere('body_html', 'like', $like('.'))->orWhere('body_html', 'like', $like('-')))->orderBy('published_at')->value('id');
+                if ($hit) {
+                    return $hit;
+                }
+            }
+
+            return 0;
+        });
+
+        return $id ? Post::find($id) : null;
     }
 }

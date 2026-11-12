@@ -53,6 +53,21 @@ class SecurityTest extends TestCase
         $this->get('/page/53/=1&fbclid=IwAR1')->assertRedirect(url('/page/53').'/')->assertStatus(301);
     }
 
+    /** Search Console's 404 list (owner, 2026-11-12): the old theme's placeholders, child-category pages, picture pages. */
+    public function test_old_theme_placeholders_category_pages_and_picture_pages_find_their_way(): void
+    {
+        $this->get('/romance/{{post_cat_link}}')->assertRedirect(url('/romance').'/')->assertStatus(301);
+        $this->get('/push-your-fears/fight_your_fears-381-185/{{td_query_all_results}}')->assertRedirect(url('/push-your-fears/fight_your_fears-381-185').'/');
+        $this->get('/page/38/%7B%7Bpost_cat_link%7D%7D/')->assertRedirect(url('/page/38').'/');
+        $this->get('/category/entertainment/reviews/page/2/')->assertRedirect(url('/category/reviews/page/2').'/')->assertStatus(301);
+
+        $post = $this->makePost(['slug' => 'jhoruna', 'status' => 'published', 'body_html' => '<p>লেখা</p><p><img src="/wp-content/uploads/2019/07/IMG_20190731_092351_057-1024x768.jpg"></p>']);
+        $this->get('/img_20190731_092351_057/')->assertRedirect($post->url())->assertStatus(301);
+        $covered = $this->makePost(['slug' => 'chhobi', 'status' => 'published', 'featured_image_path' => 'wp-content/uploads/2018/01/images-4.jpg']);
+        $this->get('/images-4-2/')->assertRedirect($covered->url());   // WordPress's "-2" for a repeated name
+        $this->get('/dsc_0000077-13/')->assertNotFound();   // no piece shows it: still not found
+    }
+
     public function test_sanitizer_strips_scripts_handlers_and_js_links(): void
     {
         $dirty = '<p onclick="x()">ঠিক</p><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">l</a><iframe src="https://evil"></iframe>';

@@ -69,6 +69,9 @@ Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]
 Route::get('/comments/feed', fn () => redirect(\App\Support\Url::to('/feed'), 301));
 Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+');
 Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
+// Search Console 404s (2026-11-12): an old child category's later pages keep their page number.
+Route::get('/category/{parent}/{child}/page/{n}', fn (string $parent, string $child, int $n) => redirect(\App\Support\Url::to('/category/'.\App\Support\Slug::encode(\App\Support\Slug::normalize($child)).'/page/'.$n), 301))
+    ->where(['parent' => '[^/]+', 'child' => '[^/]+', 'n' => '[0-9]+']);
 Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
