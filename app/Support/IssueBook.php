@@ -18,11 +18,11 @@ final class IssueBook
     /** Editorial first (if published), then the issue's published pieces in publishing order. */
     public static function pieces(Issue $issue): Collection
     {
-        $editorial = $issue->editorial()->first();
+        $editorial = $issue->liveEditorial();   // always first, its own section
         $posts = Post::published()->with('authors', 'section')->where('issue_id', $issue->id)
             ->when($editorial, fn ($q) => $q->whereKeyNot($editorial->id))->orderBy('published_at')->get();
 
-        return ($editorial && $editorial->isLive() ? collect([$editorial->loadMissing('authors', 'section')]) : collect())->concat($posts)->values();
+        return ($editorial ? collect([$editorial]) : collect())->concat($posts)->values();
     }
 
     /** A piece's text as clean XHTML for the book: no pictures, embeds or scripts; every tag closed. */

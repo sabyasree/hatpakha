@@ -2,7 +2,7 @@
      magazine), the editor's word, the contents by section, and the e-book once the owner has approved it. --}}
 @php
     use App\Support\Bn;
-    $editorial = $issue->editorial_post_id ? $posts->firstWhere('id', $issue->editorial_post_id) : null;
+    $editorial = $issue->liveEditorial();   // its own section, first (owner, 2026-11-12)
     $bySection = $posts->reject(fn ($p) => $editorial && $p->id === $editorial->id)->groupBy(fn ($p) => $p->section?->name_bn ?? 'অন্যান্য');
     $writers = $posts->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id');
 @endphp
@@ -39,10 +39,11 @@
 
     <section class="mx-auto max-w-[1100px] px-5 py-12">
         @if ($editorial || $issue->editor_note)
-            <div class="max-w-[760px]">
+            <div class="max-w-[760px] rounded-3xl border-2 border-navy bg-peach-light p-6">
                 <p class="text-sm font-extrabold text-red">সম্পাদকীয়</p>
                 @if ($editorial)
                     <h2 class="mt-1 font-display text-3xl font-extrabold"><a href="{{ $editorial->url() }}" class="hover:text-red">{{ $editorial->title }}</a></h2>
+                    <p class="mt-1 text-sm text-ink2">{{ $editorial->authors->map->publicName()->implode(', ') }}</p>
                     @if ($editorial->excerpt)<p class="mt-2 font-serif text-lg text-ink2">{{ $editorial->excerpt }}</p>@endif
                     <a href="{{ $editorial->url() }}" class="mt-2 inline-block font-bold text-sky-deep underline">পুরোটা পড়ুন →</a>
                 @else
@@ -53,6 +54,12 @@
 
         <h2 class="mt-12 font-display text-3xl font-extrabold">এই সংখ্যায়</h2>
         <div class="mt-4 grid gap-8 md:grid-cols-2">
+            @if ($editorial)
+                <div>
+                    <h3 class="border-b-2 border-navy pb-1 text-sm font-extrabold text-red">সম্পাদকীয়</h3>
+                    <ol class="divide-y divide-rule"><li><a href="{{ $editorial->url() }}" class="block py-3 hover:text-red"><span class="block font-serif text-xl font-bold leading-snug">{{ $editorial->title }}</span><span class="mt-0.5 block text-sm text-ink2">{{ $editorial->authors->map->publicName()->implode(', ') }}</span></a></li></ol>
+                </div>
+            @endif
             @foreach ($bySection as $sec => $list)
                 <div>
                     <h3 class="border-b-2 border-navy pb-1 text-sm font-extrabold text-red">{{ $sec }}</h3>

@@ -106,7 +106,7 @@ class Ebooks extends Page
     public function rebuild(int $id): void
     {
         $i = Issue::findOrFail($id);
-        if (! $i->editorial?->isLive()) {
+        if (! $i->liveEditorial()) {
             Notification::make()->title(__('আগে সম্পাদকীয় প্রকাশ করুন; প্রতিটি ই-বুকে সম্পাদকীয় থাকে'))->warning()->send();
 
             return;

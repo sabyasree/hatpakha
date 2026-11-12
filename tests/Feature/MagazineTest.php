@@ -48,6 +48,25 @@ class MagazineTest extends TestCase
         return $post;
     }
 
+    public function test_the_editorial_is_its_own_section_even_without_a_link(): void
+    {
+        $issue = $this->issue();
+        // Made by hand or imported from WordPress: the editorial is a piece of the issue in the সম্পাদকীয় section, not linked.
+        $section = \App\Models\Section::firstOrCreate(['slug' => 'editorial'], ['name_bn' => 'সম্পাদকীয়', 'format' => 'prose']);
+        $ed = $this->makePost(['status' => 'published', 'slug' => 'ed', 'title' => 'হেমন্তের কথা', 'section_id' => $section->id, 'format' => 'prose',
+            'issue_id' => $issue->id, 'published_at' => now()->subDays(2)]);
+        $this->assertSame($ed->id, $issue->liveEditorial()?->id);
+
+        $html = $this->get('/sonkha/2026-11/boi/')->assertOk()->getContent();
+        $this->assertStringContainsString('<h2>সম্পাদকীয়</h2>', $html, 'An opener page of its own');
+        $this->assertStringContainsString('<li><h3>সম্পাদকীয়</h3></li>', $html, 'Its own heading in the contents');
+        $this->assertSame(1, substr_count($html, 'data-anchor="piece-'.$ed->id.'"'), 'Shown once');
+        $this->assertLessThan(strpos($html, 'নদীর ধারে</h2>'), strpos($html, 'হেমন্তের কথা</h2>'), 'Before the other pieces');
+        $this->get('/sonkha/2026-11/')->assertSeeInOrder(['সম্পাদকীয়', 'হেমন্তের কথা', 'এই সংখ্যায়', 'সম্পাদকীয়', 'হেমন্তের কথা']);
+        $this->assertSame('live', \App\Ai\IssueWatch::status($issue)['editorial']);
+        $this->assertSame($ed->id, \App\Support\IssueBook::pieces($issue)->first()->id, 'First in the e-book too');
+    }
+
     public function test_the_ebook_has_the_editorial_and_a_cover_and_stays_with_the_owner(): void
     {
         Storage::fake('local');

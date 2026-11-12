@@ -20,7 +20,7 @@ final class IssueEbook
     {
         $pieces = IssueBook::pieces($issue)->map(fn ($p) => $p->id.'@'.$p->updated_at?->timestamp)->implode(',');
 
-        return sha1($issue->title.'|'.$issue->cover_path.'|'.$issue->editor_note.'|'.$issue->editorial_post_id.'|'.$pieces);
+        return sha1($issue->title.'|'.$issue->cover_path.'|'.$issue->editor_note.'|'.$issue->liveEditorial()?->id.'|'.$pieces);
     }
 
     public static function build(Issue $issue): void
@@ -41,7 +41,7 @@ final class IssueEbook
     {
         $n = 0;
         foreach (Issue::where('status', 'published')->get() as $issue) {
-            if (IssueBook::pieces($issue)->isEmpty() || ! $issue->editorial?->isLive() || $issue->ebook_hash === self::hash($issue)) {
+            if (IssueBook::pieces($issue)->isEmpty() || ! $issue->liveEditorial() || $issue->ebook_hash === self::hash($issue)) {
                 continue;
             }
             rescue(function () use ($issue, &$n) {

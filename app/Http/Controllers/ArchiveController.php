@@ -172,7 +172,7 @@ class ArchiveController extends Controller
         $pieces = \App\Support\IssueBook::pieces($issue);
         abort_if($pieces->isEmpty(), 404);
         // Owner (2026-11-12): the issue as a real magazine, full screen, pages that turn in 3D.
-        $editorial = $issue->editorial_post_id ? $pieces->firstWhere('id', $issue->editorial_post_id) : null;
+        $editorial = $issue->liveEditorial();
         $rest = $pieces->reject(fn ($p) => $editorial && $p->id === $editorial->id)->values();
         $writers = $rest->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id')->values();
 

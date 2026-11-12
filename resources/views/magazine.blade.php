@@ -117,7 +117,9 @@
         .mag-fanbg { position: absolute; right: -30%; top: 30%; width: 80%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
         .mag-inside .mag-body { display: flex; flex-direction: column; justify-content: center; text-align: center; font-family: 'Anek Bangla', sans-serif; }
         .mag-opener-in { position: relative; height: 100%; background: #FBEBD8; display: flex; flex-direction: column; justify-content: flex-end; padding: 10% 9%; box-sizing: border-box; }
+        .mag-opener-ed { background: #13212C; } .mag-opener-ed h2 { color: #FFFBF4; } .mag-opener-ed .mag-mark { color: #EFC08D; } .mag-opener-ed .mag-mark .mag-brand { color: #FFFBF4; }
         .mag-opener-in p { margin: 0; font: 700 .9em 'Anek Bangla', sans-serif; color: #CB1B32; }
+        .mag-opener-in.mag-opener-ed p { color: #F08D90; }
         .mag-opener-in h2 { margin: .1em 0 0; font: 800 2.6em/1.1 'Anek Bangla', sans-serif; }
         .mag-back-in { height: 100%; background: #13212C; color: #FFFBF4; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 10%; box-sizing: border-box; font-family: 'Anek Bangla', sans-serif; }
         .mag-back-in a { color: #EFC08D; }
@@ -184,7 +186,14 @@
             <p class="mag-kicker">এই সংখ্যায়</p>
             <h2 class="mag-h">সূচি</h2>
             <ol>
-                @if ($editorial)<li><a href="#" data-goto="piece-{{ $editorial->id }}"><span class="t">সম্পাদকীয়<small>{{ $editorial->title }}</small></span><span class="dots"></span><span data-pn="piece-{{ $editorial->id }}"></span></a></li>@endif
+                {{-- The editorial is its own section, first (owner, 2026-11-12) --}}
+                @if ($editorial)
+                    <li><h3>সম্পাদকীয়</h3></li>
+                    <li><a href="#" data-goto="piece-{{ $editorial->id }}"><span class="t">{{ $editorial->title }}<small>{{ $editorial->authors->map->publicName()->implode(', ') }}</small></span><span class="dots"></span><span data-pn="piece-{{ $editorial->id }}"></span></a></li>
+                @elseif ($issue->editor_note)
+                    <li><h3>সম্পাদকীয়</h3></li>
+                    <li><a href="#" data-goto="editor-note"><span class="t">সম্পাদকের কথা</span><span class="dots"></span><span data-pn="editor-note"></span></a></li>
+                @endif
                 @foreach ($bySection as $sec => $list)
                     <li><h3>{{ $sec }}</h3></li>
                     @foreach ($list as $p)
@@ -194,11 +203,15 @@
                 @if ($writers)<li><a href="#" data-goto="writers"><span class="t">এই সংখ্যার লেখকেরা</span><span class="dots"></span><span data-pn="writers"></span></a></li>@endif
             </ol>
         </section>
+        @if ($editorial || $issue->editor_note)
+            <section data-kind="opener" data-head="none"><div class="mag-opener-in mag-opener-ed"><p>{{ $issue->title }}</p><h2>সম্পাদকীয়</h2><div class="mag-mark" style="left:auto;right:9%;top:6%;bottom:auto"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div></section>
+        @endif
         @if ($editorial)
             @include('partials.magazine-piece', ['p' => $editorial, 'sec' => 'সম্পাদকীয়'])
         @elseif ($issue->editor_note)
-            <section data-kind="piece" data-section="সম্পাদকের কথা" data-anchor="editor-note">
-                <p class="mag-kicker">সম্পাদকের কথা</p>
+            <section data-kind="piece" data-section="সম্পাদকীয়" data-anchor="editor-note">
+                <p class="mag-kicker">সম্পাদকীয়</p>
+                <h2 class="mag-h">সম্পাদকের কথা</h2>
                 @foreach (preg_split('/\n{2,}/', trim($issue->editor_note)) as $para)<p>{{ trim($para) }}</p>@endforeach
             </section>
         @endif

@@ -250,5 +250,6 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D139: the month's issue never misses its editorial or cover (IssueWatch: daily retries, reminders on the 25th and 28th and every day after the issue goes live); /desk → মাসের পত্রিকা checklist; every e-book has the editorial and a composed cover
 - [x] D142: magazine page designer: piece pictures (feature / band / vignette), pictures inside the text with captions, name + ISSN on every page; page-break fixes (page number line, fonts loaded before measuring)
 - [x] Owner: Cloudflare visitor location headers turned on (2026-11-12)
+- [x] D143: the editorial as its own section (opener page, contents heading, issue page card), found even when not linked
  → turn on "Add visitor location headers" (for city names in the desk health report)
 - [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)

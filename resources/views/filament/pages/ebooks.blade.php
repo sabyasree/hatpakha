@@ -118,7 +118,7 @@
                             <x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-path" wire:click="rebuild({{ $i->id }})">{{ __('ই-বুক তৈরি করুন') }}</x-filament::button>
                         @endif
                     </div>
-                    @if (! $i->editorial?->isLive())<p class="hp-muted">{{ __('সম্পাদকীয় নেই; ই-বুক হবে না') }}</p>@endif
+                    @if (! $i->liveEditorial())<p class="hp-muted">{{ __('সম্পাদকীয় নেই; ই-বুক হবে না') }}</p>@endif
                 </div>
             @endforeach
         </div>
