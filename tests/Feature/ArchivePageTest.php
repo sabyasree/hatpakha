@@ -42,12 +42,28 @@ class ArchivePageTest extends TestCase
         $this->makePost(['slug' => 'kobita', 'title' => 'সাগরের ডাকবাক্স', 'section_id' => $poems->id, 'published_at' => '2019-01-23 10:00:00']);
         $this->makePost(['slug' => 'agey', 'title' => 'আগের বছরের লেখা', 'published_at' => '2018-06-01 10:00:00']);
         DB::table('post_views')->insert(['post_id' => $read->id, 'day' => '2019-02-01', 'views' => 90]);
+        // Checked on the live site: these never become picks, however often they are read.
+        $english = Section::firstOrCreate(['slug' => 'english'], ['name_bn' => 'English', 'format' => 'prose']);
+        foreach ([['seo', 'Mariah Carey\'s Sister: A Look into the Life', $english->id], ['porbo', 'ছুটি (৩য় পর্ব)', $stories->id], ['kom', 'কম পড়া গল্প', $stories->id]] as $i => [$slug, $title, $sec]) {
+            $p = $this->makePost(['slug' => $slug, 'title' => $title, 'section_id' => $sec, 'published_at' => '2019-02-0'.($i + 1).' 10:00:00', 'featured_image_path' => 'media/y.jpg']);
+            DB::table('post_views')->insert(['post_id' => $p->id, 'day' => '2019-02-01', 'views' => $slug === 'kom' ? 2 : 500]);
+        }
         \Illuminate\Support\Facades\Cache::flush();
 
-        $this->get('/archive/2019/')->assertOk()
-            ->assertSee('এ বছরের বাছাই')->assertSee('সবচেয়ে পড়া গল্প')->assertSee('সাগরের ডাকবাক্স')
-            ->assertSee('সব ২')->assertSee('?section=poetry', false)->assertSee('← ২০১৮', false)
-            ->assertDontSee('noindex', false);
+        $html = $this->get('/archive/2019/')->assertOk()
+            ->assertSee('এ বছরের বাছাই')->assertSee('সাগরের ডাকবাক্স')->assertSee('Mariah Carey', false)   // every piece stays in the list
+            ->assertSee('?section=poetry', false)->assertSee('← ২০১৮', false)
+            ->assertDontSee('noindex', false)->getContent();
+        $picks = substr($html, strpos($html, 'id="picks"'), strpos($html, '</ul>', strpos($html, 'id="picks"')) - strpos($html, 'id="picks"'));
+        $this->assertStringContainsString('সবচেয়ে পড়া গল্প', $picks);
+        foreach (['Mariah Carey', 'ছুটি (৩য় পর্ব)', 'কম পড়া গল্প'] as $never) {
+            $this->assertStringNotContainsString($never, $picks, $never.' must not be a pick');
+        }
+        $this->assertFalse(\App\Http\Controllers\ArchiveController::laterEpisode('সিটি অফ জয় (Part 1)'));
+        $this->assertFalse(\App\Http\Controllers\ArchiveController::laterEpisode('শীল vs. শীল (প্রথম পর্ব)'));
+        $this->assertTrue(\App\Http\Controllers\ArchiveController::laterEpisode('সাদা কালো--তৃতীয় পর্ব'));
+        $this->assertTrue(\App\Http\Controllers\ArchiveController::laterEpisode('লাল কাচ (পর্ব ৩): আলতা'));
+        $this->assertFalse(\App\Http\Controllers\ArchiveController::laterEpisode('মনে পড়ে'));
 
         $this->get('/archive/2019/?section=poetry')->assertOk()
             ->assertSee('সাগরের ডাকবাক্স')->assertDontSee('সবচেয়ে পড়া গল্প')
