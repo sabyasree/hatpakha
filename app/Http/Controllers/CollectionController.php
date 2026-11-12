@@ -22,6 +22,38 @@ class CollectionController extends Controller
         return view('collections', compact('collections', 'seo'));
     }
 
+    /**
+     * A collection read as a magazine (owner, 2026-11-12: বর্ষসেরা): the same page designer as the issues, the collection's
+     * intro as its opening, its pieces by section, its writers, and the designer's cover. Same as an issue: noindex.
+     */
+    public function book(string $slug)
+    {
+        $c = Collection::where('slug', $slug)->where('status', 'approved')->firstOrFail();
+
+        return $this->magazine($c, false);
+    }
+
+    /** Editors see a proposed collection's magazine before it is published. */
+    public function bookPreview(Request $request, Collection $collection)
+    {
+        abort_unless($request->user()?->hasRole(Role::Editor), 403);
+
+        return $this->magazine($collection, true)->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    private function magazine(Collection $c, bool $preview)
+    {
+        $rest = $c->posts();
+        abort_if($rest->count() < 1, 404);
+
+        return response()->view('magazine', [
+            'issue' => \App\Support\MagazineBook::fromCollection($c), 'pieces' => $rest, 'editorial' => null, 'rest' => $rest,
+            'writers' => $rest->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id')->values(),
+            'words' => \App\Support\MagazineBook::WORDS, 'preview' => $preview,
+            'backUrl' => \App\Filament\Resources\Collections\CollectionResource::getUrl('edit', ['record' => $c], panel: 'desk'),
+        ]);
+    }
+
     public function show(Request $request, string $slug)
     {
         $c = Collection::where('slug', $slug)->firstOrFail();

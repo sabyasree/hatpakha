@@ -19,8 +19,12 @@ use Filament\Support\Icons\Heroicon;
 class Marketing extends Page
 {
     use \App\Filament\Concerns\TranslatedPageLabels;
+    use \Livewire\WithFileUploads;
 
     protected string $view = 'filament.pages.marketing';
+
+    /** The card the browser drew, as a JPEG, on its way to Instagram (owner, 2026-11-12). */
+    public $cardJpeg = null;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
@@ -102,6 +106,74 @@ class Marketing extends Page
         $s->forceFill(['status' => 'posted', 'posted_at' => now(), 'posted_by' => auth()->id()])->save();
         AuditLog::record('marketing.posted', null, ['social_post' => $s->id]);
         self::undoable($id, __('"পোস্ট করা / বাদ"-এ সরানো হলো'));
+    }
+
+    /** Facebook Page (owner, 2026-11-12): post this one now. */
+    public function facebookNow(int $id): void
+    {
+        [$ok, $msg] = \App\Support\FacebookPage::publish(SocialPost::findOrFail($id), auth()->id());
+        $ok ? Notification::make()->title(__('ফেসবুক পেজে পোস্ট হয়েছে'))->success()->send()
+            : Notification::make()->title(__('ফেসবুকে যায়নি'))->body($msg)->danger()->send();
+    }
+
+    /** Instagram: keep the card the browser just uploaded with the post (also done ahead of time for automatic posts). */
+    public function storeCard(int $id): bool
+    {
+        $s = SocialPost::findOrFail($id);
+        $ok = false;
+        if ($this->cardJpeg instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            $ok = \App\Support\InstagramPage::saveCard($s, $this->cardJpeg->getRealPath()) !== null;
+            $this->cardJpeg->delete();
+        }
+        $this->cardJpeg = null;
+
+        return $ok;
+    }
+
+    /** Instagram: post it now, with the card just uploaded (or the piece's own picture). */
+    public function instagramNow(int $id, bool $withCard = false): void
+    {
+        if ($withCard && ! $this->storeCard($id)) {
+            Notification::make()->title(__('কার্ডের ছবি রাখা গেল না'))->danger()->send();
+
+            return;
+        }
+        [$ok, $msg] = \App\Support\InstagramPage::publish(SocialPost::findOrFail($id), auth()->id());
+        $ok ? Notification::make()->title(__('ইনস্টাগ্রামে পোস্ট হয়েছে'))->success()->send()
+            : Notification::make()->title(__('ইনস্টাগ্রামে যায়নি'))->body($msg)->danger()->send();
+    }
+
+    /** Post it at the owner's chosen time (Kolkata); the scheduler checks every 5 minutes. */
+    public function facebookSchedule(int $id, string $at): void
+    {
+        $s = SocialPost::findOrFail($id);
+        $when = rescue(fn () => \Illuminate\Support\Carbon::parse($at, 'Asia/Kolkata'), null, false);
+        if (! $when || $when->isPast()) {
+            Notification::make()->title(__('ভবিষ্যতের একটি সময় বেছে নিন'))->warning()->send();
+
+            return;
+        }
+        $s->forceFill(['fb_scheduled_at' => $when->utc(), 'fb_error' => null])->save();
+        AuditLog::record('marketing.facebook_scheduled', null, ['social_post' => $s->id, 'at' => $when->toIso8601String()]);
+        Notification::make()->title(__('সময়মতো ফেসবুকে যাবে'))->success()->send();
+    }
+
+    public function facebookUnschedule(int $id): void
+    {
+        SocialPost::findOrFail($id)->forceFill(['fb_scheduled_at' => null])->save();
+        Notification::make()->title(__('সময় বাতিল হয়েছে'))->send();
+    }
+
+    /** Automatic mode: the owner's switch (D42), admins only. */
+    public function toggleFacebookAuto(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $on = ! \App\Support\FacebookPage::auto();
+        \App\Models\Setting::put(\App\Support\FacebookPage::AUTO, $on ? '1' : '0');
+        AuditLog::record('marketing.facebook_auto', null, ['on' => $on]);
+        Notification::make()->title($on ? __('নিজে থেকে পোস্ট চালু হয়েছে') : __('নিজে থেকে পোস্ট বন্ধ হয়েছে'))->success()->send();
     }
 
     public function dismiss(int $id): void

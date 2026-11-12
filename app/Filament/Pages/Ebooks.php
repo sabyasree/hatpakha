@@ -103,6 +103,23 @@ class Ebooks extends Page
         Notification::make()->title(__('সম্পাদকীয়র খসড়া লেখা হচ্ছে; দু-তিন মিনিট পরে পাতাটি আবার খুলুন'))->success()->send();
     }
 
+    /** Owner (2026-11-12): tell readers' phones about the new issue (once; sent by the announcement sender). */
+    public function announce(int $id): void
+    {
+        abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+        $a = \App\Support\IssueNews::announce(Issue::findOrFail($id), auth()->user());
+        $a ? Notification::make()->title(\App\Support\Bn::num((string) $a->recipients).' '.__('টি ফোনে পাঠানো শুরু হবে (মিনিটে ২০০টি করে)'))->success()->send()
+           : Notification::make()->title(__('আগেই পাঠানো হয়েছে, বা ফোনে খবর চালু নেই'))->warning()->send();
+    }
+
+    /** Owner (2026-11-12): tell each writer in the issue that their piece is in it (once). */
+    public function tellWriters(int $id): void
+    {
+        abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+        $n = \App\Support\IssueNews::tellWriters(Issue::findOrFail($id), auth()->user());
+        Notification::make()->title(\App\Support\Bn::num((string) $n).' '.__('জন লেখককে জানানো হয়েছে'))->success()->send();
+    }
+
     public function rebuild(int $id): void
     {
         $i = Issue::findOrFail($id);

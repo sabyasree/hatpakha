@@ -40,6 +40,8 @@ Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
+// Owner (2026-11-12): /sonkha/ had no page; all the issues are listed in the archive.
+Route::get('/sonkha', fn () => redirect(\App\Support\Url::to('/archive').'#issues', 301))->name('issues');
 Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
 Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
 // Owner (2026-11-12, later): readers read the issue on the site only; no e-book download for now (the EPUB stays in /desk).
@@ -55,7 +57,10 @@ Route::get('/certificate/{code}', CertificateController::class)->where('code', '
 
 // Old WordPress attack surface → 410 Gone (docs/SECURITY.md §5)
 Route::any('/{path}', [LegacyController::class, 'gone'])
-    ->where('path', 'wp-login\.php|xmlrpc\.php|wp-admin(/.*)?|wp-json(/.*)?|wp-includes(/.*)?|wp-content/plugins(/.*)?|wp-content/themes(/.*)?');
+    ->where('path', 'wp-login\.php|xmlrpc\.php|wp-admin(/.*)?|wp-includes(/.*)?|wp-content/plugins(/.*)?|wp-content/themes(/.*)?');
+// Owner (2026-11-12): old WordPress API addresses (/wp-json/…) were being read: an old piece's address goes to that piece,
+// everything else to the home page (301). Anything but a read is still refused.
+Route::any('/wp-json/{rest?}', [LegacyController::class, 'wpJson'])->where('rest', '.*');
 
 // Old AMP URLs → canonical post
 Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]+');
@@ -64,6 +69,9 @@ Route::get('/{slug}/amp', [LegacyController::class, 'amp'])->where('slug', '[^/]
 Route::get('/comments/feed', fn () => redirect(\App\Support\Url::to('/feed'), 301));
 Route::get('/page/{n}', fn () => redirect(url('/').'/', 301))->where('n', '\d+');
 Route::get('/{type}/{slug}/page/{n}', [LegacyController::class, 'paged'])->where(['type' => 'category|tag|author', 'n' => '\d+']);
+// Search Console 404s (2026-11-12): an old child category's later pages keep their page number.
+Route::get('/category/{parent}/{child}/page/{n}', fn (string $parent, string $child, int $n) => redirect(\App\Support\Url::to('/category/'.\App\Support\Slug::encode(\App\Support\Slug::normalize($child)).'/page/'.$n), 301))
+    ->where(['parent' => '[^/]+', 'child' => '[^/]+', 'n' => '[0-9]+']);
 Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCategory'])->where(['parent' => '[^/]+', 'child' => '(?!feed$)[^/]+']);
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
@@ -73,6 +81,8 @@ Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class,
 Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');
 Route::get('/sonkolon', [\App\Http\Controllers\CollectionController::class, 'index']);
 Route::get('/sonkolon/{slug}', [\App\Http\Controllers\CollectionController::class, 'show'])->where('slug', '[a-z0-9-]+');
+Route::get('/sonkolon/{slug}/boi', [\App\Http\Controllers\CollectionController::class, 'book'])->name('collection.book');   // বর্ষসেরা as a magazine (2026-11-12)
+Route::get('/collection-preview/{collection}', [\App\Http\Controllers\CollectionController::class, 'bookPreview'])->middleware('auth')->name('collection.preview');
 
 // Old member-profile pages (Ultimate Member plugin: /user/{login}/?profiletab=…) → the writer's page (D93).
 // The profile slug was the WordPress login, which is also the writer page's slug; the old site account → desk byline.

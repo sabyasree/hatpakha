@@ -39,5 +39,16 @@
         const blob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
         return new File([blob], name, { type: 'image/png' });
     }
-    window.hpCard = { download, file };
+    /** The card as a JPEG on the paper colour, for Instagram (it takes JPEG only; owner, 2026-11-12). */
+    async function jpeg(card, name) {
+        const c = await canvas(card);
+        const out = document.createElement('canvas');
+        out.width = c.width; out.height = c.height;
+        const g = out.getContext('2d');
+        g.fillStyle = '#FFFBF4'; g.fillRect(0, 0, out.width, out.height);
+        g.drawImage(c, 0, 0);
+        const blob = await new Promise((ok) => out.toBlob(ok, 'image/jpeg', 0.92));
+        return new File([blob], name, { type: 'image/jpeg' });
+    }
+    window.hpCard = { download, file, jpeg };
 })();

@@ -43,7 +43,7 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 - Upload checks: real MIME sniffing, size limit (images 8 MB), images re-encoded (strips EXIF/GPS and any embedded payload), random file names.
 - **No PHP executes in upload folders.** `.htaccess` in `public/wp-content/uploads` and `public/media`: `php_flag engine off` + deny `*.php*`, `*.phtml`, `*.phar`. ✅test (rules file present)
 - **Migration scan:** the old `wp-content/uploads` folder is scanned before it is copied. Any `.php`, `.phtml`, `.js` inside uploads, files with double extensions, and files whose content does not match their extension are **quarantined, not copied**. A report is kept.
-- Legacy attack paths (`/wp-login.php`, `/xmlrpc.php`, `/wp-admin/*`, `/wp-json/*`) return **410** and are rate-limited by a Cloudflare WAF rule.
+- Legacy attack paths (`/wp-login.php`, `/xmlrpc.php`, `/wp-admin/*`) return **410** and are rate-limited by a Cloudflare WAF rule. `/wp-json/*` (owner, 2026-11-12, D153): reads 301 to the old piece/page by its WordPress number, else the home page; anything but GET/HEAD is 410.
 
 ## 6. Secrets and infrastructure
 - `.env` is **never committed**; only `.env.example`. Real values live in **GitHub Environments** (`staging`, `production`) and are written to the server at deploy time.

@@ -27,6 +27,17 @@ return [
         'facebook_app_id' => env('FACEBOOK_APP_ID'),   // optional: only silences the Sharing Debugger's fb:app_id note
     ],
 
+    // Facebook Page posting (owner, 2026-11-12). Keys only in the GitHub Environment ENV_FILE. Posts go out only from the
+    // live site (never staging), and only what the owner approved or what automatic mode (a desk switch) sends.
+    'facebook_page' => [
+        'id' => env('FACEBOOK_PAGE_ID'),
+        'token' => env('FACEBOOK_PAGE_TOKEN'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+        'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v23.0'),
+        // Instagram (owner, 2026-11-12): the professional account linked to the Page; posted with the same Page token.
+        'instagram_id' => env('INSTAGRAM_ACCOUNT_ID'),
+    ],
+
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
     'adsense' => [
         'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),

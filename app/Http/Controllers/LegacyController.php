@@ -15,6 +15,22 @@ class LegacyController extends Controller
         abort(410);
     }
 
+    /** /wp-json/wp/v2/posts/{id} (or pages/{id}) → that piece or page by its old WordPress number; the rest → home. */
+    public function wpJson(\Illuminate\Http\Request $request, ?string $rest = null)
+    {
+        abort_unless(in_array($request->method(), ['GET', 'HEAD'], true), 410);
+        if (preg_match('#^wp/v2/(posts|pages)/(\d+)#', (string) $rest, $m)) {
+            $target = $m[1] === 'posts'
+                ? \App\Models\Post::whereIn('status', ['published', 'archived'])->where('legacy_wp_id', (int) $m[2])->first()
+                : \App\Models\Page::where('legacy_wp_id', (int) $m[2])->first();
+            if ($target && (! $target instanceof \App\Models\Post || $target->isLive() || $target->status === 'archived')) {
+                return redirect($target->url(), 301);
+            }
+        }
+
+        return redirect(Url::to('/'), 301);
+    }
+
     public function amp(string $slug)
     {
         return redirect(Url::to('/'.Slug::encode(Slug::normalize($slug))), 301);
@@ -69,7 +85,41 @@ class LegacyController extends Controller
 
             return redirect(Url::to($hit->to_path), $hit->status_code);
         }
+        // Old WordPress image pages ("/img_20190731_092351_057/", "/images-4-2/"): the piece that shows that picture.
+        if ($post = self::pieceWithPicture($path)) {
+            return redirect($post->url(), 301);
+        }
 
         abort(404);
+    }
+
+    /**
+     * Search Console 404s (owner, 2026-11-12): WordPress gave every uploaded picture its own page, named after the file.
+     * The file's name is still in the piece that used it (its text or its cover), so that piece is where the reader goes.
+     * Only for file-like names; the answer is cached for a day either way.
+     */
+    public static function pieceWithPicture(string $path): ?Post
+    {
+        $slug = trim($path, '/');
+        if (! preg_match('/^[a-z0-9_-]{5,120}$/i', $slug)) {
+            return null;
+        }
+        $id = \Illuminate\Support\Facades\Cache::remember('legacy-pic:'.$slug, 86400, function () use ($slug) {
+            foreach (array_unique([$slug, preg_replace('/-\d+$/', '', $slug)]) as $name) {   // WordPress added "-2" to repeated names
+                if (strlen($name) < 5) {
+                    continue;
+                }
+                $like = fn (string $tail) => '%/'.$name.$tail.'%';   // the name is letters, digits, _ and - only; an _ matching any one letter is harmless
+                $hit = Post::published()->where(fn ($q) => $q->where('featured_image_path', 'like', $like('.'))->orWhere('featured_image_path', 'like', $like('-'))
+                    ->orWhere('body_html', 'like', $like('.'))->orWhere('body_html', 'like', $like('-')))->orderBy('published_at')->value('id');
+                if ($hit) {
+                    return $hit;
+                }
+            }
+
+            return 0;
+        });
+
+        return $id ? Post::find($id) : null;
     }
 }

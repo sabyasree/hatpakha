@@ -13,7 +13,13 @@
         @if ($c->intro)<p class="mt-5 font-serif text-lg leading-relaxed md:text-xl">{{ $c->intro }}</p>@endif
         <p class="mt-4 text-sm font-bold text-ink2">{{ \App\Support\Bn::num((string) $posts->count()) }}টি লেখা · হাতপাখার আর্কাইভ থেকে বাছাই</p>
         @if ($posts->isNotEmpty())
-            <a href="{{ $posts->first()->url() }}" class="mt-5 inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">প্রথম লেখা থেকে পড়ুন →</a>
+            <div class="mt-5 flex flex-wrap gap-3">
+                {{-- বর্ষসেরা and every collection read as a magazine too (owner, 2026-11-12) --}}
+                @if (! $preview && $c->slug)
+                    <a href="{{ \App\Support\Url::to('/sonkolon/'.$c->slug.'/boi') }}" class="inline-flex h-12 items-center rounded-full bg-red px-6 font-bold text-white">পত্রিকা খুলুন</a>
+                @endif
+                <a href="{{ $posts->first()->url() }}" class="inline-flex h-12 items-center rounded-full border-2 border-navy px-6 font-bold">প্রথম লেখা থেকে পড়ুন →</a>
+            </div>
         @endif
 
         <ol class="mt-8 divide-y divide-rule border-y-2 border-navy">
