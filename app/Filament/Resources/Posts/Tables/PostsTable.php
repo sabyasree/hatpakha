@@ -200,7 +200,7 @@ class PostsTable
                 ->modalDescription(fn (Post $record) => self::whatHappens($record, 'changes'))
                 ->schema([
                     Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(10)->maxLength(4000)
-                        ->helperText(__('এআই-এর খসড়া বসানো আছে: তার বার্তা আর পরামর্শগুলো। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন।'))
+                        ->helperText(__('এআই-এর লেখা চিঠি বসানো আছে। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন। ই-মেলে নিজে থেকেই যোগ হয়: “যেমন আছে তেমনই রাখতে চাইলে না বদলেও আবার জমা দিতে পারেন।”'))
                         ->default(fn (Post $record) => Review::changesMessage($record)),
                     CheckboxList::make('edits')->label(__('ছোট সংশোধনগুলো এখনই লেখায় বসান'))
                         ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।'))
