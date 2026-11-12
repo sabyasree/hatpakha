@@ -264,6 +264,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: after deploy, press “ইনস্টাগ্রামে দিন” on one post to test
 - [ ] Owner: /desk → শংসাপত্র → "ডেস্কের লেখার শংসাপত্র সরান" once after deploy
 - [x] D153/D154: Search Console 404 list (251 addresses): wp-json, double slashes, `/page/N/=1` share links, theme `{{…}}` placeholders, child-category pages, WordPress picture pages → their piece
+- [x] D155: deploy warms the main pages after the Cloudflare purge (520 seen right after a deploy)
+- [x] D156: review flow: "what to do" panel on a waiting piece, AI report → decision buttons, full AI advice and small fixes in "বদল চাই"
 - [ ] Owner: after deploy, Search Console → Pages → Not found (404) → "Validate fix"; send the old `/books/*.pdf` files if they still exist
 - [x] Owner report (2026-11-12): issue page cover read as a broken red line and the button shadow looked broken: cover redesigned (cream edge, fan in its corner, name on a navy panel), clean পত্রিকা খুলুন + সূচি দেখুন; the magazine crashed phone browsers on long issues: only the leaves around the open page are drawn (427-page test issue: 2–4 drawn), pictures load lazily, "পাতা সাজানো হচ্ছে…" while laying out
  → turn on "Add visitor location headers" (for city names in the desk health report)

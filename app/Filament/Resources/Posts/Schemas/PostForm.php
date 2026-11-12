@@ -20,6 +20,9 @@ class PostForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->columns(3)->components([
+            // What to do with a waiting submission, at the top (owner, 2026-11-12).
+            \Filament\Schemas\Components\View::make('filament.review-guide')->columnSpanFull()
+                ->visible(fn (?Post $record) => $record?->status === 'pending'),
             Section::make(__('লেখার পাঠ'))->collapsible()->columnSpan(2)->schema([
                 TextInput::make('title')->label(__('শিরোনাম'))->required()->maxLength(400),
                 TextInput::make('slug')->label(__('ঠিকানা'))->required()->maxLength(380)

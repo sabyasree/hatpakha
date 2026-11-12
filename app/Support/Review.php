@@ -26,6 +26,28 @@ final class Review
         'নিয়ম' => 'লেখাটি আমাদের লেখা পাঠানোর নিয়মের সঙ্গে মেলেনি। নিয়মগুলো একবার দেখে নিয়ে আবার লেখা পাঠাতে পারেন।',
     ];
 
+    /**
+     * The whole message for "বদল চাই", ready to edit: the AI's note to the writer and then its numbered suggestions
+     * (owner, 2026-11-12: "everything is not there"). Null when there is no AI report.
+     */
+    public static function changesMessage(Post $post): ?string
+    {
+        $r = \App\Ai\EditorPackage::report($post);
+        if (! $r) {
+            return null;
+        }
+        $note = trim((string) ($r['note_to_writer'] ?? ''));
+        $tips = array_values(array_filter(array_map(fn ($s) => trim((string) $s), (array) ($r['suggestions'] ?? []))));
+        if ($tips) {
+            $note .= ($note === '' ? '' : "\n\n").'যে কথাগুলো ভেবে দেখতে বলছি:';
+            foreach ($tips as $i => $tip) {
+                $note .= "\n".Bn::num((string) ($i + 1)).'. '.$tip;
+            }
+        }
+
+        return $note === '' ? null : $note;
+    }
+
     /** Approve: publish now or on a date; give the post its readable Latin URL (D14). */
     public static function approve(Post $post, User $editor, ?CarbonInterface $at = null, ?string $slug = null, ?string $note = null): void
     {

@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Set;
 use App\Ai\EditorPackage;
+use App\Support\Bn;
 use App\Support\Review;
 use App\Support\Schedule;
 use Filament\Forms\Components\CheckboxList;
@@ -154,8 +155,7 @@ class PostsTable
             Action::make('approve')->label(__('মনোনীত'))->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Post $record) => $record->status === 'pending')
                 ->modalHeading(fn (Post $record) => __('মনোনীত: ').$record->title)->modalSubmitActionLabel(__('মনোনীত করুন'))
-                ->modalDescription(fn (Post $record) => EditorPackage::report($record)
-                    ? __('এআই সম্পাদক সব তৈরি করে রেখেছে। দেখে নিন, দরকার হলে বদলান, তারপর মনোনীত করুন।') : null)
+                ->modalDescription(fn (Post $record) => self::whatHappens($record, 'approved'))
                 ->schema([
                     // The AI editor's copy-edits (D42): only spelling/punctuation/spacing/typos are ticked by default.
                     CheckboxList::make('edits')->label(__('এআই-এর সংশোধন (টিক দেওয়াগুলো লেখায় বসবে)'))
@@ -196,36 +196,63 @@ class PostsTable
                 }),
             Action::make('requestChanges')->label(__('বদল চাই'))->icon('heroicon-o-pencil-square')->color('warning')
                 ->visible(fn (Post $record) => $record->status === 'pending')
-                ->modalHeading(fn (Post $record) => __('বদল চাই: ').$record->title)
+                ->modalHeading(fn (Post $record) => __('বদল চাই: ').$record->title)->modalSubmitActionLabel(__('লেখককে পাঠান'))
+                ->modalDescription(fn (Post $record) => self::whatHappens($record, 'changes'))
                 ->schema([
-                    Select::make('template')->label(__('তৈরি বার্তা থেকে শুরু করুন'))->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_map('__', array_keys(Review::CHANGE_TEMPLATES))))
-                        ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::CHANGE_TEMPLATES[$state] ?? '')),
-                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(5)->maxLength(2000)->helperText(__('সদয় ও নির্দিষ্ট থাকুন: কী ভালো লেগেছে, কী বদলালে ভালো হয়।'))
-                        ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'changes' ? EditorPackage::report($record)['note_to_writer'] : null),
+                    Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(10)->maxLength(4000)
+                        ->helperText(__('এআই-এর খসড়া বসানো আছে: তার বার্তা আর পরামর্শগুলো। যা খুশি বদলান; লেখক ঠিক এই কথাগুলোই পাবেন।'))
+                        ->default(fn (Post $record) => Review::changesMessage($record)),
+                    CheckboxList::make('edits')->label(__('ছোট সংশোধনগুলো এখনই লেখায় বসান'))
+                        ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন আর সেখান থেকেই বদলাবেন। শব্দ বদল এখানে নেই।'))
+                        ->options(fn (Post $record) => array_intersect_key(EditorPackage::editOptions($record), array_flip(EditorPackage::safeIndexes($record))))
+                        ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
+                        ->bulkToggleable()->columns(1)
+                        ->visible(fn (Post $record) => EditorPackage::safeIndexes($record) !== []),
+                    Select::make('template')->label(__('এআই-এর খসড়ার বদলে তৈরি বার্তা নিতে চাইলে'))->placeholder(__('দরকার নেই'))
+                        ->options(array_combine(array_keys(Review::CHANGE_TEMPLATES), array_map('__', array_keys(Review::CHANGE_TEMPLATES))))
+                        ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::CHANGE_TEMPLATES[$state] ?? '') : null),
                 ])
                 ->action(function (Post $record, array $data) {
-                    Review::requestChanges($record, auth()->user(), $data['note']);
-                    Notification::make()->title(__('লেখককে জানানো হয়েছে'))->success()->send();
+                    $fixed = EditorPackage::applySafeEdits($record, (array) ($data['edits'] ?? []));
+                    Review::requestChanges($record->refresh(), auth()->user(), $data['note']);
+                    Notification::make()->title(__('লেখককে ই-মেল পাঠানো হয়েছে'))
+                        ->body($fixed ? Bn::num((string) $fixed).__('টি ছোট সংশোধন লেখায় বসানো হয়েছে।') : null)->success()->send();
                 }),
             Action::make('reject')->label(__('বাতিল'))->icon('heroicon-o-x-circle')->color('gray')
                 ->visible(fn (Post $record) => $record->status === 'pending')
-                ->modalHeading(fn (Post $record) => __('এবার নয়: ').$record->title)
+                ->modalHeading(fn (Post $record) => __('এবার নয়: ').$record->title)->modalSubmitActionLabel(__('লেখককে পাঠান'))
+                ->modalDescription(fn (Post $record) => self::whatHappens($record, 'rejected'))
                 ->schema([
-                    Select::make('template')->label(__('তৈরি বার্তা'))->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_map('__', array_keys(Review::REJECT_TEMPLATES))))
-                        ->live()->afterStateUpdated(fn ($state, Set $set) => $set('note', Review::REJECT_TEMPLATES[$state] ?? '')),
                     Textarea::make('note')->label(__('লেখককে বার্তা'))->required()->rows(5)->maxLength(2000)
                         ->default(fn (Post $record) => (EditorPackage::report($record)['decision'] ?? null) === 'decline' ? EditorPackage::report($record)['note_to_writer'] : null),
+                    Select::make('template')->label(__('তৈরি বার্তা নিতে চাইলে'))->placeholder(__('দরকার নেই'))
+                        ->options(array_combine(array_keys(Review::REJECT_TEMPLATES), array_map('__', array_keys(Review::REJECT_TEMPLATES))))
+                        ->live()->afterStateUpdated(fn ($state, Set $set) => $state ? $set('note', Review::REJECT_TEMPLATES[$state] ?? '') : null),
                 ])
                 ->action(function (Post $record, array $data) {
                     Review::reject($record, auth()->user(), $data['note']);
-                    Notification::make()->title(__('লেখককে জানানো হয়েছে'))->send();
+                    Notification::make()->title(__('লেখককে ই-মেল পাঠানো হয়েছে'))->send();
                 }),
-            // AI report (3d): advice for editors only; the decision stays with the buttons above.
+            // AI report (3d): advice for editors only; the decision stays with a person. The footer goes straight on
+            // to the three decisions, the AI's choice first (owner, 2026-11-12: "whats next?").
             Action::make('aiReport')->label(__('এআই রিপোর্ট'))->icon('heroicon-o-sparkles')->color('info')
                 ->visible(fn (Post $record) => $record->latestAiReview !== null)
                 ->modalHeading(fn (Post $record) => __('এআই রিপোর্ট: ').$record->title)
                 ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
-                ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ')),
+                ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন'))
+                ->extraModalFooterActions(fn (Action $action, Post $record) => $record->status !== 'pending' ? [] : array_map(
+                    fn (string $next) => $action->makeModalSubmitAction('go_'.$next, ['next' => $next])
+                        ->label(__(self::DECISIONS[$next][0]))
+                        ->color(self::recommended($record) === $next ? self::DECISIONS[$next][1] : 'gray'),
+                    self::decisionOrder($record),
+                ))
+                ->action(function (Action $action, array $arguments, $livewire) {
+                    if (in_array($next = $arguments['next'] ?? null, array_keys(self::DECISIONS), true)) {
+                        $context = $livewire->mountedActions[array_key_last($livewire->mountedActions)]['context'] ?? [];
+                        $livewire->replaceMountedAction($next, [], $context);
+                        $action->halt();
+                    }
+                }),
             Action::make('runAi')->label(__('এআই দিয়ে পড়ান'))->icon('heroicon-o-arrow-path')->color('gray')
                 ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
                 ->requiresConfirmation()->modalDescription(__('এআই একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।'))
@@ -236,6 +263,41 @@ class PostsTable
                         : Notification::make()->title(__('রিপোর্ট হয়নি'))->body($review->error)->warning()->send();
                 }),
         ];
+    }
+
+    /** The three decisions: button label, colour when it is the AI's choice. */
+    public const DECISIONS = [
+        'approve' => ['মনোনীত করুন', 'success'],
+        'requestChanges' => ['বদল চাই', 'warning'],
+        'reject' => ['এবার নয়', 'danger'],
+    ];
+
+    /** The decision the AI editor recommends, as an action name, or null. */
+    public static function recommended(Post $p): ?string
+    {
+        return ['publish' => 'approve', 'changes' => 'requestChanges', 'decline' => 'reject'][EditorPackage::report($p)['decision'] ?? ''] ?? null;
+    }
+
+    /** @return list<string> the AI's choice first */
+    public static function decisionOrder(Post $p): array
+    {
+        $all = array_keys(self::DECISIONS);
+        $first = self::recommended($p);
+
+        return $first ? array_values(array_unique([$first, ...$all])) : $all;
+    }
+
+    /** Plain words for the dialog: what this button does, and who gets an e-mail. */
+    public static function whatHappens(Post $p, string $decision): string
+    {
+        $who = $p->submittedBy ? __('লেখক (').$p->submittedBy->email.__(') ই-মেল পাবেন') : __('লেখকের অ্যাকাউন্ট নেই, তাই কোনও ই-মেল যাবে না');
+
+        return match ($decision) {
+            'changes' => __('লেখাটি লেখকের কাছে ফিরে যাবে। ').$who.__(': নিচের বার্তা আর লেখাটি খুলে ঠিক করার বোতাম। তিনি ঠিক করে আবার জমা দিলে লেখাটি আবার “অনুমোদনের অপেক্ষায়” আসবে, এআই আবার পড়বে।'),
+            'approved' => __('লেখাটি নিচের দিনে-সময়ে সাইটে প্রকাশ হবে। ').$who.__('। টিক দেওয়া সংশোধনগুলো বসবে; “শব্দ বদল” টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ।'),
+            'rejected' => __('লেখাটি এবার নেওয়া হবে না, সাইটে উঠবে না। ').$who.__(': নিচের বার্তাটি, সঙ্গে নতুন লেখা পাঠানোর আমন্ত্রণ।'),
+            default => '',
+        };
     }
 
     public static function effect(Post $p): string
