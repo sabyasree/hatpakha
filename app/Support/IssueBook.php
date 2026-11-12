@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
  * An issue as a book (D68): the reader's book view, the EPUB for Google Play Books, and the print page.
  * Amazon KDP does not accept Bengali (eBook or paperback, checked Nov 2026), so the target is Google
  * Play Books (accepts all languages, EPUB or PDF) and print-on-demand services that take a PDF.
- * Pictures inside pieces are left out of the book (rights and layout); the cover is the issue's.
+ * Pictures are placed by the page designer (PageDesigner): each piece's own picture on top, the ones inside in their place.
  */
 final class IssueBook
 {
@@ -93,12 +93,37 @@ final class IssueBook
         $spine[] = '<itemref idref="title"/>';
         $spine[] = '<itemref idref="nav"/>';
 
+        // Pictures go inside the book: our own files only, each once; the web page's sizing (var(--ph)) is dropped.
+        $pics = [];
+        $embed = function (string $html) use ($zip, &$pics, &$manifest): string {
+            $html = preg_replace('/\sstyle="[^"]*"/', '', $html);
+
+            return preg_replace_callback('/\ssrc="([^"]+)"/', function ($m) use ($zip, &$pics, &$manifest) {
+                $path = rawurldecode((string) parse_url(html_entity_decode($m[1]), PHP_URL_PATH));
+                $file = public_path(ltrim($path, '/'));
+                if (str_contains($path, '..') || ! is_file($file)) {
+                    return ' src=""';
+                }
+                if (! isset($pics[$file])) {
+                    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                    $mime = ['png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'image/jpeg';
+                    $pics[$file] = 'images/p'.(count($pics) + 1).'.'.$ext;
+                    $zip->addFile($file, 'OEBPS/'.$pics[$file]);
+                    $manifest[] = '<item id="p'.count($pics).'" href="'.$pics[$file].'" media-type="'.$mime.'"/>';
+                }
+
+                return ' src="'.$pics[$file].'"';
+            }, $html);
+        };
         $navItems = '';
         foreach ($pieces as $i => $p) {
             $file = 'c'.($i + 1).'.xhtml';
             $by = $p->authors->map->publicName()->implode(', ');
-            $zip->addFromString('OEBPS/'.$file, $page($p->title, '<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'"><p class="section">'.e((string) $p->section?->name_bn).'</p>'
-                .'<h2>'.e($p->title).'</h2><p class="by">'.e($by).'</p>'.self::xhtml((string) $p->body_html).'</section>'));
+            // The page designer's pictures (2026-11-12): the piece's own picture on top, the pictures inside in their place.
+            $d = PageDesigner::design($p);
+            $hero = $d['hero'] ? '<figure class="hero '.$d['layout'].'">'.PageDesigner::img($d['hero']).($d['credit'] ? '<figcaption>'.e($d['credit']).'</figcaption>' : '').'</figure>' : '';
+            $zip->addFromString('OEBPS/'.$file, $page($p->title, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e((string) $p->section?->name_bn).'</p>'
+                .'<h2>'.e($p->title).'</h2><p class="by">'.e($by).'</p>'.$d['body'].'</section>')));
             $manifest[] = '<item id="c'.($i + 1).'" href="'.$file.'" media-type="application/xhtml+xml"/>';
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
@@ -176,6 +201,8 @@ p { margin: 0 0 .9em; text-align: left; }
 .poem { text-align: center; } .poem p { text-align: center; }
 blockquote { margin: 1em 5%; font-style: italic; }
 .cover { text-align: center; } .cover img { max-width: 100%; max-height: 100%; }
+figure { margin: 1em 0; text-align: center; } figure img { max-width: 100%; max-height: 60vh; height: auto; } figcaption { font-size: .8em; color: #4D5A63; }
+figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vignette img, figure.feature img { max-width: 70%; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }

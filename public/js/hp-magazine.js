@@ -43,7 +43,12 @@
         const body = document.createElement('div');
         body.className = 'mag-body';
         p.appendChild(body);
-        if (sec.dataset.head !== 'none') { const f = document.createElement('div'); f.className = 'mag-foot'; p.appendChild(f); }
+        if (sec.dataset.head !== 'none') {   // owner: every page carries the name and the ISSN; the number comes later (a space holds its line while measuring)
+            const f = document.createElement('div');
+            f.className = 'mag-foot';
+            f.innerHTML = '<span class="mag-brand">হাতপাখা</span><span class="mag-pn">\u00a0</span><span class="mag-issn">ISSN 2321-3035</span>';
+            p.appendChild(f);
+        }
         return p;
     };
     const fits = (body) => body.scrollHeight <= body.clientHeight + 1;
@@ -88,7 +93,7 @@
         document.body.appendChild(stage);
         const out = [];
         source.querySelectorAll(':scope > [data-kind]').forEach((sec) => {
-            const fixed = ['cover', 'inside', 'opener', 'back', 'blank'].includes(sec.dataset.kind);
+            const fixed = ['cover', 'inside', 'opener', 'feature', 'back', 'blank'].includes(sec.dataset.kind);
             if (fixed) {
                 const p = newPage(sec, 'mag-' + sec.dataset.kind);
                 p.querySelector('.mag-body').innerHTML = sec.innerHTML;
@@ -101,25 +106,47 @@
             stage.appendChild(p);
             let body = p.querySelector('.mag-body');
             const queue = [...sec.children].map((c) => c.cloneNode(true));
-            while (queue.length) {
-                const el = queue.shift();
-                body.appendChild(el);
-                if (fits(body)) continue;
-                body.removeChild(el);
-                const splittable = /^(P|BLOCKQUOTE|LI|DIV)$/.test(el.nodeName) && !el.querySelector('img,table') && el.textContent.trim().length > 0;
-                if (splittable) {
-                    const [head, rest] = split(el, body);
-                    if (head) body.appendChild(head);
-                    if (rest && head) queue.unshift(rest);
-                    else if (rest && !head && body.children.length === 0) { body.appendChild(rest); continue; }   // a word longer than a page
-                    else if (rest) queue.unshift(rest);
-                } else if (body.children.length === 0) { body.appendChild(el); continue; }
-                else queue.unshift(el);
+            // The page designer's rule: a picture that does not fit waits for the top of the next page while the text
+            // goes on filling this one (no half-empty pages); at most two wait at a time, in their order.
+            const waiting = [];
+            const turnPage = () => {
                 out.push(p);
                 stage.removeChild(p);
                 p = newPage(sec, 'mag-' + sec.dataset.kind + ' mag-next');
                 stage.appendChild(p);
                 body = p.querySelector('.mag-body');
+                while (waiting.length) {
+                    const f = waiting[0];
+                    body.appendChild(f);
+                    if (!fits(body) && body.children.length > 1) { body.removeChild(f); break; }
+                    waiting.shift();
+                }
+            };
+            while (queue.length || waiting.length) {
+                if (!queue.length) {   // only waiting pictures are left
+                    const f = waiting.shift();
+                    body.appendChild(f);
+                    if (fits(body) || body.children.length === 1) continue;
+                    body.removeChild(f);
+                    waiting.unshift(f);
+                    turnPage();
+                    continue;
+                }
+                const el = queue.shift();
+                if (waiting.length >= 2 && el.nodeName !== 'FIGURE') { queue.unshift(el); turnPage(); continue; }
+                body.appendChild(el);
+                if (fits(body)) continue;
+                body.removeChild(el);
+                if (el.nodeName === 'FIGURE' && body.children.length > 0) { waiting.push(el); continue; }
+                const splittable = /^(P|BLOCKQUOTE|LI|DIV)$/.test(el.nodeName) && !el.querySelector('img,table') && el.textContent.trim().length > 0;
+                if (splittable) {
+                    const [head, rest] = split(el, body);
+                    if (head) body.appendChild(head);
+                    if (rest && !head && body.children.length === 0) { body.appendChild(rest); continue; }   // a word longer than a page
+                    if (rest) queue.unshift(rest);
+                } else if (body.children.length === 0) { body.appendChild(el); continue; }
+                else queue.unshift(el);
+                turnPage();
             }
             out.push(p);
             stage.removeChild(p);
@@ -127,9 +154,9 @@
         stage.remove();
         // The back cover is the last left-hand page: pad with a blank page when needed.
         const back = out.findIndex((p) => p.classList.contains('mag-back'));
-        if (back > -1 && back % 2 === 0) out.splice(back, 0, (() => { const b = document.createElement('div'); b.className = 'mag-page mag-blank'; b.innerHTML = '<div class="mag-body"></div>'; return b; })());
+        if (back > -1 && back % 2 === 0) out.splice(back, 0, (() => { const b = document.createElement('div'); b.className = 'mag-page mag-blank'; b.innerHTML = '<div class="mag-body"><div class="mag-mark"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div>'; return b; })());
         // Page numbers (the cover is not counted) and the contents' numbers.
-        out.forEach((p, i) => { const f = p.querySelector('.mag-foot'); if (f) f.textContent = bn.format(i); });
+        out.forEach((p, i) => { const f = p.querySelector('.mag-pn'); if (f) f.textContent = bn.format(i); });
         const at = {};
         out.forEach((p, i) => { if (p.dataset.anchor && !(p.dataset.anchor in at)) at[p.dataset.anchor] = i; });
         out.forEach((p) => p.querySelectorAll('[data-pn]').forEach((s) => { if (s.dataset.pn in at) s.textContent = bn.format(at[s.dataset.pn]); }));
@@ -238,7 +265,12 @@
 
     root.classList.add('mag-ready');
     source.hidden = true;
-    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
+    // Pages are measured in the book's own fonts: load them first (a font not yet used on the screen is not loaded by
+    // itself, and measuring with a stand-in font would push lines off the page later); lay out again if one comes late.
+    const faces = ['400 17px "Noto Serif Bengali"', '700 17px "Noto Serif Bengali"', '600 17px "Anek Bangla"', '700 17px "Anek Bangla"', '800 17px "Anek Bangla"', '400 17px "Galada"'];
+    const fontsReady = document.fonts ? Promise.all(faces.map((f) => document.fonts.load(f, 'অক').catch(() => null))).then(() => document.fonts.ready) : Promise.resolve();
+    if (document.fonts) document.fonts.addEventListener('loadingdone', () => { clearTimeout(t); t = setTimeout(render, 100); });
+    fontsReady.then(() => {
         try { cur = Number(localStorage.getItem(key)) || 0; } catch (e) { cur = 0; }
         render();
     });

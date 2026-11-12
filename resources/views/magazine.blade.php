@@ -58,7 +58,15 @@
         .mag-head { display: flex; justify-content: space-between; gap: 1rem; font: 600 .68em 'Anek Bangla', sans-serif; color: #4D5A63; border-bottom: 1px solid #E8DCCB; padding-bottom: .4em; margin-bottom: 1.1em; }
         .mag-head span:last-child { color: #CB1B32; }
         .mag-body { flex: 1; overflow: hidden; min-height: 0; }
-        .mag-foot { text-align: center; font: 600 .72em 'Anek Bangla', sans-serif; color: #4D5A63; padding-top: .6em; }
+        .mag-foot { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: .5em; font: 600 .72em 'Anek Bangla', sans-serif; color: #4D5A63; padding-top: .6em; border-top: 1px solid #E8DCCB; margin-top: .3em; }
+        .mag-foot .mag-pn { text-align: center; color: #13212C; font-size: 1.1em; }
+        .mag-foot .mag-issn { text-align: right; font-size: .9em; }
+        .mag-brand { font-family: 'Galada', cursive; font-weight: 400; color: #CB1B32; font-size: 1.25em; line-height: 1; }
+        /* Pages without header and footer still carry the name and the ISSN, small, in a corner */
+        .mag-mark { position: absolute; left: 8%; bottom: 3.5%; display: flex; gap: .6em; align-items: baseline; font: 600 .62em 'Anek Bangla', sans-serif; color: #4D5A63; z-index: 2; }
+        .mag-mark.on-dark { color: #EFC08D; }
+        .mag-mark.on-dark .mag-brand { color: #FFFBF4; }
+        .mag-blank .mag-body { position: relative; height: 100%; }
         .mag-body p { margin: 0 0 .85em; }
         .mag-body p.mag-cont { text-indent: 0; }
         .mag-kicker { font: 700 .75em 'Anek Bangla', sans-serif; color: #CB1B32; letter-spacing: .02em; margin: 0 0 .3em !important; }
@@ -66,6 +74,28 @@
         .mag-by { color: #4D5A63; margin: 0 0 1.2em !important; font-family: 'Anek Bangla', sans-serif; }
         .mag-by::after { content: ''; display: block; width: 3em; border-bottom: 3px solid #CB1B32; margin-top: .6em; }
         .mag-poem .mag-body { text-align: center; }
+        /* Pictures, placed by the page designer (App\Support\PageDesigner). Every picture has its exact shape, so pages
+           are laid out before pictures arrive; none is taller than half a page inside the text. */
+        .mag-body figure { margin: .3em 0 1em; text-align: center; }
+        .mag-body figure img { display: block; margin: 0 auto; height: auto; border-radius: 2px; background: #FBEBD8; object-fit: cover; }
+        .mag-body figcaption { font: .72em/1.5 'Anek Bangla', sans-serif; color: #4D5A63; margin-top: .45em; text-align: center; }
+        .mag-fig-small img { max-width: 45%; }
+        .mag-credit { font: .62em 'Anek Bangla', sans-serif; color: #4D5A63; text-align: right; margin: .3em 0 0 !important; }
+        .mag-hero { margin: 0 0 1.1em !important; }
+        .mag-hero img { width: 100% !important; aspect-ratio: auto !important; height: calc(var(--ph) * .34) !important; object-fit: cover; border-radius: 0; }
+        .mag-poem .mag-hero img { height: calc(var(--ph) * .26) !important; }
+        .mag-vignette { margin: 0 0 1em !important; }
+        .mag-vignette img { border-radius: 50% / 46%; box-shadow: 0 0 0 6px #FBEBD8; }
+        .mag-poem .mag-vignette img { border-radius: 3px; box-shadow: none; }
+        .mag-page.mag-feature { padding: 0; }
+        .mag-page.mag-feature .mag-body { height: 100%; }
+        .mag-feat-in { position: relative; height: 100%; background: #13212C; overflow: hidden; }
+        .mag-feat-in .mag-feature-img { position: absolute; inset: 0; width: 100% !important; height: 100% !important; max-height: none; aspect-ratio: auto !important; object-fit: cover; border-radius: 0; }
+        .mag-feature-panel { position: absolute; left: 0; right: 0; bottom: 0; background: #13212C; color: #FFFBF4; padding: 1.1em 8% 1.4em; }
+        .mag-feature-panel .mag-h { color: #FFFBF4; font-size: 1.9em; }
+        .mag-feature-panel .mag-kicker { color: #F08D90; }
+        .mag-feature-by { font-family: 'Anek Bangla', sans-serif; color: #EFC08D; margin: .2em 0 0 !important; }
+        .mag-feature-panel .mag-credit { color: #EFC08D; text-align: left; }
         .mag-poem .mag-by::after { margin-left: auto; margin-right: auto; }
 
         /* Cover, inside cover, openers, back cover */
@@ -84,9 +114,9 @@
         .mag-cover-lines span { color: #EFC08D; font-size: .85em; }
         /* UX review: cover lines sit on a navy panel, never on the pink fan or a photo */
         .mag-cover-in > div:last-child { background: #13212C; margin: 0 calc(-8% - 4px) -8%; padding: 6% calc(8% + 4px) 8% 8%; }
-        .mag-fanbg { position: absolute; right: -30%; top: 22%; width: 85%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
+        .mag-fanbg { position: absolute; right: -30%; top: 30%; width: 80%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg); opacity: .9; }
         .mag-inside .mag-body { display: flex; flex-direction: column; justify-content: center; text-align: center; font-family: 'Anek Bangla', sans-serif; }
-        .mag-opener-in { height: 100%; background: #FBEBD8; display: flex; flex-direction: column; justify-content: flex-end; padding: 10% 9%; box-sizing: border-box; }
+        .mag-opener-in { position: relative; height: 100%; background: #FBEBD8; display: flex; flex-direction: column; justify-content: flex-end; padding: 10% 9%; box-sizing: border-box; }
         .mag-opener-in p { margin: 0; font: 700 .9em 'Anek Bangla', sans-serif; color: #CB1B32; }
         .mag-opener-in h2 { margin: .1em 0 0; font: 800 2.6em/1.1 'Anek Bangla', sans-serif; }
         .mag-back-in { height: 100%; background: #13212C; color: #FFFBF4; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 10%; box-sizing: border-box; font-family: 'Anek Bangla', sans-serif; }
@@ -165,12 +195,7 @@
             </ol>
         </section>
         @if ($editorial)
-            <section data-kind="piece" data-section="সম্পাদকীয়" data-anchor="piece-{{ $editorial->id }}">
-                <p class="mag-kicker">সম্পাদকীয়</p>
-                <h2 class="mag-h">{{ $editorial->title }}</h2>
-                <p class="mag-by">{{ $editorial->authors->map->publicName()->implode(', ') }}</p>
-                {!! \App\Support\IssueBook::xhtml((string) $editorial->body_html) !!}
-            </section>
+            @include('partials.magazine-piece', ['p' => $editorial, 'sec' => 'সম্পাদকীয়'])
         @elseif ($issue->editor_note)
             <section data-kind="piece" data-section="সম্পাদকের কথা" data-anchor="editor-note">
                 <p class="mag-kicker">সম্পাদকের কথা</p>
@@ -178,15 +203,9 @@
             </section>
         @endif
         @foreach ($bySection as $sec => $list)
-            <section data-kind="opener" data-head="none"><div class="mag-opener-in"><p>{{ $issue->title }}</p><h2>{{ $sec }}</h2></div></section>
+            <section data-kind="opener" data-head="none"><div class="mag-opener-in"><p>{{ $issue->title }}</p><h2>{{ $sec }}</h2><div class="mag-mark" style="left:auto;right:9%;top:6%;bottom:auto"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div></section>
             @foreach ($list as $p)
-                {{-- body_html is sanitised on save; IssueBook::xhtml leaves out pictures and embeds --}}
-                <section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }}" data-section="{{ $sec }}" data-running="{{ $p->title }} · {{ $p->authors->map->publicName()->implode(', ') }}" data-anchor="piece-{{ $p->id }}">
-                    <p class="mag-kicker">{{ $sec }}</p>
-                    <h2 class="mag-h">{{ $p->title }}</h2>
-                    <p class="mag-by">{{ $p->authors->map->publicName()->implode(', ') }}</p>
-                    {!! \App\Support\IssueBook::xhtml((string) $p->body_html) !!}
-                </section>
+                @include('partials.magazine-piece', ['p' => $p, 'sec' => $sec])
             @endforeach
         @endforeach
         @if ($writers)
@@ -210,6 +229,6 @@
         </section>
     </div>
 </div>
-<script src="{{ asset('js/hp-magazine.js') }}?v=2" defer></script>
+<script src="{{ asset('js/hp-magazine.js') }}?v=4" defer></script>
 </body>
 </html>
