@@ -147,9 +147,10 @@ class ArchiveController extends Controller
         $months = $posts->groupBy(fn ($p) => (int) $p->published_at->format('n'));
 
         // "এ বছরের বাছাই": the year's four most-read pieces with a cover (only the ids are cached, D18).
-        $pickIds = \Illuminate\Support\Facades\Cache::remember("archive:picks:{$year}:v1", 86400, fn () => \Illuminate\Support\Facades\DB::table('post_views')
-            ->whereIn('post_id', $all->whereNotNull('featured_image_path')->pluck('id'))
-            ->selectRaw('post_id, sum(views) as n')->groupBy('post_id')->orderByDesc('n')->limit(4)->pluck('post_id')->all());
+        $pickIds = \Illuminate\Support\Facades\Cache::remember("archive:picks:{$year}:v2", 86400, fn () => \Illuminate\Support\Facades\DB::table('post_views')
+            ->whereIn('post_id', self::pickable($all)->pluck('id'))
+            ->selectRaw('post_id, sum(views) as n')->groupBy('post_id')->havingRaw('sum(views) >= ?', [self::PICK_MIN_READS])
+            ->orderByDesc('n')->limit(4)->pluck('post_id')->all());
         $picks = $filter ? collect() : $all->whereIn('id', $pickIds)->sortBy(fn ($p) => array_search($p->id, $pickIds))->values();
 
         $keys = array_keys($years);   // newest first
@@ -167,6 +168,35 @@ class ArchiveController extends Controller
         );
 
         return view('archive-year', compact('year', 'years', 'months', 'posts', 'all', 'seo', 'sectionCounts', 'filter', 'picks', 'older', 'newer'));
+    }
+
+    /** A piece must have been read at least this often to be one of the year's picks. */
+    public const PICK_MIN_READS = 5;
+
+    /**
+     * Pieces that can be "এ বছরের বাছাই" (checked on the live site, 2026-11-12): literature with a cover. Not the
+     * English section (old search-traffic articles: "10 Essential Python Concepts"), not editorials or house notes,
+     * nothing the content audit set aside, and of a serial only its first episode (never "পর্ব ৩" on its own).
+     */
+    public static function pickable(\Illuminate\Support\Collection $posts): \Illuminate\Support\Collection
+    {
+        $firstOfSerial = $posts->whereNotNull('serial_id')->sortBy('published_at')->unique('serial_id')->pluck('id')->all();
+
+        return $posts->filter(fn (Post $p) => $p->featured_image_path
+            && ! in_array($p->section?->slug, ['english', 'editorial'], true)
+            && ! in_array($p->audit_label, ['noindex', 'remove', 'merge'], true)
+            && (! $p->serial_id || in_array($p->id, $firstOfSerial, true))
+            && ! self::laterEpisode($p->title))->values();
+    }
+
+    /** "ছুটি (৩য় পর্ব)", "সাদা কালো--তৃতীয় পর্ব", "City of Joy (Part 2)": a later episode by its title. */
+    public static function laterEpisode(string $title): bool
+    {
+        if (! preg_match('/পর্ব|part|episode|খণ্ড|অধ্যায়/iu', $title)) {
+            return false;
+        }
+
+        return ! preg_match('/প্রথম|১ম|পর্ব\s*[-–:]?\s*(১|1)(?![০-৯0-9])|(?<![০-৯0-9])(১|1)\s*(ম\s*)?পর্ব|part\s*(1|one|i)\b|first/iu', $title);
     }
 
     /** @return array<int,int> year → published post count, newest first */
