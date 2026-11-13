@@ -236,6 +236,31 @@ class Marketing extends Page
         Notification::make()->title(__('সপ্তাহের হিসাব তৈরি হয়েছে'))->success()->send();
     }
 
+    /** D189: the switch for answering readers' comments by itself. Admins only. */
+    public function toggleReplies(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        $on = ! \App\Support\CommentReplies::auto();
+        \App\Models\Setting::put(\App\Support\CommentReplies::AUTO, $on ? '1' : '0');
+        AuditLog::record('marketing.replies_auto', null, ['on' => $on]);
+        Notification::make()->title($on ? __('কমেন্টের উত্তর চালু হয়েছে') : __('কমেন্টের উত্তর বন্ধ হয়েছে'))->success()->send();
+    }
+
+    /** D189: take back one reply (deleted on Facebook or Instagram too). */
+    public function deleteReply(int $id): void
+    {
+        $ok = \App\Support\CommentReplies::delete(\App\Models\SocialComment::findOrFail($id));
+        Notification::make()->title($ok ? __('উত্তরটি মুছে ফেলা হয়েছে') : __('মোছা গেল না; ফেসবুক বা ইনস্টাগ্রামে গিয়ে মুছুন'))->{$ok ? 'success' : 'danger'}()->send();
+    }
+
+    /** D189: the owner has seen a comment the team did not answer. */
+    public function seenComment(int $id): void
+    {
+        \App\Models\SocialComment::where('status', 'flagged')->findOrFail($id)->forceFill(['status' => 'skipped'])->save();
+    }
+
     /** Owner: "how to check you can comment on Facebook?" Asks Facebook what the Page's key may do. */
     public array $fbCheck = [];
 
@@ -302,7 +327,8 @@ class Marketing extends Page
         $schedule = SocialPost::whereBetween('slot_at', [$from, $from->copy()->addDays(2)])->orderBy('slot_at')->limit(30)->get()
             ->map(fn (SocialPost $s) => ['s' => $s, 'sum' => \App\Support\MarketingStats::sum($s), 'where' => self::where($s)]);
 
-        return ['schedule' => $schedule, 'whatsapp' => \App\Support\MarketingPlan::whatsapp(), 'lessons' => \App\Support\MarketingStats::saved(), 'review' => \App\Support\MarketingAnalyst::saved(), 'plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
+        return ['schedule' => $schedule, 'whatsapp' => \App\Support\MarketingPlan::whatsapp(), 'lessons' => \App\Support\MarketingStats::saved(), 'review' => \App\Support\MarketingAnalyst::saved(),
+            'comments' => \App\Models\SocialComment::with('post')->whereIn('status', ['flagged', 'replied', 'failed'])->orderByRaw("status = 'flagged' desc")->latest('id')->limit(30)->get(), 'plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
     }
 
     /** The page a post is about (D87): the piece, the issue, else the home page. */

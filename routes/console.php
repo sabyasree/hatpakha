@@ -90,3 +90,10 @@ Schedule::call(function () {
     \App\Support\WriterInvites::remind();
     \App\Support\WriterInvites::match();
 })->name('writer invitations sent')->hourlyAt(15)->withoutOverlapping(30);
+
+// D189 (owner: "auto"): readers' comments under our Facebook and Instagram posts are read every half hour and the safe
+// ones answered in the Kolkata day; the rest wait for the owner on the marketing page.
+Schedule::call(function () {
+    \App\Support\CommentReplies::fetch();
+    \App\Support\CommentReplies::answer();
+})->name('comment replies')->everyThirtyMinutes()->withoutOverlapping(20);

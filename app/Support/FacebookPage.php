@@ -342,6 +342,8 @@ final class FacebookPage
         'instagram_basic' => 'ইনস্টাগ্রাম অ্যাকাউন্টটি চেনা',
         'instagram_content_publish' => 'ইনস্টাগ্রামে ছবি ও রিল দেওয়া',
         'instagram_manage_insights' => 'ইনস্টাগ্রামে কতজন দেখলেন, সেভ করলেন তা পড়া',
+        'pages_read_user_content' => 'ফেসবুকে পাঠকের কমেন্ট পড়া (উত্তর দেওয়ার জন্য)',
+        'instagram_manage_comments' => 'ইনস্টাগ্রামে পাঠকের কমেন্ট পড়া ও উত্তর দেওয়া',
     ];
 
     /**
