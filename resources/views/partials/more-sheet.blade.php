@@ -27,6 +27,7 @@
         ['/account/reading', 'book', 'আমার পড়া', 'পরে পড়ব, অর্ধেক পড়া, যাঁদের অনুসরণ করেন'],
         ['/account/profile', 'person', 'আমার পাতা', $acct['writer'] ? 'ছবি, নাম, নিজের কথা' : 'ছবি, নাম'],
         ['/account/settings', 'key', 'ই-মেল ও পাসওয়ার্ড', 'সাপ্তাহিক ই-মেল চালু/বন্ধ, ফোনে খবর, পাসওয়ার্ড বদল'],
+        $acct['reviewer'] ? ['/account/review', 'book', 'যাচাইয়ের লেখা', $acct['toReview'] ? \App\Support\Bn::num((string) $acct['toReview']).'টি লেখা পড়া বাকি' : 'সম্পাদকমণ্ডলী যা পড়তে দিয়েছেন'] : null,   // D168
     ])) : [];
 @endphp
 <div data-more-sheet hidden class="md:hidden">

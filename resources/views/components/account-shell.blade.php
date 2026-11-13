@@ -38,6 +38,14 @@
 </nav>
 
 <div class="mx-auto max-w-[1000px] px-5 pb-8 pt-5">
+    @if ($acct['toReview'] > 0 && $tab !== 'review')
+        {{-- D168: pieces the desk asked this reviewer to read --}}
+        <a href="{{ Url::to('/account/review') }}" class="mb-5 flex items-center gap-3 rounded-2xl border-2 border-red bg-peach-light p-4 font-bold hover:bg-white">
+            <span class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-red text-lg text-white" aria-hidden="true">{{ \App\Support\Bn::num((string) $acct['toReview']) }}</span>
+            <span class="flex-1">যাচাইয়ের জন্য {{ \App\Support\Bn::num((string) $acct['toReview']) }}টি লেখা আপনার অপেক্ষায়<span class="block text-sm font-medium text-ink2">সম্পাদকমণ্ডলী আপনার মত জানতে চান</span></span>
+            <span aria-hidden="true">›</span>
+        </a>
+    @endif
     @if (session('submitted'))
         <div role="status" class="mb-5 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
             <div class="font-hand text-2xl text-red">জমা পড়েছে!</div>

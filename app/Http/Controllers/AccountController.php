@@ -33,7 +33,7 @@ class AccountController extends Controller
     }
 
     /** What every account page shows at the top. */
-    private static function shell(Request $request, string $tab, string $title): array
+    public static function shell(Request $request, string $tab, string $title): array
     {
         $user = $request->user();
         $author = \App\Models\Author::where('user_id', $user->id)->first();

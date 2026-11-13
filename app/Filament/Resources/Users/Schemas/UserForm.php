@@ -30,6 +30,8 @@ class UserForm
             Select::make('role')->label(__('ভূমিকা'))->required()->default(Role::Reader->value)->options(self::roles())
                 ->disabled(fn (?User $record) => $record?->is(auth()->user()))
                 ->helperText(__('সম্পাদক বা তার উপরে হলে ডেস্ক খোলা যায় (২-ধাপ যাচাই বাধ্যতামূলক)। প্রতিটি বদল লগে থাকে।')),
+            \Filament\Forms\Components\Toggle::make('is_reviewer')->label(__('যাচাইকারী'))   // D168
+                ->helperText(__('চালু থাকলে এঁকে লেখা পড়তে দিতে পারবেন ("যাচাইয়ে পাঠান")। তিনি নিজের অ্যাকাউন্টে লেখা পড়ে মত দেবেন; ডেস্ক খুলতে পারবেন না।')),
             TextInput::make('spam_reason')->label(__('স্প্যাম চিহ্ন (কারণ)'))->maxLength(120)
                 ->helperText(__('খালি রাখলে স্বাভাবিক অ্যাকাউন্ট। চিহ্নিত অ্যাকাউন্ট মুছে ফেলা হয় না।')),
             Section::make(__('তথ্য'))->collapsible()->columns(2)->visibleOn('edit')->schema([

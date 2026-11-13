@@ -79,6 +79,7 @@ class PostsTable
             ->recordActions([
                 ...self::reviewActions(),
                 EditAction::make(),
+                \App\Support\PieceReviews::assignAction(),   // D168
                 Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Post $p) => $p->url())->openUrlInNewTab()->visible(fn (Post $p) => $p->status === 'published'),
                 // Applying audit suggestions changes what readers/Google see → admin only (CLAUDE.md §3).

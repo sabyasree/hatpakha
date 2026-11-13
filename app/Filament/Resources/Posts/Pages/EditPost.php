@@ -38,41 +38,18 @@ class EditPost extends EditRecord
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
             ...$review,
+            \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
+            Action::make('pieceReviews')->color('gray')->icon('heroicon-o-chat-bubble-bottom-center-text')
+                ->label(fn (Post $record) => __('যাচাইকারীর মতামত').' ('.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', 'done')->count()).'/'.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->count()).')')
+                ->visible(fn (Post $record) => \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->exists())
+                ->url(fn (Post $record) => \App\Filament\Resources\PieceReviews\PieceReviewResource::getUrl('index').'?post='.$record->id),
             // D113 (owner): a real person read this AI-written piece; their feedback rewrites it and/or guides the next ones.
             Action::make('humanFeedback')->label(__('মানুষের মতামত'))->icon('heroicon-o-chat-bubble-left-right')->color('warning')
                 ->visible(fn (Post $record) => \App\Ai\Rewriter::canRewrite($record))
                 ->modalHeading(__('কেউ লেখাটি পড়ে মতামত দিয়েছেন'))
                 ->modalDescription(__('মতামত লিখুন, তারপর বাছুন: এই লেখাটিই আবার লেখানো, আর/অথবা পরের লেখাগুলোতে মেনে চলা। নতুন সংস্করণ আপনি দেখে তবেই বসাবেন।'))
-                ->schema(fn (Post $record) => [
-                    \Filament\Forms\Components\TextInput::make('giver')->label(__('কে পড়েছেন (নাম বা পরিচয়, ঐচ্ছিক)'))->maxLength(120),
-                    \Filament\Forms\Components\Textarea::make('body')->label(__('মতামত'))->required()->rows(5)->maxLength(4000),
-                    \Filament\Forms\Components\Toggle::make('apply_now')->label(__('এই লেখাটিই আবার লেখানো হোক'))->default(true),
-                    \Filament\Forms\Components\Toggle::make('apply_future')->label(__('পরের লেখাগুলোতে মেনে চলা হোক'))->default(true)->live(),
-                    \Filament\Forms\Components\Radio::make('scope')->label(__('কোন লেখায় মেনে চলবে'))->required(fn ($get) => (bool) $get('apply_future'))
-                        ->visible(fn ($get) => (bool) $get('apply_future'))
-                        ->options(array_filter([
-                            'section' => $record->section ? __('শুধু ":name" বিভাগে', ['name' => $record->section->name_bn]) : null,
-                            'serial' => $record->serial ? __('শুধু ":name" ধারাবাহিকের পরের পর্বে', ['name' => $record->serial->title]) : null,
-                            'all' => __('সব এআই লেখায়'),
-                        ]))->default($record->serial_id ? 'serial' : 'section'),
-                ])
-                ->action(function (Post $record, array $data) {
-                    if (! $data['apply_now'] && ! $data['apply_future']) {
-                        \Filament\Notifications\Notification::make()->title(__('কোনোটি বাছা হয়নি'))->body(__('আবার লেখানো বা পরের লেখায় মেনে চলা, অন্তত একটি বাছুন।'))->warning()->send();
-
-                        return;
-                    }
-                    \App\Models\WritingFeedback::create([
-                        'post_id' => $record->id, 'giver' => trim((string) ($data['giver'] ?? '')) ?: null, 'body' => trim(strip_tags((string) $data['body'])),
-                        'apply_now' => (bool) $data['apply_now'], 'apply_future' => (bool) $data['apply_future'],
-                        'scope' => $data['apply_future'] ? ($data['scope'] ?? 'section') : null,
-                        'section_id' => $record->section_id, 'serial_id' => $record->serial_id,
-                        'rewrite_status' => $data['apply_now'] ? 'queued' : null, 'created_by' => auth()->id(),
-                    ]);
-                    \App\Models\AuditLog::record('post.human_feedback', $record);
-                    \Filament\Notifications\Notification::make()->title(__('মতামত রাখা হয়েছে'))
-                        ->body($data['apply_now'] ? __('কয়েক মিনিটে এই পাতায় নতুন সংস্করণ আসবে; দেখে তবেই বসাবেন।') : __('পরের লেখা থেকে মেনে চলা হবে। "লেখার নির্দেশিকা" পাতায় দেখতে ও বদলাতে পারবেন।'))->success()->send();
-                }),
+                ->schema(fn (Post $record) => self::feedbackSchema($record))
+                ->action(fn (Post $record, array $data) => self::saveFeedback($record, $data)),
             // The AI SEO expert (D46): run now, apply a waiting proposal, or undo its last pass.
             ActionGroup::make([
                 Action::make('seoRun')->label(__('এসইও বিশেষজ্ঞকে দিয়ে করান'))->icon('heroicon-o-magnifying-glass')
@@ -214,5 +191,42 @@ class EditPost extends EditRecord
     private static function certs(Post $record): \Illuminate\Support\Collection
     {
         return \App\Models\Certificate::where('post_id', $record->id)->whereNull('revoked_at')->orderBy('id')->get();
+    }
+
+    /** D113 form, also used from /desk → যাচাইকারীর মতামত to put a reviewer's words to work on an AI piece (D168). */
+    public static function feedbackSchema(Post $record): array
+    {
+        return [
+            \Filament\Forms\Components\TextInput::make('giver')->label(__('কে পড়েছেন (নাম বা পরিচয়, ঐচ্ছিক)'))->maxLength(120),
+            \Filament\Forms\Components\Textarea::make('body')->label(__('মতামত'))->required()->rows(5)->maxLength(4000),
+            \Filament\Forms\Components\Toggle::make('apply_now')->label(__('এই লেখাটিই আবার লেখানো হোক'))->default(true),
+            \Filament\Forms\Components\Toggle::make('apply_future')->label(__('পরের লেখাগুলোতে মেনে চলা হোক'))->default(true)->live(),
+            \Filament\Forms\Components\Radio::make('scope')->label(__('কোন লেখায় মেনে চলবে'))->required(fn ($get) => (bool) $get('apply_future'))
+                ->visible(fn ($get) => (bool) $get('apply_future'))
+                ->options(array_filter([
+                    'section' => $record->section ? __('শুধু ":name" বিভাগে', ['name' => $record->section->name_bn]) : null,
+                    'serial' => $record->serial ? __('শুধু ":name" ধারাবাহিকের পরের পর্বে', ['name' => $record->serial->title]) : null,
+                    'all' => __('সব এআই লেখায়'),
+                ]))->default($record->serial_id ? 'serial' : 'section'),
+        ];
+    }
+
+    public static function saveFeedback(Post $record, array $data): void
+    {
+        if (! $data['apply_now'] && ! $data['apply_future']) {
+            \Filament\Notifications\Notification::make()->title(__('কোনোটি বাছা হয়নি'))->body(__('আবার লেখানো বা পরের লেখায় মেনে চলা, অন্তত একটি বাছুন।'))->warning()->send();
+
+            return;
+        }
+        \App\Models\WritingFeedback::create([
+            'post_id' => $record->id, 'giver' => trim((string) ($data['giver'] ?? '')) ?: null, 'body' => trim(strip_tags((string) $data['body'])),
+            'apply_now' => (bool) $data['apply_now'], 'apply_future' => (bool) $data['apply_future'],
+            'scope' => $data['apply_future'] ? ($data['scope'] ?? 'section') : null,
+            'section_id' => $record->section_id, 'serial_id' => $record->serial_id,
+            'rewrite_status' => $data['apply_now'] ? 'queued' : null, 'created_by' => auth()->id(),
+        ]);
+        \App\Models\AuditLog::record('post.human_feedback', $record);
+        \Filament\Notifications\Notification::make()->title(__('মতামত রাখা হয়েছে'))
+            ->body($data['apply_now'] ? __('কয়েক মিনিটে এই পাতায় নতুন সংস্করণ আসবে; দেখে তবেই বসাবেন।') : __('পরের লেখা থেকে মেনে চলা হবে। "লেখার নির্দেশিকা" পাতায় দেখতে ও বদলাতে পারবেন।'))->success()->send();
     }
 }

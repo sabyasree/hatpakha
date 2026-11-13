@@ -34,6 +34,7 @@ class UsersTable
                 TextColumn::make('role')->label(__('ভূমিকা'))->badge()
                     ->formatStateUsing(fn ($state) => UserForm::roles()[$roleValue($state)] ?? $roleValue($state))
                     ->color(fn ($state) => in_array($roleValue($state), ['editor', 'chief_editor', 'admin'], true) ? 'danger' : 'gray'),
+                IconColumn::make('is_reviewer')->label(__('যাচাইকারী'))->boolean()->trueColor('success')->falseIcon('')->toggleable(),   // D168
                 IconColumn::make('twofa')->label(__('২-ধাপ'))->boolean()
                     ->state(fn (User $record) => filled($record->app_authentication_secret) || $record->hasEmailAuthentication()),
                 TextColumn::make('legacy_role')->label(__('পুরনো ভূমিকা'))->placeholder('—')->toggleable(),
@@ -46,6 +47,7 @@ class UsersTable
                 SelectFilter::make('desk')->label(__('ডেস্ক খুলতে পারেন'))->options(['yes' => __('হ্যাঁ')])
                     ->query(fn ($query, array $data) => ($data['value'] ?? null) === 'yes'
                         ? $query->whereIn('role', ['editor', 'chief_editor', 'admin']) : $query),
+                \Filament\Tables\Filters\Filter::make('reviewers')->label(__('শুধু যাচাইকারী'))->query(fn ($query) => $query->where('is_reviewer', true)),
                 TernaryFilter::make('spam_reason')->label(__('স্প্যাম চিহ্নিত'))->nullable(),
             ])
             ->recordActions([

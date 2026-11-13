@@ -13,7 +13,7 @@ use App\Models\User;
  */
 final class AccountMenu
 {
-    /** @return array{name: string, initial: string, avatar: ?string, writer: bool, act: int, author: ?Author} */
+    /** @return array{name: string, initial: string, avatar: ?string, writer: bool, act: int, author: ?Author, reviewer: bool, toReview: int} */
     public static function for(User $user): array
     {
         $key = 'hp.account-menu.'.$user->id;
@@ -34,6 +34,9 @@ final class AccountMenu
                 'writer' => $writer,
                 'act' => $writer ? (clone $mine)->whereIn('status', ['changes', 'confirm'])->count() : 0,
                 'author' => $author,
+                // D168: a reviewer (যাচাইকারী) sees their pieces to read; someone who was one keeps their past answers
+                'reviewer' => $user->is_reviewer || \App\Models\PieceReview::where('reviewer_id', $user->id)->where('status', '!=', 'withdrawn')->exists(),
+                'toReview' => \App\Models\PieceReview::openFor($user),
             ];
         })();
         request()->attributes->set($key, $menu);

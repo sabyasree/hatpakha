@@ -18,7 +18,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use SensitiveParameter;
 
-#[Fillable(['name', 'email', 'password', 'role', 'spam_reason'])]
+#[Fillable(['name', 'email', 'password', 'role', 'spam_reason', 'is_reviewer'])]
 #[Hidden(['password', 'legacy_password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication, MustVerifyEmail
 {
@@ -26,7 +26,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     use HasFactory, Notifiable;
 
     /** D166: reading history is on until the reader switches it off (same default as the database). */
-    protected $attributes = ['reading_history' => true];
+    protected $attributes = ['reading_history' => true, 'is_reviewer' => false];
 
     protected function casts(): array
     {
@@ -40,6 +40,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'has_email_authentication' => 'boolean',
             'mail_opt_out' => 'boolean',
             'reading_history' => 'boolean',
+            'is_reviewer' => 'boolean',
             'bot_reasons' => 'array',
             'bot_checked_at' => 'datetime',
         ];
@@ -51,6 +52,9 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         static::updated(function (self $user) {
             if ($user->wasChanged('role') && auth()->check()) {
                 AuditLog::record('user.role_changed', $user, ['from' => $user->getOriginal('role')?->value ?? $user->getOriginal('role'), 'to' => $user->role?->value, 'via' => 'desk']);
+            }
+            if ($user->wasChanged('is_reviewer') && auth()->check()) {   // D168
+                AuditLog::record($user->is_reviewer ? 'user.reviewer_on' : 'user.reviewer_off', $user, ['by' => auth()->id()]);
             }
         });
     }
