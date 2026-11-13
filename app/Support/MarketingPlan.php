@@ -116,7 +116,7 @@ final class MarketingPlan
             return 0;
         }
         $from = SocialPost::with('subject')->whereIn('kind', ['piece', 'archive'])->where('created_at', '>=', now()->subDays(10))->latest()->limit(30)->get()
-            ->first(fn (SocialPost $s) => filled($s->texts['quote'] ?? null) && empty($s->texts['reeled']) && $s->subject instanceof Post && $s->subject->isLive());
+            ->first(fn (SocialPost $s) => filled($s->texts['quote'] ?? null) && empty($s->texts['reeled']) && $s->subject instanceof Post && $s->subject->isLive() && ! \App\Ai\Marketer::kids($s->subject));
         if (! $from) {
             return 0;
         }
@@ -205,12 +205,17 @@ final class MarketingPlan
         // Posts nobody gave a time (older ones, or a piece that has only now gone live) join the evening queue.
         foreach (SocialPost::with('subject')->where('status', 'ready')->whereNull('slot_at')->whereNull('fb_scheduled_at')->whereNull('fb_post_id')->where('kind', '!=', 'weekly')
             ->where('created_at', '>=', now()->subDays(14))->oldest()->limit(5)->get() as $loose) {
-            if (FacebookPage::postable($loose) === null) {
+            if (FacebookPage::postable($loose) === null && ! ($loose->subject instanceof Post && \App\Ai\Marketer::kids($loose->subject))) {
                 $loose->forceFill(['slot_at' => self::evening()])->save();
             }
         }
         $sent = 0;
         foreach (SocialPost::with('subject')->where('status', 'ready')->whereNotNull('slot_at')->where('slot_at', '<=', now())->orderBy('slot_at')->limit(12)->get() as $s) {
+            if ($s->subject instanceof Post && \App\Ai\Marketer::kids($s->subject)) {   // D185: never by itself; the owner can still post it by hand
+                $s->forceFill(['slot_at' => null])->save();
+
+                continue;
+            }
             $drawn = ! in_array($s->format, ['card', 'carousel', 'reel'], true) || $s->media;
             if ($s->slot_at->lt(now()->subHours(self::WINDOW_HOURS)) || (! $drawn && $s->format === 'reel' && $s->slot_at->lt(now()->subHours(self::WAIT_HOURS)))) {
                 $went = $s->fb_post_id || $s->ig_media_id || $s->ig_container;   // its time has passed
