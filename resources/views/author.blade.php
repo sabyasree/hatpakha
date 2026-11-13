@@ -109,11 +109,13 @@
         <ul class="mt-4 divide-y divide-rule border-y border-rule sm:hidden">
             @foreach ($posts as $p)
                 <li><x-post-row :post="$p" :meta="($p->section?->name_bn ?? '').' · '.Bn::date($p->published_at)" /></li>
+                @if ($loop->iteration % 10 === 0 && $loop->remaining > 2)<li class="list-none"><x-ad-slot spot="list" :height="250" class="!my-4" /></li>@endif {{-- D167 --}}
             @endforeach
         </ul>
         <div class="mt-6 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($posts as $p)
                 <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></a>
+                @if ($loop->iteration % 6 === 0 && $loop->remaining > 2)<div class="col-span-full"><x-ad-slot spot="list" :height="250" class="!my-0" /></div>@endif {{-- D167 --}}
             @endforeach
         </div>
         @if ($posts->count() >= 6)<x-ad-slot spot="list" :height="250" />@endif

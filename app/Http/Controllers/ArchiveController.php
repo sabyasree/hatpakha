@@ -119,7 +119,35 @@ class ArchiveController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')], ['সব সংখ্যা', \App\Support\Url::to('/sonkha')]])],
         );
 
-        return view('issues', compact('issues', 'byYear', 'seo'));
+        $adAfter = self::adAfter($byYear->map->count(), 8);   // D167: one ad partway down the list of issues
+        if ($adAfter !== null) {
+            \App\Support\Ads::allow();
+        }
+
+        return view('issues', compact('issues', 'byYear', 'seo', 'adAfter'));
+    }
+
+    /**
+     * D167: the group (month or year) after which a long list gets its one ad: the first group by which about half the
+     * items have passed, as long as more groups follow. Null when the list is too short for an ad.
+     *
+     * @param  \Illuminate\Support\Collection<int|string, int>  $counts  items per group, in page order
+     */
+    public static function adAfter(\Illuminate\Support\Collection $counts, int $min = 15): int|string|null
+    {
+        $total = $counts->sum();
+        if ($total < $min || $counts->count() < 2) {
+            return null;
+        }
+        $seen = 0;
+        foreach ($counts as $key => $n) {
+            $seen += $n;
+            if ($seen >= $total / 2) {
+                return $key === $counts->keys()->last() ? null : $key;
+            }
+        }
+
+        return null;
     }
 
     /** Published issues that are out, newest first, with the number of their live pieces. */
@@ -167,7 +195,12 @@ class ArchiveController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], ['আর্কাইভ', \App\Support\Url::to('/archive')], [$y, \App\Support\Url::to("/archive/{$year}")]])],
         );
 
-        return view('archive-year', compact('year', 'years', 'months', 'posts', 'all', 'seo', 'sectionCounts', 'filter', 'picks', 'older', 'newer'));
+        $adAfter = self::adAfter($months->map->count());   // D167: one ad partway down a long year
+        if ($adAfter !== null) {
+            \App\Support\Ads::allow();
+        }
+
+        return view('archive-year', compact('year', 'years', 'months', 'posts', 'all', 'seo', 'sectionCounts', 'filter', 'picks', 'older', 'newer', 'adAfter'));
     }
 
     /** A piece must have been read at least this often to be one of the year's picks. */

@@ -47,6 +47,7 @@ return [
             'home_2' => env('ADSENSE_SLOT_HOME_2'),
             'article' => env('ADSENSE_SLOT_ARTICLE'),
             'article_2' => env('ADSENSE_SLOT_ARTICLE_2'),
+            'article_mid' => env('ADSENSE_SLOT_ARTICLE_MID', env('ADSENSE_SLOT_ARTICLE')),   // D167: the article unit unless its own is set
             'sidebar' => env('ADSENSE_SLOT_SIDEBAR'),
             'list' => env('ADSENSE_SLOT_LIST'),
         ],

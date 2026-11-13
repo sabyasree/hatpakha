@@ -32,6 +32,7 @@
                     @endforeach
                 </ul>
             </section>
+            @if ($adAfter === $y)<x-ad-slot spot="list" :height="250" class="!my-10" />@endif {{-- D167 --}}
         @endforeach
     </div>
 </x-layouts.app>

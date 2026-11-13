@@ -107,6 +107,7 @@
                         @if ($loop->index === 1)</details>@endif
                     @endforeach
                 </section>
+                @if ($adAfter === $m)<x-ad-slot spot="list" :height="250" class="!my-10" />@endif {{-- D167 --}}
             @endforeach
 
             <nav aria-label="আগের ও পরের বছর" class="mt-10 grid grid-cols-2 gap-3">
