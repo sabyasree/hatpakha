@@ -307,15 +307,18 @@ class PostsTable
                 $copy->review_note = (string) $get('note');
                 // The small fixes as ticked, listed in the e-mail (D160); none when not this time.
                 $copy->review_fixes = null;
-                $fixes = $decision === 'rejected' ? '' : EditorPackage::fixesPreview($record, (array) ($get('edits') ?? []));
-                $copy->review_fixes = $fixes === '' ? null : array_map(fn ($l) => array_combine(['original', 'replacement'], explode(' → ', $l, 2)), explode("\n", $fixes));
+                $fixes = $decision === 'rejected' ? [] : EditorPackage::fixesPreview($record, (array) ($get('edits') ?? []));
+                $copy->review_fixes = $fixes ?: null;
                 if ($decision === 'approved' && $get('at')) {
                     $copy->published_at = rescue(fn () => \Illuminate\Support\Carbon::parse($get('at')), now(), false);
                 }
-                $mail = (new \App\Notifications\SubmissionDecision($copy, $decision))->toMail($record->submittedBy);
+                // A preview that cannot be drawn must never stop the editor from deciding: it says so, and is logged.
+                return rescue(function () use ($copy, $decision, $record) {
+                    $mail = (new \App\Notifications\SubmissionDecision($copy, $decision))->toMail($record->submittedBy);
 
-                return new \Illuminate\Support\HtmlString('<p style="margin:0 0 .4rem;font-size:.9rem"><b>'.e(__('বিষয়:')).'</b> '.e((string) $mail->subject).'</p>'
-                    .view('filament.partials.mail-preview', ['html' => (string) $mail->render(), 'height' => '28rem'])->render());
+                    return new \Illuminate\Support\HtmlString('<p style="margin:0 0 .4rem;font-size:.9rem"><b>'.e(__('বিষয়:')).'</b> '.e((string) $mail->subject).'</p>'
+                        .view('filament.partials.mail-preview', ['html' => (string) $mail->render(), 'height' => '28rem'])->render());
+                }, fn () => new \Illuminate\Support\HtmlString('<p>'.e(__('ই-মেলের নমুনা এখন দেখানো গেল না; চিঠি তবু ঠিকমতো যাবে।')).'</p>'), true);
             });
     }
 

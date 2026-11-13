@@ -261,4 +261,24 @@ class AiEditorTest extends TestCase
         $this->assertSame('pending', $c->status, 'The editor still decides');
         \App\Ai\Claude::$fake = null;
     }
+
+    /** Owner, 2026-11-14: "when clicking request changes getting error". A fix whose words hold a line break (a poem) broke the e-mail preview. */
+    public function test_request_changes_opens_when_a_small_fix_spans_two_lines(): void
+    {
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $writer = User::factory()->create();
+        $post = $this->makePost(['slug' => 'draft-poem', 'title' => 'বৃষ্টি', 'status' => 'pending', 'published_at' => null, 'body_html' => "<p>আমি করিনা<br>ভয় ,মেঘলা আকাশ।</p>"]);
+        $post->forceFill(['submitted_by' => $writer->id])->save();
+        $this->packageFor($post, [['original' => "করিনা\nভয় ,", 'replacement' => "করি না\nভয়,", 'kind' => 'spacing']], 'changes');
+        $safe = \App\Ai\EditorPackage::safeIndexes($post->fresh());
+        $fixes = \App\Ai\EditorPackage::fixesPreview($post->fresh(), $safe);
+        $this->assertNotSame([], $safe, 'The two-line fix is one of the small fixes');
+        $this->assertSame(count($safe), count($fixes), 'One pair per ticked fix, whatever is inside the words');
+
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])
+            ->mountAction('requestChanges')->assertActionMounted('requestChanges')
+            ->assertSchemaComponentExists('email_preview', 'mountedActionSchema0');
+    }
 }
