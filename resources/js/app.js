@@ -694,9 +694,16 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
         g.fillStyle = '#CB1B32'; g.font = "64px 'Galada', 'Anek Bangla', sans-serif"; g.fillText('হাতপাখা', 64, 124);
         const svg = btn.closest('li').querySelector('[data-medal] svg').cloneNode(true);
         svg.setAttribute('width', '480'); svg.setAttribute('height', '520');
+        try {   // the words inside the medal need our font inside the picture too
+            const font = await fetch('/fonts/anek-bangla-bengali.woff2').then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
+            const latin = await fetch('/fonts/anek-bangla-latin.woff2').then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
+            const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+            style.textContent = `@font-face{font-family:'Anek Bangla';font-weight:400 800;src:url(${font}) format('woff2');unicode-range:U+0980-09FF,U+200C-200D,U+25CC}@font-face{font-family:'Anek Bangla';font-weight:400 800;src:url(${latin}) format('woff2')}`;
+            svg.insertBefore(style, svg.firstChild);
+        } catch (e) { /* the phone's own Bengali font */ }
         const img = new Image();
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
-        try { await img.decode(); g.drawImage(img, (W - 480) / 2, 150, 480, 520); } catch (e) { /* the words alone */ }
+        try { await img.decode(); await new Promise((r) => setTimeout(r, 120)); g.drawImage(img, (W - 480) / 2, 150, 480, 520); } catch (e) { /* the words alone */ }
         g.textAlign = 'center'; g.fillStyle = '#13212C';
         g.font = "800 92px 'Anek Bangla', sans-serif"; g.fillText(fit(g, name, W - 160), W / 2, 790);
         g.fillStyle = '#CB1B32'; g.font = "700 54px 'Anek Bangla', sans-serif"; g.fillText(tier, W / 2, 866);

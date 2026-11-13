@@ -110,7 +110,11 @@ class GamesAndBadgesTest extends TestCase
 
         $this->actingAs($u)->get('/account/profile/')->assertOk()->assertSee('আমার ব্যাজ')->assertSee('রোজকার খেলোয়াড়')->assertSee('রুপো')->assertSee('সোনা পেতে আর')
             ->assertSee('data-medal', false)->assertSee('data-badge-share', false)->assertSee('data-badge-canvas', false);   // D180: medals with the logo's fan, and a share card
-        $this->assertStringContainsString('<svg', \App\Support\Badges::medalSvg('reader', 3));
+        $gold = \App\Support\Badges::medalSvg('reader', 3);
+        $this->assertStringContainsString('<svg', $gold);
+        $this->assertStringContainsString('>হাতপাখা</text>', $gold, 'Owner: text inside the medal: the magazine\'s name');
+        $this->assertStringContainsString('>সোনা</text>', $gold, '...and the tier');
+        $this->assertStringNotContainsString('</text><text', str_replace('>হাতপাখা</text>', '', \App\Support\Badges::medalSvg('reader', 0)).'x', 'Not earned: no tier written');
         $this->assertStringNotContainsString('data-badge-share data-name="পড়ুয়া"', $this->get('/account/profile/')->getContent(), 'Only earned badges can be shared');
         $author->refreshCount();
         auth()->logout();

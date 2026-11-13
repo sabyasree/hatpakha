@@ -107,7 +107,7 @@
             @if ($author->user && ($earned = \App\Support\Badges::earned($author->user)))
                 <ul class="mt-5 flex flex-wrap gap-4" aria-label="হাতপাখার ব্যাজ">
                     @foreach ($earned as $b)
-                        <li class="flex w-20 flex-col items-center text-center" title="{{ \App\Support\Bn::num((string) $b['count']).(str_starts_with($b['unit'], 'টি') ? '' : ' ').$b['unit'] }}">{!! \App\Support\Badges::medalSvg($b['key'], $b['tier'], 56) !!}<span class="mt-1 text-xs font-bold leading-tight">{{ $b['name'] }}<span class="block font-medium text-ink2">{{ $b['tierName'] }}</span></span></li>
+                        <li class="flex w-24 flex-col items-center text-center" title="{{ \App\Support\Bn::num((string) $b['count']).(str_starts_with($b['unit'], 'টি') ? '' : ' ').$b['unit'] }}">{!! \App\Support\Badges::medalSvg($b['key'], $b['tier'], 88) !!}<span class="mt-1 text-xs font-bold leading-tight">{{ $b['name'] }}<span class="block font-medium text-ink2">{{ $b['tierName'] }}</span></span></li>
                     @endforeach
                 </ul>
             @endif

@@ -100,22 +100,24 @@ final class Badges
         for ($k = 0; $k < $n; $k++) {
             $a1 = deg2rad(180 + 180 * $k / $n);
             $a2 = deg2rad(180 + 180 * ($k + 1) / $n);
-            $p = fn ($a) => round(60 + 30 * cos($a), 2).' '.round(84 + 30 * sin($a), 2);
-            $rays .= '<path d="M60 84 L'.$p($a1).' A30 30 0 0 1 '.$p($a2).' Z" fill="'.($k % 2 ? $ray2 : $ray1).'"/>';
-        }
-        $stars = '';
-        for ($i = 0; $i < $tier; $i++) {   // one, two or three marks under the fan
-            $stars .= '<circle cx="'.(60 + ($i - ($tier - 1) / 2) * 9).'" cy="103" r="2.6" fill="'.$rim.'"/>';
+            $p = fn ($a) => round(60 + 22 * cos($a), 2).' '.round(90 + 22 * sin($a), 2);
+            $rays .= '<path d="M60 90 L'.$p($a1).' A22 22 0 0 1 '.$p($a2).' Z" fill="'.($k % 2 ? $ray2 : $ray1).'"/>';
         }
         $ink = $tier ? '#13212C' : '#B9AE9D';
+        // D180 (owner: "we also need some text inside medals"): the magazine's name across the top (straight: Bengali breaks apart on a curve), the tier under the fan
+        $font = "font-family=\"'Anek Bangla','Noto Sans Bengali',sans-serif\" font-weight=\"800\"";
+        $name = e(__('হাতপাখা'));
+        $tierName = $tier ? e(__(self::TIERS[$tier])) : '';
 
         return '<svg xmlns="http://www.w3.org/2000/svg" width="'.$size.'" height="'.round($size * 130 / 120).'" viewBox="0 0 120 130" aria-hidden="true" focusable="false">'
             .'<path d="M34 0h22l10 40H48z" fill="'.$ribbonA.'"/><path d="M86 0H64L54 40h18z" fill="'.$ribbonB.'"/>'
             .'<path d="M34 0h22l10 40H48z M86 0H64L54 40h18z" fill="none" stroke="'.$ink.'" stroke-width="2.5" stroke-linejoin="round"/>'
             .'<circle cx="60" cy="82" r="44" fill="'.$disc.'" stroke="'.$ink.'" stroke-width="3"/>'
-            .'<circle cx="60" cy="82" r="37" fill="none" stroke="'.$rim.'" stroke-width="2.5" stroke-dasharray="1 5" stroke-linecap="round"/>'
-            .$rays.'<path d="M48 84 A12 12 0 0 1 72 84 Z" fill="'.$hub.'"/><path d="M28 84h64" stroke="'.$ink.'" stroke-width="2" stroke-linecap="round"/>'
-            .'<g transform="translate(53 87) scale(.58)" fill="none" stroke="'.$ink.'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'.self::GLYPHS[$key].'</g>'
-            .$stars.'</svg>';
+            .'<circle cx="60" cy="82" r="40" fill="none" stroke="'.$rim.'" stroke-width="1.6"/>'
+            .'<text '.$font.' x="60" y="61" font-size="13" fill="'.$ink.'" text-anchor="middle">'.$name.'</text>'
+            .$rays.'<path d="M51 90 A9 9 0 0 1 69 90 Z" fill="'.$hub.'"/><path d="M36 90h48" stroke="'.$ink.'" stroke-width="1.8" stroke-linecap="round"/>'
+            .($tierName !== '' ? '<text '.$font.' x="60" y="104.5" font-size="12.5" fill="'.($tier === 2 ? '#1A86C2' : '#7A1022').'" text-anchor="middle">'.$tierName.'</text>' : '')
+            .'<g transform="translate('.($tierName !== '' ? '54.5 107.5) scale(.46)' : '53 96) scale(.58)').'" fill="none" stroke="'.$ink.'" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">'.self::GLYPHS[$key].'</g>'
+            .'</svg>';
     }
 }

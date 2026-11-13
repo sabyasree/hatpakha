@@ -7,7 +7,7 @@
 <ul class="mt-3 grid gap-3 sm:grid-cols-2">
     @foreach ($badges as $b)
         <li class="flex items-start gap-3 rounded-2xl border-2 {{ $b['tier'] ? 'border-navy bg-white' : 'border-dashed border-rule bg-paper' }} p-3">
-            <span class="flex-none" data-medal>{!! Badges::medalSvg($b['key'], $b['tier'], 64) !!}</span>
+            <span class="flex-none" data-medal>{!! Badges::medalSvg($b['key'], $b['tier'], 104) !!}</span>
             <span class="min-w-0 flex-1">
                 <span class="block text-lg font-extrabold leading-tight">{{ __($b['name']) }}@if ($b['tier']) <span class="ml-1 rounded-full bg-navy px-2 py-0.5 align-middle text-xs text-white">{{ __($b['tierName']) }}</span>@endif</span>
                 <span class="block text-sm text-ink2">{{ Bn::num((string) $b['count']) }}{{ str_starts_with($b['unit'], 'টি') ? '' : ' ' }}{{ __($b['unit']) }}</span>
