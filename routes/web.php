@@ -121,6 +121,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account');
     Route::get('/account/writings', [\App\Http\Controllers\AccountController::class, 'writings'])->name('account.writings');
     Route::get('/account/reading', [\App\Http\Controllers\AccountController::class, 'reading'])->name('account.reading');
+    // D168: reviewers (যাচাইকারী) read assigned pieces and give feedback
+    Route::get('/account/review', [\App\Http\Controllers\ReviewController::class, 'index'])->name('account.reviews');
+    Route::get('/account/review/{review}', [\App\Http\Controllers\ReviewController::class, 'show'])->whereNumber('review')->name('account.review');
+    Route::post('/account/review/{review}', [\App\Http\Controllers\ReviewController::class, 'submit'])->whereNumber('review')->middleware('throttle:10,1');
+    Route::post('/account/review/{review}/after-ai', [\App\Http\Controllers\ReviewController::class, 'afterAi'])->whereNumber('review')->middleware('throttle:10,1');
     Route::get('/account/stats', [\App\Http\Controllers\AccountController::class, 'stats'])->name('account.stats');   // "আমার পাঠক"
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
     Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
