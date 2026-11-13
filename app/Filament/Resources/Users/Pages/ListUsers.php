@@ -21,6 +21,7 @@ class ListUsers extends ListRecords
                     \Filament\Forms\Components\Select::make('user')->label(__('কার চোখে'))->required()->searchable()
                         ->options(fn () => \App\Http\Middleware\ViewAs::choices())
                         ->getSearchResultsUsing(fn (string $search) => \App\Http\Middleware\ViewAs::choices($search))
+                        ->getOptionLabelUsing(fn ($value) => \App\Http\Middleware\ViewAs::choiceLabel($value))
                         ->default(fn () => array_key_first(\App\Http\Middleware\ViewAs::choices()))
                         ->helperText(__('সবচেয়ে বেশি লেখা যাঁর, তিনি প্রথমে।')),
                 ])

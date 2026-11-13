@@ -136,6 +136,19 @@ class AccountTest extends TestCase
             ->callAction('viewAs', ['user' => $writer->id])->assertHasNoActionErrors()->assertRedirect(url('/account').'/');
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.view_as', 'subject_id' => $writer->id, 'user_id' => $admin->id]);
 
+        // Owner report: someone found by searching (not among the first 30) was "invalid".
+        $quiet = User::factory()->create(['role' => Role::Reader, 'name' => 'Dr Quiet Reader']);
+        User::factory()->count(31)->create(['role' => Role::Reader])->each(function (User $u, int $i) {
+            $a = Author::create(['display_name' => 'W'.$i, 'slug' => 'w-'.$i, 'user_id' => $u->id]);
+            $p = \App\Models\Post::create(['title' => 'P'.$i, 'slug' => 'p-'.$i, 'status' => 'draft', 'body_html' => '<p>x</p>']);
+            $p->authors()->attach($a->id, ['position' => 0]);
+        });
+        $this->assertArrayNotHasKey($quiet->id, \App\Http\Middleware\ViewAs::choices());
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->callAction('viewAs', ['user' => $quiet->id])->assertHasNoActionErrors();
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->callAction('viewAs', ['user' => $writer->id])->assertHasNoActionErrors();
+
         $page = $this->get('/account/')->assertOk()->assertSee('Busy Writer')->assertSee('Busy one')->assertSee('চোখে দেখছেন')->assertSee('বন্ধ করুন');
         $this->assertStringContainsString('no-store', (string) $page->headers->get('Cache-Control'));
         $this->get('/account/writings/')->assertOk()->assertSee('Busy one');
