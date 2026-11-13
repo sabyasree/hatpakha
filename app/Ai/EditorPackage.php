@@ -154,12 +154,19 @@ final class EditorPackage
     }
 
     /** "ভুল → ঠিক" lines for the ticked small fixes, for the e-mail preview before anything is applied. */
-    public static function fixesPreview(Post $post, array $chosen): string
+    /**
+     * The ticked small fixes as the e-mail lists them. Returned as pairs, never as joined text: a fix whose words hold a
+     * line break (a poem's lines) broke the preview when the text was split again (owner, 2026-11-14: "error when
+     * clicking request changes").
+     *
+     * @return list<array{original: string, replacement: string}>
+     */
+    public static function fixesPreview(Post $post, array $chosen): array
     {
         $edits = self::edits($post);
         $keep = array_intersect(array_map('intval', $chosen), self::safeIndexes($post));
 
-        return collect($keep)->map(fn ($i) => $edits[$i]['original'].' → '.$edits[$i]['replacement'])->implode("\n");
+        return collect($keep)->map(fn ($i) => ['original' => (string) $edits[$i]['original'], 'replacement' => (string) $edits[$i]['replacement']])->values()->all();
     }
 
     public static function applyMetadata(Post $post, array $r): void
