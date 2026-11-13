@@ -1,6 +1,6 @@
 {{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
-@php($d = $this->data())
-@php($isAdmin = \App\Filament\Support\Deleting::isAdmin())
+@php $d = $this->data(); @endphp
+@php $isAdmin = \App\Filament\Support\Deleting::isAdmin(); @endphp
 <x-filament-panels::page>
     <style>
         .hp-mk { display: grid; gap: 1rem; }
@@ -15,7 +15,7 @@
     {{-- How this page works (D70): plain steps, so the buttons are never a puzzle. --}}
     {{-- Facebook Page (owner, 2026-11-12): post now, at a time, or by itself (automatic mode, the owner's switch) --}}
     @if (\App\Support\FacebookPage::configured())
-        @php($fbAuto = \App\Support\FacebookPage::auto())
+        @php $fbAuto = \App\Support\FacebookPage::auto(); @endphp
         <x-filament::section icon="heroicon-o-globe-alt">
             <x-slot name="heading">{{ __('ফেসবুক পেজে পোস্ট') }}</x-slot>
             <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between">
@@ -143,19 +143,55 @@
                     @endforeach
                 </div>
                 @if ($card)
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
-                        @foreach (array_filter(['share' => true, 'quote' => filled($card['quote'])]) as $layout => $_)
-                            <div>
-                                <div class="hp-card-wrap" @if ($layout === 'share') x-data x-init="$nextTick(() => { const c = $el.querySelector('.hp-card'); if (c) { c.dataset.name = 'hatpakha-{{ $s->id }}.png'; window.hpShare?.watch($el); } })" @endif>@include('filament.partials.social-card', ['card' => $card, 'layout' => $layout])</div>
-                                <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-down-tray" style="margin-top:.4rem"
-                                    x-data x-on:click="window.hpCard.download($el.parentElement.querySelector('.hp-card'), 'hatpakha-{{ $s->id }}-{{ $layout }}.png')">
-                                    {{ $layout === 'quote' ? __('উদ্ধৃতির ছবি নামান') : __('শেয়ারের ছবি নামান') }}
-                                </x-filament::button>
+                    {{-- D170 (owner): every card can go to Facebook or Instagram on its own; "আরও উদ্ধৃতি কার্ড" makes more --}}
+                    @php
+                        $cards = ['share' => $card];
+                        foreach ($s->quotes() as $qi => $q) {
+                            $cards['q'.$qi] = ['quote' => $q] + $card;
+                        }
+                        $fbOn = \App\Support\FacebookPage::configured() && filled($s->texts['facebook'] ?? '');
+                        $igOn = \App\Support\InstagramPage::configured() && filled($s->texts['instagram'] ?? '');
+                    @endphp
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start">
+                        @foreach ($cards as $key => $c)
+                            @php
+                                $layout = $key === 'share' ? 'share' : 'quote';
+                                $done = (array) ($s->texts['card_posts'][$key] ?? []);
+                            @endphp
+                            <div data-card-key="{{ $key }}" x-data="{ busy: false }" style="width:270px">
+                                <div class="hp-card-wrap" @if ($key === 'share') x-data x-init="$nextTick(() => { const c = $el.querySelector('.hp-card'); if (c) { c.dataset.name = 'hatpakha-{{ $s->id }}.png'; window.hpShare?.watch($el); } })" @endif>@include('filament.partials.social-card', ['card' => $c, 'layout' => $layout])</div>
+                                <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.4rem">
+                                    <x-filament::button size="xs" color="gray" icon="heroicon-o-arrow-down-tray"
+                                        x-on:click="window.hpCard.download($el.closest('[data-card-key]').querySelector('.hp-card'), 'hatpakha-{{ $s->id }}-{{ $key }}.png')">
+                                        {{ $layout === 'quote' ? __('উদ্ধৃতির ছবি নামান') : __('শেয়ারের ছবি নামান') }}
+                                    </x-filament::button>
+                                    @if ($fbOn)
+                                        <x-filament::button size="xs" color="gray" icon="heroicon-o-paper-airplane" x-bind:disabled="busy"
+                                            x-on:click="if (! confirm({{ \Illuminate\Support\Js::from(__('এই ছবিটি ফেসবুকের লেখার সঙ্গে এখনই হাতপাখার ফেসবুক পেজে যাবে। পাঠাবেন?')) }})) return; busy = true; window.hpIg.postCard($el, {{ $s->id }}, '{{ $key }}', 'facebook').finally(() => busy = false)">{{ __('এই ছবি ফেসবুকে') }}</x-filament::button>
+                                    @endif
+                                    @if ($igOn)
+                                        <x-filament::button size="xs" color="gray" icon="heroicon-o-camera" x-bind:disabled="busy"
+                                            x-on:click="if (! confirm({{ \Illuminate\Support\Js::from(__('এই ছবিটি ইনস্টাগ্রামের লেখার সঙ্গে এখনই হাতপাখার ইনস্টাগ্রামে যাবে। পাঠাবেন?')) }})) return; busy = true; window.hpIg.postCard($el, {{ $s->id }}, '{{ $key }}', 'instagram').finally(() => busy = false)">{{ __('এই ছবি ইনস্টাগ্রামে') }}</x-filament::button>
+                                    @endif
+                                    @if (str_starts_with($key, 'q') && $key !== 'q0')
+                                        <x-filament::button size="xs" color="gray" icon="heroicon-o-x-mark" wire:click="removeQuote({{ $s->id }}, {{ (int) substr($key, 1) - 1 }})">{{ __('সরান') }}</x-filament::button>
+                                    @endif
+                                </div>
+                                @if ($done)
+                                    <p class="hp-muted" style="margin:.3rem 0 0">✓ {{ implode(' · ', array_map(fn ($n) => __($n === 'facebook' ? 'ফেসবুকে গেছে' : 'ইনস্টাগ্রামে গেছে'), array_keys($done))) }}</p>
+                                @endif
                             </div>
                         @endforeach
+                        @if ($s->subject instanceof \App\Models\Post)
+                            <div style="align-self:center">
+                                <x-filament::button size="sm" color="gray" icon="heroicon-o-plus" wire:click="moreQuotes({{ $s->id }})" wire:loading.attr="disabled" wire:target="moreQuotes({{ $s->id }})">{{ __('আরও উদ্ধৃতি কার্ড') }}</x-filament::button>
+                                <p class="hp-muted" style="max-width:15rem;margin:.3rem 0 0">{{ __('লেখা থেকে হুবহু আরও লাইন বেছে নতুন কার্ড বানায়।') }}</p>
+                            </div>
+                        @endif
                     </div>
                 @endif
-                @if ($s->status === 'ready')
+                {{-- D170: Facebook and Instagram are separate; posting to one keeps the other available --}}
+                @if ($s->status === 'ready' && ! $s->fb_post_id)
                     @if (\App\Support\FacebookPage::configured() && filled($s->texts['facebook'] ?? ''))
                         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center" x-data="{ at: '' }">
                             <x-filament::button size="sm" icon="heroicon-o-paper-airplane" wire:click="facebookNow({{ $s->id }})"
@@ -170,6 +206,9 @@
                         </div>
                         @if ($s->fb_error)<p style="color:#CB1B32;font-weight:700;margin:.2rem 0 0">⚠ {{ __('ফেসবুকে যায়নি') }}: {{ $s->fb_error }}</p>@endif
                     @endif
+                @elseif ($s->fb_post_id)
+                    <p class="hp-muted" style="margin:0">✓ {{ __('ফেসবুক পেজে পোস্ট হয়েছে') }} · <a style="text-decoration:underline" target="_blank" rel="noopener" href="https://www.facebook.com/{{ $s->fb_post_id }}">{{ __('ফেসবুকে দেখুন') }}</a></p>
+                @endif
                     {{-- Instagram (owner, 2026-11-12): the card the browser draws goes up as the picture --}}
                     @if (\App\Support\InstagramPage::configured() && filled($s->texts['instagram'] ?? ''))
                         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
@@ -185,6 +224,7 @@
                         </div>
                         @if ($s->ig_error && ! $s->ig_media_id)<p style="color:#CB1B32;font-weight:700;margin:.2rem 0 0">⚠ {{ __('ইনস্টাগ্রামে যায়নি') }}: {{ $s->ig_error }}</p>@endif
                     @endif
+                @if ($s->status === 'ready')
                     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
                         <x-filament::button size="sm" color="success" icon="heroicon-o-check" wire:click="posted({{ $s->id }})">{{ __('পোস্ট করেছি') }}</x-filament::button>
                         <x-filament::button size="sm" color="gray" icon="heroicon-o-x-mark" wire:click="dismiss({{ $s->id }})">{{ __('পোস্ট করব না') }}</x-filament::button>
@@ -215,6 +255,14 @@
             // Ready posts without a saved card get one quietly when this page is open, so automatic posts have it too.
             window.hpIg = window.hpIg || {
                 cardOf(el) { return el.closest('.hp-mk-item')?.querySelector('.hp-card-wrap .hp-card') || null; },
+                // D170: one particular card to Facebook or Instagram
+                async postCard(el, id, key, net) {
+                    const card = el.closest('[data-card-key]')?.querySelector('.hp-card');
+                    if (!card) return;
+                    const file = await window.hpCard.jpeg(card, 'hatpakha-' + id + '-' + key + '.jpg');
+                    await new Promise((ok, fail) => @this.upload('cardJpeg', file, ok, fail));
+                    return @this.cardPost(id, key, net);
+                },
                 async upload(card, id) {
                     const file = await window.hpCard.jpeg(card, 'hatpakha-' + id + '.jpg');
                     await new Promise((ok, fail) => @this.upload('cardJpeg', file, ok, fail));

@@ -130,6 +130,55 @@ class Marketing extends Page
         return $ok;
     }
 
+    /**
+     * D170 (owner): post one particular card (share, quote, or a new quote card) to Facebook or Instagram. The browser
+     * has just drawn it and uploaded it as `cardJpeg`.
+     */
+    public function cardPost(int $id, string $key, string $net): void
+    {
+        $s = SocialPost::findOrFail($id);
+        if (! preg_match('/^(share|q\d{1,2})$/', $key) || ! in_array($net, ['facebook', 'instagram'], true)) {
+            return;
+        }
+        $path = null;
+        if ($this->cardJpeg instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            $path = \App\Support\InstagramPage::saveCard($s, $this->cardJpeg->getRealPath(), $key);
+            $this->cardJpeg->delete();
+        }
+        $this->cardJpeg = null;
+        if (! $path) {
+            Notification::make()->title(__('কার্ডের ছবি রাখা গেল না'))->danger()->send();
+
+            return;
+        }
+        [$ok, $msg] = $net === 'facebook'
+            ? \App\Support\FacebookPage::publishCard($s->fresh(), $path, $key, auth()->id())
+            : \App\Support\InstagramPage::publishCard($s->fresh(), $path, $key, auth()->id());
+        $ok ? Notification::make()->title($net === 'facebook' ? __('ছবিসহ ফেসবুক পেজে পোস্ট হয়েছে') : __('ইনস্টাগ্রামে পোস্ট হয়েছে'))->success()->send()
+            : Notification::make()->title($net === 'facebook' ? __('ফেসবুকে যায়নি') : __('ইনস্টাগ্রামে যায়নি'))->body($msg)->danger()->send();
+    }
+
+    /** D170: more quote cards from the same piece (lines copied exactly from it). */
+    public function moreQuotes(int $id): void
+    {
+        $n = \App\Ai\Marketer::moreQuotes(SocialPost::findOrFail($id));
+        Notification::make()->title($n ? __(':n টি নতুন উদ্ধৃতি কার্ড তৈরি হয়েছে', ['n' => \App\Support\Bn::num((string) $n)]) : __('লেখা থেকে আর নতুন লাইন পাওয়া গেল না'))
+            ->{$n ? 'success' : 'warning'}()->send();
+    }
+
+    /** D170: drop an extra quote card the owner doesn't want. */
+    public function removeQuote(int $id, int $i): void
+    {
+        $s = SocialPost::findOrFail($id);
+        $texts = (array) $s->texts;
+        $quotes = array_values((array) ($texts['quotes'] ?? []));
+        if (isset($quotes[$i])) {
+            array_splice($quotes, $i, 1);
+            $texts['quotes'] = $quotes;
+            $s->forceFill(['texts' => $texts])->save();
+        }
+    }
+
     /** Instagram: post it now, with the card just uploaded (or the piece's own picture). */
     public function instagramNow(int $id, bool $withCard = false): void
     {
