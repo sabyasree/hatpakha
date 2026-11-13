@@ -110,11 +110,17 @@ class GamesAndBadgesTest extends TestCase
 
         $this->actingAs($u)->get('/account/profile/')->assertOk()->assertSee('আমার ব্যাজ')->assertSee('রোজকার খেলোয়াড়')->assertSee('রুপো')->assertSee('সোনা পেতে আর')
             ->assertSee('data-medal', false)->assertSee('data-badge-share', false)->assertSee('data-badge-canvas', false);   // D180: medals with the logo's fan, and a share card
-        $gold = \App\Support\Badges::medalSvg('reader', 3);
-        $this->assertStringContainsString('<svg', $gold);
-        $this->assertStringContainsString('>হাতপাখা</text>', $gold, 'Owner: text inside the medal: the magazine\'s name');
-        $this->assertStringContainsString('>সোনা</text>', $gold, '...and the tier');
-        $this->assertStringNotContainsString('</text><text', str_replace('>হাতপাখা</text>', '', \App\Support\Badges::medalSvg('reader', 0)).'x', 'Not earned: no tier written');
+        // D181 (owner + UX review): the medal says what it is for; the tier is colour + edge + stars, never a word
+        $small = \App\Support\Badges::medalSvg('reader', 3, 104);
+        $big = \App\Support\Badges::medalSvg('reader', 3, 480);
+        $this->assertStringNotContainsString('<text', $small, 'No words at sizes where they cannot be read');
+        $this->assertStringContainsString('>পড়ুয়া</text>', $big, 'The badge\'s name on the banner of the large medal');
+        $this->assertStringNotContainsString('সোনা', $big, 'The tier is not written inside the medal');
+        $this->assertStringNotContainsString('হাতপাখা', $big);
+        $stars = fn (string $svg) => substr_count($svg, 'M0 -');
+        $this->assertSame([1, 2, 3], [$stars(\App\Support\Badges::medalSvg('writer', 1, 104)), $stars(\App\Support\Badges::medalSvg('writer', 2, 104)), $stars($small)], 'One, two, three stars');
+        $this->assertNotSame(\App\Support\Badges::EMBLEMS['reader'], \App\Support\Badges::EMBLEMS['writer']);
+        $this->assertStringContainsString('stroke-dasharray', \App\Support\Badges::medalSvg('reader', 0, 104), 'Not yet earned: a dashed outline');
         $this->assertStringNotContainsString('data-badge-share data-name="পড়ুয়া"', $this->get('/account/profile/')->getContent(), 'Only earned badges can be shared');
         $author->refreshCount();
         auth()->logout();

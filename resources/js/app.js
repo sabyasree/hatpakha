@@ -692,7 +692,8 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
         g.fillStyle = '#FBEBD8'; g.fillRect(0, 0, W, 520);
         g.textBaseline = 'alphabetic'; g.textAlign = 'left';
         g.fillStyle = '#CB1B32'; g.font = "64px 'Galada', 'Anek Bangla', sans-serif"; g.fillText('হাতপাখা', 64, 124);
-        const svg = btn.closest('li').querySelector('[data-medal] svg').cloneNode(true);
+        const li = btn.closest('li');
+        const svg = (li.querySelector('[data-medal-full]')?.content.querySelector('svg') || li.querySelector('[data-medal] svg')).cloneNode(true);   // the large medal carries the badge's name
         svg.setAttribute('width', '480'); svg.setAttribute('height', '520');
         try {   // the words inside the medal need our font inside the picture too
             const font = await fetch('/fonts/anek-bangla-bengali.woff2').then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
@@ -704,11 +705,11 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
         const img = new Image();
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
         try { await img.decode(); await new Promise((r) => setTimeout(r, 120)); g.drawImage(img, (W - 480) / 2, 150, 480, 520); } catch (e) { /* the words alone */ }
+        // D181: the medal says which badge; the words under it say what was done, who did it, and the tier
         g.textAlign = 'center'; g.fillStyle = '#13212C';
-        g.font = "800 92px 'Anek Bangla', sans-serif"; g.fillText(fit(g, name, W - 160), W / 2, 790);
-        g.fillStyle = '#CB1B32'; g.font = "700 54px 'Anek Bangla', sans-serif"; g.fillText(tier, W / 2, 866);
-        g.fillStyle = '#13212C'; g.font = "600 40px 'Anek Bangla', sans-serif";
-        g.fillText(fit(g, (who ? who + ' · ' : '') + line, W - 160), W / 2, 936);
+        g.font = "800 72px 'Anek Bangla', sans-serif"; g.fillText(fit(g, line, W - 140), W / 2, 790);
+        if (who) { g.font = "600 46px 'Anek Bangla', sans-serif"; g.fillText(fit(g, who, W - 160), W / 2, 862); }
+        g.fillStyle = '#CB1B32'; g.font = "700 44px 'Anek Bangla', sans-serif"; g.fillText(tier, W / 2, who ? 934 : 880);
         g.fillStyle = '#4D5A63'; g.font = "600 28px 'Anek Bangla', sans-serif";
         g.textAlign = 'left'; g.fillText('hatpakha.com', 64, 1024);
         g.textAlign = 'right'; g.fillText('ISSN 2321-3035', W - 64, 1024);
@@ -716,7 +717,7 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
     };
     document.querySelectorAll('[data-badge-share]').forEach((btn) => btn.addEventListener('click', async () => {
         opener = btn; msg.textContent = '';
-        text = msg.dataset.text.replace(':name', btn.dataset.name).replace(':tier', btn.dataset.tier) + '\n' + btn.dataset.line + '\n' + msg.dataset.url;
+        text = msg.dataset.text.replace(':name', btn.dataset.name).replace(':tier', btn.dataset.tierName) + '\n' + btn.dataset.line + '\n' + msg.dataset.url;
         dialog.querySelector('[data-badge-wa]').href = 'https://wa.me/?text=' + encodeURIComponent(text);
         dialog.hidden = false; document.documentElement.style.overflow = 'hidden';
         await draw(btn);

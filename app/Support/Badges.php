@@ -71,53 +71,117 @@ final class Badges
         return $b;
     }
 
-    /** Small line drawings, one per badge (24×24 paths). */
-    public const GLYPHS = [
-        'reader' => '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
-        'streak' => '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
-        'player' => '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
-        'kolom' => '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
-        'writer' => '<path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6M9 8h3"/>',
-        'voice' => '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.5A8 8 0 1 1 21 12z"/>',
-        'reviewer' => '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8.5 11l2 2 3.5-4"/>',
+    /**
+     * D181: one solid emblem per badge on a 24×24 grid, saying what the medal is for. {ink} is the emblem colour,
+     * {hub} the colour behind it (for cut-out details). Recognisable at 30px; nothing thinner than 2 units.
+     */
+    public const EMBLEMS = [
+        // an open book with a bookmark
+        'reader' => '<path d="M1.5 5.5Q7 3 11.2 5.8V20Q7 17.6 1.5 19.4Z M22.5 5.5Q17 3 12.8 5.8V20Q17 17.6 22.5 19.4Z" fill="{ink}"/><path d="M10.4 19.5h3.2V24L12 22.4 10.4 24Z" fill="{ink}"/>',
+        // a calendar leaf with a tick: played day after day
+        'streak' => '<rect x="2.5" y="5" width="19" height="17" rx="2.5" fill="{ink}"/><rect x="6.6" y="1.5" width="2.8" height="6" rx="1.4" fill="{ink}" stroke="{hub}" stroke-width="1"/><rect x="14.6" y="1.5" width="2.8" height="6" rx="1.4" fill="{ink}" stroke="{hub}" stroke-width="1"/><path d="M7 14.5l3.4 3.4L17 11" fill="none" stroke="{hub}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
+        // a letter tile with ক and a star on its corner
+        'player' => '<rect x="2" y="5.5" width="17" height="17" rx="3.5" fill="{ink}"/><text x="10.5" y="18.6" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="12.5" text-anchor="middle" fill="{hub}">ক</text><path d="{star}" fill="{ink}" stroke="{hub}" stroke-width="1.2" stroke-linejoin="round" transform="translate(19 5.5)"/>',
+        // a sealed envelope with a star: your entry was picked
+        'kolom' => '<rect x="1.5" y="5" width="21" height="15.5" rx="2.5" fill="{ink}"/><path d="M3 7l9 5.6L21 7" fill="none" stroke="{hub}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="{star}" fill="{hub}" transform="translate(12 16) scale(.78)"/>',
+        // a fountain-pen nib
+        'writer' => '<path d="M12 23.5L4.5 12 8 2.5h8L19.5 12Z" fill="{ink}" stroke="{ink}" stroke-width="1" stroke-linejoin="round"/><path d="M12 23V14" stroke="{hub}" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="11.6" r="2" fill="{hub}"/>',
+        // two speech bubbles
+        'voice' => '<rect x="8.5" y="2" width="14" height="10.5" rx="3.2" fill="none" stroke="{ink}" stroke-width="2.4"/><path d="M4.8 8.5h9.4a3.3 3.3 0 0 1 3.3 3.3v4.4a3.3 3.3 0 0 1-3.3 3.3H9.5L5 23.5v-4H4.8a3.3 3.3 0 0 1-3.3-3.3v-4.4a3.3 3.3 0 0 1 3.3-3.3Z" fill="{ink}" stroke="{hub}" stroke-width="1.4" stroke-linejoin="round"/>',
+        // a pair of round spectacles: the editor's eye
+        'reviewer' => '<circle cx="6.6" cy="13.5" r="4.6" fill="none" stroke="{ink}" stroke-width="2.8"/><circle cx="17.4" cy="13.5" r="4.6" fill="none" stroke="{ink}" stroke-width="2.8"/><path d="M11 12.6q1-1.4 2 0M2.2 12L1.2 7.5M21.8 12l1-4.5" fill="none" stroke="{ink}" stroke-width="2.6" stroke-linecap="round"/>',
     ];
 
-    /**
-     * D180 (owner: "a medal kind of badge, using the Hatpakha logo"): a ribbon and a disc carrying the logo's hand-fan,
-     * coloured by tier from the logo palette only (ব্রোঞ্জ peach-deep, রুপো sky, সোনা peach; not yet earned: pale).
-     * Our own fixed drawing, no user data in it.
-     */
-    public static function medalSvg(string $key, int $tier, int $size = 72): string
+    /** How large the name sits on the banner, so the long ones fit on one line. [বাংলা, English] */
+    private const NAME_SIZE = ['reader' => [15, 15], 'writer' => [15, 15], 'voice' => [15, 9.5], 'reviewer' => [14, 14], 'player' => [12.5, 12], 'kolom' => [11.5, 10.5], 'streak' => [10, 12]];
+
+    /** A five-point star round (0,0). */
+    private static function star(float $r): string
     {
-        [$disc, $rim, $ray1, $ray2, $hub, $ribbonA, $ribbonB] = [
-            0 => ['#FFFBF4', '#E8DCCB', '#E8DCCB', '#FFFBF4', '#E8DCCB', '#E8DCCB', '#FFFBF4'],
-            1 => ['#E39A6A', '#7A1022', '#CB1B32', '#F08D90', '#FBEBD8', '#13212C', '#CB1B32'],
-            2 => ['#DDF1FA', '#1A86C2', '#CB1B32', '#F08D90', '#FFFFFF', '#13212C', '#2DAAE2'],
-            3 => ['#EFC08D', '#CB1B32', '#CB1B32', '#F08D90', '#FFFBF4', '#CB1B32', '#13212C'],
-        ][$tier] ?? [];
-        $rays = '';
-        $n = 12;
-        for ($k = 0; $k < $n; $k++) {
-            $a1 = deg2rad(180 + 180 * $k / $n);
-            $a2 = deg2rad(180 + 180 * ($k + 1) / $n);
-            $p = fn ($a) => round(60 + 22 * cos($a), 2).' '.round(90 + 22 * sin($a), 2);
-            $rays .= '<path d="M60 90 L'.$p($a1).' A22 22 0 0 1 '.$p($a2).' Z" fill="'.($k % 2 ? $ray2 : $ray1).'"/>';
+        $pts = [];
+        for ($i = 0; $i < 10; $i++) {
+            $a = deg2rad(-90 + 36 * $i);
+            $rr = $i % 2 ? $r * 0.45 : $r;
+            $pts[] = round($rr * cos($a), 2).' '.round($rr * sin($a), 2);
         }
-        $ink = $tier ? '#13212C' : '#B9AE9D';
-        // D180 (owner: "we also need some text inside medals"): the magazine's name across the top (straight: Bengali breaks apart on a curve), the tier under the fan
-        $font = "font-family=\"'Anek Bangla','Noto Sans Bengali',sans-serif\" font-weight=\"800\"";
-        $name = e(__('হাতপাখা'));
-        $tierName = $tier ? e(__(self::TIERS[$tier])) : '';
+
+        return 'M'.implode('L', $pts).'Z';
+    }
+
+    /**
+     * D181 (owner: "instead of the tier, why the medal makes more sense; tier is already described by colour; work with
+     * UX experts to design the badge properly"; redrawn after a UX and visual-design review). A ribbon and a disc: the
+     * logo's hand-fan rises like a half-sun behind a large emblem that says what the medal is for. The tier shows three
+     * ways, never by colour alone: colour, the edge (ব্রোঞ্জ plain, রুপো a bold second ring, সোনা scalloped) and one
+     * to three stars. From 200px the badge's name sits on a banner; smaller sizes drop the name (it is beside the
+     * medal), then the stars. Logo palette only; our own fixed drawing.
+     */
+    public static function medalSvg(string $key, int $tier, int $size = 104): string
+    {
+        $full = $size >= 200;
+        $small = $size < 96;
+        [$disc, $rim, $hub, $ribA, $ribB, $banner] = [
+            0 => ['#FFFBF4', '#E8DCCB', '#FFFBF4', '#FFFBF4', '#FFFBF4', '#FFFBF4'],
+            1 => ['#E39A6A', '#7A1022', '#FBEBD8', '#13212C', '#B0162B', '#13212C'],
+            2 => ['#DDF1FA', '#1A86C2', '#FFFFFF', '#13212C', '#2DAAE2', '#13212C'],
+            3 => ['#EFC08D', '#CB1B32', '#FFFBF4', '#CB1B32', '#13212C', '#CB1B32'],
+        ][$tier];
+        $ink = $tier ? '#13212C' : '#4D5A63';
+        $line = $tier ? ($small ? 4 : 3) : 2;
+        [$cy, $hubR, $box, $rayR] = $full ? [65, 18, 25, 35] : [74, 22, 30, 38];
+
+        // the edge: plain, or scalloped for gold
+        if ($tier === 3) {
+            $d = '';
+            for ($k = 0; $k < 16; $k++) {
+                $a = deg2rad(360 * $k / 16);
+                $m = deg2rad(360 * ($k + 0.5) / 16);
+                $n = deg2rad(360 * ($k + 1) / 16);
+                $d .= ($k ? '' : 'M'.round(60 + 44 * cos($a), 2).' '.round(72 + 44 * sin($a), 2))
+                    .'Q'.round(60 + 51.5 * cos($m), 2).' '.round(72 + 51.5 * sin($m), 2).' '.round(60 + 44 * cos($n), 2).' '.round(72 + 44 * sin($n), 2);
+            }
+            $edge = '<path d="'.$d.'Z" fill="'.$disc.'" stroke="'.$ink.'" stroke-width="'.$line.'" stroke-linejoin="round"/>';
+        } else {
+            $edge = '<circle cx="60" cy="72" r="44" fill="'.$disc.'" stroke="'.$ink.'" stroke-width="'.$line.'"'.($tier ? '' : ' stroke-dasharray="5 4"').'/>';
+        }
+        $ring = $tier === 2 ? '<circle cx="60" cy="72" r="38.5" fill="none" stroke="'.$rim.'" stroke-width="3.5"/>'
+            : ($small ? '' : '<circle cx="60" cy="72" r="39.5" fill="none" stroke="'.$rim.'" stroke-width="1.6"/>');
+
+        // the logo's fan, as a half-sun behind the emblem
+        $n = $small ? 8 : 12;
+        $rays = '';
+        for ($k = 0; $k < $n; $k++) {
+            $p = fn ($a) => round(60 + $rayR * cos($a), 2).' '.round($cy + $rayR * sin($a), 2);
+            $rays .= '<path d="M60 '.$cy.'L'.$p(deg2rad(180 + 180 * $k / $n)).'A'.$rayR.' '.$rayR.' 0 0 1 '.$p(deg2rad(180 + 180 * ($k + 1) / $n)).'Z" fill="'
+                .($tier ? ($k % 2 ? '#F08D90' : '#CB1B32') : ($k % 2 ? '#FFFBF4' : '#E8DCCB')).'"/>';
+        }
+        $emblem = str_replace(['{ink}', '{hub}', '{star}'], [$ink, $hub, self::star(4.2)], self::EMBLEMS[$key]);
+
+        // the tier's stars (hollow while not yet earned); dropped on the smallest medals
+        $stars = '';
+        if (! $small) {
+            [$sr, $sy, $gap] = $full ? [3.7, 108.8, 10.5] : [4.6, 106, 12];
+            $count = $tier ?: 3;
+            for ($i = 0; $i < $count; $i++) {
+                $stars .= '<path d="'.self::star($sr).'" transform="translate('.(60 + ($i - ($count - 1) / 2) * $gap).' '.$sy.')" '
+                    .($tier ? 'fill="'.$ink.'"' : 'fill="none" stroke="'.$ink.'" stroke-width="1.2" stroke-linejoin="round"').'/>';
+            }
+        }
+
+        // the name on a banner, only where it can be read
+        $name = '';
+        if ($full) {
+            $fs = self::NAME_SIZE[$key][app()->getLocale() === 'en' ? 1 : 0];
+            $name = '<path d="M2 80H118L114 90.5L118 101H2L6 90.5Z" fill="'.$banner.'" stroke="'.$ink.'" stroke-width="2" stroke-linejoin="round"/>'
+                .'<text x="60" y="'.round(90.5 + $fs * 0.36, 1).'" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="'.$fs.'" text-anchor="middle" fill="'.($tier ? '#FFFFFF' : $ink).'">'.e(__(self::ALL[$key][0])).'</text>';
+        }
 
         return '<svg xmlns="http://www.w3.org/2000/svg" width="'.$size.'" height="'.round($size * 130 / 120).'" viewBox="0 0 120 130" aria-hidden="true" focusable="false">'
-            .'<path d="M34 0h22l10 40H48z" fill="'.$ribbonA.'"/><path d="M86 0H64L54 40h18z" fill="'.$ribbonB.'"/>'
-            .'<path d="M34 0h22l10 40H48z M86 0H64L54 40h18z" fill="none" stroke="'.$ink.'" stroke-width="2.5" stroke-linejoin="round"/>'
-            .'<circle cx="60" cy="82" r="44" fill="'.$disc.'" stroke="'.$ink.'" stroke-width="3"/>'
-            .'<circle cx="60" cy="82" r="40" fill="none" stroke="'.$rim.'" stroke-width="1.6"/>'
-            .'<text '.$font.' x="60" y="61" font-size="13" fill="'.$ink.'" text-anchor="middle">'.$name.'</text>'
-            .$rays.'<path d="M51 90 A9 9 0 0 1 69 90 Z" fill="'.$hub.'"/><path d="M36 90h48" stroke="'.$ink.'" stroke-width="1.8" stroke-linecap="round"/>'
-            .($tierName !== '' ? '<text '.$font.' x="60" y="104.5" font-size="12.5" fill="'.($tier === 2 ? '#1A86C2' : '#7A1022').'" text-anchor="middle">'.$tierName.'</text>' : '')
-            .'<g transform="translate('.($tierName !== '' ? '54.5 107.5) scale(.46)' : '53 96) scale(.58)').'" fill="none" stroke="'.$ink.'" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">'.self::GLYPHS[$key].'</g>'
-            .'</svg>';
+            .'<path d="M34 0h22l10 40H48z" fill="'.$ribA.'"/><path d="M86 0H64L54 40h18z" fill="'.$ribB.'"/>'
+            .'<path d="M34 0h22l10 40H48z M86 0H64L54 40h18z" fill="none" stroke="'.$ink.'" stroke-width="'.($tier ? 2.5 : 2).'" stroke-linejoin="round"/>'
+            .$edge.$ring.$rays
+            .'<circle cx="60" cy="'.$cy.'" r="'.$hubR.'" fill="'.$hub.'" stroke="'.$ink.'" stroke-width="2"/>'
+            .'<g transform="translate('.(60 - $box / 2).' '.($cy - $box / 2).') scale('.round($box / 24, 3).')">'.$emblem.'</g>'
+            .$name.$stars.'</svg>';
     }
 }
