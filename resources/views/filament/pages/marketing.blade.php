@@ -40,31 +40,41 @@
         @if ($schedule->isEmpty())
             <p class="hp-muted">{{ __('এখনও কিছু সাজানো নেই। রোজ সন্ধ্যায় পরের দিনের পোস্ট সাজানো হয়।') }}</p>
         @else
+            <p class="hp-muted" style="margin-bottom:.5rem">{{ __('কোনো পোস্ট না চাইলে “থামান” টিপুন: সেটি আর নিজে থেকে যাবে না। “খুলে দেখুন” টিপলে ফেসবুক বা ইনস্টাগ্রামে পোস্টটি খুলবে।') }}</p>
             <div style="overflow-x:auto"><table style="width:100%;font-size:.9rem;border-collapse:collapse">
-                <thead><tr style="text-align:left"><th style="padding:.3rem .5rem">{{ __('সময়') }}</th><th style="padding:.3rem .5rem">{{ __('পোস্ট') }}</th><th style="padding:.3rem .5rem">{{ __('ধরন') }}</th><th style="padding:.3rem .5rem">{{ __('অবস্থা') }}</th><th style="padding:.3rem .5rem">{{ __('সাড়া') }}</th></tr></thead>
+                <thead><tr style="text-align:left"><th style="padding:.3rem .5rem">{{ __('সময়') }}</th><th style="padding:.3rem .5rem">{{ __('পোস্ট') }}</th><th style="padding:.3rem .5rem">{{ __('ধরন') }}</th><th style="padding:.3rem .5rem">{{ __('অবস্থা') }}</th><th style="padding:.3rem .5rem">{{ __('সাড়া') }}</th><th></th></tr></thead>
                 <tbody>
                 @foreach ($schedule as $row)
                     @php
                         $p = $row['s'];
                         $formats = ['link' => __('লেখা ও লিংক'), 'card' => __('ছবির কার্ড'), 'carousel' => __('কয়েকটি ছবি'), 'reel' => __('রিল')];
-                        $state = match (true) {
-                            (bool) ($p->fb_post_id || $p->ig_media_id) => '✓ '.__('পোস্ট হয়েছে'),
-                            (bool) $p->ig_container => __('ইনস্টাগ্রাম ভিডিও তৈরি করছে'),
-                            $p->status === 'dismissed' => __('বাদ'),
-                            (bool) ($p->fb_error || $p->ig_error) => '⚠ '.mb_substr((string) ($p->fb_error ?: $p->ig_error), 0, 80),
-                            $p->format !== 'link' && ! $p->media => __('ছবি তৈরি হচ্ছে'),
-                            default => __('তৈরি, সময়ের অপেক্ষায়'),
-                        };
+                        $sent = $p->fb_post_id || $p->ig_media_id || $p->ig_container;
                     @endphp
-                    <tr style="border-top:1px solid rgba(127,127,127,.2)">
-                        <td style="padding:.3rem .5rem;white-space:nowrap">{{ \App\Support\Bn::num($p->slot_at->timezone('Asia/Kolkata')->format('d/m H:i')) }}</td>
-                        <td style="padding:.3rem .5rem">{{ $p->title }}
+                    <tr style="border-top:1px solid rgba(127,127,127,.2);vertical-align:top">
+                        <td style="padding:.4rem .5rem;white-space:nowrap">{{ \App\Support\Bn::num($p->slot_at->timezone('Asia/Kolkata')->format('d/m H:i')) }}</td>
+                        <td style="padding:.4rem .5rem">{{ $p->title }}
                             @if ($p->media['video'] ?? null) · <a href="{{ asset($p->media['video']) }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ __('রিল দেখুন') }}</a>
                             @elseif ($p->media['images'][0] ?? null) · <a href="{{ asset($p->media['images'][0]) }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ __('ছবি দেখুন') }}</a>@endif
                         </td>
-                        <td style="padding:.3rem .5rem;white-space:nowrap">{{ $formats[$p->format] ?? $p->format }}</td>
-                        <td style="padding:.3rem .5rem">{{ $state }}</td>
-                        <td style="padding:.3rem .5rem;white-space:nowrap">@if ($p->metrics){{ __('দেখেছেন') }} {{ \App\Support\Bn::num((string) $row['sum']['reach']) }} · {{ __('কমেন্ট, শেয়ার, সেভ') }} {{ \App\Support\Bn::num((string) $row['sum']['talk']) }}@if (isset($p->metrics['site']['visits'])) · {{ __('সাইটে এসেছেন') }} {{ \App\Support\Bn::num((string) $p->metrics['site']['visits']) }}@endif @endif</td>
+                        <td style="padding:.4rem .5rem;white-space:nowrap">{{ $formats[$p->format] ?? $p->format }}</td>
+                        <td style="padding:.4rem .5rem">
+                            @if ($p->status === 'dismissed' && ! $sent)<b>{{ __('থামানো আছে') }}</b>@else
+                                @foreach ($row['where'] as $w)
+                                    <div @if ($w['bad']) style="color:#CB1B32;font-weight:700" @endif>{{ $w['net'] }}: {{ $w['text'] }}@if ($w['link']) · <a href="{{ $w['link'] }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ __('খুলে দেখুন') }}</a>@endif</div>
+                                @endforeach
+                            @endif
+                        </td>
+                        <td style="padding:.4rem .5rem;white-space:nowrap">@if ($p->metrics){{ __('দেখেছেন') }} {{ \App\Support\Bn::num((string) $row['sum']['reach']) }} · {{ __('কমেন্ট, শেয়ার, সেভ') }} {{ \App\Support\Bn::num((string) $row['sum']['talk']) }}@if (isset($p->metrics['site']['visits'])) · {{ __('সাইটে এসেছেন') }} {{ \App\Support\Bn::num((string) $p->metrics['site']['visits']) }}@endif @endif</td>
+                        <td style="padding:.4rem .5rem;white-space:nowrap">
+                            @if ($p->status === 'ready' && ! $sent)
+                                <x-filament::button size="xs" color="gray" wire:click="dismiss({{ $p->id }})">{{ __('থামান') }}</x-filament::button>
+                            @elseif ($p->status === 'dismissed' && ! $sent)
+                                <x-filament::button size="xs" color="gray" wire:click="restore({{ $p->id }})">{{ __('আবার চালু') }}</x-filament::button>
+                            @endif
+                            @if ($isAdmin && ! $sent)
+                                <x-filament::button size="xs" color="danger" wire:click="deleteSocial({{ $p->id }})" wire:confirm="{{ __('এই পোস্টটি একেবারে মুছে ফেলবেন?') }}">{{ __('মুছুন') }}</x-filament::button>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>

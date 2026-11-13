@@ -281,7 +281,7 @@ class Marketing extends Page
         // D182: what goes out today and tomorrow, with what readers did
         $from = now('Asia/Kolkata')->startOfDay()->utc();
         $schedule = SocialPost::whereBetween('slot_at', [$from, $from->copy()->addDays(2)])->orderBy('slot_at')->limit(30)->get()
-            ->map(fn (SocialPost $s) => ['s' => $s, 'sum' => \App\Support\MarketingStats::sum($s)]);
+            ->map(fn (SocialPost $s) => ['s' => $s, 'sum' => \App\Support\MarketingStats::sum($s), 'where' => self::where($s)]);
 
         return ['schedule' => $schedule, 'whatsapp' => \App\Support\MarketingPlan::whatsapp(), 'lessons' => \App\Support\MarketingStats::saved(), 'review' => \App\Support\MarketingAnalyst::saved(), 'plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
     }
@@ -321,5 +321,41 @@ class Marketing extends Page
         }
 
         return null;
+    }
+
+    /**
+     * Owner (2026-11-14: "it shows posted but I can't see it on Facebook or Instagram. How to see details? Is it really
+     * posted? What is the error?"): for one post, what happened on each network, in plain words, with the address
+     * where it can be seen, when it went and whether a person or the plan sent it.
+     *
+     * @return list<array{net: string, text: string, link: ?string, bad: bool}>
+     */
+    public static function where(SocialPost $s): array
+    {
+        $log = AuditLog::whereIn('action', ['marketing.facebook', 'marketing.instagram'])->where('meta->social_post', $s->id)->latest('id')->get()->keyBy('action');
+        $when = function (string $action) use ($log): string {
+            $l = $log[$action] ?? null;
+
+            return $l ? ' ('.\App\Support\Bn::num($l->created_at->timezone('Asia/Kolkata')->format('d/m H:i')).', '.($l->user_id ? __('হাতে') : __('নিজে থেকে')).')' : '';
+        };
+        $waiting = $s->status === 'ready' ? ($s->format !== 'link' && ! $s->media ? __('ছবি তৈরি হচ্ছে') : __('সময়ের অপেক্ষায়')) : __('যায়নি');
+        $out = [];
+        $fbState = $s->texts['fb_state'] ?? null;
+        $out[] = ['net' => 'Facebook'] + match (true) {
+            blank($s->texts['facebook'] ?? null) => ['text' => __('এখানে যাবে না'), 'link' => null, 'bad' => false],
+            filled($s->fb_error) => ['text' => __('যায়নি').': '.mb_substr((string) $s->fb_error, 0, 160), 'link' => null, 'bad' => true],
+            (bool) $s->fb_post_id && $s->format === 'reel' && $s->media && $fbState !== 'ready' => ['text' => __('ফেসবুক নিয়েছে, ভিডিও তৈরি করছে').$when('marketing.facebook'), 'link' => \App\Support\FacebookPage::linkTo($s), 'bad' => false],
+            (bool) $s->fb_post_id => ['text' => __('পোস্ট হয়েছে').$when('marketing.facebook'), 'link' => \App\Support\FacebookPage::linkTo($s), 'bad' => false],
+            default => ['text' => $waiting, 'link' => null, 'bad' => false],
+        };
+        $out[] = ['net' => 'Instagram'] + match (true) {
+            blank($s->texts['instagram'] ?? null) => ['text' => __('এখানে যাবে না'), 'link' => null, 'bad' => false],
+            filled($s->ig_error) => ['text' => __('যায়নি').': '.mb_substr((string) $s->ig_error, 0, 160), 'link' => null, 'bad' => true],
+            (bool) $s->ig_media_id => ['text' => __('পোস্ট হয়েছে').$when('marketing.instagram'), 'link' => $s->ig_permalink, 'bad' => false],
+            (bool) $s->ig_container => ['text' => __('ইনস্টাগ্রাম ভিডিও তৈরি করছে'), 'link' => null, 'bad' => false],
+            default => ['text' => $waiting, 'link' => null, 'bad' => false],
+        };
+
+        return $out;
     }
 }

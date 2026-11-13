@@ -168,7 +168,9 @@ final class MarketingPlan
             $set['slot_at'] = max(now()->addMinutes(5), now(self::TZ)->setTime(11, 30)->utc());
         }
         if (! isset($set['slot_at']) && $s->kind !== 'weekly' && ! ($subject instanceof Post && ! $subject->isLive())) {
-            $set['slot_at'] = self::evening();
+            if ($slot = self::evening()) {
+                $set['slot_at'] = $slot;
+            }
         }
         if ($set) {
             $s->forceFill($set)->save();
@@ -177,13 +179,17 @@ final class MarketingPlan
         return $s;
     }
 
-    /** The next free evening time: the evening time (19:35 unless the numbers moved it), then 100 minutes later, then the next day. */
-    public static function evening(): Carbon
+    /**
+     * The next free evening time, at most three days ahead: the evening time (19:35 unless the numbers moved it) for
+     * a post made today, and 100 minutes later for that or for an older post waiting its turn. Null when the next
+     * three evenings are full: the post then waits (owner, 2026-11-14: old posts must not pile up on one evening).
+     */
+    public static function evening(bool $fresh = true): ?Carbon
     {
         $day = now(self::TZ)->startOfDay();
         [$eh, $em] = array_map('intval', explode(':', MarketingAnalyst::tuning()['evening']));
-        for ($i = 0; $i < 14; $i++) {
-            foreach ([0, 100] as $later) {   // the evening time, then 100 minutes later
+        for ($i = 0; $i < 3; $i++) {
+            foreach ($fresh ? [0, 100] : [100] as $later) {
                 $slot = $day->copy()->addDays($i)->setTime($eh, $em)->addMinutes($later)->utc();
                 if ($slot->gt(now()->addMinutes(20)) && ! SocialPost::where('slot_at', $slot)->exists()) {
                     return $slot;
@@ -191,13 +197,14 @@ final class MarketingPlan
             }
         }
 
-        return now()->addDay();
+        return null;
     }
 
     /** Every five minutes: what is due goes out. Returns how many posts went somewhere. */
     public static function run(): int
     {
         rescue(fn () => InstagramPage::finishReels(), null, false);
+        rescue(fn () => FacebookPage::checkReels(), null, false);
         rescue(fn () => self::comments(), null, false);
         if (! FacebookPage::auto() || ! (FacebookPage::ready() || InstagramPage::ready())) {
             return 0;
@@ -206,7 +213,10 @@ final class MarketingPlan
         foreach (SocialPost::with('subject')->where('status', 'ready')->whereNull('slot_at')->whereNull('fb_scheduled_at')->whereNull('fb_post_id')->where('kind', '!=', 'weekly')
             ->where('created_at', '>=', now()->subDays(14))->oldest()->limit(5)->get() as $loose) {
             if (FacebookPage::postable($loose) === null && ! ($loose->subject instanceof Post && \App\Ai\Marketer::kids($loose->subject))) {
-                $loose->forceFill(['slot_at' => self::evening()])->save();
+                if (! ($slot = self::evening(fresh: $loose->created_at->gt(now()->subDay())))) {
+                    break;   // the next evenings are full: the rest wait
+                }
+                $loose->forceFill(['slot_at' => $slot])->save();
             }
         }
         $sent = 0;
