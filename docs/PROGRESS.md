@@ -273,6 +273,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D177: ধাঁধা and শব্দজব্দ; leaderboard (today, week, all time); 1,002 words and 200 riddles (no repeat for 200 days)
 - [x] D178: seven badges in three tiers on the profile and on writers' pages
 - [x] D179: players report a wrong word, clue or riddle; the AI editor corrects or removes it from the next day; /desk → শব্দের অভিযোগ (with undo)
+- [ ] Owner: read docs/MARKETING.md (proposal: nine plays, weekly calendar, five-role team, what to measure) and answer its five decisions; nothing is built until then
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode
