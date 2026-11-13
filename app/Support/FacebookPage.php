@@ -279,6 +279,44 @@ final class FacebookPage
         return [true, (string) $id];
     }
 
+    /**
+     * Facebook takes a reel in and only then processes it, so "accepted" is not yet "on the Page". For a day after
+     * sending, ask how it went: ready (with its address), still processing, or failed (noted as the post's error).
+     */
+    public static function checkReels(): int
+    {
+        if (! self::ready()) {
+            return 0;
+        }
+        $n = 0;
+        foreach (SocialPost::where('format', 'reel')->whereNotNull('fb_post_id')->where('updated_at', '>=', now()->subDay())->limit(20)->get() as $s) {
+            if (in_array($s->texts['fb_state'] ?? '', ['ready', 'error'], true)) {
+                continue;
+            }
+            [$res] = self::graph($s->fb_post_id, ['fields' => 'status,permalink_url'], true);
+            $state = (string) ($res?->json('status.video_status') ?? '');
+            if (! $res?->successful() || $state === '') {
+                continue;
+            }
+            $link = (string) $res->json('permalink_url');
+            $texts = ['fb_state' => $state === 'ready' ? 'ready' : ($state === 'error' ? 'error' : 'processing')] + ($link !== '' ? ['fb_link' => 'https://www.facebook.com'.(str_starts_with($link, '/') ? $link : '/'.$link)] : []) + (array) $s->texts;
+            $s->forceFill(['texts' => $texts] + ($state === 'error' ? ['fb_error' => 'Facebook could not process the video'] : []))->save();
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /** Where a post can be seen on Facebook. */
+    public static function linkTo(SocialPost $s): ?string
+    {
+        if (! $s->fb_post_id) {
+            return null;
+        }
+
+        return (string) ($s->texts['fb_link'] ?? 'https://www.facebook.com/'.($s->format === 'reel' && $s->media ? 'reel/' : '').$s->fb_post_id);
+    }
+
     /** Our own comment under our post (a riddle's answer the next morning). Needs the Page's permission to comment; quiet if it has none. */
     public static function comment(SocialPost $s): bool
     {

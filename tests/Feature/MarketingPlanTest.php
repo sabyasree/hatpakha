@@ -354,4 +354,49 @@ class MarketingPlanTest extends TestCase
         MarketingPlan::plan(Carbon::parse('2026-11-21', 'Asia/Kolkata'));
         $this->assertNotSame('line', SocialPost::where('plan_key', '2026-11-21:reel')->first()?->design['reel']['t'] ?? null, 'No reel from a children\'s piece');
     }
+
+    /** Owner, 2026-11-14: stop or delete a planned post; see where it went or why not; old posts never pile up on one evening. */
+    public function test_planned_posts_can_be_stopped_and_show_what_happened_on_each_network(): void
+    {
+        Http::fake(['graph.facebook.com/*/v1*' => Http::response(['status' => ['video_status' => 'ready'], 'permalink_url' => '/reel/777/']), 'graph.facebook.com/*' => Http::response([])]);
+        $wait = self::social(['kind' => 'riddle', 'format' => 'card', 'title' => 'ধাঁধা', 'texts' => ['facebook' => 'ক', 'instagram' => ''], 'slot_at' => now()->addHours(3), 'media' => ['images' => ['media/cards/x.jpg']]]);
+        $bad = self::social(['kind' => 'piece', 'format' => 'reel', 'title' => 'রিল', 'texts' => ['facebook' => 'ক', 'instagram' => 'খ'], 'slot_at' => now()->addHours(4), 'media' => ['video' => 'media/cards/r.mp4'],
+            'fb_post_id' => 'v1', 'ig_error' => 'Media upload has failed']);
+        \App\Models\AuditLog::record('marketing.facebook', null, ['social_post' => $bad->id, 'fb' => 'v1']);
+
+        $where = collect(\App\Filament\Pages\Marketing::where($bad))->keyBy('net');
+        $this->assertStringContainsString('ভিডিও তৈরি করছে', $where['Facebook']['text'], 'Accepted is not yet on the Page');
+        $this->assertStringContainsString('নিজে থেকে', $where['Facebook']['text']);
+        $this->assertTrue($where['Instagram']['bad']);
+        $this->assertStringContainsString('Media upload has failed', $where['Instagram']['text']);
+        $this->assertSame(1, FacebookPage::checkReels());
+        $where = collect(\App\Filament\Pages\Marketing::where($bad->fresh()))->keyBy('net');
+        $this->assertSame('https://www.facebook.com/reel/777/', $where['Facebook']['link']);
+        $this->assertSame('এখানে যাবে না', collect(\App\Filament\Pages\Marketing::where($wait))->keyBy('net')['Instagram']['text']);
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('থামান')->assertSee('খুলে দেখুন')->assertSee('Media upload has failed');
+        $page->call('dismiss', $wait->id)->assertSee('থামানো আছে')->assertSee('আবার চালু');
+        Carbon::setTestNow(now()->addHours(4));
+        $this->assertSame(0, MarketingPlan::run(), 'A stopped post does not go out');
+        $page->call('deleteSocial', $wait->id);
+        $this->assertNull(SocialPost::find($wait->id));
+    }
+
+    public function test_older_posts_wait_their_turn_one_an_evening(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response([])]);
+        foreach (range(1, 8) as $i) {
+            tap(self::social(['kind' => 'custom', 'title' => 'old'.$i, 'texts' => ['facebook' => 'ক', 'instagram' => '']]))->forceFill(['created_at' => now()->subDays(5)])->save();
+        }
+        MarketingPlan::run();
+        MarketingPlan::run();
+        $slots = SocialPost::whereNull('plan_key')->whereNotNull('slot_at')   // the seeded announcement is an older post too
+            ->pluck('slot_at')->map(fn ($t) => $t->timezone('Asia/Kolkata')->format('d H:i'))->sort()->values()->all();
+        $this->assertSame(['19 21:15', '20 21:15', '21 21:15'], $slots, 'Three evenings ahead, one older post each; the rest wait');
+        $fresh = MarketingPlan::dress(self::social(['kind' => 'custom', 'title' => 'new', 'texts' => ['facebook' => 'ক', 'instagram' => '']]));
+        $this->assertSame('19 19:35', $fresh->slot_at->timezone('Asia/Kolkata')->format('d H:i'), 'Today\'s own post still gets the first evening time');
+    }
 }

@@ -278,6 +278,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner, after the release: run "Marketing studio" once by hand in GitHub → Actions to see the first cards; check the Page token has permission to comment (for the riddle answers) and to read insights (for reach); open a WhatsApp Channel if there is none
 - [x] D184: invite links and the বন্ধু medal, "আমার সপ্তাহ" share words, Friday top-three post (privacy page updated), weekly letter with come-back blocks (still sent only on the owner's click)
 - [x] D185: marketing leaves out the children's section; an old story from the archive is shared every day
+- [x] D186: stop / resume / delete on planned posts; per-network status with links and errors; reels checked with Facebook after sending; older posts go one an evening
 - [ ] Marketing, next: drafted replies to comments on our Facebook posts (owner sends); "আমার সপ্তাহ" as a picture card; share buttons inside the writers' published e-mail (touches an owner-edited template: ask first); day-early serial episode for inviters
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম
