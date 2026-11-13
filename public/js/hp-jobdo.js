@@ -119,6 +119,7 @@
         $('cheer').textContent = st.gaveUp ? 'কাল আবার চেষ্টা করুন' : (st.hints ? 'বেশ হয়েছে!' : 'সাবাশ! নিজেই পুরো ছক ভরেছেন');
         $('score').textContent = st.gaveUp ? 'আজকের ছকের উত্তর উপরে' : bn(r.points) + ' পয়েন্ট · সময় ' + r.time;
         $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(r.text);
+        if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), 'cross', words.map((w) => ({ word: w.cells.map((k) => sol[k]).join(''), clue: w.clue })));
         const url = root.dataset.scoreUrl;
         if (url && !st.sent) {
             fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },

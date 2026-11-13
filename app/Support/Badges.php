@@ -70,4 +70,52 @@ final class Badges
 
         return $b;
     }
+
+    /** Small line drawings, one per badge (24×24 paths). */
+    public const GLYPHS = [
+        'reader' => '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
+        'streak' => '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
+        'player' => '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+        'kolom' => '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+        'writer' => '<path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6M9 8h3"/>',
+        'voice' => '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.5A8 8 0 1 1 21 12z"/>',
+        'reviewer' => '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8.5 11l2 2 3.5-4"/>',
+    ];
+
+    /**
+     * D180 (owner: "a medal kind of badge, using the Hatpakha logo"): a ribbon and a disc carrying the logo's hand-fan,
+     * coloured by tier from the logo palette only (ব্রোঞ্জ peach-deep, রুপো sky, সোনা peach; not yet earned: pale).
+     * Our own fixed drawing, no user data in it.
+     */
+    public static function medalSvg(string $key, int $tier, int $size = 72): string
+    {
+        [$disc, $rim, $ray1, $ray2, $hub, $ribbonA, $ribbonB] = [
+            0 => ['#FFFBF4', '#E8DCCB', '#E8DCCB', '#FFFBF4', '#E8DCCB', '#E8DCCB', '#FFFBF4'],
+            1 => ['#E39A6A', '#7A1022', '#CB1B32', '#F08D90', '#FBEBD8', '#13212C', '#CB1B32'],
+            2 => ['#DDF1FA', '#1A86C2', '#CB1B32', '#F08D90', '#FFFFFF', '#13212C', '#2DAAE2'],
+            3 => ['#EFC08D', '#CB1B32', '#CB1B32', '#F08D90', '#FFFBF4', '#CB1B32', '#13212C'],
+        ][$tier] ?? [];
+        $rays = '';
+        $n = 12;
+        for ($k = 0; $k < $n; $k++) {
+            $a1 = deg2rad(180 + 180 * $k / $n);
+            $a2 = deg2rad(180 + 180 * ($k + 1) / $n);
+            $p = fn ($a) => round(60 + 30 * cos($a), 2).' '.round(84 + 30 * sin($a), 2);
+            $rays .= '<path d="M60 84 L'.$p($a1).' A30 30 0 0 1 '.$p($a2).' Z" fill="'.($k % 2 ? $ray2 : $ray1).'"/>';
+        }
+        $stars = '';
+        for ($i = 0; $i < $tier; $i++) {   // one, two or three marks under the fan
+            $stars .= '<circle cx="'.(60 + ($i - ($tier - 1) / 2) * 9).'" cy="103" r="2.6" fill="'.$rim.'"/>';
+        }
+        $ink = $tier ? '#13212C' : '#B9AE9D';
+
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="'.$size.'" height="'.round($size * 130 / 120).'" viewBox="0 0 120 130" aria-hidden="true" focusable="false">'
+            .'<path d="M34 0h22l10 40H48z" fill="'.$ribbonA.'"/><path d="M86 0H64L54 40h18z" fill="'.$ribbonB.'"/>'
+            .'<path d="M34 0h22l10 40H48z M86 0H64L54 40h18z" fill="none" stroke="'.$ink.'" stroke-width="2.5" stroke-linejoin="round"/>'
+            .'<circle cx="60" cy="82" r="44" fill="'.$disc.'" stroke="'.$ink.'" stroke-width="3"/>'
+            .'<circle cx="60" cy="82" r="37" fill="none" stroke="'.$rim.'" stroke-width="2.5" stroke-dasharray="1 5" stroke-linecap="round"/>'
+            .$rays.'<path d="M48 84 A12 12 0 0 1 72 84 Z" fill="'.$hub.'"/><path d="M28 84h64" stroke="'.$ink.'" stroke-width="2" stroke-linecap="round"/>'
+            .'<g transform="translate(53 87) scale(.58)" fill="none" stroke="'.$ink.'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'.self::GLYPHS[$key].'</g>'
+            .$stars.'</svg>';
+    }
 }

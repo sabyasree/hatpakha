@@ -69,3 +69,4 @@ Schedule::call(fn () => \App\Support\Kolom::openWeek())->name('reader theme open
 Schedule::call(fn () => \App\Support\Kolom::screen())->name('reader entries screened')->hourlyAt(25);
 Schedule::call(fn () => \App\Support\Kolom::pickWeek())->name('reader entries picked')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\Kolom::autoPublish())->name('reader picks published')->weeklyOn(0, '08:00')->timezone('Asia/Kolkata');   // D176
+Schedule::call(fn () => \App\Support\WordReports::review())->name('reported game words reviewed')->hourlyAt(40);   // D179

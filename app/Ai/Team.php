@@ -13,7 +13,7 @@ final class Team
 {
     /** key => [Bengali name, what it does, purposes it logs] */
     public const AGENTS = [
-        'editor' => ['এআই সম্পাদক', 'জমা পড়া লেখা পড়ে সিদ্ধান্তের প্রস্তাব, লেখককে বার্তা, সংখ্যা, সম্পাদকীয়, মন্তব্য, শংসাপত্র, অন্য দৈনিক কাজ', ['review', 'editor', 'blind_test', 'issue_plan', 'editorial_draft', 'comment_screen', 'kolom', 'picks', 'followup', 'certificate', 'backlog_screen']],
+        'editor' => ['এআই সম্পাদক', 'জমা পড়া লেখা পড়ে সিদ্ধান্তের প্রস্তাব, লেখককে বার্তা, সংখ্যা, সম্পাদকীয়, মন্তব্য, শংসাপত্র, অন্য দৈনিক কাজ', ['review', 'editor', 'blind_test', 'issue_plan', 'editorial_draft', 'comment_screen', 'kolom', 'words', 'picks', 'followup', 'certificate', 'backlog_screen']],
         // D108: three serial writers, one genre each (drafts only; the owner publishes).
         'serial_mystery' => ['ধারাবাহিক লেখক: রহস্য', 'সাপ্তাহিক রহস্য-রোমাঞ্চ ধারাবাহিকের পরিকল্পনা আর প্রতি সপ্তাহের পর্বের খসড়া, ছবিসহ', ['serial']],
         'serial_ghost' => ['ধারাবাহিক লেখক: অলৌকিক', 'সাপ্তাহিক অলৌকিক গল্পের ধারাবাহিক: পরিকল্পনা আর প্রতি সপ্তাহের পর্বের খসড়া, ছবিসহ', ['serial']],
@@ -39,7 +39,7 @@ final class Team
     /** Plain names for each kind of job (the "কী করেছে" list, D57). */
     public const PURPOSES = [
         'review' => 'লেখার রিপোর্ট', 'editor' => 'লেখার রিপোর্ট', 'blind_test' => 'অন্ধ পরীক্ষা', 'issue_plan' => 'সংখ্যার প্রস্তাব', 'editorial_draft' => 'সম্পাদকীয় খসড়া',
-        'comment_screen' => 'মন্তব্য পড়া', 'kolom' => 'পাঠকের কলমের লেখা পড়া', 'picks' => 'সম্পাদকের পছন্দ', 'followup' => 'লেখককে মনে করানো', 'certificate' => 'শংসাপত্র', 'backlog_screen' => 'পুরনো জমা বাছাই', 'serial' => 'ধারাবাহিক লেখা', 'feedback' => 'মানুষের মতামত থেকে নির্দেশ', 'rewrite' => 'মতামত মেনে আবার লেখা',
+        'comment_screen' => 'মন্তব্য পড়া', 'kolom' => 'পাঠকের কলমের লেখা পড়া', 'words' => 'খেলার শব্দের অভিযোগ দেখা', 'picks' => 'সম্পাদকের পছন্দ', 'followup' => 'লেখককে মনে করানো', 'certificate' => 'শংসাপত্র', 'backlog_screen' => 'পুরনো জমা বাছাই', 'serial' => 'ধারাবাহিক লেখা', 'feedback' => 'মানুষের মতামত থেকে নির্দেশ', 'rewrite' => 'মতামত মেনে আবার লেখা',
         'proof' => 'প্রুফ দেখা', 'plagiarism' => 'মৌলিকতা যাচাই', 'seo' => 'এসইও তথ্য', 'seo_refresh' => 'এসইও ঘষামাজা',
         'image_scene' => 'ছবির ভাবনা', 'image' => 'ছবি আঁকা', 'cover' => 'সংখ্যার প্রচ্ছদ', 'design' => 'নকশা',
         'marketing' => 'পোস্ট তৈরি', 'newsletter' => 'সাপ্তাহিক চিঠি', 'copy' => 'চিঠি লেখা', 'chat' => 'চ্যাটের উত্তর', 'contest' => 'প্রতিযোগিতা',

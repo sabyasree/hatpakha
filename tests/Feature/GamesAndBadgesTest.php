@@ -108,7 +108,10 @@ class GamesAndBadgesTest extends TestCase
         $this->assertSame([2, 'রুপো'], [$b['streak']['tier'], $b['streak']['tierName']]);
         $this->assertSame(2, $b['player']['tier']);
 
-        $this->actingAs($u)->get('/account/profile/')->assertOk()->assertSee('আমার ব্যাজ')->assertSee('রোজকার খেলোয়াড়')->assertSee('রুপো')->assertSee('সোনা পেতে আর');
+        $this->actingAs($u)->get('/account/profile/')->assertOk()->assertSee('আমার ব্যাজ')->assertSee('রোজকার খেলোয়াড়')->assertSee('রুপো')->assertSee('সোনা পেতে আর')
+            ->assertSee('data-medal', false)->assertSee('data-badge-share', false)->assertSee('data-badge-canvas', false);   // D180: medals with the logo's fan, and a share card
+        $this->assertStringContainsString('<svg', \App\Support\Badges::medalSvg('reader', 3));
+        $this->assertStringNotContainsString('data-badge-share data-name="পড়ুয়া"', $this->get('/account/profile/')->getContent(), 'Only earned badges can be shared');
         $author->refreshCount();
         auth()->logout();
         $this->get($author->url())->assertOk()->assertSee('হাতপাখার ব্যাজ')->assertSee('রোজকার খেলোয়াড়');

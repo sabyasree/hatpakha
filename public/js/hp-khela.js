@@ -134,6 +134,7 @@
             const c = document.createElement('span'); c.className = 'block text-sm text-ink2'; c.textContent = w.clue;
             li.append(b, c); ul.appendChild(li);
         });
+        if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), data.kind, data.words.map((w) => ({ word: answer(w), clue: w.clue })));
         const tick = () => {
             const now = new Date(); const ist = new Date(now.getTime() + (330 + now.getTimezoneOffset()) * 60000);
             const left = 86400 - (ist.getHours() * 3600 + ist.getMinutes() * 60 + ist.getSeconds());

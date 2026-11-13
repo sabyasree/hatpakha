@@ -272,8 +272,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D176: পাঠকের কলম publishes by itself on Sunday 08:00 (only AI-passed entries); switch in /desk → পাঠকের কলম
 - [x] D177: ধাঁধা and শব্দজব্দ; leaderboard (today, week, all time); 1,002 words and 200 riddles (no repeat for 200 days)
 - [x] D178: seven badges in three tiers on the profile and on writers' pages
-- [ ] Owner: a native reader should skim `database/content/word-game.php` and `riddles.php` (spellings such as শিঙাড়া/সিঙাড়া, West Bengal forms such as দেশলাই, a few place names of temples used as landmarks)
-- [ ] Owner: say whether the privacy page should mention that game scores and names show on the leaderboard (can be hidden in Settings)
+- [x] D179: players report a wrong word, clue or riddle; the AI editor corrects or removes it from the next day; /desk → শব্দের অভিযোগ (with undo)
+- [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode
 - [x] D173: readers select a line → "এই লাইন শেয়ার করুন" → quote card (canvas; share, download, WhatsApp)
 - [x] D174: শব্দ-খেলা at /khela/ (daily word jumble, streak, share)

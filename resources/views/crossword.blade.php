@@ -44,6 +44,7 @@
             </div>
             <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-jobdo-share-msg></p>
             @include('partials.game-board-line')
+            <div data-report></div>
             <p class="mt-3 font-bold">নতুন ছক আসবে রাত বারোটায়।</p>
         </div>
 
@@ -58,5 +59,6 @@
         </details>
         <script type="application/json" data-jobdo-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     </section>
-    <script src="{{ asset('js/hp-jobdo.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-jobdo.js') }}?v=2" defer></script>
 </x-layouts.app>

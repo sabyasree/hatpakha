@@ -15,10 +15,61 @@ final class WordGame
 
     public const PER_DAY = 5;
 
-    /** @return list<array{0: string, 1: string}> */
-    public static function words(): array
+    /**
+     * The word list, with the fixes readers' reports led to (D179) from the day each fix starts. A corrected entry
+     * keeps its place; a removed one becomes null (and is skipped), so the days' puzzles do not shift.
+     *
+     * @return list<array{0: string, 1: string}|null>
+     */
+    public static function listFor(string $game, ?Carbon $day = null): array
     {
-        return require database_path('content/word-game.php');
+        $base = require database_path($game === 'riddle' ? 'content/riddles.php' : 'content/word-game.php');
+        $fixes = self::fixes($game, $day);
+        if (! $fixes) {
+            return $base;
+        }
+        $k = $game === 'riddle' ? 1 : 0;   // where the answer sits in a pair
+        foreach ($base as $i => $row) {
+            if ($f = $fixes[$row[$k]] ?? null) {
+                $base[$i] = $f['action'] === 'remove' ? null
+                    : ($game === 'riddle' ? [$f['new_clue'] ?: $row[0], $f['new_word'] ?: $row[1]] : [$f['new_word'] ?: $row[0], $f['new_clue'] ?: $row[1]]);
+            }
+        }
+
+        return $base;
+    }
+
+    /** @return array<string, array{action: string, new_word: ?string, new_clue: ?string}> fixes in force on that day */
+    public static function fixes(string $game, ?Carbon $day = null): array
+    {
+        $all = \Illuminate\Support\Facades\Cache::remember('hp.wordfixes', 600, fn () => \Illuminate\Support\Facades\DB::table('word_fixes')->get()
+            ->map(fn ($f) => ['game' => $f->game, 'word' => $f->word, 'action' => $f->action, 'new_word' => $f->new_word, 'new_clue' => $f->new_clue, 'from' => (string) $f->from_day])->all());
+        $on = ($day ?? now('Asia/Kolkata'))->toDateString();
+        $out = [];
+        foreach ($all as $f) {
+            if ($f['game'] === $game && substr($f['from'], 0, 10) <= $on) {
+                $out[$f['word']] = $f;
+            }
+        }
+
+        return $out;
+    }
+
+    /** The entry at a place in the list; a removed one is replaced by the next one still standing, half the list away. */
+    private static function at(array $list, int $i): array
+    {
+        $n = count($list);
+        for ($step = 0; $step < $n && $list[$i] === null; $step++) {
+            $i = ($i + intdiv($n, 2) + $step) % $n;
+        }
+
+        return $list[$i] ?? ['', ''];
+    }
+
+    /** @return list<array{0: string, 1: string}> the words in play today */
+    public static function words(?Carbon $day = null): array
+    {
+        return array_values(array_filter(self::listFor('word', $day)));
     }
 
     /** One Bengali অক্ষর per item: "প্রজাপতি" → প্র, জা, প, তি. */
@@ -31,9 +82,9 @@ final class WordGame
     }
 
     /** @return list<array{0: string, 1: string}> [riddle, answer] */
-    public static function riddles(): array
+    public static function riddles(?Carbon $day = null): array
     {
-        return require database_path('content/riddles.php');
+        return array_values(array_filter(self::listFor('riddle', $day)));
     }
 
     /**
@@ -45,12 +96,13 @@ final class WordGame
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $index = max(0, self::number($day) - 1);
-        $all = self::riddles();
-        $count = count($all);
+        $list = self::listFor('riddle', $day);
+        $all = self::riddles($day);
+        $count = count($list);
         mt_srand(7723 + intdiv($index, $count));
         $order = range(0, $count - 1);
         shuffle($order);
-        [$riddle, $answer] = $all[$order[$index % $count]];
+        [$riddle, $answer] = self::at($list, $order[$index % $count]);
         mt_srand(5519 + $index);
         $letters = self::letters($answer);
         $pool = [];
@@ -81,12 +133,12 @@ final class WordGame
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $index = max(0, self::number($day) - 1);
 
-        return \Illuminate\Support\Facades\Cache::remember('hp.cross.'.$day->toDateString().'.'.count(self::words()), 90000, function () use ($day, $index) {
+        return \Illuminate\Support\Facades\Cache::remember('hp.cross.'.$day->toDateString().'.'.count(self::words($day)).'.'.count(self::fixes('word', $day)), 90000, function () use ($day, $index) {
             $today = array_column(self::day($day)['words'], 'answer');
             $best = null;
             for ($try = 0; $try < 12; $try++) {
                 mt_srand(3301 + $index * 13 + $try);
-                $list = array_values(array_filter(self::words(), fn ($w) => ! in_array($w[0], $today, true)));
+                $list = array_values(array_filter(self::words($day), fn ($w) => ! in_array($w[0], $today, true)));
                 shuffle($list);
                 $made = self::buildGrid(array_slice($list, 0, 260));
                 if (! $best || count($made['words']) > count($best['words'])) {
@@ -215,7 +267,7 @@ final class WordGame
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $no = self::number($day);
-        $all = self::words();
+        $all = self::listFor('word', $day);
         $count = count($all);
         $perCycle = intdiv($count, self::PER_DAY);
         $index = max(0, $no - 1);
@@ -224,7 +276,7 @@ final class WordGame
         $order = range(0, $count - 1);
         shuffle($order);
         $picked = array_slice($order, ($index % $perCycle) * self::PER_DAY, self::PER_DAY);
-        $words = array_map(fn ($i) => $all[$i], $picked);
+        $words = array_map(fn ($i) => self::at($all, $i), $picked);
         usort($words, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
 
         mt_srand(4421 + $index);

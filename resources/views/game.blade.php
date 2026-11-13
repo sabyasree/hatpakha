@@ -54,6 +54,7 @@
             @include('partials.game-board-line')
             <h2 class="mt-4 font-display text-xl font-extrabold">{{ $riddle ? 'উত্তর' : 'আজকের শব্দ' }}</h2>
             <ul class="mt-2 divide-y divide-rule" data-khela-answers></ul>
+            <div data-report></div>
             <p class="mt-4 font-bold">নতুন খেলা আসবে রাত বারোটায়। <span class="text-ink2" data-khela-next></span></p>
             <a href="{{ url('/') }}/" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-night underline">এবার একটা ভালো লেখা পড়ুন →</a>
         </div>
@@ -71,5 +72,6 @@
         </details>
         <script type="application/json" data-khela-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     </section>
-    <script src="{{ asset('js/hp-khela.js') }}?v=2" defer></script>
+    <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-khela.js') }}?v=3" defer></script>
 </x-layouts.app>

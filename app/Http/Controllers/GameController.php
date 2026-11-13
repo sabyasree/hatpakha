@@ -67,4 +67,14 @@ class GameController extends Controller
 
         return response()->json(['ok' => true, 'points' => $points, 'streak' => GameScores::streak($request->user())['now']]);
     }
+
+    /** D179: a player says a word, clue or riddle is wrong. No account needed. */
+    public function report(Request $request)
+    {
+        $data = $request->validate(['game' => ['required', 'in:word,riddle,cross'], 'word' => ['required', 'string', 'max:60'],
+            'reason' => ['required', 'in:'.implode(',', array_keys(\App\Support\WordReports::REASONS))], 'note' => ['nullable', 'string', 'max:300']]);
+        $ok = \App\Support\WordReports::store($request, $data['game'] === 'riddle' ? 'riddle' : 'word', $data['word'], $data['reason'], $data['note'] ?? null);
+
+        return response()->json(['ok' => $ok], $ok ? 200 : 422);
+    }
 }

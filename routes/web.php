@@ -30,6 +30,7 @@ Route::get('/khela', [\App\Http\Controllers\GameController::class, 'word'])->nam
 Route::get('/khela/dhadha', [\App\Http\Controllers\GameController::class, 'riddle'])->name('game.riddle');
 Route::get('/khela/shobdojobdo', [\App\Http\Controllers\GameController::class, 'crossword'])->name('game.cross');
 Route::get('/khela/board', [\App\Http\Controllers\GameController::class, 'board'])->name('game.board');
+Route::post('/khela/report', [\App\Http\Controllers\GameController::class, 'report'])->middleware('throttle:10,1')->name('game.report');   // D179
 Route::post('/khela/score', [\App\Http\Controllers\GameController::class, 'score'])->middleware(['auth', 'throttle:20,1'])->name('game.score');
 Route::get('/app', [\App\Http\Controllers\AppController::class, 'page'])->name('app');
 // D169: বাংলা / English for the sign-in pages, account and menus. Back to the same page (on-site paths only).

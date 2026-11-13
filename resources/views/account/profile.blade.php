@@ -62,6 +62,6 @@
         {{-- D178: badges earned on Hatpakha --}}
         <h2 id="badges" class="mt-10 scroll-mt-24 font-display text-2xl font-extrabold">{{ __('আমার ব্যাজ') }}</h2>
         <p class="mt-1 text-ink2">{{ __('পড়লে, খেললে, লিখলে, মতামত দিলে ব্যাজ জমে। প্রতিটির তিন ধাপ: ব্রোঞ্জ, রুপো, সোনা।') }}</p>
-        @include('partials.badges', ['badges' => \App\Support\Badges::for($user)])
+        @include('partials.badges', ['badges' => \App\Support\Badges::for($user), 'who' => \App\Support\AccountMenu::for($user)['name']])
     </x-account-shell>
 </x-layouts.app>
