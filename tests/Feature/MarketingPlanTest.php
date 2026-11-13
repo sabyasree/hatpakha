@@ -421,4 +421,12 @@ class MarketingPlanTest extends TestCase
         $this->assertSame('20:35', $new['evening']);
         $this->assertSame('09:05', $new['morning'], '03:00 UTC is 08:30 in Kolkata');
     }
+
+    /** Live log, 2026-11-13: signing up for the letter twice within minutes crashed (the time was read as plain text). */
+    public function test_a_second_newsletter_sign_up_within_minutes_does_not_crash(): void
+    {
+        $sub = \App\Models\NewsletterSubscriber::create(['email' => 'pathok@example.com', 'status' => 'pending', 'source' => 'form']);
+        $sub->forceFill(['confirm_sent_at' => now()->subMinutes(2)])->save();
+        $this->assertTrue($sub->fresh()->confirm_sent_at->gt(now()->subMinutes(10)));
+    }
 }
