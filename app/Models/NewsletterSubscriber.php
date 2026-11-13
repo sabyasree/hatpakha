@@ -12,7 +12,7 @@ class NewsletterSubscriber extends Model
 
     protected function casts(): array
     {
-        return ['suppressed' => 'boolean', 'consented_at' => 'datetime'];
+        return ['suppressed' => 'boolean', 'consented_at' => 'datetime', 'confirm_sent_at' => 'datetime'];   // confirm_sent_at: without the cast a second sign-up within minutes crashed (live log, 2026-11-13)
     }
 
     public function scopeMailable(Builder $q): Builder
