@@ -1,5 +1,7 @@
 @props(['title', 'subtitle' => null])
-<section class="mx-auto max-w-[480px] px-5 pb-16 pt-10">
+<section class="mx-auto max-w-[480px] px-5 pb-16 pt-6">
+    {{-- D169: sign-up and sign-in in বাংলা or English --}}
+    <div class="mb-4 flex justify-end">@include('partials.language-switch')</div>
     <h1 class="font-display text-4xl font-extrabold">{{ $title }}</h1>
     @if ($subtitle)<p class="mt-2 font-serif text-lg text-ink2">{{ $subtitle }}</p>@endif
     @if (session('status'))

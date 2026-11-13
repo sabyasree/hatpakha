@@ -8,27 +8,27 @@
     $active = ['home' => 'lekha', 'writings' => 'lekha', 'stats' => 'lekha', 'reading' => 'pora', 'profile' => 'pata', 'settings' => 'aro'][$tab] ?? $tab;
     $svg = fn (string $d) => '<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$d.'</svg>';
     $tabs = array_filter([
-        'lekha' => $acct['writer'] ? ['আমার লেখা', Url::to('/account'), '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'] : null,
-        'pora' => ['আমার পড়া', Url::to('/account/reading'), '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M12 8.5c-1-1.6-3.6-1.2-3.6.9 0 1.7 2.2 3 3.6 4.1 1.4-1.1 3.6-2.4 3.6-4.1 0-2.1-2.6-2.5-3.6-.9z"/>'],
-        'pata' => ['আমার পাতা', Url::to('/account/profile'), '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'],
-        'aro' => ['ই-মেল ও পাসওয়ার্ড', Url::to('/account/settings'), '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>'],
+        'lekha' => $acct['writer'] ? [__('আমার লেখা'), Url::to('/account'), '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'] : null,
+        'pora' => [__('লাইব্রেরি'), Url::to('/account/reading'), '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M12 8.5c-1-1.6-3.6-1.2-3.6.9 0 1.7 2.2 3 3.6 4.1 1.4-1.1 3.6-2.4 3.6-4.1 0-2.1-2.6-2.5-3.6-.9z"/>'],
+        'pata' => [__('প্রোফাইল'), Url::to('/account/profile'), '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'],
+        'aro' => [__('সেটিংস'), Url::to('/account/settings'), '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>'],
     ]);
 @endphp
 <section class="mx-auto max-w-[1000px] px-5 pt-5">
     <div class="flex items-start justify-between gap-3">
-        <h1 class="font-display text-3xl font-extrabold leading-tight">নমস্কার, {{ $acct['first'] }}</h1>
-        @include('partials.chat-button')
+        <h1 class="font-display text-3xl font-extrabold leading-tight">{{ __('নমস্কার, :name', ['name' => $acct['first']]) }}</h1>
+        <div class="flex flex-none items-center gap-2">@include('partials.language-switch')@include('partials.chat-button')</div>
     </div>
     @if ($acct['writer'])
         @php($published = (int) ($counts['published'] ?? 0))
         @php($review = (int) ($counts['pending'] ?? 0) + (int) ($counts['scheduled'] ?? 0))
-        <p class="mt-1 text-ink2">{{ \App\Support\Bn::num((string) $published) }}টি লেখা প্রকাশিত@if ($review) · {{ \App\Support\Bn::num((string) $review) }}টি সম্পাদকের কাছে@endif</p>
+        <p class="mt-1 text-ink2">{{ __(':countটি লেখা প্রকাশিত', ['count' => \App\Support\Bn::num((string) $published)]) }}@if ($review) · {{ __(':countটি সম্পাদকের কাছে', ['count' => \App\Support\Bn::num((string) $review)]) }}@endif</p>
     @else
-        <p class="mt-1 text-ink2">যা পড়ছেন, যা পরে পড়বেন, যাঁদের পড়েন: সব এক জায়গায়।</p>
+        <p class="mt-1 text-ink2">{{ __('যা পড়ছেন, যা সেভ করেছেন, যাঁদের ফলো করছেন: সব এক জায়গায়।') }}</p>
     @endif
 </section>
 
-<nav aria-label="আমার হাতপাখা" class="mt-4 border-y-2 border-navy bg-paper">
+<nav aria-label="{{ __('আমার অ্যাকাউন্ট') }}" class="mt-4 border-y-2 border-navy bg-paper">
     <div class="mx-auto grid max-w-[1000px] {{ count($tabs) === 4 ? 'grid-cols-4' : 'grid-cols-3' }}">
         @foreach ($tabs as $key => [$label, $href, $icon])
             <a href="{{ $href }}" @if ($active === $key) aria-current="page" @endif
@@ -42,18 +42,18 @@
         {{-- D168: pieces the desk asked this reviewer to read --}}
         <a href="{{ Url::to('/account/review') }}" class="mb-5 flex items-center gap-3 rounded-2xl border-2 border-red bg-peach-light p-4 font-bold hover:bg-white">
             <span class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-red text-lg text-white" aria-hidden="true">{{ \App\Support\Bn::num((string) $acct['toReview']) }}</span>
-            <span class="flex-1">যাচাইয়ের জন্য {{ \App\Support\Bn::num((string) $acct['toReview']) }}টি লেখা আপনার অপেক্ষায়<span class="block text-sm font-medium text-ink2">সম্পাদকমণ্ডলী আপনার মত জানতে চান</span></span>
+            <span class="flex-1">{{ __('রিভিউ করার জন্য :countটি লেখা আপনার অপেক্ষায়', ['count' => \App\Support\Bn::num((string) $acct['toReview'])]) }}<span class="block text-sm font-medium text-ink2">{{ __('সম্পাদকেরা আপনার মতামত জানতে চান') }}</span></span>
             <span aria-hidden="true">›</span>
         </a>
     @endif
     @if (session('submitted'))
         <div role="status" class="mb-5 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
-            <div class="font-hand text-2xl text-red">জমা পড়েছে!</div>
+            <div class="font-hand text-2xl text-red">{{ __('লেখা পাঠানো হয়েছে!') }}</div>
             <div class="mt-1 font-serif text-xl font-bold">“{{ session('submitted') }}”</div>
-            <p class="mt-2 text-ink2">সম্পাদকমণ্ডলী পড়ে দেখে ই-মেলে জানাবেন। ধন্যবাদ!</p>
+            <p class="mt-2 text-ink2">{{ __('সম্পাদকেরা পড়ে ই-মেলে জানাবেন। ধন্যবাদ!') }}</p>
             <div class="mt-4 flex flex-wrap gap-2">
-                <a href="{{ Url::to('/account') }}" class="flex h-11 items-center rounded-full bg-navy px-5 font-bold text-white">আমার লেখা দেখুন</a>
-                <a href="{{ Url::to('/submit') }}" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">আরেকটা লিখুন</a>
+                <a href="{{ Url::to('/account') }}" class="flex h-11 items-center rounded-full bg-navy px-5 font-bold text-white">{{ __('আমার লেখা দেখুন') }}</a>
+                <a href="{{ Url::to('/submit') }}" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">{{ __('আরেকটি লেখা পাঠান') }}</a>
             </div>
         </div>
     @elseif (session('status'))

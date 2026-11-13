@@ -38,7 +38,7 @@ class ReaderFeaturesTest extends TestCase
         $this->actingAs($reader)->postJson('/like/'.$post->id)->assertJson(['on' => true, 'count' => 1]);
         $this->postJson('/like/'.$post->id)->assertJson(['on' => false, 'count' => 0]);
         $this->postJson('/save/'.$post->id)->assertJson(['on' => true]);
-        $this->get('/account/reading/')->assertSee('পরে পড়ব')->assertSee($post->title);
+        $this->get('/account/reading/')->assertSee('সেভ করা লেখা')->assertSee($post->title);
 
         $author = $post->authors->first();
         $this->postJson('/follow/'.$author->id)->assertJson(['on' => true, 'count' => 1]);

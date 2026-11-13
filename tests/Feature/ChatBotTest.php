@@ -53,7 +53,7 @@ class ChatBotTest extends TestCase
         $this->makePost(['status' => 'pending', 'submitted_by' => $other->id, 'title' => 'অন্যের গোপন লেখা', 'slug' => 'b']);
         $this->actingAs($me)->postJson('/chat', ['question' => 'কবে প্রকাশ হবে?'])->assertOk()->assertJson(['escalated' => true]);
         $this->assertStringContainsString('আমার কবিতা', $this->seen);
-        $this->assertStringContainsString('বদল চাওয়া হয়েছে', $this->seen);
+        $this->assertStringContainsString('কিছু বদল দরকার', $this->seen);
         $this->assertStringNotContainsString('অন্যের গোপন লেখা', $this->seen);
         $this->assertSame(1, EditorTask::where('type', 'question')->count());
     }
@@ -89,7 +89,7 @@ class ChatBotTest extends TestCase
         }
         $this->postJson('/chat', ['question' => 'শংসাপত্র কোথায় পাব?'])->assertOk();
         $this->assertStringContainsString('<account_guide>', $this->seen);
-        $this->assertStringContainsString('শংসাপত্র চাই', $this->seen);
+        $this->assertStringContainsString('সার্টিফিকেট চাই', $this->seen);
         $this->assertStringContainsString('পুরনো প্রকাশিত লেখা', $this->seen);
     }
 
@@ -107,7 +107,7 @@ class ChatBotTest extends TestCase
         $r = \App\Ai\ChatBot::answer($u, 'How to get certificate?');
         \App\Ai\Claude::$fake = null;
         $this->assertStringContainsString("\n1.", $r['answer'], 'Line breaks are kept for the steps');
-        $this->assertStringContainsString('tap the tab &quot;লেখা&quot;', $seen, 'The guide gives the steps, button by button');
+        $this->assertStringContainsString('tap &quot;সার্টিফিকেট&quot; beside the published piece', $seen, 'The guide gives the steps, button by button (D169 labels)');
         $this->assertStringContainsString('top right', $seen);
         $ref = new \ReflectionMethod(\App\Ai\ChatBot::class, 'answer');
         $src = implode('', array_slice(file($ref->getFileName()), $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));

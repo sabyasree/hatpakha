@@ -20,7 +20,7 @@ class VerifyEmailController extends Controller
             rescue(fn () => $request->user()->sendEmailVerificationNotification());
         }
 
-        return view('auth.verify', ['seo' => AuthController::seo('ইমেল যাচাই')]);
+        return view('auth.verify', ['seo' => AuthController::seo('ই-মেল ভেরিফাই করুন')]);
     }
 
     /** D59: the signed link verifies the address and signs the writer in (no password needed again). */
@@ -35,7 +35,7 @@ class VerifyEmailController extends Controller
             \App\Models\AuditLog::record('user.email_verified', $user);
         }
         if (\Illuminate\Support\Facades\Auth::id() === $user->id) {
-            return redirect(Url::to('/account'))->with('status', 'ইমেল যাচাই হয়ে গেছে। হাতপাখায় স্বাগত!');
+            return redirect(Url::to('/account'))->with('status', __('ই-মেল ভেরিফাই হয়ে গেছে। হাতপাখায় স্বাগত!'));
         }
         // Signs in only on the link's first use, and never accounts with 2FA or desk access:
         // an old or forwarded link must not work like a password.
@@ -44,10 +44,10 @@ class VerifyEmailController extends Controller
             \Illuminate\Support\Facades\Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect(Url::to('/account'))->with('status', 'ইমেল যাচাই হয়ে গেছে। হাতপাখায় স্বাগত!');
+            return redirect(Url::to('/account'))->with('status', __('ই-মেল ভেরিফাই হয়ে গেছে। হাতপাখায় স্বাগত!'));
         }
 
-        return redirect(Url::to('/login'))->with('status', 'ইমেল যাচাই হয়ে গেছে। এবার লগ-ইন করুন।');
+        return redirect(Url::to('/login'))->with('status', __('ই-মেল ভেরিফাই হয়ে গেছে। এবার সাইন ইন করুন।'));
     }
 
     /** True once per 30 minutes per account (the registration e-mail counts too). */
@@ -62,6 +62,6 @@ class VerifyEmailController extends Controller
             $request->user()->sendEmailVerificationNotification();
         }
 
-        return back()->with('status', 'যাচাইয়ের লিংক আবার পাঠানো হয়েছে।');
+        return back()->with('status', __('ভেরিফাই করার লিংক আবার পাঠানো হয়েছে।'));
     }
 }

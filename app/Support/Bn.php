@@ -27,6 +27,12 @@ final class Bn
 
     public static function date(?\DateTimeInterface $d): string
     {
-        return $d ? self::num($d->format('j')).' '.self::MONTHS[(int) $d->format('n') - 1].' '.self::num($d->format('Y')) : '';
+        if (! $d) {
+            return '';
+        }
+
+        return self::$latin   // D169: English pages say "12 November 2026"
+            ? $d->format('j F Y')
+            : self::num($d->format('j')).' '.self::MONTHS[(int) $d->format('n') - 1].' '.self::num($d->format('Y'));
     }
 }

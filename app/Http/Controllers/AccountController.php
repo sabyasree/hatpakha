@@ -10,14 +10,14 @@ use Illuminate\Http\Request;
 /** "আমার লেখা": the writer's own drafts, submissions and published pieces (Phase 3a/3b). */
 class AccountController extends Controller
 {
-    public const STATUS = [
-        'draft' => ['খসড়া', 'এখনও জমা দেওয়া হয়নি'],
-        'pending' => ['জমা পড়েছে', 'সম্পাদকমণ্ডলী পড়ছেন'],
-        'changes' => ['বদল চাওয়া হয়েছে', 'সম্পাদকের মন্তব্য দেখে ঠিক করে আবার জমা দিন'],
-        'confirm' => ['মনোনীত, আপনার সম্মতি চাই', 'সম্পাদক কিছু শব্দ বদলাতে চান: দেখে সম্মতি দিন'],
-        'scheduled' => ['মনোনীত', 'প্রকাশের তারিখ ঠিক হয়েছে'],
+    public const STATUS = [   // D169: everyday words (shown with __(); English in lang/en.json)
+        'draft' => ['ড্রাফট', 'এখনও পাঠানো হয়নি'],
+        'pending' => ['পাঠানো হয়েছে', 'সম্পাদক পড়ছেন'],
+        'changes' => ['কিছু বদল দরকার', 'সম্পাদকের নোট দেখে ঠিক করে আবার পাঠান'],
+        'confirm' => ['বাছাই হয়েছে, আপনার সম্মতি দরকার', 'সম্পাদক কিছু শব্দ বদলাতে চান: দেখে সম্মতি দিন'],
+        'scheduled' => ['বাছাই হয়েছে', 'প্রকাশের তারিখ ঠিক হয়েছে'],
         'published' => ['প্রকাশিত', ''],
-        'rejected' => ['এবার মনোনীত হয়নি', ''],
+        'rejected' => ['এবার বাছাই হয়নি', ''],
         'archived' => ['আর্কাইভ', ''],
     ];
 
@@ -121,7 +121,7 @@ class AccountController extends Controller
         $savedIds = $db::table('saved_posts')->where('user_id', $user->id)->select('post_id');
         $likedIds = $db::table('post_likes')->where('user_id', $user->id)->latest('created_at')->limit(20)->pluck('post_id');
 
-        return view('account.reading', self::shell($request, 'reading', 'আমার পড়া') + [
+        return view('account.reading', self::shell($request, 'reading', 'লাইব্রেরি') + [
             'unfinished' => $user->reading_history ? \App\Support\ReadingHistory::unfinished($user) : collect(),
             'fresh' => \App\Support\ReadingHistory::newForYou($user),
             'saved' => Post::published()->with('authors', 'section')->whereIn('id', $savedIds)->latest('published_at')->paginate(self::PER_PAGE)->withPath(Url::to('/account/reading')),
@@ -135,12 +135,12 @@ class AccountController extends Controller
     /** The writer's own profile, a main tab of its own (owner): photo, cover, names, links, about. */
     public function profile(Request $request)
     {
-        return view('account.profile', self::shell($request, 'profile', 'আমার পাতা'));
+        return view('account.profile', self::shell($request, 'profile', 'প্রোফাইল'));
     }
 
     public function settings(Request $request)
     {
-        return view('account.settings', self::shell($request, 'settings', 'ই-মেল ও পাসওয়ার্ড') + ['setup' => self::twoFactorSetup($request)]);
+        return view('account.settings', self::shell($request, 'settings', 'সেটিংস') + ['setup' => self::twoFactorSetup($request)]);
     }
 
     /** While 2FA is being set up: the QR code and the key to type by hand. */
@@ -176,13 +176,13 @@ class AccountController extends Controller
             'remove_avatar' => ['nullable', 'boolean'],
             'remove_cover' => ['nullable', 'boolean'],
         ], [
-            'website.url' => 'ওয়েবসাইটের ঠিকানা https:// দিয়ে শুরু হবে।',
-            'facebook.regex' => 'ফেসবুক পাতার পুরো ঠিকানা দিন (https://facebook.com/…)।',
-            'instagram.regex' => 'ইনস্টাগ্রামের পুরো ঠিকানা দিন (https://instagram.com/…)।',
+            'website.url' => __('ওয়েবসাইটের লিংক https:// দিয়ে শুরু হবে।'),
+            'facebook.regex' => __('ফেসবুকের পুরো লিংক দিন (https://facebook.com/…)।'),
+            'instagram.regex' => __('ইনস্টাগ্রামের পুরো লিংক দিন (https://instagram.com/…)।'),
             // D166: plain words for older users (no MB, no file types)
-            'avatar.max' => 'ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।', 'cover.max' => 'ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।',
-            'avatar.mimetypes' => 'এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।', 'cover.mimetypes' => 'এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।',
-            'name.required_without' => 'আপনার নাম লিখুন।', 'name.min' => 'নামটি অন্তত দুই অক্ষরের হোক।', 'name_bn.min' => 'নামটি অন্তত দুই অক্ষরের হোক।',
+            'avatar.max' => __('ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।'), 'cover.max' => __('ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।'),
+            'avatar.mimetypes' => __('এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।'), 'cover.mimetypes' => __('এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।'),
+            'name.required_without' => __('আপনার নাম লিখুন।'), 'name.min' => __('নামটি অন্তত দুই অক্ষরের হোক।'), 'name_bn.min' => __('নামটি অন্তত দুই অক্ষরের হোক।'),
         ]);
         $data['name'] = filled($data['name'] ?? null) ? $data['name'] : $data['name_bn'];
         $user->forceFill(['name' => strip_tags($data['name'])])->save();
@@ -209,7 +209,7 @@ class AccountController extends Controller
         }
         $author->forceFill($changes)->save();
 
-        return redirect(Url::to('/account/profile'))->with('status', \App\Support\AccountMenu::for($user)['writer'] ? 'রাখা হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।' : 'রাখা হয়েছে। এখন থেকে আপনার নাম “'.strip_tags($data['name']).'”।');
+        return redirect(Url::to('/account/profile'))->with('status', \App\Support\AccountMenu::for($user)['writer'] ? __('সেভ হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।') : __('সেভ হয়েছে। এখন থেকে আপনার নাম “:name”।', ['name' => strip_tags($data['name'])]));
     }
 
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
@@ -218,18 +218,18 @@ class AccountController extends Controller
         abort_unless($post->authors()->where('user_id', $request->user()->id)->exists() && $post->status !== 'rejected', 403);
         // D94: once a reading is live on a published piece, only the editor changes it (the writer asks).
         if ($post->status === 'published' && $post->audio_status === 'approved') {
-            return redirect(Url::to('/account/writings'))->with('status', 'প্রকাশিত লেখার পাঠ আর বদলানো যায় না। বদলাতে চাইলে "বদল চাই" টিপে সম্পাদককে লিখুন।');
+            return redirect(Url::to('/account/writings'))->with('status', __('প্রকাশিত লেখার পাঠ আর বদলানো যায় না। বদলাতে চাইলে "বদল চাই" টিপে সম্পাদককে লিখুন।'));
         }
         if ($request->boolean('remove')) {
             \App\Support\AudioReading::remove($post);
 
-            return redirect(Url::to('/account/writings'))->with('status', 'পাঠটি সরানো হয়েছে।');
+            return redirect(Url::to('/account/writings'))->with('status', __('পাঠটি সরানো হয়েছে।'));
         }
         $request->validate(['audio' => ['required', 'file', 'max:'.(\App\Support\AudioReading::MAX_MB * 1024)]],
-            ['audio.required' => 'একটি অডিও ফাইল বেছে নিন।', 'audio.max' => 'ফাইলটি '.\App\Support\Bn::num((string) \App\Support\AudioReading::MAX_MB).' MB-এর মধ্যে হতে হবে।']);
+            ['audio.required' => __('একটি অডিও ফাইল বেছে নিন।'), 'audio.max' => __('ফাইলটি :mb MB-এর মধ্যে হতে হবে।', ['mb' => \App\Support\Bn::num((string) \App\Support\AudioReading::MAX_MB)])]);
         \App\Support\AudioReading::attach($post, $request->file('audio'));
 
-        return redirect(Url::to('/account/writings'))->with('status', 'পাঠটি জমা পড়েছে। সম্পাদক শুনে অনুমোদন করলেই লেখার পাতায় যোগ হবে।');
+        return redirect(Url::to('/account/writings'))->with('status', __('পাঠটি জমা পড়েছে। সম্পাদক শুনে ঠিক করলেই লেখার পাতায় যোগ হবে।'));
     }
 
     /**
@@ -251,19 +251,19 @@ class AccountController extends Controller
                 ->whereIn('author_id', \App\Models\Author::where('user_id', $request->user()->id)->select('id'))->first();
 
             // D166: straight to the new certificate (the walk-through found the old jump to the list confusing)
-            return $made ? redirect($made->verifyUrl())->with('status', 'আপনার সার্টিফিকেট তৈরি হয়েছে। নিচের বোতাম থেকে ছবি বা PDF নামান, প্রিন্ট করুন বা WhatsApp-এ পাঠান। পরে আবার পাবেন “আমার লেখা”-য়, লেখার পাশের “সার্টিফিকেট” বোতামে।')
-                : back(302, [], Url::to('/account'))->with('status', 'এই লেখার সার্টিফিকেট এখান থেকে তৈরি করা গেল না। সম্পাদককে লিখুন, তাঁরা দেখে দেবেন।');
+            return $made ? redirect($made->verifyUrl())->with('status', __('আপনার সার্টিফিকেট তৈরি হয়েছে। নিচের বোতাম থেকে ছবি বা PDF ডাউনলোড করুন, প্রিন্ট করুন বা WhatsApp-এ পাঠান। পরে আবার পাবেন “আমার লেখা”-য়, লেখার পাশের “সার্টিফিকেট” বোতামে।'))
+                : back(302, [], Url::to('/account'))->with('status', __('এই লেখার সার্টিফিকেট এখান থেকে তৈরি করা গেল না। সম্পাদককে লিখুন, তাঁরা দেখে দেবেন।'));
         }
         \App\Models\EditorTask::propose('certificate_request', 'লেখক শংসাপত্র চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
 
-        return back(302, [], Url::to('/account/writings'))->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
+        return back(302, [], Url::to('/account/writings'))->with('status', __('অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে সার্টিফিকেট দিলে আপনাকে জানানো হবে।'));
     }
 
     public function updateNewsletter(Request $request)
     {
         $request->user()->forceFill(['mail_opt_out' => ! $request->boolean('newsletter')])->save();
 
-        return redirect(Url::to('/account/settings').'#letters')->with('status', $request->boolean('newsletter') ? 'সাপ্তাহিক ই-মেল চালু হল।' : 'সাপ্তাহিক ই-মেল বন্ধ হল। নিজের লেখার খবর (যেমন সম্পাদকের কথা) আগের মতোই পাবেন।');
+        return redirect(Url::to('/account/settings').'#letters')->with('status', $request->boolean('newsletter') ? __('সাপ্তাহিক ই-মেল চালু হল।') : __('সাপ্তাহিক ই-মেল বন্ধ হল। নিজের লেখার খবর (যেমন সম্পাদকের মেসেজ) আগের মতোই পাবেন।'));
     }
 
     /** D166: the post page reports how far a signed-in reader got (sendBeacon on leaving; nothing if their switch is off). */
@@ -279,14 +279,14 @@ class AccountController extends Controller
         $on = $request->boolean('on');
         $request->user()->forceFill(['reading_history' => $on])->save();
 
-        return redirect(Url::to('/account/settings').'#reading')->with('status', $on ? 'এখন থেকে কী পড়ছেন মনে রাখা হবে।' : 'আর মনে রাখা হবে না। আগের হিসেব মুছতে চাইলে নিচের “মুছুন” টিপুন।');
+        return redirect(Url::to('/account/settings').'#reading')->with('status', $on ? __('পড়ার হিস্টরি চালু হল।') : __('পড়ার হিস্টরি বন্ধ হল। আগের হিস্টরি মুছতে চাইলে নিচের “মুছুন” টিপুন।'));
     }
 
     public function readingHistoryClear(Request $request)
     {
         \App\Support\ReadingHistory::clear($request->user());
 
-        return redirect(Url::to('/account/settings').'#reading')->with('status', 'পড়ার খাতা মুছে দেওয়া হয়েছে। “পরে পড়ব”, “ভালো লেগেছে” আর আপনার লেখা যেমন ছিল আছে।');
+        return redirect(Url::to('/account/settings').'#reading')->with('status', __('পড়ার হিস্টরি মুছে দেওয়া হয়েছে। সেভ করা লেখা, লাইক করা লেখা আর আপনার লেখা যেমন ছিল আছে।'));
     }
 
     public function updatePassword(Request $request)
@@ -294,13 +294,13 @@ class AccountController extends Controller
         $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()->uncompromised()],
-        ], ['current_password.current_password' => 'এখনকার পাসওয়ার্ড মিলছে না।', 'password.confirmed' => 'দুটি পাসওয়ার্ড মেলেনি।',
-            'password.uncompromised' => 'এই পাসওয়ার্ডটি অন্য কোনো সাইটের ফাঁস হওয়া তালিকায় আছে। অন্য একটি দিন।']);
+        ], ['current_password.current_password' => __('এখনকার পাসওয়ার্ড মিলছে না।'), 'password.confirmed' => __('দুটি পাসওয়ার্ড মেলেনি।'),
+            'password.uncompromised' => __('এই পাসওয়ার্ডটি অন্য কোনো সাইট থেকে ফাঁস হয়ে গেছে। অন্য একটি পাসওয়ার্ড দিন।')]);
         $request->user()->forceFill(['password' => $request->input('password'), 'legacy_password' => null])->save();
         \Illuminate\Support\Facades\Auth::logoutOtherDevices($request->input('password'));
         \App\Models\AuditLog::record('user.password_changed', $request->user());
 
-        return redirect(Url::to('/account/settings').'#security')->with('status', 'পাসওয়ার্ড বদলেছে। অন্য সব জায়গা থেকে লগ-আউট করা হয়েছে।');
+        return redirect(Url::to('/account/settings').'#security')->with('status', __('পাসওয়ার্ড বদলেছে। অন্য সব ফোন আর কম্পিউটার থেকে লগ আউট করা হয়েছে।'));
     }
 
     /** 2FA, step 1 (D59): a new secret, kept in the session until the first code proves the app has it. */
@@ -314,10 +314,10 @@ class AccountController extends Controller
     public function twoFactorConfirm(Request $request)
     {
         $secret = (string) $request->session()->get('2fa_setup');
-        $request->validate(['code' => ['required', 'digits:6']], ['code.digits' => 'অ্যাপের ৬ অঙ্কের কোডটি দিন।']);
+        $request->validate(['code' => ['required', 'digits:6']], ['code.digits' => __('অ্যাপের :digits অঙ্কের কোডটি দিন।', ['digits' => \App\Support\Bn::num('6')])]);
         $mfa = \Filament\Auth\MultiFactor\App\AppAuthentication::make();
         if ($secret === '' || ! $mfa->verifyCode((string) $request->input('code'), $secret)) {
-            return redirect(Url::to('/account/settings').'#security')->withErrors(['code' => 'কোডটি মিলছে না। অ্যাপে দেখানো এখনকার কোডটি দিন।']);
+            return redirect(Url::to('/account/settings').'#security')->withErrors(['code' => __('কোড মিলছে না। অ্যাপে এখন যে কোড দেখাচ্ছে, সেটা দিন।')]);
         }
         $codes = $mfa->generateRecoveryCodes();
         $user = $request->user();
@@ -325,17 +325,17 @@ class AccountController extends Controller
         $request->session()->forget('2fa_setup');
         \App\Models\AuditLog::record('user.2fa_enabled', $user);
 
-        return redirect(Url::to('/account/settings').'#security')->with(['status' => 'দুই-ধাপের যাচাই চালু হয়েছে।', 'recovery_codes' => $codes]);
+        return redirect(Url::to('/account/settings').'#security')->with(['status' => __('টু-স্টেপ ভেরিফিকেশন চালু হয়েছে।'), 'recovery_codes' => $codes]);
     }
 
     public function twoFactorDisable(Request $request)
     {
         abort_if($request->user()->hasRole(\App\Enums\Role::Editor), 403);   // desk accounts must keep 2FA (docs/SECURITY.md)
-        $request->validate(['current_password' => ['required', 'current_password']], ['current_password.current_password' => 'পাসওয়ার্ড মিলছে না।']);
+        $request->validate(['current_password' => ['required', 'current_password']], ['current_password.current_password' => __('পাসওয়ার্ড মিলছে না।')]);
         $request->user()->forceFill(['app_authentication_secret' => null, 'app_authentication_recovery_codes' => null])->save();
         \App\Models\AuditLog::record('user.2fa_disabled', $request->user());
 
-        return redirect(Url::to('/account/settings').'#security')->with('status', 'দুই-ধাপের যাচাই বন্ধ হয়েছে।');
+        return redirect(Url::to('/account/settings').'#security')->with('status', __('টু-স্টেপ ভেরিফিকেশন বন্ধ হয়েছে।'));
     }
 
     public function updateName(Request $request)
@@ -343,7 +343,7 @@ class AccountController extends Controller
         $data = $request->validate(['name' => ['required', 'string', 'min:2', 'max:80']]);
         $request->user()->forceFill(['name' => strip_tags($data['name'])])->save();
 
-        return redirect(Url::to('/account'))->with('status', 'নাম বদলানো হয়েছে।');
+        return redirect(Url::to('/account'))->with('status', __('নাম বদলানো হয়েছে।'));
     }
 
     /** Email verification is enforced only where real email is sent (staging uses the log mailer). */
@@ -362,16 +362,16 @@ class AccountController extends Controller
         abort_unless($post->authors()->where('user_id', $user->id)->exists() || $post->submitted_by === $user->id, 404);
         $back = Url::to('/account/writings');
         if (! in_array($post->status, ['pending', 'scheduled', 'confirm', 'published'], true)) {
-            return redirect($back)->with('status', 'এই লেখাটি আপনি নিজেই বদলাতে পারেন।');
+            return redirect($back)->with('status', __('এই লেখাটি আপনি নিজেই বদলাতে পারেন।'));
         }
         $data = \Illuminate\Support\Facades\Validator::make($request->all(), ['what' => ['required', 'string', 'min:5', 'max:1500']],
-            ['what.required' => 'কী বদলাতে চান, লিখুন।', 'what.min' => 'কী বদলাতে চান, একটু বিশদে লিখুন।', 'what.max' => 'একটু ছোট করে লিখুন (১৫০০ অক্ষরের মধ্যে)।']);
+            ['what.required' => __('কী বদলাতে চান, লিখুন।'), 'what.min' => __('কী বদলাতে চান, একটু খুলে লিখুন।'), 'what.max' => __('একটু ছোট করে লিখুন (:count অক্ষরের মধ্যে)।', ['count' => \App\Support\Bn::num('1500')])]);
         if ($data->fails()) {
             return redirect($back)->withErrors($data, 'change')->with('change_post', $post->id);
         }
         $open = \App\Models\ContactMessage::where('kind', 'change')->where('user_id', $user->id)->where('status', 'new')->count();
         if ($open >= 3) {
-            return redirect($back)->with('status', 'আপনার আগের তিনটি অনুরোধ এখনও দেখা হয়নি। সম্পাদক সেগুলো দেখলে আবার পাঠাতে পারবেন।');
+            return redirect($back)->with('status', __('আপনার আগের তিনটি অনুরোধ এখনও দেখা হয়নি। সম্পাদক সেগুলো দেখলে আবার পাঠাতে পারবেন।'));
         }
         $msg = \App\Models\ContactMessage::create([
             'kind' => 'change', 'topic' => 'piece', 'name' => $user->name, 'email' => $user->email, 'user_id' => $user->id,
@@ -382,6 +382,6 @@ class AccountController extends Controller
         \App\Models\AuditLog::record('post.change_requested', $post, ['message' => $msg->id]);
         $msg->notifyAdmins();
 
-        return redirect($back)->with('status', 'অনুরোধ সম্পাদকের কাছে পৌঁছেছে। তিনি দেখে ঠিক করে দেবেন, দরকার হলে ই-মেলে জানাবেন।');
+        return redirect($back)->with('status', __('অনুরোধ সম্পাদকের কাছে পৌঁছেছে। তিনি দেখে ঠিক করে দেবেন, দরকার হলে ই-মেলে জানাবেন।'));
     }
 }
