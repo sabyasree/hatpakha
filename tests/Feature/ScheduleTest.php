@@ -16,7 +16,7 @@ class ScheduleTest extends TestCase
     public function test_every_shift_is_an_in_process_callback_and_runs(): void
     {
         $events = collect(app(Schedule::class)->events());
-        $this->assertCount(30, $events);   // + reported game words (D179) + পাঠকের কলম: open, screen, pick, publish (D175, D176) + reading history (D166) + old letters (D161) + 12 shifts and jobs + the nightly backup (D92) + relaunch letters (D104) + reader insights (D119) + the daily phone note (D128) + push announcements (D132) + search index + ebooks + Facebook (timed, morning, evening)
+        $this->assertCount(34, $events);   // + the marketing plan: tomorrow, today, posts, numbers, lessons, streak reminder (D182; replaces Facebook morning and evening) + + reported game words (D179) + পাঠকের কলম: open, screen, pick, publish (D175, D176) + reading history (D166) + old letters (D161) + 12 shifts and jobs + the nightly backup (D92) + relaunch letters (D104) + reader insights (D119) + the daily phone note (D128) + push announcements (D132) + search index + ebooks + Facebook (timed, morning, evening)
         $events->each(fn ($e) => $this->assertInstanceOf(CallbackEvent::class, $e, 'No child processes: '.$e->description));
 
         $chief = $events->first(fn ($e) => $e->description === 'ai-shift chief');

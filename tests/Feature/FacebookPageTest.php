@@ -77,11 +77,12 @@ class FacebookPageTest extends TestCase
         $this->assertSame('p_1', $timed->fresh()->fb_post_id);
 
         $this->social();
-        $this->assertNull(FacebookPage::autoPost(), 'Off until the owner switches it on');
+        \App\Models\Setting::put(FacebookPage::AUTO, '0');   // D182: on since the owner asked for fully automatic; the switch still turns it off
+        $this->assertNull(FacebookPage::autoPost(), 'Off when the owner switches it off');
         $admin = User::factory()->create(['role' => Role::Admin]);
         $this->actingAs($admin);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
-        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('নিজে থেকে পোস্ট: বন্ধ')->assertSee('ফেসবুকে দিন')->assertSee('পরের পোস্ট')->call('toggleFacebookAuto');
+        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('নিজে থেকে পোস্ট: বন্ধ')->assertSee('ফেসবুকে দিন')->assertSee('আজ ও কালের পোস্ট')->call('toggleFacebookAuto');
         $this->assertTrue(FacebookPage::auto());
         $this->assertNotNull(FacebookPage::autoPost());
 

@@ -190,4 +190,127 @@ final class FacebookPage
 
         return $candidates->first(fn (SocialPost $s) => self::postable($s) === null);
     }
+
+    /** One Graph call with the Page token. @return array{0: ?\Illuminate\Http\Client\Response, 1: array} */
+    private static function graph(string $path, array $params, bool $get = false): array
+    {
+        $token = (string) config('services.facebook_page.token');
+        $params += ['access_token' => $token];
+        if (filled($secret = config('services.facebook_page.app_secret'))) {
+            $params['appsecret_proof'] = hash_hmac('sha256', $token, (string) $secret);
+        }
+        $url = 'https://graph.facebook.com/'.config('services.facebook_page.graph_version').'/'.ltrim($path, '/');
+        $res = rescue(fn () => $get ? Http::timeout(25)->get($url, $params) : Http::asForm()->timeout(40)->post($url, $params), null, false);
+
+        return [$res, $params];
+    }
+
+    private static function why($res): string
+    {
+        return mb_substr((string) ($res?->json('error.message') ?? ($res ? 'HTTP '.$res->status() : 'no connection')), 0, 280);
+    }
+
+    /**
+     * D182: send a planned post in its own format. A card goes up as a photo, a poem as several photos in one post,
+     * a reel as a reel; anything else the old way (text with a link preview). The text is the Facebook text as it is
+     * (the link is its last line).
+     *
+     * @return array{0: bool, 1: string}
+     */
+    public static function send(SocialPost $s, ?int $by = null): array
+    {
+        $images = array_values((array) ($s->media['images'] ?? []));
+        $video = $s->media['video'] ?? null;
+        if ($s->format === 'link' || ($s->format === 'reel' ? ! $video : ! $images)) {
+            return self::publish($s, $by);
+        }
+        if (! self::ready()) {
+            return [false, self::configured() ? __('শুধু আসল সাইট থেকে ফেসবুকে পোস্ট হয়') : __('ফেসবুকের চাবি দেওয়া নেই')];
+        }
+        if ($why = self::postable($s)) {
+            return [false, $why];
+        }
+        $page = (string) config('services.facebook_page.id');
+        $text = trim((string) $s->texts['facebook']);
+        $id = null;
+        $res = null;
+        if ($s->format === 'reel') {
+            [$res] = self::graph($page.'/video_reels', ['upload_phase' => 'start']);
+            $videoId = $res?->json('video_id');
+            if ($videoId) {
+                $up = rescue(fn () => Http::withHeaders(['Authorization' => 'OAuth '.config('services.facebook_page.token'), 'file_url' => asset(ltrim($video, '/'))])
+                    ->timeout(60)->post('https://rupload.facebook.com/video-upload/'.config('services.facebook_page.graph_version').'/'.$videoId), null, false);
+                if ($up && $up->successful()) {
+                    [$res] = self::graph($page.'/video_reels', ['upload_phase' => 'finish', 'video_id' => $videoId, 'video_state' => 'PUBLISHED', 'description' => $text]);
+                    $id = $res?->successful() ? (string) $videoId : null;
+                } else {
+                    $res = $up;
+                }
+            }
+        } elseif (count($images) === 1) {
+            [$res] = self::graph($page.'/photos', ['caption' => $text, 'url' => asset(ltrim($images[0], '/'))]);
+            $id = $res?->json('post_id') ?? $res?->json('id');
+        } else {
+            $attached = [];
+            foreach ($images as $i => $img) {
+                [$res] = self::graph($page.'/photos', ['published' => 'false', 'url' => asset(ltrim($img, '/'))]);
+                if (! ($photo = $res?->json('id'))) {
+                    $attached = [];
+                    break;
+                }
+                $attached["attached_media[$i]"] = json_encode(['media_fbid' => (string) $photo]);
+            }
+            if ($attached) {
+                [$res] = self::graph($page.'/feed', ['message' => $text] + $attached);
+                $id = $res?->json('id');
+            }
+        }
+        if (! $id) {
+            $why = self::why($res);
+            $s->forceFill(['fb_error' => $why])->save();
+            AuditLog::record('marketing.facebook_failed', null, ['social_post' => $s->id, 'format' => $s->format, 'error' => $why]);
+
+            return [false, $why];
+        }
+        $s->forceFill(['fb_post_id' => (string) $id, 'fb_error' => null, 'fb_scheduled_at' => null])->save();
+        $s->settle($by);
+        AuditLog::record('marketing.facebook', null, ['social_post' => $s->id, 'fb' => (string) $id, 'format' => $s->format, 'by' => $by]);
+
+        return [true, (string) $id];
+    }
+
+    /** Our own comment under our post (a riddle's answer the next morning). Needs the Page's permission to comment; quiet if it has none. */
+    public static function comment(SocialPost $s): bool
+    {
+        if (! self::ready() || ! $s->fb_post_id || $s->fb_comment_id || blank($s->comment)) {
+            return false;
+        }
+        [$res] = self::graph($s->fb_post_id.'/comments', ['message' => (string) $s->comment]);
+        $id = $res?->json('id');
+        $s->forceFill(['fb_comment_id' => $id ? (string) $id : 'failed', 'comment_at' => null])->save();
+        if (! $id) {
+            AuditLog::record('marketing.comment_failed', null, ['social_post' => $s->id, 'error' => self::why($res)]);
+        }
+
+        return (bool) $id;
+    }
+
+    /** What readers did with a post: reactions, comments, shares, and how many saw it (when the token may read that). */
+    public static function numbers(SocialPost $s): array
+    {
+        if (! self::ready() || ! $s->fb_post_id) {
+            return [];
+        }
+        [$res] = self::graph($s->fb_post_id, ['fields' => 'shares,comments.summary(true).limit(0),reactions.summary(true).limit(0)'], true);
+        $out = [];
+        if ($res?->successful()) {
+            $out = ['reactions' => (int) $res->json('reactions.summary.total_count'), 'comments' => (int) $res->json('comments.summary.total_count'), 'shares' => (int) $res->json('shares.count')];
+        }
+        [$ins] = self::graph($s->fb_post_id.'/insights', ['metric' => 'post_impressions_unique'], true);
+        if ($ins?->successful() && ($reach = $ins->json('data.0.values.0.value')) !== null) {
+            $out['reach'] = (int) $reach;
+        }
+
+        return $out;
+    }
 }

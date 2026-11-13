@@ -1,0 +1,73 @@
+# The marketing studio (D182): draws the cards and reels the marketing plan asked for, by itself.
+# The web server cannot draw them (no browser, no ffmpeg), so this job does, every three hours:
+#   1. asks the site what is waiting            (php artisan hatpakha:studio list, over the deploy SSH connection)
+#   2. draws each one in a headless browser     (studio/render.mjs, our own fonts; reels with ffmpeg)
+#   3. uploads the files to a private inbox and lets the site take them in (hatpakha:studio take checks every file)
+# Uses only the secrets the deploy already has. With nothing waiting it stops after step 1 (about 20 seconds).
+name: Marketing studio
+
+on:
+  schedule:
+    - cron: '15 */3 * * *'   # 05:45, 08:45, 11:45 … Kolkata time; the evening plan (20:20) is drawn at 20:45
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  draw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Ask the site what is waiting
+        id: jobs
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && php artisan hatpakha:studio list" > jobs.json
+          n=$(python3 -c "import json; print(len(json.load(open('jobs.json'))))")
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          echo "$n waiting"
+
+      - uses: actions/setup-node@v4
+        if: steps.jobs.outputs.count != '0'
+        with:
+          node-version: '22'
+
+      - name: Draw
+        if: steps.jobs.outputs.count != '0'
+        run: |
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
+          cd studio
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+          cd ..
+          node studio/render.mjs jobs.json out
+
+      - name: Hand the files to the site
+        if: steps.jobs.outputs.count != '0'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_PATH}/storage/app/private/studio-in'"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT:-22}" out/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/storage/app/private/studio-in/"
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && php artisan hatpakha:studio take"

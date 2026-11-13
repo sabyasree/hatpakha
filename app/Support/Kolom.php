@@ -36,12 +36,10 @@ final class Kolom
         return \App\Models\Setting::get(self::AUTO) !== '0';
     }
 
-    /** With the automatic switch on, a পাঠকের কলম post goes to the Facebook Page at once (live site only). */
+    /** D182: a পাঠকের কলম post gets its card and a late-morning time; the marketing plan sends it (when automatic posting is on). */
     private static function share(SocialPost $s): void
     {
-        if (self::auto() && FacebookPage::ready()) {
-            rescue(fn () => FacebookPage::publish($s->fresh()), null, false);
-        }
+        MarketingPlan::dress($s);
     }
 
     /** Sunday morning: publish the proposed picks by themselves, if every one of them was read and passed by the AI. */

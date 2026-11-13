@@ -80,7 +80,7 @@ class AppController extends Controller
                 default => $sub->device,
             },
         ]);
-        if (in_array('account', $add, true)) {
+        if (in_array('account', $add, true) || in_array('games', $add, true)) {
             $sub->user_id = $request->user()->id;   // a browser belongs to whoever linked it last
         }
         $sub->save();
@@ -105,7 +105,7 @@ class AppController extends Controller
 
             return response()->json(['ok' => true, 'topics' => []]);
         }
-        $sub->forceFill(['topics' => $left, 'user_id' => in_array('account', $left, true) ? $sub->user_id : null])->save();
+        $sub->forceFill(['topics' => $left, 'user_id' => in_array('account', $left, true) || in_array('games', $left, true) ? $sub->user_id : null])->save();
 
         return response()->json(['ok' => true, 'topics' => $left]);
     }
@@ -149,6 +149,7 @@ class AppController extends Controller
         foreach ($topics as $t) {
             $ok = match (true) {
                 $t === 'account' => $request->user() !== null,
+                $t === 'games' => $request->user() !== null,   // D182: the evening reminder to keep a streak of game days
                 $t === 'daily' => true,
                 $t === 'issues' => true,   // D166: "নতুন সংখ্যা বেরোলে জানান" (issue news goes to every phone with alerts on)
                 (bool) preg_match('/^serial:(\d+)$/', $t, $m) => Serial::live()->whereKey((int) $m[1])->exists(),

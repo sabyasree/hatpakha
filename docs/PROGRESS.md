@@ -273,7 +273,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D177: ধাঁধা and শব্দজব্দ; leaderboard (today, week, all time); 1,002 words and 200 riddles (no repeat for 200 days)
 - [x] D178: seven badges in three tiers on the profile and on writers' pages
 - [x] D179: players report a wrong word, clue or riddle; the AI editor corrects or removes it from the next day; /desk → শব্দের অভিযোগ (with undo)
-- [ ] Owner: read docs/MARKETING.md (proposal: nine plays, weekly calendar, five-role team, what to measure) and answer its five decisions; nothing is built until then
+- [x] D182: marketing runs by itself: daily plan (riddle card, reel, piece card or poem slides), cards and reels drawn by a GitHub Actions job, posted to Facebook and Instagram in their own formats, answers as comments, numbers read back, weekly lessons, streak reminder, WhatsApp message of the day (docs/MARKETING.md)
+- [ ] Owner, after the release: run "Marketing studio" once by hand in GitHub → Actions to see the first cards; check the Page token has permission to comment (for the riddle answers) and to read insights (for reach); open a WhatsApp Channel if there is none
+- [ ] Marketing, next: invite rewards and the "বন্ধু" medal; "আমার সপ্তাহ" card; writers' share kit; drafted replies to comments; leaderboard post (privacy line first); weekly e-mail rebuild (needs the owner's yes: bulk mail)
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode

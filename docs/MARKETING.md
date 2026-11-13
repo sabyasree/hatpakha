@@ -1,7 +1,7 @@
 # Marketing plan: from "announce the piece" to a reason to come every day
 
-Status: **proposal for the owner (2026-11-13). Nothing here is built until approved.**
-Replaces the current marketing agent's only job (one announcement with a link per new piece).
+Status: **approved by the owner on 2026-11-13 ("fully automatic", with reels). First part built: D182 in docs/DECISIONS.md** (plays 1, 2, 3, 5, 8 and the reels; the daily calendar; the analyst). Still to build: plays 4, 6, 7, the leaderboard post, drafted replies, the weekly e-mail.
+Replaces the old marketing agent's only job (one announcement with a link per new piece).
 
 ## 1. What the evidence says
 

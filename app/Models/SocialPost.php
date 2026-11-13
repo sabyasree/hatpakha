@@ -12,7 +12,7 @@ class SocialPost extends Model
 
     protected function casts(): array
     {
-        return ['texts' => 'array', 'posted_at' => 'datetime', 'fb_scheduled_at' => 'datetime'];
+        return ['texts' => 'array', 'posted_at' => 'datetime', 'fb_scheduled_at' => 'datetime', 'design' => 'array', 'media' => 'array', 'metrics' => 'array', 'slot_at' => 'datetime', 'comment_at' => 'datetime', 'metrics_at' => 'datetime'];
     }
 
     public function subject(): MorphTo
@@ -29,7 +29,7 @@ class SocialPost extends Model
     public function settle(?int $by = null): void
     {
         $fbDone = $this->fb_post_id || ! \App\Support\FacebookPage::configured() || blank($this->texts['facebook'] ?? null);
-        $igDone = $this->ig_media_id || ! \App\Support\InstagramPage::configured() || blank($this->texts['instagram'] ?? null)
+        $igDone = $this->ig_media_id || $this->ig_container || ! \App\Support\InstagramPage::configured() || blank($this->texts['instagram'] ?? null)
             || (! \App\Support\InstagramPage::picture($this) && ! \App\Filament\Pages\Marketing::card($this));
         if ($fbDone && $igDone && ($this->status ?? 'ready') === 'ready') {   // a new row's status is the database default
             $this->forceFill(['status' => 'posted', 'posted_at' => now(), 'posted_by' => $by])->save();
