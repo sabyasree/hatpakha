@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<!--
+  The marketing studio's drawing board (D182). Opened only by studio/render.mjs in a headless browser, from disk:
+  it is never served to readers. window.draw(spec, t) draws one card, or one moment (t seconds) of a reel.
+  All text is set with textContent. Logo palette only (docs/DESIGN.md); white text only on red or navy.
+-->
+<style>
+@font-face { font-family: "Anek"; src: url("../public/fonts/anek-bangla-bengali.woff2") format("woff2"); font-weight: 100 800; unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+1CD0, U+1CD2, U+1CD5-1CD6, U+1CD8, U+1CE1, U+1CEA, U+1CED, U+1CF2, U+1CF5-1CF7, U+200C-200D, U+20B9, U+25CC, U+A8F1; }
+@font-face { font-family: "Anek"; src: url("../public/fonts/anek-bangla-latin.woff2") format("woff2"); font-weight: 100 800; }
+@font-face { font-family: "Serif"; src: url("../resources/fonts/NotoSerifBengali-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Serif"; src: url("../resources/fonts/NotoSerifBengali-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Galada"; src: url("../public/fonts/galada-bengali.woff2") format("woff2"); unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+200C-200D, U+25CC; }
+@font-face { font-family: "Galada"; src: url("../public/fonts/galada-latin.woff2") format("woff2"); }
+:root { --sky:#2DAAE2; --sky-night:#12304A; --sky-tint:#DDF1FA; --red:#CB1B32; --red-dark:#7A1022; --pink:#F08D90; --peach:#EFC08D; --peach-light:#FBEBD8; --peach-deep:#E39A6A; --navy:#13212C; --paper:#FFFBF4; --ink2:#4D5A63; --rule:#E8DCCB; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--paper); }
+#stage { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: var(--paper); color: var(--navy); font-family: "Anek", sans-serif; }
+#stage.reel { height: 1920px; }
+#stage.dark { background: var(--navy); color: #fff; }
+.grain { position: absolute; inset: 0; background-image: radial-gradient(rgba(19,33,44,.05) 1.2px, transparent 1.3px); background-size: 14px 14px; }
+.fan { position: absolute; right: -150px; top: -30px; width: 620px; transform: rotate(-14deg); opacity: .95; }
+.reel .fan { width: 720px; right: -180px; top: 20px; }
+.chip { position: absolute; left: 80px; top: 88px; padding: 14px 30px 10px; border-radius: 999px; background: var(--red); color: #fff; font-size: 38px; font-weight: 600; transform: rotate(-2deg); }
+.reel .chip { top: 190px; font-size: 44px; }
+.body { position: absolute; left: 80px; right: 80px; top: 300px; bottom: 230px; display: flex; flex-direction: column; justify-content: center; gap: 36px; }
+.reel .body { top: 430px; bottom: 420px; }
+.foot { position: absolute; left: 80px; right: 80px; bottom: 70px; display: flex; align-items: flex-end; justify-content: space-between; border-top: 3px solid var(--rule); padding-top: 26px; }
+.reel .foot { bottom: 250px; }
+.dark .foot { border-color: rgba(255,255,255,.25); }
+.brand { font-family: "Galada", "Anek", sans-serif; font-size: 68px; line-height: 1; color: var(--red); }
+.dark .brand { color: #fff; }
+.site { font-size: 36px; color: var(--ink2); font-weight: 500; }
+.dark .site { color: #fff; }
+.mark { font-family: "Serif", serif; font-size: 220px; line-height: .6; color: var(--pink); height: 90px; }
+.big { font-family: "Serif", serif; font-weight: 700; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
+.poem { font-weight: 400; line-height: 1.75; }
+.by { font-size: 44px; font-weight: 600; color: var(--red-dark); }
+.dark .by { color: #fff; }
+.small { font-size: 38px; color: var(--ink2); line-height: 1.45; }
+.dark .small { color: #fff; }
+.boxes { display: flex; gap: 18px; flex-wrap: wrap; }
+.box { width: 118px; height: 118px; border: 5px solid var(--navy); border-radius: 22px; background: #fff; display: flex; align-items: center; justify-content: center; font-family: "Serif", serif; font-weight: 700; font-size: 62px; color: var(--navy); transform: rotate(-1.5deg); }
+.box:nth-child(even) { transform: rotate(1.5deg); }
+.box.on { background: var(--peach-light); border-color: var(--red); }
+.cta { display: inline-block; align-self: flex-start; padding: 20px 38px 14px; border-radius: 22px; background: var(--navy); color: #fff; font-size: 42px; font-weight: 600; }
+.row { display: flex; align-items: center; gap: 28px; padding: 26px 30px; border-radius: 26px; background: #fff; border: 3px solid var(--rule); font-size: 50px; font-weight: 600; }
+.row .n { width: 84px; height: 84px; border-radius: 50%; background: var(--red); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 46px; flex: none; }
+.row .name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.row .pts { color: var(--red-dark); }
+.count { font-family: "Anek", sans-serif; font-weight: 700; font-size: 300px; line-height: 1; color: var(--red); text-align: center; }
+.ring { width: 420px; height: 420px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.center { text-align: center; align-items: center; }
+.center .cta { align-self: center; }
+.dark .cta { background: var(--red); }
+.reel .small { font-size: 52px; }
+.reel .by { font-size: 56px; }
+.reel .cta { font-size: 54px; padding: 26px 46px 18px; }
+.reel .box { width: 150px; height: 150px; font-size: 80px; }
+.reel .site { font-size: 42px; }
+.reel .body { gap: 48px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const BN = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+const bn = (n) => String(n).replace(/\d/g, (d) => BN[+d]);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+
+function fan() {
+    const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 200 100'); svg.setAttribute('class', 'fan');
+    const rays = 16, p = (a) => (100 + 98 * Math.cos(a)).toFixed(2) + ' ' + (100 + 98 * Math.sin(a)).toFixed(2);
+    for (let k = 0; k < rays; k++) {
+        const a1 = Math.PI + Math.PI * k / rays, a2 = Math.PI + Math.PI * (k + 1) / rays, path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', `M100 100 L${p(a1)} A98 98 0 0 1 ${p(a2)} Z`); path.setAttribute('fill', k % 2 ? '#F08D90' : '#CB1B32'); svg.appendChild(path);
+    }
+    const hub = document.createElementNS(ns, 'path'); hub.setAttribute('d', 'M62 100 A38 38 0 0 1 138 100 Z'); hub.setAttribute('fill', '#EFC08D'); svg.appendChild(hub);
+    return svg;
+}
+
+/** Shrink the text until its block fits the space it has. */
+function fit(node, box, max, min) {
+    let size = max; node.style.fontSize = size + 'px';
+    while (size > min && box.scrollHeight > box.clientHeight + 2) { size -= 2; node.style.fontSize = size + 'px'; }
+}
+
+function frame(stage, s, reel) {
+    stage.className = (reel ? 'reel ' : '') + (s.dark ? 'dark' : ''); stage.replaceChildren();
+    stage.append(el('div', 'grain'), fan());
+    if (s.chip) stage.append(el('div', 'chip', s.chip));
+    const body = el('div', 'body'); stage.append(body);
+    const foot = el('div', 'foot'); foot.append(el('div', 'brand', 'হাতপাখা'), el('div', 'site', s.site || 'hatpakha.com')); stage.append(foot);
+    return body;
+}
+const show = (node, a, dy = 40) => { node.style.opacity = ease(a); node.style.transform = (node.dataset.tf || '') + ` translateY(${(1 - ease(a)) * dy}px)`; };
+function boxes(letters, shown) {
+    const wrap = el('div', 'boxes');
+    letters.forEach((l, i) => { const b = el('div', 'box' + (i < shown ? ' on' : ''), i < shown ? l : ''); wrap.append(b); });
+    return wrap;
+}
+
+/** One still card. */
+function card(stage, s, reel = false) {
+    const body = frame(stage, s, reel);
+    let main = null, max = 84;
+    if (s.t === 'line') {
+        body.append(el('div', 'mark', '“'));
+        main = el('div', 'big', s.quote); body.append(main);
+        if (s.by) body.append(el('div', 'by', '— ' + s.by));
+        if (s.title) body.append(el('div', 'small', s.title));
+    } else if (s.t === 'riddle' || s.t === 'word') {
+        main = el('div', 'big', s.clue); body.append(main);
+        body.append(boxes(s.letters || Array(s.n || 3).fill(''), s.shown || 0));
+        if (s.note) body.append(el('div', 'small', s.note));
+        if (s.cta) body.append(el('div', 'cta', s.cta));
+    } else if (s.t === 'board') {
+        max = 72; main = el('div', 'big', s.title); body.append(main);
+        (s.rows || []).forEach((r, i) => { const row = el('div', 'row'); row.append(el('div', 'n', bn(i + 1)), el('div', 'name', r[0]), el('div', 'pts', bn(r[1]))); body.append(row); });
+        if (s.note) body.append(el('div', 'small', s.note));
+    } else if (s.t === 'title') {
+        max = 110; main = el('div', 'big', s.title); body.append(main);
+        if (s.by) body.append(el('div', 'by', s.by));
+        if (s.note) body.append(el('div', 'small', s.note));
+    } else if (s.t === 'stanza') {
+        max = 64; main = el('div', 'big poem', s.text); body.append(main);
+    } else if (s.t === 'end') {
+        body.classList.add('center'); max = 92; main = el('div', 'big', s.title); body.append(main);
+        if (s.by) body.append(el('div', 'by', s.by));
+        body.append(el('div', 'cta', s.cta || 'পুরো লেখা: hatpakha.com'));
+    } else {   // 'text': a heading and a few lines (পাঠকের কলম, announcements)
+        main = el('div', 'big', s.title); body.append(main);
+        if (s.text) body.append(el('div', 'small', s.text));
+        if (s.cta) body.append(el('div', 'cta', s.cta));
+    }
+    if (main) fit(main, body, reel ? max + 22 : max, 34);
+    return body;
+}
+
+/** Reels: what the stage shows at second t. Each returns nothing; LENGTH says how long each kind runs. */
+const LENGTH = { riddle: 15, line: 13 };
+function reel(stage, s, t) {
+    if (s.t === 'riddle') {
+        const letters = s.letters || [];
+        if (t < 6.2) {            // the riddle
+            const body = card(stage, { ...s, t: 'riddle', letters: letters.map(() => ''), shown: 0, note: 'ভাবুন…', cta: null }, true);
+            [...body.children].forEach((c, i) => show(c, (t - .3 - i * .5) / .7));
+        } else if (t < 11.2) {    // five, four, three…
+            const body = frame(stage, { chip: s.chip }, true); body.classList.add('center');
+            const left = Math.max(1, 5 - Math.floor(t - 6.2)), part = (t - 6.2) % 1;
+            const ring = el('div', 'ring'); ring.style.background = `conic-gradient(#CB1B32 ${part * 360}deg, #FBEBD8 0)`;
+            const inner = el('div', 'ring'); inner.style.cssText = 'width:360px;height:360px;background:#FFFBF4';
+            const n = el('div', 'count', bn(left)); n.style.transform = `scale(${1 + .15 * (1 - ease(part * 3))})`;
+            inner.append(n); ring.append(inner);
+            body.append(el('div', 'small', s.clue), ring, el('div', 'by', 'পারলেন?'));
+            fit(body.firstChild, body, 56, 34);
+        } else if (t < 13.2) {    // the answer, one অক্ষর at a time
+            const shown = Math.min(letters.length, Math.floor((t - 11.2) / (1.2 / Math.max(1, letters.length))) + 1);
+            card(stage, { ...s, t: 'riddle', letters, shown, note: 'উত্তর: ' + letters.join(''), cta: null }, true);
+        } else {                  // come and play
+            const body = card(stage, { t: 'end', dark: true, title: 'আজকের নতুন ধাঁধা অপেক্ষা করছে', by: 'রোজ একটি ধাঁধা, একটি শব্দের খেলা', cta: 'hatpakha.com/khela', site: 'রোজ খেলুন' }, true);
+            [...body.children].forEach((c, i) => show(c, (t - 13.2 - i * .2) / .5));
+        }
+    } else {                      // 'line': a line from a piece, phrase by phrase
+        const words = String(s.quote || '').split(/\s+/), per = 6.5 / Math.max(1, words.length);
+        if (t < 10.5) {
+            const body = card(stage, { ...s, t: 'line' }, true), big = body.querySelector('.big');
+            show(body.children[0], t / .5);
+            big.replaceChildren(...words.flatMap((w, i) => { const sp = el('span', null, w); sp.style.opacity = ease((t - .8 - i * per) / .5); return [sp, document.createTextNode(' ')]; }));
+            [...body.children].slice(2).forEach((c, i) => show(c, (t - 7.8 - i * .4) / .6));
+        } else {
+            const body = card(stage, { t: 'end', dark: true, title: s.title || 'হাতপাখা', by: s.by || '', cta: 'পুরো লেখা: hatpakha.com', site: 'বাংলা সাহিত্যের ওয়েব ম্যাগাজিন' }, true);
+            [...body.children].forEach((c, i) => show(c, (t - 10.5 - i * .2) / .5));
+        }
+    }
+}
+
+window.LENGTH = LENGTH;
+window.draw = (spec, t) => { const stage = document.getElementById('stage'); t == null ? card(stage, spec) : reel(stage, spec, t); };
+window.ready = document.fonts.ready;
+</script>
+</body>
+</html>

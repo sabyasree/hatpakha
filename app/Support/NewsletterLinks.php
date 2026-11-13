@@ -32,6 +32,7 @@ final class NewsletterLinks
         $home = url('/').'/';
         $url = match (true) {
             $link === 'cta' => Copywriter::ctaUrl($n),
+            (bool) preg_match('/^x(\d)$/', $link, $x) => (string) (((array) $n->extras)[(int) $x[1]]['url'] ?? $home),   // D184: the come-back blocks
             ctype_digit($link) => (string) (((array) $n->items)[(int) $link]['url'] ?? $home),
             default => $home,
         };

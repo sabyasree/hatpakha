@@ -101,6 +101,7 @@ final class PushNotifier
         if ($posts->isEmpty()) {
             return 0;
         }
+        Setting::put('push.daily_sent_on', now('Asia/Kolkata')->toDateString());
         $n = $posts->count();
         $message = [
             'title' => $n === 1 ? 'আজ হাতপাখায় নতুন লেখা' : 'আজ হাতপাখায় '.Bn::num((string) $n).'টি নতুন লেখা',
@@ -114,6 +115,46 @@ final class PushNotifier
                 $sent += WebPush::send($sub, $message) ? 1 : 0;
             }
         });
+
+        return $sent;
+    }
+
+    /**
+     * D182, the streak-saver: at 20:45, a reader who played yesterday (two days or more in a row) and not yet today
+     * gets one reminder, on the phones where they switched on "খেলার রিমাইন্ডার". Never more than one note a day: a
+     * phone that already got today's new-pieces note is skipped. Two wordings are tried (odd and even accounts);
+     * the link says which, so the numbers show the better one.
+     */
+    public static function streakSaver(): int
+    {
+        if (! WebPush::configured()) {
+            return 0;
+        }
+        $today = now('Asia/Kolkata')->toDateString();
+        $dailyWent = Setting::get('push.daily_sent_on') === $today;
+        $played = \Illuminate\Support\Facades\DB::table('game_scores')->where('day', $today)->distinct()->pluck('user_id');
+        $due = \Illuminate\Support\Facades\DB::table('game_scores')->where('day', now('Asia/Kolkata')->subDay()->toDateString())->whereNotIn('user_id', $played)->distinct()->limit(3000)->pluck('user_id');
+        $sent = 0;
+        foreach (PushSubscription::whereIn('user_id', $due)->whereJsonContains('topics', 'games')->get()->groupBy('user_id') as $userId => $subs) {
+            $user = \App\Models\User::find($userId);
+            $days = $user ? GameScores::streak($user)['now'] : 0;
+            if ($days < 2) {
+                continue;
+            }
+            $a = $userId % 2 === 0;
+            $message = [
+                'title' => $a ? 'টানা '.Bn::num((string) $days).' দিন খেলছেন' : 'আজকের ধাঁধাটা এখনও বাকি',
+                'body' => $a ? 'আজ খেললে '.Bn::num((string) ($days + 1)).' দিন হবে। দু মিনিটের খেলা।' : 'টানা '.Bn::num((string) $days).' দিনের ধারাটা ধরে রাখুন। দু মিনিট লাগবে।',
+                'url' => Url::to('/khela').'?utm_source=hatpakha-push&utm_medium=push&utm_campaign=streak-'.($a ? 'a' : 'b'),
+                'tag' => 'streak', 'kind' => 'streak',
+            ];
+            foreach ($subs as $sub) {
+                if ($dailyWent && in_array('daily', (array) $sub->topics, true)) {
+                    continue;
+                }
+                $sent += WebPush::send($sub, $message) ? 1 : 0;
+            }
+        }
 
         return $sent;
     }

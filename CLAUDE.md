@@ -55,6 +55,7 @@ php artisan hatpakha:url-audit --base=https://new.hatpakha.com --sitemap=https:/
 php artisan hatpakha:move-host --dry                # launch: rewrite saved new.hatpakha.com → hatpakha.com (D90)
 php artisan hatpakha:backup-db                     # database backup to storage/app/private/backups (runs before deploys + nightly)
 php artisan hatpakha:staging-scrub                 # staging only, after loading a production backup (D92)
+php artisan hatpakha:studio list                   # marketing cards/reels waiting to be drawn (the "Marketing studio" GitHub job draws them, D182)
 php artisan test                          # must be green
 php artisan serve
 ```

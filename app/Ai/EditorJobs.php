@@ -148,13 +148,41 @@ final class EditorJobs
             }
         }
         $posts->loadMissing('authors', 'section');
+        // D184 (owner: the weekly e-mail should bring readers back): the best piece first, one line that makes the reader
+        // want to open each, and after the pieces three fixed reasons to come back (riddle, পাঠকের কলম, serial).
         $out = Copywriter::write(
-            $archive
+            ($archive
                 ? 'The weekly letter to readers. A quiet week for new pieces, so share favourites from our archive (say so warmly). Button: usually "archive" or "home".'
-                : 'The weekly letter to readers about this week\'s new pieces. Open with something that makes them want to read; one line per piece. Button: usually "home".',
+                : 'The weekly letter to readers about this week\'s new pieces. Button: usually "home".')
+            .' The subject line must make a reader curious without clickbait (a question or a small concrete image from the strongest piece, under 60 characters; never "সাপ্তাহিক চিঠি" or a date). '
+            .'Open with two or three sentences about the one strongest piece, like telling a friend why to read it; then one line per piece that gives a real reason to open it (a question it raises, a scene, never a summary of the ending). '
+            .'Keep it short: readers decide in ten seconds. Do not mention games or other sections: the site adds those below the pieces.',
             'Week ending '.now('Asia/Kolkata')->format('d/m/Y'), $posts->all());
+        if (! $out) {
+            return null;
+        }
+        $n = self::draft('ai_weekly', 'readers', $out, $posts->all());
+        $n->forceFill(['extras' => self::comeBack()])->save();
 
-        return $out ? self::draft('ai_weekly', 'readers', $out, $posts->all()) : null;
+        return $n;
+    }
+
+    /** D184: fixed blocks under the pieces of the weekly letter. Real things only: today's riddle, the open theme, a running serial. */
+    public static function comeBack(): array
+    {
+        $items = [];
+        if (\App\Support\WordGame::number() >= 1) {
+            $items[] = ['title' => 'আজকের ধাঁধা', 'author' => 'রোজ একটি নতুন ধাঁধা আর শব্দের খেলা', 'url' => \App\Support\Url::to('/khela/dhadha'), 'line' => \App\Support\WordGame::riddle()['words'][0]['clue']];
+        }
+        if ($k = \App\Models\ReaderPrompt::where('status', 'open')->latest('id')->first()) {
+            $items[] = ['title' => 'পাঠকের কলম: '.$k->title, 'author' => 'এ সপ্তাহে আপনিও লিখুন', 'url' => $k->url(), 'line' => $k->ask];
+        }
+        $episode = Post::published()->with('serial')->whereNotNull('serial_id')->where('published_at', '>=', now()->subDays(10))->latest('published_at')->first();
+        if ($episode && $episode->serial) {
+            $items[] = ['title' => 'ধারাবাহিক: '.$episode->serial->title, 'author' => 'নতুন পর্ব: '.$episode->title, 'url' => $episode->url(), 'line' => (string) ($episode->episode_teaser ?? '')];
+        }
+
+        return $items;
     }
 
     /**

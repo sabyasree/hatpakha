@@ -1,5 +1,5 @@
 {{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
-@php $d = $this->data(); @endphp
+@php $d = $this->data(); $schedule = $d['schedule']; $whatsapp = $d['whatsapp']; $lessons = $d['lessons']; $review = $d['review']; @endphp
 @php $isAdmin = \App\Filament\Support\Deleting::isAdmin(); @endphp
 <x-filament-panels::page>
     <style>
@@ -22,23 +22,123 @@
                 <div style="max-width:46rem">
                     <b>{{ $fbAuto ? __('নিজে থেকে পোস্ট: চালু') : __('নিজে থেকে পোস্ট: বন্ধ') }}</b>
                     <p class="hp-muted" style="margin-top:.2rem">{{ $fbAuto
-                        ? __('রোজ সকাল ১০টা আর সন্ধ্যা সাড়ে ৭টায় নিচের তালিকার সবচেয়ে পুরোনো তৈরি পোস্টটি নিজে থেকে পেজে যায় (দিনে বড়জোর দুটি)। কোনোটি না চাইলে “পোস্ট করব না” টিপুন।')
-                        : __('এখন প্রতিটি পোস্ট আপনি “ফেসবুকে দিন” বা “সময় ঠিক করুন” টিপলেই যায়। চালু করলে রোজ দুটি পোস্ট নিজে থেকে যাবে।') }}</p>
-                    @if ($fbNext = \App\Support\FacebookPage::nextAuto())<p style="margin-top:.2rem">{{ __('পরের পোস্ট') }}: <b>{{ $fbNext->title }}</b></p>@endif
+                        ? __('মার্কেটিং টিম রোজের পোস্ট নিজেই সাজায়, ছবি ও রিল নিজেই তৈরি করে, আর ঠিক সময়ে ফেসবুক ও ইনস্টাগ্রামে দেয়: সকালে ধাঁধা, দুপুরে রিল, সন্ধ্যায় দিনের লেখা। কোনোটি না চাইলে নিচে “পোস্ট করব না” টিপুন।')
+                        : __('এখন কিছুই নিজে থেকে যায় না; প্রতিটি পোস্ট আপনি টিপলে যায়। চালু করলে মার্কেটিং টিম রোজের পোস্ট নিজেই দেবে।') }}</p>
                     @unless (\App\Support\FacebookPage::ready())<p class="hp-muted" style="margin-top:.2rem">⚠ {{ __('এটি আসল সাইট নয়: এখান থেকে ফেসবুকে কিছু যায় না।') }}</p>@endunless
                 </div>
                 @if ($isAdmin)
                     <x-filament::button :color="$fbAuto ? 'gray' : 'primary'" icon="heroicon-o-bolt" wire:click="toggleFacebookAuto"
-                        wire:confirm="{{ $fbAuto ? __('নিজে থেকে পোস্ট বন্ধ করবেন?') : __('চালু করলে রোজ দুটি তৈরি পোস্ট আপনার না দেখে পেজে যাবে। চালু করবেন?') }}">{{ $fbAuto ? __('বন্ধ করুন') : __('নিজে থেকে পোস্ট চালু করুন') }}</x-filament::button>
+                        wire:confirm="{{ $fbAuto ? __('নিজে থেকে পোস্ট বন্ধ করবেন?') : __('চালু করলে রোজের পোস্ট আপনার না দেখে ফেসবুক ও ইনস্টাগ্রামে যাবে। চালু করবেন?') }}">{{ $fbAuto ? __('বন্ধ করুন') : __('নিজে থেকে পোস্ট চালু করুন') }}</x-filament::button>
                 @endif
             </div>
         </x-filament::section>
     @endif
 
+    {{-- D182: the plan for today and tomorrow, today's WhatsApp message, and what the numbers taught --}}
+    <x-filament::section icon="heroicon-o-calendar-days" collapsible>
+        <x-slot name="heading">{{ __('আজ ও কালের পোস্ট') }}</x-slot>
+        @if ($schedule->isEmpty())
+            <p class="hp-muted">{{ __('এখনও কিছু সাজানো নেই। রোজ সন্ধ্যায় পরের দিনের পোস্ট সাজানো হয়।') }}</p>
+        @else
+            <div style="overflow-x:auto"><table style="width:100%;font-size:.9rem;border-collapse:collapse">
+                <thead><tr style="text-align:left"><th style="padding:.3rem .5rem">{{ __('সময়') }}</th><th style="padding:.3rem .5rem">{{ __('পোস্ট') }}</th><th style="padding:.3rem .5rem">{{ __('ধরন') }}</th><th style="padding:.3rem .5rem">{{ __('অবস্থা') }}</th><th style="padding:.3rem .5rem">{{ __('সাড়া') }}</th></tr></thead>
+                <tbody>
+                @foreach ($schedule as $row)
+                    @php
+                        $p = $row['s'];
+                        $formats = ['link' => __('লেখা ও লিংক'), 'card' => __('ছবির কার্ড'), 'carousel' => __('কয়েকটি ছবি'), 'reel' => __('রিল')];
+                        $state = match (true) {
+                            (bool) ($p->fb_post_id || $p->ig_media_id) => '✓ '.__('পোস্ট হয়েছে'),
+                            (bool) $p->ig_container => __('ইনস্টাগ্রাম ভিডিও তৈরি করছে'),
+                            $p->status === 'dismissed' => __('বাদ'),
+                            (bool) ($p->fb_error || $p->ig_error) => '⚠ '.mb_substr((string) ($p->fb_error ?: $p->ig_error), 0, 80),
+                            $p->format !== 'link' && ! $p->media => __('ছবি তৈরি হচ্ছে'),
+                            default => __('তৈরি, সময়ের অপেক্ষায়'),
+                        };
+                    @endphp
+                    <tr style="border-top:1px solid rgba(127,127,127,.2)">
+                        <td style="padding:.3rem .5rem;white-space:nowrap">{{ \App\Support\Bn::num($p->slot_at->timezone('Asia/Kolkata')->format('d/m H:i')) }}</td>
+                        <td style="padding:.3rem .5rem">{{ $p->title }}
+                            @if ($p->media['video'] ?? null) · <a href="{{ asset($p->media['video']) }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ __('রিল দেখুন') }}</a>
+                            @elseif ($p->media['images'][0] ?? null) · <a href="{{ asset($p->media['images'][0]) }}" target="_blank" rel="noopener" style="text-decoration:underline">{{ __('ছবি দেখুন') }}</a>@endif
+                        </td>
+                        <td style="padding:.3rem .5rem;white-space:nowrap">{{ $formats[$p->format] ?? $p->format }}</td>
+                        <td style="padding:.3rem .5rem">{{ $state }}</td>
+                        <td style="padding:.3rem .5rem;white-space:nowrap">@if ($p->metrics){{ __('দেখেছেন') }} {{ \App\Support\Bn::num((string) $row['sum']['reach']) }} · {{ __('কমেন্ট, শেয়ার, সেভ') }} {{ \App\Support\Bn::num((string) $row['sum']['talk']) }}@if (isset($p->metrics['site']['visits'])) · {{ __('সাইটে এসেছেন') }} {{ \App\Support\Bn::num((string) $p->metrics['site']['visits']) }}@endif @endif</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table></div>
+        @endif
+        <div style="margin-top:1rem" x-data="{ copied: false }">
+            <b>{{ __('আজকের হোয়াটসঅ্যাপ চ্যানেলের বার্তা') }}</b>
+            <p class="hp-muted">{{ __('হোয়াটসঅ্যাপ চ্যানেলে বাইরে থেকে নিজে পোস্ট করার ব্যবস্থা নেই। তাই দিনে একবার এটি কপি করে চ্যানেলে পেস্ট করে দিন।') }}</p>
+            <div class="hp-mk-text" x-ref="wa">{{ $whatsapp }}</div>
+            <x-filament::button size="sm" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem" x-on:click="navigator.clipboard.writeText($refs.wa.innerText); copied = true; setTimeout(() => copied = false, 2000)"><span x-show="!copied">{{ __('কপি') }}</span><span x-show="copied" x-cloak>{{ __('কপি হয়েছে') }}</span></x-filament::button>
+        </div>
+        {{-- D183: the analyst's weekly review: every number on one card, what changed in the plan, what to do next --}}
+        @php
+            $card = $review['card'] ?? [];
+            $bn = fn ($n) => \App\Support\Bn::num((string) $n);
+            $pair = fn ($x) => $x ? $bn($x['now']).' ('.__('আগের সপ্তাহে').' '.$bn($x['before']).')' : '—';
+            $tune = \App\Support\MarketingAnalyst::tuning();
+        @endphp
+        <div style="margin-top:1rem">
+            <b>{{ __('সপ্তাহের হিসাব') }}</b>
+            <p class="hp-muted">{{ __('প্রতি রবিবার রাতে বিশ্লেষক গুগল অ্যানালিটিক্স, ফেসবুক, ইনস্টাগ্রাম, নিউজলেটার, ফোনের নোটিফিকেশন আর সাইটের নিজের সংখ্যা মিলিয়ে দেখে, আর তা থেকে পরের সপ্তাহের পরিকল্পনা বদলায়।') }}
+                {{ __('এখন পোস্টের সময়') }}: {{ $bn($tune['morning']) }}, {{ $bn('13:30') }}, {{ $bn($tune['evening']) }}.</p>
+            @if (! $card)
+                <p class="hp-muted">{{ __('প্রথম হিসাব আসবে এই রবিবার রাতে।') }}</p>
+            @else
+                @if ($review['report'] ?? [])<ul style="margin:.3rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['report'] as $l)<li>{{ $l }}</li>@endforeach</ul>@endif
+                @if ($review['changes'] ?? [])
+                    <p style="margin-top:.5rem"><b>{{ __('পরিকল্পনায় যা বদলাল') }}</b></p>
+                    <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['changes'] as $l)<li>{{ $l }}</li>@endforeach</ul>
+                @endif
+                @if ($review['asks'] ?? [])
+                    <p style="margin-top:.5rem"><b>{{ __('আপনার করার মতো') }}</b></p>
+                    <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['asks'] as $l)<li>{{ $l }}</li>@endforeach</ul>
+                @endif
+                <div class="hp-mk-cols" style="margin-top:.6rem;font-size:.9rem">
+                    <div class="hp-mk-text"><b>{{ __('সাইট') }}</b>
+{{ __('নতুন সদস্য') }}: {{ $pair($card['site']['signups'] ?? null) }}
+{{ __('খেলেছেন') }}: {{ $pair($card['site']['players'] ?? null) }}
+{{ __('পাঠকের কলমে লেখা') }}: {{ $pair($card['site']['kolom_entries'] ?? null) }}
+{{ __('নিউজলেটারে নতুন') }}: {{ $pair($card['site']['newsletter_signups'] ?? null) }}
+{{ __('কমেন্ট') }}: {{ $pair($card['site']['comments'] ?? null) }}</div>
+                    @if ($card['ga']['now'] ?? null)
+                        <div class="hp-mk-text"><b>{{ __('গুগল অ্যানালিটিক্স (৭ দিন)') }}</b>
+{{ __('পাঠক') }}: {{ $bn((int) $card['ga']['now']['activeUsers']) }} ({{ __('আগের সপ্তাহে') }} {{ $bn((int) ($card['ga']['before']['activeUsers'] ?? 0)) }})
+@if ($card['ga']['returning_share'] !== null){{ __('ফিরে আসা পাঠক') }}: {{ $bn($card['ga']['returning_share']) }}%
+@endif
+{{ __('কোথা থেকে এলেন') }}: @foreach (array_slice($card['ga']['sources'], 0, 6) as $r){{ $r['sessionSource'] }} {{ $bn((int) $r['sessions']) }}@if (! $loop->last), @endif @endforeach
+
+@if ($card['ga']['campaigns']){{ __('কোন পোস্ট থেকে') }}: @foreach (array_slice($card['ga']['campaigns'], 0, 6) as $r){{ $r['sessionCampaignName'] }} {{ $bn((int) $r['sessions']) }}@if (! $loop->last), @endif @endforeach
+@endif</div>
+                    @endif
+                    <div class="hp-mk-text"><b>{{ __('ফেসবুক ও ইনস্টাগ্রাম') }}</b>
+@foreach ($card['social']['followers'] ?? [] as $net => $n){{ $net }}: {{ $bn($n) }} {{ __('অনুসরণকারী') }}
+@endforeach
+@foreach (array_slice($card['social']['by_kind'] ?? [], 0, 6) as $t){{ $t['what'] }}: {{ __('গড়ে দেখেছেন') }} {{ $bn($t['reach']) }}, {{ __('সাড়া') }} {{ $bn($t['talk']) }}
+@endforeach</div>
+                    <div class="hp-mk-text"><b>{{ __('নিউজলেটার ও নোটিফিকেশন') }}</b>
+@foreach ($card['newsletter'] ?? [] as $n){{ \Illuminate\Support\Str::limit($n['subject'], 40) }}: {{ $bn($n['sent']) }} {{ __('জনকে পাঠানো') }}, {{ $bn($n['click_rate']) }}% {{ __('ক্লিক করেছেন') }}
+@endforeach
+@foreach ($card['push'] ?? [] as $n){{ $n['kind'] }}: {{ $bn($n['sent']) }} {{ __('পাঠানো') }}, {{ $bn($n['opened']) }} {{ __('খুলেছেন') }}
+@endforeach</div>
+                </div>
+            @endif
+            @if ($lessons['lessons'] ?? [])
+                <p style="margin-top:.5rem"><b>{{ __('পোস্ট লেখার জন্য শিক্ষা') }}</b></p>
+                <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($lessons['lessons'] as $l)<li>{{ $l }}</li>@endforeach</ul>
+            @endif
+        </div>
+    </x-filament::section>
+
     <x-filament::section icon="heroicon-o-question-mark-circle" collapsible>
         <x-slot name="heading">{{ __('এই পাতায় কী করবেন') }}</x-slot>
         <ol style="margin:0;padding-left:1.2rem;line-height:1.9">
-            <li>{{ __('মার্কেটিং বিশেষজ্ঞ প্রতিটি নতুন লেখা, সংখ্যা আর উৎসবের জন্য পোস্ট লিখে রাখে। এখান থেকে কিছুই নিজে থেকে পোস্ট হয় না।') }}</li>
+            <li>{{ __('মার্কেটিং টিম রোজের পোস্ট নিজেই সাজায় আর “নিজে থেকে পোস্ট” চালু থাকলে নিজেই দেয়। নিচের বোতামগুলো আপনি নিজে হাতে কিছু দিতে চাইলে।') }}</li>
             <li>{{ __('"ফেসবুকে দিন", "হোয়াটসঅ্যাপে দিন" বা "ইনস্টাগ্রামে দিন" টিপুন: সেই সাইট বা অ্যাপ লেখা, লিংক আর ছবি সমেত খুলবে, সেখানে "পোস্ট" টিপলেই হলো। ফেসবুক বাইরের লেখা নিজে বসায় না, তাই লেখাটি কপি হয়ে থাকে: পেস্ট করে দিন। চাইলে "কপি" টিপে নিজে পেস্ট করতেও পারেন।') }}</li>
             <li>{{ __('পোস্ট হয়ে গেলে "পোস্ট করেছি" টিপুন: কার্ডটি "পোস্ট করা / বাদ"-এ চলে যাবে, যাতে কোনটা বাকি বোঝা যায়।') }}</li>
             <li>{{ __('কোনো পোস্ট দিতে না চাইলে "পোস্ট করব না" টিপুন। ভুল করে টিপলে সঙ্গে সঙ্গে "ফিরিয়ে আনুন" টিপুন, বা পরে "পোস্ট করা / বাদ" থেকে ফেরান।') }}</li>

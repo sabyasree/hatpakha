@@ -39,7 +39,7 @@ class FacebookPageTest extends TestCase
         $this->assertTrue($ok);
         $this->assertSame('307497312677802_111', $id);
         Http::assertSent(fn ($r) => str_contains($r->url(), '/307497312677802/feed') && $r['message'] === 'নতুন কবিতা: নদীর গান'
-            && $r['link'] === $s->subject->url() && $r['appsecret_proof'] === hash_hmac('sha256', 'page-token', 'secret'));
+            && $r['link'] === $s->subject->url().'?utm_source=facebook&utm_medium=social&utm_campaign='.$s->kind.'&utm_content=sp'.$s->id && $r['appsecret_proof'] === hash_hmac('sha256', 'page-token', 'secret'));
         $s->refresh();
         $this->assertSame('posted', $s->status);
         $this->assertSame([false, 'আগেই পোস্ট হয়েছে, বা তালিকা থেকে সরানো'], FacebookPage::publish($s));
@@ -77,11 +77,12 @@ class FacebookPageTest extends TestCase
         $this->assertSame('p_1', $timed->fresh()->fb_post_id);
 
         $this->social();
-        $this->assertNull(FacebookPage::autoPost(), 'Off until the owner switches it on');
+        \App\Models\Setting::put(FacebookPage::AUTO, '0');   // D182: on since the owner asked for fully automatic; the switch still turns it off
+        $this->assertNull(FacebookPage::autoPost(), 'Off when the owner switches it off');
         $admin = User::factory()->create(['role' => Role::Admin]);
         $this->actingAs($admin);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
-        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('নিজে থেকে পোস্ট: বন্ধ')->assertSee('ফেসবুকে দিন')->assertSee('পরের পোস্ট')->call('toggleFacebookAuto');
+        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('নিজে থেকে পোস্ট: বন্ধ')->assertSee('ফেসবুকে দিন')->assertSee('আজ ও কালের পোস্ট')->call('toggleFacebookAuto');
         $this->assertTrue(FacebookPage::auto());
         $this->assertNotNull(FacebookPage::autoPost());
 

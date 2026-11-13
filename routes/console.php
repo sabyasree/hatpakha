@@ -60,8 +60,18 @@ Schedule::call(fn () => \Illuminate\Support\Facades\Artisan::call('hatpakha:back
 // Facebook Page (owner, 2026-11-12): posts the owner timed, every 5 minutes; automatic mode (a desk switch, off by default)
 // posts one ready post at 10:05 and 19:35, good reading times in Bengal. Live site only (App\Support\FacebookPage::ready).
 Schedule::call(fn () => \App\Support\FacebookPage::due())->name('facebook timed posts')->everyFiveMinutes()->withoutOverlapping(10);
-Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto morning')->dailyAt('10:05')->timezone('Asia/Kolkata');
-Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto evening')->dailyAt('19:35')->timezone('Asia/Kolkata');
+// D182 (owner, 2026-11-13: "I want fully automatic"): the marketing plan. Each evening tomorrow's riddle card and reel
+// are planned (again at dawn, harmlessly); every five minutes whatever is due goes out in its own format; the analyst
+// reads the numbers each morning and writes the week's lessons on Sunday night. docs/MARKETING.md
+Schedule::call(fn () => \App\Support\MarketingPlan::plan())->name('marketing plan tomorrow')->dailyAt('20:20')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\MarketingPlan::plan(now('Asia/Kolkata')))->name('marketing plan today')->dailyAt('05:40')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\MarketingPlan::run())->name('marketing posts')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::call(function () {
+    \App\Support\MarketingStats::collect();
+    \App\Support\MarketingAnalyst::visits();   // D183: visits each tagged post brought (Google Analytics)
+})->name('marketing numbers')->dailyAt('07:10')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+Schedule::call(fn () => \App\Support\MarketingAnalyst::review())->name('marketing review')->weeklyOn(0, '21:30')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\PushNotifier::streakSaver())->name('streak reminder')->dailyAt('20:45')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 
 // D175: পাঠকের কলম. Monday morning the week's theme opens and readers are invited; the AI reads entries through the
 // week; Saturday evening it proposes the best ten. Readers' words go public only on the owner's click.

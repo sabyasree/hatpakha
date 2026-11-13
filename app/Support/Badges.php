@@ -22,6 +22,7 @@ final class Badges
         'kolom' => ['পাঠকের কলম', 'পাঠকের কলমে লেখা বাছাই হলে', 'টি লেখা বাছাই হয়েছে', [1, 5, 15]],
         'writer' => ['লেখক', 'হাতপাখায় লেখা প্রকাশিত হলে', 'টি লেখা প্রকাশিত', [1, 10, 50]],
         'voice' => ['আলাপী', 'লেখায় মতামত দিলে', 'টি মতামত দিয়েছেন', [5, 25, 100]],
+        'friend' => ['বন্ধু', 'বন্ধুকে হাতপাখায় আনলে', 'জন বন্ধু এসেছেন', [1, 5, 15]],   // D184
         'reviewer' => ['রিভিউয়ার', 'সম্পাদকের দেওয়া লেখা পড়ে মতামত দিলে', 'টি লেখা রিভিউ করেছেন', [1, 10, 30]],
     ];
 
@@ -39,6 +40,7 @@ final class Badges
             'writer' => $authorIds->isEmpty() ? 0 : DB::table('author_post')->join('posts', 'posts.id', '=', 'author_post.post_id')
                 ->whereIn('author_post.author_id', $authorIds)->where('posts.status', 'published')->whereNull('posts.deleted_at')->distinct()->count('posts.id'),
             'voice' => DB::table('comments')->where('user_id', $u->id)->where('status', 'approved')->count(),
+            'friend' => Invites::count($u),
             'reviewer' => DB::table('piece_reviews')->where('reviewer_id', $u->id)->where('status', 'done')->count(),
         ];
     }
@@ -89,11 +91,13 @@ final class Badges
         // two speech bubbles
         'voice' => '<rect x="8.5" y="2" width="14" height="10.5" rx="3.2" fill="none" stroke="{ink}" stroke-width="2.4"/><path d="M4.8 8.5h9.4a3.3 3.3 0 0 1 3.3 3.3v4.4a3.3 3.3 0 0 1-3.3 3.3H9.5L5 23.5v-4H4.8a3.3 3.3 0 0 1-3.3-3.3v-4.4a3.3 3.3 0 0 1 3.3-3.3Z" fill="{ink}" stroke="{hub}" stroke-width="1.4" stroke-linejoin="round"/>',
         // a pair of round spectacles: the editor's eye
+        // two people side by side: you brought a friend
+        'friend' => '<circle cx="8" cy="7.5" r="4.2" fill="{ink}"/><path d="M0.8 21.5c0-4.8 3.1-8 7.2-8s7.2 3.2 7.2 8z" fill="{ink}"/><circle cx="17.6" cy="9.6" r="3.4" fill="{ink}" stroke="{hub}" stroke-width="1.2"/><path d="M12.6 21.5c.2-3.9 2-6.4 5-6.4 3.2 0 5.4 2.5 5.6 6.4z" fill="{ink}" stroke="{hub}" stroke-width="1.2" stroke-linejoin="round"/>',
         'reviewer' => '<circle cx="6.6" cy="13.5" r="4.6" fill="none" stroke="{ink}" stroke-width="2.8"/><circle cx="17.4" cy="13.5" r="4.6" fill="none" stroke="{ink}" stroke-width="2.8"/><path d="M11 12.6q1-1.4 2 0M2.2 12L1.2 7.5M21.8 12l1-4.5" fill="none" stroke="{ink}" stroke-width="2.6" stroke-linecap="round"/>',
     ];
 
     /** How large the name sits on the banner, so the long ones fit on one line. [বাংলা, English] */
-    private const NAME_SIZE = ['reader' => [15, 15], 'writer' => [15, 15], 'voice' => [15, 9.5], 'reviewer' => [14, 14], 'player' => [12.5, 12], 'kolom' => [11.5, 10.5], 'streak' => [10, 12]];
+    private const NAME_SIZE = ['friend' => [15, 15], 'reader' => [15, 15], 'writer' => [15, 15], 'voice' => [15, 9.5], 'reviewer' => [14, 14], 'player' => [12.5, 12], 'kolom' => [11.5, 10.5], 'streak' => [10, 12]];
 
     /** A five-point star round (0,0). */
     private static function star(float $r): string

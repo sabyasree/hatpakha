@@ -25,6 +25,9 @@ Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
 Route::get('/kolom', [\App\Http\Controllers\KolomController::class, 'index'])->name('kolom');
 Route::post('/kolom', [\App\Http\Controllers\KolomController::class, 'store'])->middleware('throttle:6,1');
 Route::get('/kolom/{slug}', [\App\Http\Controllers\KolomController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('kolom.show');
+// D184: a member's invite link: remembers who invited (a cookie, 30 days) and goes to the home page
+Route::get('/bondhu/{code}', fn (string $code) => redirect(url('/').'/?utm_source=bondhu&utm_medium=referral&utm_campaign=invite')
+    ->withCookie(cookie(\App\Support\Invites::COOKIE, preg_match('/^[a-z0-9]{8}$/', $code) ? $code : '', 60 * 24 * 30)))->middleware('throttle:60,1')->name('invite');
 // D174, D177: the daily games and their leaderboard
 Route::get('/khela', [\App\Http\Controllers\GameController::class, 'word'])->name('game');
 Route::get('/khela/dhadha', [\App\Http\Controllers\GameController::class, 'riddle'])->name('game.riddle');
@@ -237,7 +240,7 @@ Route::get('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyControll
 Route::post('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'store'])->middleware(['signed', 'throttle:10,1'])->name('relaunch.answer');
 // D117: counted links in sent letters (the target comes from the letter, never from the URL).
 Route::get('/chithi/{newsletter}/{delivery}/{link}/{sig}', \App\Http\Controllers\NewsletterClickController::class)
-    ->whereNumber(['newsletter', 'delivery'])->where(['link' => 'home|cta|[0-9]{1,2}', 'sig' => '[a-f0-9]{16}'])->middleware('throttle:60,1');
+    ->whereNumber(['newsletter', 'delivery'])->where(['link' => 'home|cta|x[0-9]|[0-9]{1,2}', 'sig' => '[a-f0-9]{16}'])->middleware('throttle:60,1');
 Route::get('/newsletter/confirm/{subscriber}', [\App\Http\Controllers\NewsletterController::class, 'confirm'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.confirm');
 Route::match(['get', 'post'], '/newsletter/unsubscribe/w/{user}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeWriter'])->middleware(['signed', 'throttle:20,1'])->name('newsletter.unsubscribe.writer');
 Route::match(['get', 'post'], '/newsletter/unsubscribe/{subscriber}', function (\App\Models\NewsletterSubscriber $subscriber) {

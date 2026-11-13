@@ -273,6 +273,11 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D177: ধাঁধা and শব্দজব্দ; leaderboard (today, week, all time); 1,002 words and 200 riddles (no repeat for 200 days)
 - [x] D178: seven badges in three tiers on the profile and on writers' pages
 - [x] D179: players report a wrong word, clue or riddle; the AI editor corrects or removes it from the next day; /desk → শব্দের অভিযোগ (with undo)
+- [x] D182: marketing runs by itself: daily plan (riddle card, reel, piece card or poem slides), cards and reels drawn by a GitHub Actions job, posted to Facebook and Instagram in their own formats, answers as comments, numbers read back, weekly lessons, streak reminder, WhatsApp message of the day (docs/MARKETING.md)
+- [x] D183: every posted link is tagged for Google Analytics; the Sunday review puts Analytics, Facebook, Instagram, newsletter, notification and site numbers on one card, moves the posting times and the reel mix by fixed rules, and writes a plain report, lessons and asks (marketing page → সপ্তাহের হিসাব)
+- [ ] Owner, after the release: run "Marketing studio" once by hand in GitHub → Actions to see the first cards; check the Page token has permission to comment (for the riddle answers) and to read insights (for reach); open a WhatsApp Channel if there is none
+- [x] D184: invite links and the বন্ধু medal, "আমার সপ্তাহ" share words, Friday top-three post (privacy page updated), weekly letter with come-back blocks (still sent only on the owner's click)
+- [ ] Marketing, next: drafted replies to comments on our Facebook posts (owner sends); "আমার সপ্তাহ" as a picture card; share buttons inside the writers' published e-mail (touches an owner-edited template: ask first); day-early serial episode for inviters
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode

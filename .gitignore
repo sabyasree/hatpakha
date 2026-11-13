@@ -33,3 +33,5 @@ Thumbs.db
 /public/wp-content/uploads/*
 !/public/wp-content/uploads/.htaccess
 /public/media
+/studio/node_modules
+/studio/package*.json
