@@ -238,6 +238,9 @@ Route::post('/newsletter/subscribe', [\App\Http\Controllers\NewsletterController
 // D104: a writer answers the apology letter about an old submission (signed link, no sign-in).
 Route::get('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'show'])->middleware(['signed', 'throttle:20,1'])->name('relaunch.reply');
 Route::post('/lekha-uttor/{author}', [\App\Http\Controllers\RelaunchReplyController::class, 'store'])->middleware(['signed', 'throttle:10,1'])->name('relaunch.answer');
+// D188: a regular writer answers the invitation to the ফিরে আসা সংখ্যা (signed link, no sign-in; the answer is kept on the button press)
+Route::get('/amontron/{invite}/{answer}', [\App\Http\Controllers\WriterInviteController::class, 'show'])->where('answer', 'yes|later|no')->middleware(['signed', 'throttle:30,1'])->name('invite.answer');
+Route::post('/amontron/{invite}/{answer}', [\App\Http\Controllers\WriterInviteController::class, 'store'])->where('answer', 'yes|later|no')->middleware(['signed', 'throttle:10,1']);
 // D117: counted links in sent letters (the target comes from the letter, never from the URL).
 Route::get('/chithi/{newsletter}/{delivery}/{link}/{sig}', \App\Http\Controllers\NewsletterClickController::class)
     ->whereNumber(['newsletter', 'delivery'])->where(['link' => 'home|cta|x[0-9]|[0-9]{1,2}', 'sig' => '[a-f0-9]{16}'])->middleware('throttle:60,1');

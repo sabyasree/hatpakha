@@ -184,7 +184,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Old submissions: AI reads each once (worth asking / too weak); owner can change; never published without the writer's yes
 - [x] Apology letters start by themselves on hatpakha.com after the owner approves the text; writer answers per piece from a signed link
 - [ ] Owner: check the AI's list and the letter text (/desk → পুরনো লেখকদের চিঠি), then approve
-- [ ] Owner: message the 145 core writers; plan the ফিরে আসা সংখ্যা; 6-week schedule before announcing
+- [x] D188: the regular writers (3+ pieces, or rated 8+, any year) get a personal letter written and sent by the team for the ফিরে আসা সংখ্যা (pieces by 7 Dec, issue 14 Dec); answers, one reminder and received pieces tracked in /desk → লেখকদের আমন্ত্রণ
+- [ ] Owner: read the first letters in /desk → লেখকদের আমন্ত্রণ during their 12-hour wait (the wording could not be tried with the real AI before release); set the signer's name in /desk → শংসাপত্র if the letters should carry it
+- [ ] ফিরে আসা সংখ্যা, next: the issue's cover and editorial draft in the first week of December; posts and reels for it; the letter to all readers on the day
 - [ ] Later: automatic bounce handling for the "we're back" letter
 
 ## ধারাবাহিক (D108), 2026-11-08
