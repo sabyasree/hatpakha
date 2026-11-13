@@ -30,7 +30,10 @@ Schedule::call(fn () => \App\Ai\Rewriter::runQueued())->name('feedback rewrites'
 // D119: what readers did yesterday (Google Analytics + Search Console), before the morning brief. No AI involved.
 Schedule::call(fn () => \App\Support\ReaderInsights::refresh())->name('reader insights')->dailyAt('07:30')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 Schedule::call(fn () => \App\Models\Post::where('status', 'published')->where('updated_at', '>=', now()->subDays(2))->each(fn ($p) => \App\Support\BnSearch::index($p)))->name('search index')->dailyAt('03:10')->timezone('Asia/Kolkata');   // spelling-forgiving search: keys with the latest writers and tags
-Schedule::call(fn () => \App\Support\ReadingHistory::prune())->name('old reading history')->dailyAt('03:45')->timezone('Asia/Kolkata');   // D166: a year old is deleted
+Schedule::call(function () {
+    \App\Support\ReadingHistory::prune();
+    \App\Support\SiteErrors::prune();   // D191: errors older than thirty days
+})->name('old reading history')->dailyAt('03:45')->timezone('Asia/Kolkata');   // D166: a year old is deleted
 Schedule::call(fn () => \App\Models\SentLetter::where('sent_at', '<', now()->subYears(2))->delete())->name('old letters')->dailyAt('03:40')->timezone('Asia/Kolkata');   // D161: copies of letters to writers are kept two years
 Schedule::call(fn () => \App\Support\IssueEbook::buildDue())->name('ebooks')->dailyAt('04:20')->timezone('Asia/Kolkata')->withoutOverlapping(60);   // each issue's e-book, rebuilt when its pieces change; waits for the owner's approval
 Schedule::call(fn () => \App\Support\PushNotifier::announceBatch())->name('push announcements')->everyMinute()->withoutOverlapping(10);   // D132: the owner's announcement, 200 phones a minute

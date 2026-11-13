@@ -38,6 +38,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\ViewAs::class, \App\Http\Middleware\SiteLocale::class, \App\Http\Middleware\SecurityHeaders::class, \App\Http\Middleware\AgentFormats::class]);   // D85: view as a writer (look only); D126: Markdown for agents
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // D191: every reported error is also kept in a small table for /desk → সাইটের ত্রুটি and the morning note.
+        $exceptions->report(function (\Throwable $e) {
+            \App\Support\SiteErrors::record($e);
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

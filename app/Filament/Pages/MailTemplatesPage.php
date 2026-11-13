@@ -42,7 +42,7 @@ class MailTemplatesPage extends Page
         return Action::make('preview')->label(__('দেখুন'))->icon('heroicon-o-eye')->color('gray')->size('sm')
             ->modalHeading(fn (array $arguments) => __(MailTemplates::all()[$arguments['key']][0] ?? ''))
             ->modalDescription(__('নমুনা নাম ও লেখা দিয়ে, পাঠকের ইনবক্সে ঠিক যেমন দেখাবে।'))
-            ->modalContent(fn (array $arguments) => view('filament.partials.mail-preview', ['html' => MailTemplates::preview($arguments['key'])]))
+            ->modalContent(fn (array $arguments) => \App\Filament\Support\Safe::view('filament.partials.mail-preview', ['html' => MailTemplates::preview($arguments['key'])]))
             ->modalWidth('3xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ'));
     }
 

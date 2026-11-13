@@ -27,6 +27,8 @@ class EditorBrief extends Notification
             ->line("আপনার অপেক্ষায়: {$n('waiting_pieces')}টি লেখা, {$n('waiting_comments')}টি মন্তব্য, {$n('waiting_pictures')}টি ছবি"
                 .($this->b['issue_proposed'] ? ', সংখ্যার প্রস্তাব' : '').($this->b['editorial_drafts'] ? ', সম্পাদকীয় খসড়া' : '').'।')
             ->when(($this->b['free_slots_week'] ?? 0) > 0, fn ($m) => $m->line("এই সপ্তাহে {$n('free_slots_week')}টি প্রকাশের দিন খালি।"))
+            // D191: errors are said in the note, not left in a log file
+            ->when(($this->b['errors_new'] ?? 0) > 0, fn ($m) => $m->line("গত ২৪ ঘণ্টায় সাইটে {$n('errors_new')}টি নতুন রকমের ত্রুটি হয়েছে। ডেস্কে “সাইটের ত্রুটি” পাতায় দেখুন।"))
             ->action('আজকের কাজ খুলুন', Url::to('/desk'))
             ->salutation('— এআই সম্পাদক, হাতপাখা');
     }

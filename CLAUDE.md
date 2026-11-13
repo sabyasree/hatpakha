@@ -75,6 +75,7 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 ## 6b. Gotchas
 - Filament closures get arguments **by parameter name**: use `$query`, `$record`, `$state`, `$data` (a `$q` gets null).
 - Laravel 13 refuses to unserialize models from the cache: cache IDs/scalars (D18).
+- A new desk dialog for a piece, or a newly met kind of awkward piece, goes into `tests/Feature/MessyPiecesTest.php`; a preview or report inside a dialog is drawn with `App\Filament\Support\Safe` so it cannot stop the dialog (D191).
 - Pipe test output carefully: use `set -o pipefail` so a failing `php artisan test | tail` stops the commit.
 
 ## 7. Language

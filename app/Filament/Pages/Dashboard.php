@@ -296,7 +296,7 @@ class Dashboard extends BaseDashboard
     {
         return \Filament\Actions\Action::make('readTask')->label(__('পড়ুন'))->icon('heroicon-o-document-text')->size('sm')->color('gray')
             ->modalHeading(fn (array $arguments) => $this->task($arguments)->title)
-            ->modalContent(fn (array $arguments) => view('filament.editor-task', ['task' => $this->task($arguments)]))
+            ->modalContent(fn (array $arguments) => \App\Filament\Support\Safe::view('filament.editor-task', ['task' => $this->task($arguments)]))
             ->modalSubmitActionLabel(__('পড়েছি'))
             ->action(fn (array $arguments) => $this->task($arguments)->close());
     }

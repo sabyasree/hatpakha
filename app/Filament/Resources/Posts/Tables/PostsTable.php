@@ -244,7 +244,7 @@ class PostsTable
             Action::make('aiReport')->label(__('এআই রিপোর্ট'))->icon('heroicon-o-sparkles')->color('info')
                 ->visible(fn (Post $record) => $record->latestAiReview !== null)
                 ->modalHeading(fn (Post $record) => __('এআই রিপোর্ট: ').$record->title)
-                ->modalContent(fn (Post $record) => view('filament.ai-report', ['review' => $record->latestAiReview]))
+                ->modalContent(fn (Post $record) => \App\Filament\Support\Safe::view('filament.ai-report', ['review' => $record->latestAiReview]))
                 ->modalSubmitAction(false)->modalCancelActionLabel(__('রিপোর্ট বন্ধ করুন'))
                 ->extraModalFooterActions(fn (Action $action, Post $record) => $record->status !== 'pending' ? [] : array_map(
                     fn (string $next) => $action->makeModalSubmitAction('go_'.$next, ['next' => $next])
