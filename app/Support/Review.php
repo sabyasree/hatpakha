@@ -72,6 +72,7 @@ final class Review
     public static function requestChanges(Post $post, User $editor, string $note): void
     {
         $post->forceFill(['status' => 'changes', 'review_note' => $note, 'reviewed_at' => now(), 'reviewed_by' => $editor->id])->save();
+        \App\Models\PostVersion::snap($post, 'sent_back', $note, $editor->id);   // D171: the text the writer gets back
         self::finish($post, $editor, 'changes');
     }
 

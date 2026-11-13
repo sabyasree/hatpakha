@@ -183,4 +183,42 @@ class SubmissionTest extends TestCase
         $this->assertStringContainsString('<p class="ta-right">শেষে</p>', $post->fresh()->body_html);
         $this->assertSame('<p style="text-align: center">x</p>', \App\Support\HtmlSanitizer::alignmentForEditor('<p class="ta-center">x</p>'));
     }
+
+    public function test_writer_sends_it_back_with_a_note_and_the_desk_sees_exactly_what_changed(): void
+    {
+        // Owner (D171): "no option for the writer to write a comment when sending back; no change history".
+        $this->actingAs($this->writer)->post('/submit/', $this->poem())->assertRedirect();
+        $post = \App\Models\Post::latest('id')->first();
+        $editor = User::factory()->create(['role' => Role::Admin]);
+        \App\Support\Review::requestChanges($post->fresh(), $editor, 'শেষ লাইনটা আর একবার ভাবুন।');
+
+        $this->actingAs($this->writer)->get('/submit/'.$post->id.'/')->assertOk()
+            ->assertSee('সম্পাদককে কিছু বলবেন?')->assertSee('name="writer_note"', false)->assertSee('আবার পাঠান');
+        $this->post('/submit/'.$post->id.'/', $this->poem(['body' => "আকাশ ভরা মেঘ\nভিজে গেছে মাঠ\n\nতোমার কথা মনে পড়ে\nসারা বিকেল একা", 'writer_note' => 'শেষ লাইনটা বদলেছি।']))->assertRedirect();
+
+        $kinds = $post->versions()->pluck('kind')->all();
+        $this->assertSame(['submitted', 'sent_back', 'resubmitted'], $kinds);
+        $last = $post->versions()->reorder('id', 'desc')->first();
+        $this->assertSame('শেষ লাইনটা বদলেছি।', $last->note);
+        $this->assertSame('শেষ লাইনটা আর একবার ভাবুন।', $last->previous()->note);
+
+        $d = \App\Support\TextDiff::compare($last->previous()->body_html, $last->body_html);
+        $this->assertStringContainsString('<del style="background:#FBD9DD;text-decoration:line-through">দুপুর</del>', $d['html']);
+        $this->assertStringContainsString('<ins style="background:#D7F0DC;text-decoration:none">বিকেল</ins>', $d['html']);
+        $this->assertSame([2, 1], [$d['added'], $d['removed']], '+বিকেল একা, −দুপুর');
+
+        // The desk: the writer's note and the changes at the top of the waiting piece, and the full history.
+        $this->actingAs($editor);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $guide = view('filament.review-guide', ['getRecord' => fn () => $post->fresh()])->render();
+        $this->assertStringContainsString('লেখক বদল করে আবার পাঠিয়েছেন', $guide);
+        $this->assertStringContainsString('শেষ লাইনটা বদলেছি।', $guide);
+        $this->assertStringContainsString('বিকেল', $guide);
+        $history = view('filament.post-history', ['post' => $post->fresh()])->render();
+        $this->assertStringContainsString('সম্পাদক বদল চাইলেন', $history);
+        $this->assertStringContainsString('লেখক আবার পাঠালেন', $history);
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->getRouteKey()])->assertActionVisible('history');
+
+        $this->assertStringNotContainsString('<script', \App\Support\TextDiff::compare('<p>ক</p>', '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>')['html'], 'Escaped');
+    }
 }

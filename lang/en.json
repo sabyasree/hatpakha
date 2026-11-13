@@ -2379,5 +2379,20 @@
     "আরও উদ্ধৃতি কার্ড": "More quote cards",
     "লেখা থেকে হুবহু আরও লাইন বেছে নতুন কার্ড বানায়।": "Picks more lines, word for word, from the piece and makes new cards.",
     "ফেসবুকে গেছে": "Posted to Facebook",
-    "ইনস্টাগ্রামে গেছে": "Posted to Instagram"
+    "ইনস্টাগ্রামে গেছে": "Posted to Instagram",
+    "বদলের ইতিহাস": "Change history",
+    "এই লেখার কোনো আগের সংস্করণ রাখা নেই (সংস্করণ রাখা শুরু হয়েছে ১৩ নভেম্বর ২০২৬ থেকে)।": "No earlier versions are kept for this piece (versions are kept from 13 November 2026).",
+    "লেখায় কোনো বদল নেই": "No change in the text",
+    "+:a শব্দ, −:r শব্দ": "+:a words, −:r words",
+    "লেখকের কথা:": "Writer's note:",
+    "লেখক কোনো কথা লেখেননি।": "The writer didn't add a note.",
+    "আগের বারের থেকে কী বদলেছে": "What changed since the time before",
+    "সবুজ: নতুন, লাল: বাদ গেছে": "green: new, red: removed",
+    "লেখক কিছু না বদলেই আবার পাঠিয়েছেন।": "The writer sent it again without changes.",
+    "লেখক বদল করে আবার পাঠিয়েছেন": "The writer made changes and sent it back",
+    "কী বদলেছে দেখুন": "See what changed",
+    "আগের সব বার দেখতে উপরের \"বদলের ইতিহাস\" টিপুন।": "To see every round, press \"Change history\" at the top.",
+    "লেখক পাঠালেন": "Writer sent it",
+    "সম্পাদক বদল চাইলেন": "Editor asked for changes",
+    "লেখক আবার পাঠালেন": "Writer sent it again"
 }

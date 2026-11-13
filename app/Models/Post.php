@@ -137,6 +137,9 @@ class Post extends Model
 
     public function aiReviews(): HasMany { return $this->hasMany(AiReview::class)->latest(); }
 
+    /** D171: the piece as sent in and sent back, oldest first. */
+    public function versions(): \Illuminate\Database\Eloquent\Relations\HasMany { return $this->hasMany(PostVersion::class)->orderBy('id'); }
+
     public function latestAiReview(): \Illuminate\Database\Eloquent\Relations\HasOne { return $this->hasOne(AiReview::class)->whereNull('blind_run')->latestOfMany(); }
 
     public function submittedBy(): BelongsTo { return $this->belongsTo(User::class, 'submitted_by'); }

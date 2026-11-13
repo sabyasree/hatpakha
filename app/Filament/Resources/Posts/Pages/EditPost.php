@@ -39,6 +39,12 @@ class EditPost extends EditRecord
                 ->visible(fn (Post $record) => $record->status === 'published'),
             ...$review,
             \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
+            // D171 (owner): every round with the writer, and what changed each time
+            Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
+                ->visible(fn (Post $record) => $record->versions()->exists())
+                ->modalHeading(fn (Post $record) => __('বদলের ইতিহাস').': '.$record->title)
+                ->modalContent(fn (Post $record) => view('filament.post-history', ['post' => $record]))
+                ->modalWidth('4xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন')),
             Action::make('pieceReviews')->color('gray')->icon('heroicon-o-chat-bubble-bottom-center-text')
                 ->label(fn (Post $record) => __('যাচাইকারীর মতামত').' ('.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', 'done')->count()).'/'.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->count()).')')
                 ->visible(fn (Post $record) => \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->exists())
