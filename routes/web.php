@@ -21,6 +21,10 @@ Route::get('/robots.txt', [SitemapController::class, 'robots']);
 Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
 
 // D127/D128: Hatpakha as an app, and phone notifications (with or without an account)
+// D175: পাঠকের কলম, the weekly reader theme
+Route::get('/kolom', [\App\Http\Controllers\KolomController::class, 'index'])->name('kolom');
+Route::post('/kolom', [\App\Http\Controllers\KolomController::class, 'store'])->middleware('throttle:6,1');
+Route::get('/kolom/{slug}', [\App\Http\Controllers\KolomController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('kolom.show');
 // D174: শব্দ-খেলা, the daily word jumble (the same five words for everyone, by the Kolkata date)
 Route::get('/khela', function () {
     $game = \App\Support\WordGame::day();

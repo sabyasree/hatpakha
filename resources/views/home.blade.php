@@ -56,6 +56,17 @@
         </a>
     </section>
 
+    {{-- D175: পাঠকের কলম, this week's theme: anyone can write in a minute --}}
+    @if ($kolom = \App\Models\ReaderPrompt::current())
+    <section class="border-b-2 border-navy">
+        <a href="{{ \App\Support\Url::to('/kolom') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 hover:bg-peach-light">
+            <span class="font-hand text-2xl text-red">পাঠকের কলম</span>
+            <span class="min-w-0 flex-1 text-lg"><strong class="font-serif">“{{ $kolom->title }}”</strong> <span class="text-ink2">এ সপ্তাহের বিষয়। এক মিনিটে লিখুন, সেরা দশটি রবিবার ছাপা হবে।</span></span>
+            <span class="flex h-11 flex-none items-center rounded-full border-2 border-navy bg-white px-5 font-bold">লিখুন →</span>
+        </a>
+    </section>
+    @endif
+
     @if ($poemOfDay)
     {{-- Poem poster (the editor's pick when there is one, D78: with the editor's reason) --}}
     <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#12304A)" aria-labelledby="poem-h">

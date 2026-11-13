@@ -285,6 +285,9 @@ class Marketing extends Page
     public static function link(SocialPost $s): string
     {
         $subject = $s->subject;
+        if (filled($s->texts['link'] ?? null) && str_starts_with((string) $s->texts['link'], url('/'))) {
+            return (string) $s->texts['link'];   // D175: পাঠকের কলম posts point at the week's page
+        }
 
         return $subject instanceof Post || $subject instanceof Issue ? $subject->url() : \App\Support\Url::to('/');
     }
@@ -293,6 +296,9 @@ class Marketing extends Page
     public static function card(SocialPost $s): ?array
     {
         $subject = $s->subject;
+        if ($s->kind === 'kolom') {   // D175: the week's theme, or a reader's line, as a quote card
+            return ['title' => $s->title, 'by' => 'পাঠকের কলম', 'section' => 'পাঠকের কলম', 'quote' => (string) ($s->texts['quote'] ?? ''), 'image' => null];
+        }
         if ($subject instanceof Post) {
             return [
                 'title' => $subject->title,

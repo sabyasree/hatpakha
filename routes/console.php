@@ -62,3 +62,9 @@ Schedule::call(fn () => \Illuminate\Support\Facades\Artisan::call('hatpakha:back
 Schedule::call(fn () => \App\Support\FacebookPage::due())->name('facebook timed posts')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto morning')->dailyAt('10:05')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook auto evening')->dailyAt('19:35')->timezone('Asia/Kolkata');
+
+// D175: পাঠকের কলম. Monday morning the week's theme opens and readers are invited; the AI reads entries through the
+// week; Saturday evening it proposes the best ten. Readers' words go public only on the owner's click.
+Schedule::call(fn () => \App\Support\Kolom::openWeek())->name('reader theme opens')->weeklyOn(1, '06:10')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\Kolom::screen())->name('reader entries screened')->hourlyAt(25);
+Schedule::call(fn () => \App\Support\Kolom::pickWeek())->name('reader entries picked')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');
