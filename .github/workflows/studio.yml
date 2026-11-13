@@ -44,8 +44,18 @@ jobs:
       - name: Ask the site what is waiting
         id: jobs
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && php artisan hatpakha:studio list" > jobs.json
-          n=$(python3 -c "import json; print(len(json.load(open('jobs.json'))))")
+          # A release may be half uploaded at this moment (the site is then on its "back soon" page): that is not an
+          # error, the next run draws what is waiting. Anything else that is not a list is shown and fails the job.
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "cd '${DEPLOY_PATH}' && php artisan hatpakha:studio list" > jobs.json 2> err.txt || true
+          n=$(python3 -c "import json; j=json.load(open('jobs.json')); assert isinstance(j, list); print(len(j))" 2>/dev/null || echo bad)
+          if [ "$n" = "bad" ]; then
+            echo "The site did not answer with a list:"; head -c 600 jobs.json; head -c 600 err.txt
+            if ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "test -f '${DEPLOY_PATH}/storage/framework/down'"; then
+              echo "::warning::A release is being installed right now. Nothing drawn this time; run again in a few minutes."; n=0
+            else
+              exit 1
+            fi
+          fi
           echo "count=$n" >> "$GITHUB_OUTPUT"
           echo "$n waiting"
 

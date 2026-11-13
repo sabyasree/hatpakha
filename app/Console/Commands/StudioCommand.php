@@ -15,6 +15,8 @@ class StudioCommand extends Command
     public function handle(): int
     {
         if ($this->argument('what') === 'list') {
+            // Tomorrow's fixed posts, in case the evening plan has not run yet (a fresh release, a missed cron). Never twice.
+            rescue(fn () => \App\Support\MarketingPlan::plan(), null, false);
             $this->line(json_encode(Studio::pending(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
             return self::SUCCESS;
