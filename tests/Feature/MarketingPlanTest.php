@@ -429,4 +429,17 @@ class MarketingPlanTest extends TestCase
         $sub->forceFill(['confirm_sent_at' => now()->subMinutes(2)])->save();
         $this->assertTrue($sub->fresh()->confirm_sent_at->gt(now()->subMinutes(10)));
     }
+
+    /** Owner, 2026-11-14: the desk's piece list has its own tab for pieces with a publishing time set. */
+    public function test_the_piece_list_has_a_scheduled_tab(): void
+    {
+        $this->makePost(['slug' => 'pore', 'title' => 'পরের লেখা', 'status' => 'scheduled', 'published_at' => now()->addDays(2)]);
+        $this->makePost(['slug' => 'aage', 'title' => 'বেরিয়ে গেছে']);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class)->assertSee('সময় ঠিক করা')
+            ->set('activeTab', 'scheduled')->assertSee('পরের লেখা')->assertDontSee('বেরিয়ে গেছে')->assertSee('ভারতীয় সময়')
+            ->set('activeTab', 'published')->assertSee('বেরিয়ে গেছে')->assertDontSee('পরের লেখা');
+    }
 }
