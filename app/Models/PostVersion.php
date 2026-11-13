@@ -12,7 +12,8 @@ class PostVersion extends Model
 
     protected $guarded = ['id'];
 
-    public const KINDS = ['submitted' => 'লেখক পাঠালেন', 'sent_back' => 'সম্পাদক বদল চাইলেন', 'resubmitted' => 'লেখক আবার পাঠালেন'];
+    public const KINDS = ['submitted' => 'লেখক পাঠালেন', 'sent_back' => 'সম্পাদক বদল চাইলেন', 'resubmitted' => 'লেখক আবার পাঠালেন',
+        'desk_edit' => 'ডেস্কে বদল করা হল', 'before' => 'ডেস্কে বদলের আগের লেখা'];
 
     protected function casts(): array
     {

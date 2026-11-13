@@ -12,7 +12,7 @@
 @endphp
 <div style="font-size:.95rem;line-height:1.75">
     @if ($versions->isEmpty())
-        <p>{{ __('এই লেখার কোনো আগের সংস্করণ রাখা নেই (সংস্করণ রাখা শুরু হয়েছে ১৩ নভেম্বর ২০২৬ থেকে)।') }}</p>
+        <p>{{ __('এখনও কোনো বদল রাখা নেই। এখন থেকে ডেস্কে লেখা বা শিরোনাম বদলে সেভ করলে, লেখক আবার পাঠালে বা আপনি বদল চাইলে, প্রতিবার এখানে থাকবে। (বদল রাখা শুরু হয়েছে ১৩ নভেম্বর ২০২৬ থেকে; তার আগের বদল জানা নেই।)') }}</p>
     @endif
     @foreach ($versions->reverse()->values() as $i => $v)
         @php
@@ -33,11 +33,16 @@
             @elseif ($v->kind === 'resubmitted')
                 <p style="margin:.5rem 0 0;opacity:.7">{{ __('লেখক কোনো কথা লেখেননি।') }}</p>
             @endif
+            @if ($v->kind === 'desk_edit' && $v->user)
+                <p style="margin:.4rem 0 0;opacity:.75">{{ __('বদল করেছেন:') }} {{ $v->user->name }}</p>
+            @endif
             @if ($diff && ! $diff['same'])
                 <p style="margin:.6rem 0 .2rem;font-weight:700">{{ __('আগের বারের থেকে কী বদলেছে') }} <span style="font-weight:400;opacity:.7">({{ __('সবুজ: নতুন, লাল: বাদ গেছে') }})</span></p>
                 <div style="max-height:28rem;overflow:auto;border-left:3px solid rgba(127,127,127,.3);padding-left:.8rem">{!! $diff['html'] !!}</div>
-            @elseif ($diff)
+            @elseif ($diff && $v->kind === 'resubmitted')
                 <p style="margin:.5rem 0 0">{{ __('লেখক কিছু না বদলেই আবার পাঠিয়েছেন।') }}</p>
+            @elseif ($diff)
+                <p style="margin:.5rem 0 0;opacity:.75">{{ __('লেখায় কোনো বদল নেই') }}</p>
             @endif
         </details>
     @endforeach
