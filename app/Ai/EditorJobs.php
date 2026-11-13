@@ -130,6 +130,9 @@ final class EditorJobs
      */
     public static function newsletter(bool $force = false): ?Newsletter
     {
+        if (! $force && ! self::letterDue()) {
+            return null;   // D190: every two weeks, this is not the week
+        }
         $open = Newsletter::where('status', 'draft')->where('source', 'ai_weekly');
         if ($open->exists()) {
             if (! $force) {
@@ -137,7 +140,7 @@ final class EditorJobs
             }
             (clone $open)->get()->each(fn ($n) => $n->forceFill(['status' => 'cancelled'])->save());
         }
-        $posts = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(7))->latest('published_at')->limit(12)->get();
+        $posts = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(self::rhythm() === 'weekly' ? 7 : 14))->latest('published_at')->limit(12)->get();
         $archive = $posts->isEmpty();
         if ($archive) {
             $popular = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(60)->toDateString())->groupBy('post_id')->orderByRaw('SUM(views) DESC')->limit(20)->pluck('post_id');
@@ -165,6 +168,44 @@ final class EditorJobs
         $n->forceFill(['extras' => self::comeBack()])->save();
 
         return $n;
+    }
+
+    public const RHYTHM = 'newsletter.rhythm';
+
+    /**
+     * D190 (owner, 2026-11-14: "for now bi-weekly; I want an option in the desk to set weekly or bi-weekly"): how often
+     * the readers' letter is drafted. Every two weeks unless the owner chooses weekly in /desk → চিঠি.
+     */
+    public static function rhythm(): string
+    {
+        return \App\Models\Setting::get(self::RHYTHM) === 'weekly' ? 'weekly' : 'biweekly';
+    }
+
+    /**
+     * Is a letter due for the coming Sunday? Weekly: always. Every two weeks: for the 1st and 3rd Sunday of the month,
+     * so a month never has three (the e-mail plan counts by the month).
+     */
+    public static function letterDue(?Carbon $now = null): bool
+    {
+        if (self::rhythm() === 'weekly') {
+            return true;
+        }
+        $now = ($now ?? now('Asia/Kolkata'))->copy()->timezone('Asia/Kolkata');
+        $sunday = $now->isSunday() ? $now : $now->copy()->next(\Carbon\CarbonInterface::SUNDAY);
+
+        return in_array((int) ceil($sunday->day / 7), [1, 3], true);
+    }
+
+    /** The Sunday the next letter is for (shown in the desk). */
+    public static function nextLetter(): Carbon
+    {
+        $d = now('Asia/Kolkata')->startOfDay();
+        $d = $d->isSunday() ? $d : $d->next(\Carbon\CarbonInterface::SUNDAY);
+        while (! self::letterDue($d)) {
+            $d = $d->copy()->addWeek();
+        }
+
+        return $d;
     }
 
     /** D184: fixed blocks under the pieces of the weekly letter. Real things only: today's riddle, the open theme, a running serial. */

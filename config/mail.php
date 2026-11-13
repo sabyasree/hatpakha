@@ -147,6 +147,8 @@ return [
     'daily_limit' => (int) env('MAIL_DAILY_LIMIT', 0),
     // D129: Brevo's own limit (free plan 300 a day; a little under it leaves room for test letters).
     'brevo_daily_limit' => (int) env('MAIL_BREVO_DAILY_LIMIT', 290),
+    // D190: the Brevo plan counts by the month (Starter: 5,000). 0 = no monthly limit kept by the site.
+    'brevo_monthly_limit' => (int) env('MAIL_BREVO_MONTHLY_LIMIT', 0),
     // Off hatpakha.com (staging), mail goes only to desk staff and bulk mail is off (App\Support\MailGuard).
     // "allow" switches the guard off; only the test suite uses it.
     'off_live' => env('MAIL_OFF_LIVE', 'block'),

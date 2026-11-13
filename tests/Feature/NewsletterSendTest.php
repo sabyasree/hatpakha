@@ -49,6 +49,7 @@ class NewsletterSendTest extends TestCase
 
         Claude::$fake = fn () => ['subject' => 'হাতপাখার চিঠি', 'preheader' => 'এই সপ্তাহের লেখা', 'paragraphs' => ['প্রিয় পাঠক,', 'এই সপ্তাহে… দেখুন https://evil.example'],
             'closing' => 'ভালো থাকবেন', 'cta_label' => 'পড়ুন', 'cta_target' => 'home', 'pieces' => [['id' => $post->id, 'line' => 'পড়ুন']]];
+        \App\Models\Setting::put(EditorJobs::RHYTHM, 'weekly');   // D190: every two weeks by default; this test is about the weekly draft
         $n = EditorJobs::newsletter();
         $this->assertSame('draft', $n->status);
         $this->assertSame('সপ্তাহের লেখা', $n->items[0]['title']);
@@ -100,5 +101,43 @@ class NewsletterSendTest extends TestCase
         Livewire::test(EditNewsletter::class, ['record' => $n->id])->assertOk()->callAction('send');
         $this->assertSame('queued', $n->fresh()->status);
         $this->assertSame(1, $n->fresh()->recipients);
+    }
+
+    /** D190: the readers' letter every two weeks (1st and 3rd Sunday) unless the owner chooses weekly; a monthly allowance. */
+    public function test_letter_rhythm_is_every_two_weeks_unless_set_weekly_and_the_month_has_a_limit(): void
+    {
+        $this->assertSame('biweekly', EditorJobs::rhythm());
+        $sat = fn (string $d) => \Illuminate\Support\Carbon::parse($d.' 18:00', 'Asia/Kolkata');
+        // November 2026: Sundays are 1, 8, 15, 22, 29. Drafted the Saturday before.
+        $this->assertTrue(EditorJobs::letterDue($sat('2026-11-14')), 'For the 3rd Sunday (15th)');
+        $this->assertFalse(EditorJobs::letterDue($sat('2026-11-21')), 'Not for the 4th');
+        $this->assertFalse(EditorJobs::letterDue($sat('2026-11-28')), 'Not for a 5th Sunday: never three in a month');
+        $this->assertTrue(EditorJobs::letterDue($sat('2026-12-05')), 'For the 1st Sunday of December (6th)');
+
+        \Illuminate\Support\Carbon::setTestNow($sat('2026-11-21'));
+        $this->makePost(['status' => 'published', 'slug' => 'w2', 'title' => 'লেখা', 'published_at' => now()->subDays(10)]);
+        Claude::$fake = fn () => ['subject' => 'চিঠি', 'preheader' => '', 'paragraphs' => ['ক'], 'closing' => 'খ', 'cta_label' => 'পড়ুন', 'cta_target' => 'home', 'pieces' => []];
+        $this->assertNull(EditorJobs::newsletter(), 'Not this week');
+        $this->assertSame('2026-12-06', EditorJobs::nextLetter()->toDateString());
+        $this->assertNotNull(EditorJobs::newsletter(force: true), 'The owner can still ask for one');
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Newsletters\Pages\ListNewsletters::class)->assertSee('দু সপ্তাহে একবার')
+            ->callAction('rhythm', ['rhythm' => 'weekly']);
+        $this->assertSame('weekly', EditorJobs::rhythm());
+        $this->assertTrue(EditorJobs::letterDue());
+
+        // The month's allowance through Brevo.
+        config(['mail.mailers.brevo.host' => 'smtp-relay.brevo.com', 'mail.brevo_daily_limit' => 2000, 'mail.brevo_monthly_limit' => 3]);
+        \App\Models\Setting::put('mail.bulk_provider', 'brevo');
+        $n = \App\Models\Newsletter::where('source', 'ai_weekly')->latest('id')->firstOrFail();
+        foreach (['a', 'b'] as $x) {
+            \App\Models\NewsletterDelivery::create(['newsletter_id' => $n->id, 'email' => $x.'@example.test', 'kind' => 'subscriber', 'recipient_id' => 1, 'sent_at' => now(), 'via' => 'brevo']);
+        }
+        $this->assertSame(1, \App\Support\BulkMail::monthLeft());
+        $this->assertSame(1, \App\Support\BulkMail::remainingToday(), 'The nearer of the day\'s and the month\'s limit');
+        \Illuminate\Support\Carbon::setTestNow();
     }
 }
