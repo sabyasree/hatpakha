@@ -118,9 +118,11 @@ class NewsletterResource extends Resource
             $left = \App\Support\BulkMail::remainingToday($p);
             $limit = \App\Support\BulkMail::limit($p);
 
-            return $limit > 0
+            $month = \App\Support\BulkMail::monthLeft($p);
+
+            return ($limit > 0
                 ? __('দিনে').' '.\App\Support\Bn::num((string) $limit).' '.__('টি পর্যন্ত; আজ আর').' '.\App\Support\Bn::num((string) $left).' '.__('টি যেতে পারে')
-                : __('দিনের কোনো সীমা রাখা নেই');
+                : __('দিনের কোনো সীমা রাখা নেই')).($month !== null ? '। '.__('এ মাসে আর').' '.\App\Support\Bn::num((string) $month).' '.__('টি যেতে পারে') : '');
         };
 
         return \Filament\Actions\Action::make('provider')
@@ -148,6 +150,28 @@ class NewsletterResource extends Resource
             ->action(function (array $data) {
                 \App\Support\BulkMail::choose($data['provider'], auth()->id());
                 \Filament\Notifications\Notification::make()->title(__('এখন থেকে চিঠি যাবে').' '.\App\Support\BulkMail::label($data['provider']).' '.__('দিয়ে'))->success()->send();
+            });
+    }
+
+    /** D190: how often the team drafts the readers' letter: every two weeks (the 1st and 3rd Sunday) or every week. Admins only. */
+    public static function rhythmAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('rhythm')
+            ->label(fn () => __('পাঠকের চিঠি').': '.(\App\Ai\EditorJobs::rhythm() === 'weekly' ? __('প্রতি সপ্তাহে') : __('দু সপ্তাহে একবার')))
+            ->icon('heroicon-o-calendar-days')->color('gray')
+            ->visible(fn () => auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false)
+            ->modalHeading(__('পাঠকের চিঠি কত ঘন ঘন যাবে'))
+            ->modalDescription(fn () => __('দল শনিবার সন্ধ্যায় চিঠির খসড়া তৈরি করে; আপনি দেখে পাঠান। পরের চিঠি').': '.\App\Support\Bn::date(\App\Ai\EditorJobs::nextLetter()).'।')
+            ->schema([
+                \Filament\Forms\Components\Radio::make('rhythm')->label(__('কত ঘন ঘন'))->required()->default(fn () => \App\Ai\EditorJobs::rhythm())
+                    ->options(['biweekly' => __('দু সপ্তাহে একবার'), 'weekly' => __('প্রতি সপ্তাহে')])
+                    ->descriptions(['biweekly' => __('মাসের প্রথম ও তৃতীয় রবিবার: মাসে দুটি চিঠি। চিঠিতে গত দু সপ্তাহের লেখা থাকে।'), 'weekly' => __('প্রতি রবিবার: মাসে চার-পাঁচটি চিঠি। ই-মেলের মাসিক সীমা দেখে নিন।')]),
+            ])
+            ->modalSubmitActionLabel(__('রাখুন'))
+            ->action(function (array $data) {
+                \App\Models\Setting::put(\App\Ai\EditorJobs::RHYTHM, $data['rhythm'] === 'weekly' ? 'weekly' : 'biweekly');
+                \App\Models\AuditLog::record('newsletter.rhythm', null, ['rhythm' => $data['rhythm'], 'by' => auth()->id()]);
+                \Filament\Notifications\Notification::make()->title(__('রাখা হয়েছে'))->success()->send();
             });
     }
 }

@@ -71,12 +71,27 @@ final class BulkMail
         $provider ??= self::provider();
         $limit = self::limit($provider);
         if ($limit <= 0) {
-            return null;
+            return self::monthLeft($provider);
         }
-        $used = \App\Models\NewsletterDelivery::where('sent_at', '>=', now()->subDay())
-            ->when($provider === 'brevo', fn ($q) => $q->where('via', 'brevo'), fn ($q) => $q->where(fn ($w) => $w->whereNull('via')->orWhere('via', '!=', 'brevo')))
-            ->count();
+        $via = fn ($q) => $q->when($provider === 'brevo', fn ($q) => $q->where('via', 'brevo'), fn ($q) => $q->where(fn ($w) => $w->whereNull('via')->orWhere('via', '!=', 'brevo')));
+        $used = $via(\App\Models\NewsletterDelivery::where('sent_at', '>=', now()->subDay()))->count();
+        // D190: the month's allowance too (Brevo's plan counts by the calendar month), whichever is nearer.
+        if (($month = self::monthLeft($provider)) !== null) {
+            return max(0, min($limit - $used, $month));
+        }
 
         return max(0, $limit - $used);
+    }
+
+    /** Letters still allowed this calendar month through Brevo (null = no monthly limit set: MAIL_BREVO_MONTHLY_LIMIT). */
+    public static function monthLeft(?string $provider = null): ?int
+    {
+        $provider ??= self::provider();
+        $limit = $provider === 'brevo' ? (int) config('mail.brevo_monthly_limit') : 0;
+        if ($limit <= 0) {
+            return null;
+        }
+
+        return max(0, $limit - \App\Models\NewsletterDelivery::where('via', 'brevo')->where('sent_at', '>=', now('Asia/Kolkata')->startOfMonth()->utc())->count());
     }
 }

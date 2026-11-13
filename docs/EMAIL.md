@@ -119,6 +119,7 @@ MAIL_BREVO_PORT=587
 MAIL_BREVO_USERNAME=<Brevo → SMTP & API → SMTP: Login>
 MAIL_BREVO_PASSWORD=<an SMTP key made there>
 MAIL_BREVO_DAILY_LIMIT=290
+MAIL_BREVO_MONTHLY_LIMIT=        # D190: a little under the plan's monthly allowance (Starter 5,000 → 4400); empty = none
 ```
 Choose the road in /desk → চিঠি → **পাঠানোর পথ** (admins). Each road's daily limit is counted separately. In Brevo, authenticate the domain hatpakha.com (brevo-code TXT and the two DKIM CNAMEs in Cloudflare, DNS only; don't add a second DMARC) and add editor@hatpakha.com as a sender.
 

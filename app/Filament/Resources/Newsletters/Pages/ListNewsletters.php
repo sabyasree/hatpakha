@@ -29,6 +29,7 @@ class ListNewsletters extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            NewsletterResource::rhythmAction(),     // D190
             NewsletterResource::providerAction(),   // D129
             // The AI team writes the letter (D58); the owner reads, edits and sends.
             Action::make('aiDraft')->label(__('এআই-কে খসড়া লিখতে বলুন'))->icon('heroicon-o-sparkles')->color('gray')
