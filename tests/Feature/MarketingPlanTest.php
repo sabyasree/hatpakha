@@ -442,4 +442,20 @@ class MarketingPlanTest extends TestCase
             ->set('activeTab', 'scheduled')->assertSee('পরের লেখা')->assertDontSee('বেরিয়ে গেছে')->assertSee('ভারতীয় সময়')
             ->set('activeTab', 'published')->assertSee('বেরিয়ে গেছে')->assertDontSee('পরের লেখা');
     }
+
+    /** Owner, 2026-11-14: the weekly review has its own section with a "now" button; Facebook's permissions can be checked. */
+    public function test_the_review_can_be_made_now_and_facebook_permissions_are_shown(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*/debug_token*' => Http::response(['data' => ['is_valid' => true, 'expires_at' => 0, 'scopes' => ['pages_manage_posts', 'pages_read_engagement', 'instagram_content_publish']]]),
+            'graph.facebook.com/*' => Http::response([]),
+        ]);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)
+            ->assertSee('এখনই হিসাব করুন')->assertSee('প্রথম হিসাব আসবে এই রবিবার রাতে')
+            ->call('reviewNow')->assertSee('নতুন সদস্য')->assertDontSee('প্রথম হিসাব আসবে এই রবিবার রাতে')
+            ->call('checkFacebook')->assertSee('✓ ফেসবুকে পোস্ট, ছবি ও রিল দেওয়া')->assertSee('✗ ধাঁধার উত্তর আমাদের পোস্টের নিচে কমেন্ট করা')->assertSee('চাবির মেয়াদ শেষ হয় না');
+    }
 }

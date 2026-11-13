@@ -25,6 +25,14 @@
                         ? __('মার্কেটিং টিম রোজের পোস্ট নিজেই সাজায়, ছবি ও রিল নিজেই তৈরি করে, আর ঠিক সময়ে ফেসবুক ও ইনস্টাগ্রামে দেয়: সকালে ধাঁধা, দুপুরে রিল, সন্ধ্যায় দিনের লেখা। কোনোটি না চাইলে নিচে “পোস্ট করব না” টিপুন।')
                         : __('এখন কিছুই নিজে থেকে যায় না; প্রতিটি পোস্ট আপনি টিপলে যায়। চালু করলে মার্কেটিং টিম রোজের পোস্ট নিজেই দেবে।') }}</p>
                     @unless (\App\Support\FacebookPage::ready())<p class="hp-muted" style="margin-top:.2rem">⚠ {{ __('এটি আসল সাইট নয়: এখান থেকে ফেসবুকে কিছু যায় না।') }}</p>@endunless
+                    <p style="margin-top:.5rem"><x-filament::button size="xs" color="gray" icon="heroicon-o-shield-check" wire:click="checkFacebook">{{ __('ফেসবুক কী কী করতে দিচ্ছে, দেখুন') }}</x-filament::button></p>
+                    @if ($this->fbCheck)
+                        <div class="hp-mk-text" style="margin-top:.4rem">@if (! $this->fbCheck['ok'])⚠ {{ __('ফেসবুক উত্তর দেয়নি') }}: {{ $this->fbCheck['error'] }}
+{{ __('নিজে দেখতে: developers.facebook.com → Tools → Access Token Debugger-এ পেজের চাবিটি বসান (চাবিটি আর কোথাও দেবেন না)।') }}@else
+@foreach (\App\Support\FacebookPage::NEEDS as $scope => $what){{ in_array($scope, $this->fbCheck['scopes'], true) ? '✓' : '✗' }} {{ __($what) }} ({{ $scope }})
+@endforeach
+{{ $this->fbCheck['expires'] ? __('চাবির মেয়াদ শেষ').': '.$this->fbCheck['expires'] : __('চাবির মেয়াদ শেষ হয় না।') }}@endif</div>
+                    @endif
                 </div>
                 @if ($isAdmin)
                     <x-filament::button :color="$fbAuto ? 'gray' : 'primary'" icon="heroicon-o-bolt" wire:click="toggleFacebookAuto"
@@ -86,6 +94,13 @@
             <div class="hp-mk-text" x-ref="wa">{{ $whatsapp }}</div>
             <x-filament::button size="sm" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem" x-on:click="navigator.clipboard.writeText($refs.wa.innerText); copied = true; setTimeout(() => copied = false, 2000)"><span x-show="!copied">{{ __('কপি') }}</span><span x-show="copied" x-cloak>{{ __('কপি হয়েছে') }}</span></x-filament::button>
         </div>
+    </x-filament::section>
+
+    <x-filament::section icon="heroicon-o-chart-bar" collapsible>
+        <x-slot name="heading">{{ __('সপ্তাহের হিসাব') }}</x-slot>
+        @if ($isAdmin)
+            <x-slot name="afterHeader"><x-filament::button size="sm" color="gray" icon="heroicon-o-arrow-path" wire:click="reviewNow" wire:loading.attr="disabled">{{ __('এখনই হিসাব করুন') }}</x-filament::button></x-slot>
+        @endif
         {{-- D183: the analyst's weekly review: every number on one card, what changed in the plan, what to do next --}}
         @php
             $card = $review['card'] ?? [];
@@ -93,12 +108,11 @@
             $pair = fn ($x) => $x ? $bn($x['now']).' ('.__('আগের সপ্তাহে').' '.$bn($x['before']).')' : '—';
             $tune = \App\Support\MarketingAnalyst::tuning();
         @endphp
-        <div style="margin-top:1rem">
-            <b>{{ __('সপ্তাহের হিসাব') }}</b>
+        <div>
             <p class="hp-muted">{{ __('প্রতি রবিবার রাতে বিশ্লেষক গুগল অ্যানালিটিক্স, ফেসবুক, ইনস্টাগ্রাম, নিউজলেটার, ফোনের নোটিফিকেশন আর সাইটের নিজের সংখ্যা মিলিয়ে দেখে, আর তা থেকে পরের সপ্তাহের পরিকল্পনা বদলায়।') }}
                 {{ __('এখন পোস্টের সময়') }}: {{ $bn($tune['morning']) }}, {{ $bn('13:30') }}, {{ $bn($tune['evening']) }}.</p>
             @if (! $card)
-                <p class="hp-muted">{{ __('প্রথম হিসাব আসবে এই রবিবার রাতে।') }}</p>
+                <p class="hp-muted">{{ __('প্রথম হিসাব আসবে এই রবিবার রাতে।') }} {{ __('এখনই দেখতে চাইলে “এখনই হিসাব করুন” টিপুন।') }}</p>
             @else
                 @if ($review['report'] ?? [])<ul style="margin:.3rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['report'] as $l)<li>{{ $l }}</li>@endforeach</ul>@endif
                 @if ($review['changes'] ?? [])
