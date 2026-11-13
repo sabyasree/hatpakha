@@ -84,6 +84,10 @@ final class GoogleData
         if (! $res || ! $res->successful()) {
             return [[], 'Analytics: '.mb_substr((string) ($res?->json('error.message') ?? $res?->status() ?? 'no connection'), 0, 160)];
         }
+        // The time zone the Analytics account counts hours in (the marketing plan turns hours into Kolkata time, D187).
+        if (is_string($tz = $res->json('metadata.timeZone')) && $tz !== '' && $tz !== \App\Models\Setting::get('analytics.timezone')) {
+            \App\Models\Setting::put('analytics.timezone', $tz);
+        }
         $rows = [];
         foreach ((array) $res->json('rows') as $r) {
             $row = [];

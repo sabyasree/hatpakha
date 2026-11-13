@@ -33,6 +33,10 @@ final class MarketingPlan
 
     public const WINDOW_HOURS = 18;
 
+    public const QUIET_FROM = 2230;   // Kolkata clock: nothing goes out by itself from 22:30…
+
+    public const QUIET_TO = 700;      // …to 07:00
+
     private const TZ = 'Asia/Kolkata';
 
     /** The evening before (and again in the morning, harmlessly): the fixed posts of one day. Returns how many were made. */
@@ -207,6 +211,13 @@ final class MarketingPlan
         rescue(fn () => FacebookPage::checkReels(), null, false);
         rescue(fn () => self::comments(), null, false);
         if (! FacebookPage::auto() || ! (FacebookPage::ready() || InstagramPage::ready())) {
+            return 0;
+        }
+        // D187 (owner: "posting should follow IST… post in their daytime, when they use social media most"): every time
+        // in the plan is Kolkata time, and nothing goes out by itself at night there. A post whose picture arrives
+        // late in the evening waits for the morning.
+        $clock = (int) now(self::TZ)->format('Hi');
+        if ($clock >= self::QUIET_FROM || $clock < self::QUIET_TO) {
             return 0;
         }
         // Posts nobody gave a time (older ones, or a piece that has only now gone live) join the evening queue.

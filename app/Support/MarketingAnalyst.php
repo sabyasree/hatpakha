@@ -135,7 +135,12 @@ final class MarketingAnalyst
         $new = $now;
         $why = [];
         // Posting times follow the hours readers come (28 days of visits by hour), a little before the busiest hour.
-        $hours = collect($card['ga']['hours'] ?? [])->mapWithKeys(fn ($r) => [(int) $r['hour'] => (float) $r['sessions']]);
+        // Google counts hours in the Analytics account's own time zone; the plan works in Kolkata time (D187).
+        $shift = 0;
+        if (in_array($tz = (string) Setting::get('analytics.timezone', 'Asia/Kolkata'), timezone_identifiers_list(), true)) {
+            $shift = (int) round((now('Asia/Kolkata')->utcOffset() - now($tz)->utcOffset()) / 60);
+        }
+        $hours = collect($card['ga']['hours'] ?? [])->mapWithKeys(fn ($r) => [(((int) $r['hour'] + $shift) % 24 + 24) % 24 => (float) $r['sessions']]);
         if ($hours->sum() >= 200) {
             $pick = function (array $choices, int $from, int $to) use ($hours): string {
                 $busiest = $hours->filter(fn ($v, $h) => $h >= $from && $h <= $to)->sortDesc()->keys()->first();
