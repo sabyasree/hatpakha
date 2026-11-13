@@ -47,17 +47,32 @@ class AccountController extends Controller
         ];
     }
 
+    /**
+     * D166: "আমার" opens "আমার লেখা" for a writer and "আমার পড়া" for a reader (who never sees empty writing pages).
+     * আমার লেখা: what needs the writer first (sent back, drafts), then with the editor, then published pieces with
+     * WhatsApp, certificate and read counts, the reader numbers, and the writer page with its link.
+     */
     public function index(Request $request)
     {
+        $acct = \App\Support\AccountMenu::for($request->user());
+        if (! $acct['writer']) {
+            return redirect(Url::to('/account/reading'));   // flashed messages ride along to the next page
+        }
         $act = self::mine($request)->with('section')->whereIn('status', ['changes', 'confirm'])->latest('updated_at')->get();
         $drafts = self::mine($request)->with('section')->where('status', 'draft');
+        $published = self::mine($request)->with('section')->where('status', 'published')->latest('published_at')->limit(5)->get();
+        $authors = \App\Models\Author::where('user_id', $request->user()->id)->get();
+        $stats = \App\Support\WriterStats::for($authors);
+        $reads = collect($stats['rows'])->mapWithKeys(fn ($r) => [$r['post']->id => $r['reads']]);
+        $certs = \App\Models\Certificate::whereNull('revoked_at')->whereIn('post_id', $published->pluck('id'))->whereIn('author_id', $authors->pluck('id'))->get()->keyBy('post_id');
 
-        return view('account.index', self::shell($request, 'home', 'আমার হাতপাখা') + [
+        return view('account.index', self::shell($request, 'home', 'আমার লেখা') + [
             'act' => $act,
             'drafts' => (clone $drafts)->latest('updated_at')->limit(3)->get(),
             'draftCount' => $drafts->count(),
             'review' => self::mine($request)->with('section')->whereIn('status', ['pending', 'scheduled'])->latest('updated_at')->limit(5)->get(),
-            'recent' => self::mine($request)->with('section')->where('status', 'published')->latest('published_at')->limit(3)->get(),
+            'published' => $published, 'reads' => $reads, 'certs' => $certs, 'stats' => $stats,
+            'writerPage' => ($a = $acct['author']) && ($a->published_count > 0 || $published->isNotEmpty()) ? $a->url() : null,
         ]);
     }
 
@@ -95,27 +110,37 @@ class AccountController extends Controller
         return view('account.stats', self::shell($request, 'writings', 'আমার পাঠক') + ['s' => \App\Support\WriterStats::for($authors), 'authors' => $authors]);
     }
 
-    /** Saved pieces (20 a page) and followed writers. */
+    /**
+     * D166 "আমার পড়া": where the reader stopped, what is new from those they follow, saved pieces (20 a page),
+     * who and what they follow, liked and recently read pieces.
+     */
     public function reading(Request $request)
     {
         $user = $request->user();
-        $savedIds = \Illuminate\Support\Facades\DB::table('saved_posts')->where('user_id', $user->id)->select('post_id');
+        $db = \Illuminate\Support\Facades\DB::class;
+        $savedIds = $db::table('saved_posts')->where('user_id', $user->id)->select('post_id');
+        $likedIds = $db::table('post_likes')->where('user_id', $user->id)->latest('created_at')->limit(20)->pluck('post_id');
 
-        return view('account.reading', self::shell($request, 'reading', 'পড়ার তালিকা') + [
+        return view('account.reading', self::shell($request, 'reading', 'আমার পড়া') + [
+            'unfinished' => $user->reading_history ? \App\Support\ReadingHistory::unfinished($user) : collect(),
+            'fresh' => \App\Support\ReadingHistory::newForYou($user),
             'saved' => Post::published()->with('authors', 'section')->whereIn('id', $savedIds)->latest('published_at')->paginate(self::PER_PAGE)->withPath(Url::to('/account/reading')),
-            'following' => \App\Models\Author::whereIn('id', \Illuminate\Support\Facades\DB::table('follows')->where('user_id', $user->id)->select('author_id'))->orderBy('display_name')->get(),
+            'following' => \App\Models\Author::whereIn('id', $db::table('follows')->where('user_id', $user->id)->select('author_id'))->orderBy('display_name')->get(),
+            'serials' => \App\Models\Serial::whereIn('id', $db::table('serial_follows')->where('user_id', $user->id)->select('serial_id'))->get(),
+            'liked' => Post::published()->with('authors', 'section')->whereIn('id', $likedIds)->get()->sortBy(fn ($p) => $likedIds->search($p->id))->values(),
+            'recent' => $user->reading_history ? \App\Support\ReadingHistory::recent($user) : collect(),
         ]);
     }
 
     /** The writer's own profile, a main tab of its own (owner): photo, cover, names, links, about. */
     public function profile(Request $request)
     {
-        return view('account.profile', self::shell($request, 'profile', 'লেখক-প্রোফাইল'));
+        return view('account.profile', self::shell($request, 'profile', 'আমার পাতা'));
     }
 
     public function settings(Request $request)
     {
-        return view('account.settings', self::shell($request, 'settings', 'সেটিংস') + ['setup' => self::twoFactorSetup($request)]);
+        return view('account.settings', self::shell($request, 'settings', 'ই-মেল ও পাসওয়ার্ড') + ['setup' => self::twoFactorSetup($request)]);
     }
 
     /** While 2FA is being set up: the QR code and the key to type by hand. */
@@ -139,8 +164,8 @@ class AccountController extends Controller
     {
         $user = $request->user();
         $data = $request->validate([
-            'name' => ['required', 'string', 'min:2', 'max:80'],
-            'name_bn' => ['nullable', 'string', 'max:80'],
+            'name' => ['required_without:name_bn', 'nullable', 'string', 'min:2', 'max:80'],
+            'name_bn' => ['nullable', 'string', 'min:2', 'max:80'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'city' => ['nullable', 'string', 'max:60'],
             'website' => ['nullable', 'url:https', 'max:200'],
@@ -154,9 +179,12 @@ class AccountController extends Controller
             'website.url' => 'ওয়েবসাইটের ঠিকানা https:// দিয়ে শুরু হবে।',
             'facebook.regex' => 'ফেসবুক পাতার পুরো ঠিকানা দিন (https://facebook.com/…)।',
             'instagram.regex' => 'ইনস্টাগ্রামের পুরো ঠিকানা দিন (https://instagram.com/…)।',
-            'avatar.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।', 'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
-            'avatar.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।', 'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
+            // D166: plain words for older users (no MB, no file types)
+            'avatar.max' => 'ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।', 'cover.max' => 'ছবিটি খুব বড়। ফোনের অন্য একটা ছবি দিন।',
+            'avatar.mimetypes' => 'এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।', 'cover.mimetypes' => 'এই ফাইলটি ছবি নয়। ফোনের গ্যালারি থেকে একটা ছবি বেছে নিন।',
+            'name.required_without' => 'আপনার নাম লিখুন।', 'name.min' => 'নামটি অন্তত দুই অক্ষরের হোক।', 'name_bn.min' => 'নামটি অন্তত দুই অক্ষরের হোক।',
         ]);
+        $data['name'] = filled($data['name'] ?? null) ? $data['name'] : $data['name_bn'];
         $user->forceFill(['name' => strip_tags($data['name'])])->save();
         $author = \App\Models\Author::where('user_id', $user->id)->first() ?? \App\Models\Author::create([
             'user_id' => $user->id, 'display_name' => $user->name, 'slug' => 'writer-'.$user->id,
@@ -181,7 +209,7 @@ class AccountController extends Controller
         }
         $author->forceFill($changes)->save();
 
-        return redirect(Url::to('/account/profile'))->with('status', 'প্রোফাইল সাজানো হয়েছে।');
+        return redirect(Url::to('/account/profile'))->with('status', \App\Support\AccountMenu::for($user)['writer'] ? 'রাখা হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।' : 'রাখা হয়েছে। এখন থেকে আপনার নাম “'.strip_tags($data['name']).'”।');
     }
 
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
@@ -219,19 +247,45 @@ class AccountController extends Controller
         if (\App\Models\Setting::get('certificates.auto') === '1') {
             \App\Models\Certificate::issueFor($post, tell: false);
             \App\Models\AuditLog::record('certificate.requested_issued', $post, ['by' => $request->user()->id]);
+            $made = \App\Models\Certificate::where('post_id', $post->id)->where('kind', 'publication')->whereNull('revoked_at')
+                ->whereIn('author_id', \App\Models\Author::where('user_id', $request->user()->id)->select('id'))->first();
 
-            return redirect(Url::to('/account/writings'))->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে। লেখার পাশের ⋯ থেকে, বা "শংসাপত্র" থেকে খুলে নামান বা প্রিন্ট করুন।');
+            // D166: straight to the new certificate (the walk-through found the old jump to the list confusing)
+            return $made ? redirect($made->verifyUrl()) : back(302, [], Url::to('/account/writings'))->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে।');
         }
         \App\Models\EditorTask::propose('certificate_request', 'লেখক শংসাপত্র চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
 
-        return redirect(Url::to('/account/writings'))->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
+        return back(302, [], Url::to('/account/writings'))->with('status', 'অনুরোধ পাঠানো হয়েছে। সম্পাদক দেখে শংসাপত্র দিলে আপনাকে জানানো হবে।');
     }
 
     public function updateNewsletter(Request $request)
     {
         $request->user()->forceFill(['mail_opt_out' => ! $request->boolean('newsletter')])->save();
 
-        return redirect(Url::to('/account/settings').'#letters')->with('status', $request->boolean('newsletter') ? 'চিঠি চালু থাকল।' : 'চিঠি বন্ধ হয়েছে। নিজের লেখার খবর আগের মতোই পাবেন।');
+        return redirect(Url::to('/account/settings').'#letters')->with('status', $request->boolean('newsletter') ? 'সাপ্তাহিক ই-মেল চালু হল।' : 'সাপ্তাহিক ই-মেল বন্ধ হল। নিজের লেখার খবর (যেমন সম্পাদকের কথা) আগের মতোই পাবেন।');
+    }
+
+    /** D166: the post page reports how far a signed-in reader got (sendBeacon on leaving; nothing if their switch is off). */
+    public function readingProgress(Request $request, Post $post)
+    {
+        \App\Support\ReadingHistory::record($request->user(), $post, (int) $request->input('p', 0));
+
+        return response()->noContent();
+    }
+
+    public function readingHistorySwitch(Request $request)
+    {
+        $on = $request->boolean('on');
+        $request->user()->forceFill(['reading_history' => $on])->save();
+
+        return redirect(Url::to('/account/settings').'#reading')->with('status', $on ? 'এখন থেকে কী পড়ছেন মনে রাখা হবে।' : 'আর মনে রাখা হবে না। আগের হিসেব মুছতে চাইলে নিচের “মুছুন” টিপুন।');
+    }
+
+    public function readingHistoryClear(Request $request)
+    {
+        \App\Support\ReadingHistory::clear($request->user());
+
+        return redirect(Url::to('/account/settings').'#reading')->with('status', 'পড়ার খাতা মুছে দেওয়া হয়েছে। “পরে পড়ব”, “ভালো লেগেছে” আর আপনার লেখা যেমন ছিল আছে।');
     }
 
     public function updatePassword(Request $request)

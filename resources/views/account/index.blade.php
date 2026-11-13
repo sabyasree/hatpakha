@@ -1,11 +1,11 @@
-{{-- Account home (owner + UX review): only what needs the writer now, a few short previews, one line of numbers. --}}
+{{-- D166 "আমার লেখা" (a writer's first page; owner + UX review + tests with older users): what needs the writer first,
+     drafts, pieces with the editor, published pieces with plain actions, reader numbers, the writer page and its link. --}}
 @php
     use App\Support\Bn;
     use App\Support\Url;
     $S = \App\Http\Controllers\AccountController::STATUS;
-    $published = (int) ($counts['published'] ?? 0);
-    $inReview = (int) ($counts['pending'] ?? 0) + (int) ($counts['scheduled'] ?? 0);
-    $total = (int) $counts->sum();
+    $chip = 'inline-flex min-h-11 items-center justify-center rounded-full border-2 border-navy bg-white px-4 text-[15px] font-bold hover:bg-peach-light';
+    $wa = fn (string $text) => 'https://wa.me/?text='.rawurlencode($text);
 @endphp
 <x-layouts.app :seo="$seo">
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
@@ -17,113 +17,102 @@
         @if ($needsVerification)
             <div class="mb-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">জমা দেওয়ার আগে ইমেল যাচাই করুন। আপনার ইনবক্সে লিংক আছে।</div>
         @endif
+        <a href="{{ Url::to('/submit') }}" class="flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-10">+ নতুন লেখা পাঠান</a>
 
-        @if ($total === 0)
-            <div class="rounded-3xl border-2 border-dashed border-navy p-8 text-center">
-                <p class="font-serif text-xl">এখনও কোনো লেখা পাঠাননি।</p>
-                <p class="mt-2 text-ink2">প্রথম লেখাটি পাঠানোর আগে <a href="{{ Url::to('/submissions') }}" class="underline">লেখা পাঠানোর নিয়ম</a> একবার দেখে নিন।</p>
-            </div>
-        @else
-            {{-- One line of numbers; each part opens its list --}}
-            @php
-                $nums = array_filter([
-                    [$published, 'প্রকাশিত', 'published'], [$inReview, 'সম্পাদকের কাছে', 'review'], [$certCount, 'শংসাপত্র', 'certificates'],
-                ], fn ($x) => $x[0] > 0);
-            @endphp
-            <p class="flex flex-wrap gap-x-3 gap-y-1 text-sm font-bold">
-                @foreach ($nums as [$v, $label, $key])
-                    @if (! $loop->first)<span aria-hidden="true" class="text-ink2">·</span>@endif
-                    <a href="{{ Url::to('/account/writings') }}?status={{ $key }}" class="underline decoration-rule underline-offset-4 hover:text-red">{{ Bn::num((string) $v) }} {{ $label }}</a>
-                @endforeach
-            </p>
+        @if ($act->isNotEmpty())
+            <h2 class="mt-8 font-display text-2xl font-extrabold">আপনার কাজ আছে</h2>
+            @foreach ($act as $p)
+                <div class="mt-3 rounded-2xl border-2 border-red bg-peach-light p-4 shadow-[4px_4px_0_#CB1B32]">
+                    <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
+                    <div class="text-ink2">{{ $p->status === 'changes' ? 'সম্পাদক একটু বদল চেয়েছেন' : 'সম্পাদক কয়েকটি শব্দ বদলাতে চান: দেখে সম্মতি দিন' }}</div>
+                    @if ($p->status === 'changes' && $p->review_note)
+                        <div class="mt-3 whitespace-pre-line rounded-xl bg-white p-3 leading-relaxed"><strong>সম্পাদকের কথা:</strong> {{ $p->review_note }}</div>
+                    @endif
+                    <a href="{{ Url::to('/submit/'.$p->id) }}" class="mt-3 flex h-12 items-center justify-center rounded-full bg-red font-bold text-white">{{ $p->status === 'changes' ? 'লেখাটি খুলে ঠিক করুন' : 'দেখে সম্মতি দিন' }}</a>
+                    @if ($p->status === 'changes')
+                        <p class="mt-2 text-sm text-ink2">ঠিক করে নিচের “আবার পাঠান” বোতাম টিপুন। আপনার মনে হলে লেখাটি যেমন আছে তেমনই আবার পাঠাতে পারেন; সম্পাদক আবার মন দিয়ে পড়বেন।</p>
+                    @endif
+                </div>
+            @endforeach
         @endif
 
-        {{-- Your turn --}}
-        @if ($act->isNotEmpty() || $drafts->isNotEmpty())
-            <h2 class="mt-7 font-display text-2xl font-extrabold">আপনার পালা</h2>
-            <ul class="mt-3 space-y-3">
-                @foreach ($act as $p)
-                    <li class="rounded-2xl border-2 border-red bg-peach-light p-4">
-                        <div class="flex items-start gap-3">
-                            <div class="min-w-0 flex-1">
-                                <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
-                                <div class="text-sm text-ink2">{{ $S[$p->status][1] ?? '' }}</div>
-                            </div>
-                            <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full bg-red px-4 font-bold text-white">{{ ['changes' => 'ঠিক করুন', 'confirm' => 'দেখে সম্মতি দিন'][$p->status] }}</a>
-                        </div>
-                        @if ($p->status === 'changes' && $p->review_note)
-                            <div class="mt-3 whitespace-pre-line rounded-xl bg-white p-3 text-sm"><strong>সম্পাদকের মন্তব্য:</strong> {{ $p->review_note }}</div>
-                        @endif
-                    </li>
-                @endforeach
-                @foreach ($drafts as $p)
-                    <li>
-                        <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex items-center gap-3 rounded-2xl border-2 border-rule bg-white p-4 hover:border-navy">
-                            <span class="min-w-0 flex-1"><span class="block font-serif text-lg font-bold leading-snug">{{ $p->title ?: 'শিরোনামহীন খসড়া' }}</span>
-                                <span class="text-sm text-ink2">খসড়া · {{ Bn::date($p->updated_at) }}</span></span>
-                            <span class="flex-none font-bold text-red">লিখতে থাকুন →</span>
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
+        @if ($drafts->isNotEmpty())
+            <h2 class="mt-8 font-display text-2xl font-extrabold">লিখতে থাকুন</h2>
+            @foreach ($drafts as $p)
+                <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
+                    <div class="font-serif text-lg font-bold leading-snug">{{ $p->title ?: 'শিরোনামহীন খসড়া' }}</div>
+                    <div class="text-ink2">খসড়া, শেষ লিখেছেন {{ Bn::date($p->updated_at) }}</div>
+                    <a href="{{ Url::to('/submit/'.$p->id) }}" class="mt-3 flex h-12 items-center justify-center rounded-full border-2 border-navy font-bold hover:bg-peach-light">খুলে লিখতে থাকুন</a>
+                </div>
+            @endforeach
             @if ($draftCount > $drafts->count())
-                <a href="{{ Url::to('/account/writings') }}?status=draft" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব খসড়া ({{ Bn::num((string) $draftCount) }}) →</a>
+                <a href="{{ Url::to('/account/writings') }}?status=draft" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-night underline">সব খসড়া ({{ Bn::num((string) $draftCount) }}) →</a>
             @endif
         @endif
 
-        {{-- With the editor: the only place the four-step tracker means something --}}
         @if ($review->isNotEmpty())
             <h2 class="mt-8 font-display text-2xl font-extrabold">সম্পাদকের কাছে</h2>
-            <ul class="mt-3 divide-y divide-rule rounded-2xl border-2 border-navy bg-white">
-                @foreach ($review as $p)
-                    @php $step = ['pending' => 2, 'scheduled' => 3][$p->status] ?? 1; @endphp
-                    <li class="p-4">
-                        <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
-                        <ol class="mt-2 flex flex-wrap items-center gap-1 text-xs font-bold" aria-label="অবস্থা">
-                            @foreach (['জমা', 'পড়া হচ্ছে', 'মনোনীত', 'প্রকাশিত'] as $i => $stage)
-                                <li class="flex items-center gap-1 {{ $i + 1 <= $step ? 'text-sky-night' : 'text-ink2 opacity-60' }}" @if ($i + 1 === $step) aria-current="step" @endif>
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full {{ $i + 1 <= $step ? 'bg-sky-deep' : 'bg-rule' }}"></span>{{ $stage }}
-                                    @if (! $loop->last)<span class="mx-0.5 opacity-50">—</span>@endif
-                                </li>
-                            @endforeach
-                        </ol>
-                    </li>
-                @endforeach
-            </ul>
-            @if ($inReview > $review->count())
-                <a href="{{ Url::to('/account/writings') }}?status=review" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব ({{ Bn::num((string) $inReview) }}) →</a>
-            @endif
+            @foreach ($review as $p)
+                @php($step = ['pending' => 2, 'scheduled' => 3][$p->status] ?? 1)
+                <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
+                    <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
+                    <ol class="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-sm font-bold" aria-label="অবস্থা">
+                        @foreach (['জমা', 'পড়া হচ্ছে', 'বাছাই হয়েছে', 'প্রকাশিত'] as $i => $stage)
+                            <li class="flex items-center gap-1 {{ $i + 1 <= $step ? 'text-sky-night' : 'font-medium text-ink2' }}" @if ($i + 1 === $step) aria-current="step" @endif>
+                                <span class="inline-block h-3 w-3 rounded-full {{ $i + 1 <= $step ? 'bg-sky-deep' : 'bg-rule' }}"></span>{{ $stage }}@if (! $loop->last)<span class="mx-0.5 text-ink2">—</span>@endif
+                            </li>
+                        @endforeach
+                    </ol>
+                    <p class="mt-2 text-sm text-ink2">{{ $p->status === 'scheduled' ? 'প্রকাশের দিন ঠিক হয়েছে: '.Bn::date($p->published_at) : 'সিদ্ধান্ত হলে ই-মেলে জানাব।' }}</p>
+                </div>
+            @endforeach
         @endif
 
-        {{-- Recently published: three rows, then the full list --}}
-        @if ($recent->isNotEmpty())
-            {{-- "আমার পাঠক" (owner, 2026-11-12): the writer's numbers and share cards --}}
-            <a href="{{ Url::to('/account/stats') }}" class="mt-7 flex min-h-16 items-center gap-3 rounded-2xl bg-navy px-5 py-3 text-white hover:bg-sky-night">
-                <svg class="h-7 w-7 flex-none text-peach" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-                <span class="min-w-0 flex-1"><strong class="block text-lg">আমার পাঠক</strong><span class="text-sm text-peach-light">কতবার পড়া হল · ফেসবুকে শেয়ারের কার্ড</span></span>
-                <span aria-hidden="true" class="font-bold">→</span>
-            </a>
-            <h2 class="mt-8 font-display text-2xl font-extrabold">সাম্প্রতিক প্রকাশিত</h2>
-            <ul class="mt-2 divide-y divide-rule border-y border-rule">
-                @foreach ($recent as $p)
-                    <li><a href="{{ $p->url() }}" class="flex min-h-14 items-center gap-3 py-2 hover:text-red">
-                        <span class="min-w-0 flex-1"><span class="block truncate font-serif text-lg font-bold">{{ $p->title }}</span>
-                            <span class="text-sm text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></span>
-                        <span aria-hidden="true">→</span></a></li>
-                @endforeach
-            </ul>
-            <a href="{{ Url::to('/account/writings') }}" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব লেখা ({{ Bn::num((string) $total) }}) →</a>
+        @if ($published->isNotEmpty())
+            <div class="mt-8 flex items-baseline justify-between gap-3">
+                <h2 class="font-display text-2xl font-extrabold">প্রকাশিত লেখা</h2>
+                <a href="{{ Url::to('/account/writings') }}?status=published" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সব দেখুন</a>
+            </div>
+            @foreach ($published as $p)
+                @php($n = (int) ($reads[$p->id] ?? 0))
+                <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
+                    <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
+                    <div class="text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }} · <strong class="text-navy">{{ Bn::num((string) $n) }} বার খোলা হয়েছে</strong></div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <a href="{{ $wa('“'.$p->title.'”, হাতপাখায় আমার লেখা: '.$p->url()) }}" target="_blank" rel="noopener" class="{{ $chip }}">WhatsApp-এ পাঠান</a>
+                        @if ($c = $certs->get($p->id))
+                            <a href="{{ $c->verifyUrl() }}" class="{{ $chip }}">সার্টিফিকেট</a>
+                        @else
+                            <form method="POST" action="{{ Url::to('/account/certificate/'.$p->id) }}">@csrf<button class="{{ $chip }}">সার্টিফিকেট</button></form>
+                        @endif
+                        <a href="{{ $p->url() }}" class="{{ $chip }}">পড়ে দেখুন</a>
+                    </div>
+                </div>
+            @endforeach
+            <p class="mt-3 text-sm text-ink2">“সার্টিফিকেট”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার একটি সার্টিফিকেট, বিনা পয়সায়। খুলে নামিয়ে বা ছবি তুলে WhatsApp বা ফেসবুকে দিতে পারেন।</p>
+
+            <div class="mt-8 rounded-2xl border-2 border-navy bg-peach-light p-4">
+                <div class="flex items-baseline justify-between gap-3"><h2 class="font-display text-2xl font-extrabold">আমার পাঠক</h2><a href="{{ Url::to('/account/stats') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">বিস্তারিত</a></div>
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-white p-3"><div class="text-3xl font-extrabold">{{ Bn::num((string) $stats['reads']) }}</div><div class="text-sm text-ink2">বার খোলা হয়েছে (সব লেখা মিলিয়ে)</div></div>
+                    <div class="rounded-xl bg-white p-3"><div class="text-3xl font-extrabold">{{ Bn::num((string) $stats['likes']) }}</div><div class="text-sm text-ink2">টি “ভালো লেগেছে”</div></div>
+                </div>
+            </div>
         @endif
 
-        @if (! $twoFactorOn)
-            {{-- D59: 2FA is optional, asked kindly, in one line --}}
-            <a href="{{ Url::to('/account/settings') }}#security" class="mt-8 flex min-h-12 items-center gap-3 rounded-2xl border-2 border-dashed border-peach-deep bg-peach-light px-4 py-3 text-sm hover:bg-peach">
-                <svg class="h-6 w-6 flex-none text-navy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                <span><strong>অ্যাকাউন্টটি আরও নিরাপদ করুন:</strong> দুই-ধাপের যাচাই, দুই মিনিট লাগে।</span>
-                <span class="ml-auto font-bold text-red" aria-hidden="true">→</span>
-            </a>
+        @if ($writerPage)
+            <h2 class="mt-8 font-display text-2xl font-extrabold">আমার লেখক-পাতা</h2>
+            <p class="text-ink2">পাঠকেরা এখানে আপনার সব লেখা পান। WhatsApp বা ফেসবুকে দিন।</p>
+            <div class="mt-2 flex items-center gap-2 rounded-xl border-2 border-navy bg-white py-1.5 pl-3 pr-1.5">
+                <span class="min-w-0 flex-1 truncate text-sm text-ink2" data-copy-source>{{ $writerPage }}</span>
+                <button type="button" data-copy="{{ $writerPage }}" data-copied="✓ কপি হয়েছে" class="flex h-11 flex-none items-center rounded-full bg-navy px-4 text-sm font-bold text-white">লিংক কপি</button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a href="{{ $wa('হাতপাখায় আমার লেখাগুলো: '.$writerPage) }}" target="_blank" rel="noopener" class="{{ $chip }}">WhatsApp-এ পাঠান</a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($writerPage) }}" target="_blank" rel="noopener" class="{{ $chip }}">ফেসবুকে দিন</a>
+                <a href="{{ $writerPage }}" class="{{ $chip }}">পাতাটি দেখুন</a>
+                <a href="{{ Url::to('/account/profile') }}" class="{{ $chip }}">ছবি ও নাম বদলান</a>
+            </div>
         @endif
-
-        <form method="POST" action="{{ Url::to('/logout') }}" class="mt-10 border-t-2 border-rule pt-6 text-center">@csrf<button class="min-h-11 font-bold text-red underline">লগ-আউট</button></form>
     </x-account-shell>
 </x-layouts.app>

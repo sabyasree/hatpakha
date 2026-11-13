@@ -17,7 +17,7 @@
                         @endif
                         <span class="mt-2 font-display text-6xl font-extrabold leading-none text-red" aria-hidden="true">{{ $l['letter'] }}</span>
                         <span class="mt-1 font-serif text-xl font-bold" aria-hidden="true">{{ $l['word'] }}</span>
-                        @if ($l['audio'])<span class="mt-1 text-sm font-bold text-sky-deep" aria-hidden="true">🔊 শুনুন</span>@endif
+                        @if ($l['audio'])<span class="mt-1 text-sm font-bold text-sky-night" aria-hidden="true">🔊 শুনুন</span>@endif
                     </button>
                 </li>
             @endforeach

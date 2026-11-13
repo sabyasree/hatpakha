@@ -32,7 +32,7 @@
             @else<strong class="text-navy">হাতপাখার চিঠি বন্ধ আছে।</strong> সপ্তাহে একবার নতুন লেখার খবর পেতে চালু করুন।@endif
         </p>
         @if ($on)
-            <a href="{{ \App\Support\Url::to('/account/settings') }}#letters" class="text-sm font-bold underline">বদলান</a>
+            <a href="{{ \App\Support\Url::to('/account/settings') }}#letters" class="inline-flex min-h-11 items-center px-1 text-sm font-bold underline">বদলান</a>
         @else
             <form method="POST" action="{{ \App\Support\Url::to('/account/newsletter') }}">@csrf<input type="hidden" name="newsletter" value="1">
                 <button class="h-10 rounded-full bg-red px-5 font-bold text-white">চালু করুন</button></form>
@@ -59,7 +59,7 @@
                         <button class="h-12 flex-none rounded-full bg-red px-6 font-bold text-white">চিঠি চাই</button>
                     </div>
                     <details class="mt-2 text-sm">
-                        <summary class="cursor-pointer text-ink2">নাম দিতে চাইলে</summary>
+                        <summary class="flex min-h-11 cursor-pointer items-center text-ink2">নাম দিতে চাইলে</summary>
                         <label class="sr-only" for="{{ $id }}-name">নাম (ঐচ্ছিক)</label>
                         <input id="{{ $id }}-name" name="name" maxlength="80" autocomplete="name" value="{{ old('name') }}" placeholder="নাম (ঐচ্ছিক)"
                             class="mt-2 h-11 w-full rounded-xl border-2 border-navy bg-white px-4">

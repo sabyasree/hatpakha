@@ -18,7 +18,7 @@ class CommentTest extends TestCase
     {
         parent::setUp();
         \Illuminate\Support\Facades\RateLimiter::clear('comment');
-        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);   // limits tested separately
+        $this->withoutMiddleware(\App\Http\Middleware\PerRouteThrottle::class);   // limits tested separately
     }
 
     private function form(array $extra = []): array
@@ -95,7 +95,7 @@ class CommentTest extends TestCase
 
     public function test_comments_are_rate_limited(): void
     {
-        $this->withMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+        $this->withMiddleware(\App\Http\Middleware\PerRouteThrottle::class);
         $post = $this->makePost(['slug' => 'nodi']);
         $codes = collect(range(1, 4))->map(fn ($i) => $this->post("/comment/{$post->id}", $this->form(['name' => 'কমল', 'body' => "মন্তব্য {$i}"]))->status());
         $this->assertSame(429, $codes->last(), 'Guests: a few a minute at most');

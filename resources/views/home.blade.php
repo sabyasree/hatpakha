@@ -84,7 +84,7 @@
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div><div class="font-hand text-2xl text-red">সপ্তাহে একটি করে পর্ব</div>
                         <h2 id="serials-h" class="font-display text-5xl font-extrabold leading-none md:text-6xl" style="font-stretch: 78%">ধারাবাহিক</h2></div>
-                    <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="border-b-[3px] border-red text-lg font-bold">সব ধারাবাহিক</a>
+                    <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="inline-flex min-h-11 items-center text-lg font-bold"><span class="border-b-[3px] border-red">সব ধারাবাহিক</span></a>
                 </div>
                 <ul class="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($serials as $s)
@@ -99,7 +99,7 @@
                                     <a href="{{ $s->url() }}" class="mt-1 font-display text-2xl font-extrabold leading-tight hover:text-red">{{ $s->title }}</a>
                                     @if ($s->logline)<p class="mt-1 line-clamp-2 font-serif text-ink2">{{ $s->logline }}</p>@endif
                                     @if ($ep)
-                                        <a href="{{ $ep->url() }}" class="mt-auto flex min-h-12 items-center justify-between gap-2 pt-3 font-bold text-sky-deep hover:text-red">
+                                        <a href="{{ $ep->url() }}" class="mt-auto flex min-h-12 items-center justify-between gap-2 pt-3 font-bold text-sky-night hover:text-red">
                                             <span class="line-clamp-1">{{ $ep->episodeLabel() }}</span><span aria-hidden="true">→</span></a>
                                     @endif
                                 </div>
@@ -173,7 +173,7 @@
                             [$badge, $bg] = match (true) {
                                 $m->kind === 'first' => ['১ম', 'bg-red'],
                                 str_starts_with($m->kind, 'pieces_') => [\App\Support\Bn::num(substr($m->kind, 7)), 'bg-red'],
-                                default => [\App\Support\Bn::num(substr($m->kind, 6)).'ব', 'bg-sky-deep'],
+                                default => [\App\Support\Bn::num(substr($m->kind, 6)).'ব', 'bg-navy'],
                             };
                             $text = match (true) {
                                 $m->kind === 'first' => 'প্রথম লেখা প্রকাশিত',
@@ -199,7 +199,7 @@
         <div class="mx-auto max-w-[1320px] px-5 py-16">
             <div class="flex flex-wrap items-end justify-between gap-3">
                 <h2 class="font-display text-6xl font-extrabold leading-none md:text-7xl" style="font-stretch: 78%">গল্পের পাতা</h2>
-                <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="border-b-[3px] border-red text-lg font-bold">সব গল্প</a>
+                <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="inline-flex min-h-11 items-center text-lg font-bold"><span class="border-b-[3px] border-red">সব গল্প</span></a>
             </div>
             <div class="hp-first-only mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4" data-rotate="4">
                 @foreach ($stories as $i => $story)

@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind Cloudflare/LiteSpeed: trust forwarded proto/host so HTTPS is detected.
         $middleware->trustProxies(at: '*');
+        $middleware->alias(['throttle' => \App\Http\Middleware\PerRouteThrottle::class]);   // D166: one counter per route
         // RFC 8058 one-click unsubscribe: mail apps POST to the signed link without a form token (the signature is the proof).
         $middleware->validateCsrfTokens(except: ['newsletter/unsubscribe/*']);
         // docs/SEO.md §1 and docs/SECURITY.md §1

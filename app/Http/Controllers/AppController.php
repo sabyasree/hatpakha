@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 /**
  * D127/D128: Hatpakha as an app. The service worker, the /app/ page, and phone notifications per browser:
  * with or without an account. A browser's topics: "account" (the follows of the signed-in reader),
- * "daily" (once a day, the day's new pieces), "serial:{id}" and "author:{id}".
+ * "daily" (once a day, the day's new pieces), "issues" (a new issue, D166), "serial:{id}" and "author:{id}".
  * Knowing a browser's push address is what proves it is yours (it is long and secret to that browser).
  */
 class AppController extends Controller
@@ -150,6 +150,7 @@ class AppController extends Controller
             $ok = match (true) {
                 $t === 'account' => $request->user() !== null,
                 $t === 'daily' => true,
+                $t === 'issues' => true,   // D166: "নতুন সংখ্যা বেরোলে জানান" (issue news goes to every phone with alerts on)
                 (bool) preg_match('/^serial:(\d+)$/', $t, $m) => Serial::live()->whereKey((int) $m[1])->exists(),
                 (bool) preg_match('/^author:(\d+)$/', $t, $m) => Author::whereKey((int) $m[1])->where('is_desk', false)->exists(),
                 (bool) preg_match('/^section:(\d+)$/', $t, $m) => \App\Models\Section::whereKey((int) $m[1])->where('is_active', true)->exists(),   // D132

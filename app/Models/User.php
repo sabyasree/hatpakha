@@ -25,6 +25,9 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** D166: reading history is on until the reader switches it off (same default as the database). */
+    protected $attributes = ['reading_history' => true];
+
     protected function casts(): array
     {
         return [
@@ -36,6 +39,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'app_authentication_recovery_codes' => 'encrypted:array',
             'has_email_authentication' => 'boolean',
             'mail_opt_out' => 'boolean',
+            'reading_history' => 'boolean',
             'bot_reasons' => 'array',
             'bot_checked_at' => 'datetime',
         ];

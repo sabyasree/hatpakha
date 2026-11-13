@@ -43,7 +43,7 @@
                 @if ($a->followers_count) · {{ \App\Support\Bn::num((string) $a->followers_count) }} জন অনুসরণ করেন@endif
             </p>
             @if ($a->bio)<p class="mt-2 line-clamp-3 font-serif leading-relaxed">{{ $a->bio }}</p>@endif
-            <a href="{{ $a->url() }}" class="mt-3 inline-flex h-10 items-center font-bold text-sky-deep underline">{{ $a->publicName() }}-এর সব লেখা →</a>
+            <a href="{{ $a->url() }}" class="mt-3 inline-flex h-10 items-center font-bold text-sky-night underline">{{ $a->publicName() }}-এর সব লেখা →</a>
         </div>
     </div>
 </section>

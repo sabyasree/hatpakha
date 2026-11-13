@@ -17,17 +17,17 @@
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="writings" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
-        <div class="flex flex-wrap gap-2" role="list" aria-label="লেখা বাছুন">
+        <nav class="flex flex-wrap gap-2" aria-label="লেখা বাছুন">
             @foreach ($chips as $key => [$label, $count])
                 @continue($count === 0 && ! in_array($key, ['all', $filter], true))
-                <a role="listitem" href="{{ $base }}{{ $key === 'all' ? '' : '?status='.$key }}" @if ($filter === $key) aria-current="true" @endif
+                <a href="{{ $base }}{{ $key === 'all' ? '' : '?status='.$key }}" @if ($filter === $key) aria-current="true" @endif
                     class="flex h-11 items-center gap-1.5 rounded-full border-2 px-4 font-bold {{ $filter === $key ? 'border-navy bg-navy text-white' : ($key === 'action' ? 'border-red bg-peach-light text-red-dark' : 'border-navy bg-white hover:bg-peach-light') }}">
                     {{ $label }} <span class="{{ $filter === $key ? 'text-peach-light' : 'text-ink2' }}">{{ Bn::num((string) $count) }}</span></a>
             @endforeach
-        </div>
+        </nav>
 
         @if (($counts['published'] ?? 0) > 0)
-            <a href="{{ Url::to('/account/stats') }}" class="mt-4 inline-flex min-h-11 items-center gap-2 font-bold text-sky-deep underline">📊 আমার পাঠক: কতজন পড়ছেন, শেয়ার কার্ড →</a>
+            <a href="{{ Url::to('/account/stats') }}" class="mt-4 inline-flex min-h-11 items-center gap-2 font-bold text-sky-night underline">📊 আমার পাঠক: কতজন পড়ছেন, শেয়ার কার্ড →</a>
         @endif
 
         @if ($filter !== 'certificates' && $counts->sum() > 10)

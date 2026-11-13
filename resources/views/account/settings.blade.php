@@ -1,120 +1,133 @@
-{{-- Settings (owner + UX review): security and letters, one card open at a time; the profile has its own tab (owner). --}}
+{{-- D166 "ই-মেল ও পাসওয়ার্ড" (owner + UX review + tests with older users): switches that look like a phone's, each
+     saying what it does now; the reading history with what deleting it removes; password; optional extra security
+     (calm, folded away); help; লগ-আউট. --}}
 @php
-    use App\Support\Bn;
     use App\Support\Url;
-    $avatar = $author?->avatar_path;
+    $card = 'mt-3 rounded-2xl border-2 border-navy bg-white px-4';
+    $setRow = 'flex items-center justify-between gap-4 border-b border-rule py-4 last:border-b-0';
+    $switch = function (bool $on) {
+        return '<span class="flex flex-none flex-col items-center gap-1"><span class="relative block h-9 w-16 rounded-full border-2 border-navy '.($on ? 'bg-sky-deep' : 'bg-rule').'" aria-hidden="true">'
+            .'<span class="absolute top-0.5 block h-7 w-7 rounded-full border-2 border-navy bg-white transition-all '.($on ? 'left-[1.85rem]' : 'left-0.5').'"></span></span>'
+            .'<span class="whitespace-nowrap text-sm font-bold">'.($on ? 'এখন চালু' : 'এখন বন্ধ').'</span></span>';
+    };
+    $more = 'flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-lg font-bold [&::-webkit-details-marker]:hidden';
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="settings" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
-        <div class="space-y-4">
-        <details id="security" class="group scroll-mt-20 rounded-3xl border-2 border-navy bg-white" data-settings-card>
-            <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">নিরাপত্তা</span><span class="text-sm text-ink2">দুই-ধাপের যাচাই {{ $twoFactorOn ? '(চালু)' : '(বন্ধ)' }} · পাসওয়ার্ড</span></span>
-                <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
-            </summary>
-            <div class="border-t-2 border-rule p-3 sm:p-5">
-            <div class="grid gap-5 md:grid-cols-2">
-                <div class="sm:rounded-3xl sm:border-2 sm:border-navy bg-white sm:p-5">
-                    <h3 class="text-xl font-extrabold">দুই-ধাপের যাচাই</h3>
-                    @if ($twoFactorOn)
-                        <p class="mt-2"><span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">✓ চালু আছে</span></p>
-                        <p class="mt-3 text-ink2">লগ-ইনের সময় পাসওয়ার্ডের পরে অ্যাপের কোডও লাগবে।</p>
-                        @if (session('recovery_codes'))
-                            <div class="mt-4 rounded-2xl border-2 border-red bg-peach-light p-4">
-                                <strong>উদ্ধার-কোডগুলো এখনই লিখে রাখুন</strong>
-                                <p class="text-sm">ফোন হারালে এর একটি দিয়ে ঢোকা যাবে (প্রতিটি একবার)। এগুলো আর দেখানো হবে না।</p>
-                                <ul class="mt-2 grid grid-cols-1 gap-1 font-mono text-sm sm:grid-cols-2">@foreach (session('recovery_codes') as $code)<li>{{ $code }}</li>@endforeach</ul>
-                            </div>
-                        @endif
-                        @unless ($user->hasRole(\App\Enums\Role::Editor))
-                            <details class="mt-4"><summary class="cursor-pointer text-sm font-bold text-ink2">বন্ধ করতে চান?</summary>
-                                <form method="POST" action="{{ Url::to('/account/2fa/disable') }}" class="mt-3">@csrf
-                                    <x-field name="current_password" type="password" label="পাসওয়ার্ড দিয়ে নিশ্চিত করুন" autocomplete="current-password" required />
-                                    <button class="h-11 rounded-full border-2 border-red px-5 font-bold text-red">বন্ধ করুন</button>
-                                </form>
-                            </details>
-                        @endunless
-                    @elseif ($setup)
-                        <ol class="mt-3 list-decimal space-y-2 pl-5">
-                            <li>ফোনে একটি অথেনটিকেটর অ্যাপ খুলুন (Google Authenticator, Microsoft Authenticator বা 2FAS)।</li>
-                            <li>এই QR কোডটি স্ক্যান করুন।</li>
-                        </ol>
-                        @if ($setup['qr'])<img src="{{ $setup['qr'] }}" alt="QR কোড" class="mt-3 h-44 w-44 rounded-xl border-2 border-navy bg-white p-2">@endif
-                        <p class="mt-2 text-sm text-ink2">স্ক্যান না হলে হাতে লিখুন: <code class="break-all rounded bg-peach-light px-1 font-mono">{{ $setup['secret'] }}</code></p>
-                        <form method="POST" action="{{ Url::to('/account/2fa/confirm') }}" class="mt-4">@csrf
-                            <x-field name="code" label="৩. অ্যাপে দেখানো ৬ অঙ্কের কোড" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
-                            <button class="h-11 rounded-full bg-red px-6 font-bold text-white">চালু করুন</button>
-                        </form>
-                    @else
-                        <p class="mt-2 text-ink2">ঐচ্ছিক, তবে আমরা জোর দিয়ে বলি। কেউ আপনার পাসওয়ার্ড জেনে গেলেও আপনার ফোনের কোড ছাড়া ঢুকতে পারবে না।</p>
-                        <form method="POST" action="{{ Url::to('/account/2fa/start') }}" class="mt-4">@csrf
-                            <button class="h-11 rounded-full bg-red px-6 font-bold text-white">চালু করুন</button>
-                        </form>
-                    @endif
-                </div>
-                <div class="sm:rounded-3xl sm:border-2 sm:border-navy bg-white sm:p-5">
-                    <h3 class="text-xl font-extrabold">পাসওয়ার্ড বদলান</h3>
-                    <form method="POST" action="{{ Url::to('/account/password') }}" class="mt-3">@csrf
-                        <x-field name="current_password" type="password" label="এখনকার পাসওয়ার্ড" autocomplete="current-password" required />
-                        <x-field name="password" type="password" label="নতুন পাসওয়ার্ড" autocomplete="new-password" required hint="অন্তত ১০ অক্ষর, অক্ষর আর সংখ্যা দুই-ই।" />
-                        <x-field name="password_confirmation" type="password" label="নতুন পাসওয়ার্ড আবার" autocomplete="new-password" required />
-                        <button class="h-11 rounded-full border-2 border-navy px-6 font-bold">বদলান</button>
-                    </form>
-                    <p class="mt-3 text-sm text-ink2">বদলালে অন্য সব ফোন/কম্পিউটার থেকে লগ-আউট হয়ে যাবে।</p>
-                </div>
-            </div>
-            </div>
-        </details>
-        <details id="letters" class="group scroll-mt-20 rounded-3xl border-2 border-navy bg-white" data-settings-card>
-            <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">চিঠি</span><span class="text-sm text-ink2">হাতপাখার সাপ্তাহিক চিঠি {{ $user->mail_opt_out ? '(বন্ধ)' : '(চালু)' }}</span></span>
-                <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
-            </summary>
-            <div class="border-t-2 border-rule p-3 sm:p-5">
-            <form method="POST" action="{{ Url::to('/account/newsletter') }}" class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-navy bg-white p-5">
-                @csrf
-                <div class="min-w-0">
-                    <strong class="block text-lg">হাতপাখার চিঠি</strong>
-                    <span class="text-ink2">সপ্তাহে একটি: নতুন লেখার খবর; মাঝে মাঝে লেখকদের জন্য পরের সংখ্যার বিষয় আর প্রতিযোগিতার খবর।</span>
-                    <span class="mt-1 block text-sm font-bold {{ $user->mail_opt_out ? 'text-red' : 'text-sky-night' }}">এখন: {{ $user->mail_opt_out ? 'বন্ধ' : 'চালু' }}</span>
-                </div>
+        <div class="max-w-2xl">
+        <h2 id="letters" class="scroll-mt-24 font-display text-2xl font-extrabold">ই-মেল আর ফোনে খবর</h2>
+        <div class="{{ $card }}">
+            <form method="POST" action="{{ Url::to('/account/newsletter') }}">@csrf
                 <input type="hidden" name="newsletter" value="{{ $user->mail_opt_out ? 1 : 0 }}">
-                <button class="h-11 flex-none rounded-full {{ $user->mail_opt_out ? 'bg-red text-white' : 'border-2 border-navy' }} px-6 font-bold">{{ $user->mail_opt_out ? 'চালু করুন' : 'বন্ধ করুন' }}</button>
+                <button class="{{ $setRow }} w-full text-left" role="switch" aria-checked="{{ $user->mail_opt_out ? 'false' : 'true' }}">
+                    <span><span class="block text-lg font-bold">সপ্তাহে একটা ই-মেল</span><span class="block text-ink2">নতুন লেখার খবর। বন্ধ করলে আর এই ই-মেল যাবে না। নিজের লেখার খবর (যেমন সম্পাদকের কথা) তবুও আসবে।</span></span>
+                    {!! $switch(! $user->mail_opt_out) !!}
+                </button>
             </form>
-            <p class="mt-3 text-sm text-ink2">নিজের লেখার খবর (মনোনয়ন, বদলের অনুরোধ) চিঠি বন্ধ থাকলেও আসবে।</p>
-            </div>
-        </details>
-        @if (\App\Support\WebPush::publicKey())
-        {{-- D127: phone notifications for followed serials and writers. The button's state is this browser's; the script fills it in. --}}
-        <details id="phone" class="group scroll-mt-20 rounded-3xl border-2 border-navy bg-white" data-settings-card>
-            <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0 flex-1"><span class="block text-xl font-extrabold">ফোনে খবর</span><span class="text-sm text-ink2">নতুন পর্ব আর প্রিয় লেখকের নতুন লেখা</span></span>
-                <span class="text-2xl transition group-open:rotate-180" aria-hidden="true">▾</span>
-            </summary>
-            <div class="border-t-2 border-rule p-3 sm:p-5">
-                <div class="rounded-3xl border-2 border-navy bg-white p-5">
-                    <p>যে ধারাবাহিক বা লেখককে অনুসরণ করছেন, নতুন লেখা এলেই এই ফোনে (বা কম্পিউটারে) একটি ছোট খবর আসবে। ছুঁয়ে দিলেই লেখাটি খুলবে।</p>
-                    <p class="mt-3 font-bold" data-push-status role="status"></p>
-                    <div class="mt-4 flex flex-col gap-3 sm:items-start">
-                        <x-push-button topic="account" off="🔔 অনুসরণ করা লেখার খবর এই ফোনে চালু করুন" on="✓ অনুসরণ করা লেখার খবর চালু (বন্ধ করতে ছুঁয়ে দিন)" />
-                        <x-push-button topic="daily" off="🔔 রোজ সন্ধ্যায় সব নতুন লেখার খবরও চাই" on="✓ রোজকার খবরও চালু (বন্ধ করতে ছুঁয়ে দিন)" />
-                        <button type="button" class="h-11 rounded-full border-2 border-navy px-6 font-bold" data-push-test hidden>একটা পরীক্ষা পাঠান</button>
-                    </div>
-                    @php($pushSections = \App\Models\Section::where('is_active', true)->where('slug', '!=', \App\Models\Section::KIDS)->orderBy('sort')->get(['id', 'name_bn']))
-            <p class="mt-5 font-bold">শুধু কিছু বিভাগের নতুন লেখা চান? যেটি চান ছুঁয়ে দিন (প্রতিটি নতুন লেখা প্রকাশ হলেই খবর):</p>
-            <div class="mt-2 flex flex-wrap gap-2">
-                @foreach ($pushSections as $ps)
-                    <x-push-button :topic="'section:'.$ps->id" :off="$ps->name_bn" :on="'✓ '.$ps->name_bn" :small="true" />
-                @endforeach
-            </div>
-                    <p class="mt-3 text-sm" data-push-unsupported hidden>এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Chrome, Firefox বা Edge-এ খুলে দেখুন।</p>
-                    <p class="mt-3 text-sm text-ink2" data-push-ios hidden>আইফোনে: আগে Safari-তে <strong>শেয়ার</strong> (□↑) → <strong>Add to Home Screen</strong>। তারপর হোম স্ক্রিনের হাতপাখা আইকন থেকে খুলে এখানে এসে চালু করুন। <a href="{{ Url::to('/app') }}#iphone" class="underline">ছবিসহ দেখুন</a></p>
-                    <p class="mt-3 text-sm text-ink2">প্রতিটি ফোন বা কম্পিউটারে আলাদা করে চালু করতে হয়। কাকে অনুসরণ করছেন, তা দেখুন <a href="{{ Url::to('/account/reading') }}" class="underline">পড়ার তালিকায়</a>।</p>
+            @if (\App\Support\WebPush::publicKey())
+                <div id="phone" class="{{ $setRow }} scroll-mt-24 flex-wrap">
+                    <span class="min-w-0 flex-1"><span class="block text-lg font-bold">নতুন সংখ্যা বেরোলে ফোনে জানান</span><span class="block text-ink2">মাসে একবার, এই ফোনের পর্দায় একটা ছোট খবর আসবে। WhatsApp বা SMS নয়, ফোন নম্বর লাগবে না।</span></span>
+                    <x-push-button topic="issues" off="চালু করুন" on="✓ চালু আছে (বন্ধ করতে টিপুন)" />
                 </div>
+                <div class="{{ $setRow }} flex-wrap">
+                    <span class="min-w-0 flex-1"><span class="block text-lg font-bold">যাঁদের অনুসরণ করেন, তাঁদের নতুন লেখা</span><span class="block text-ink2">এই ফোনের পর্দায় জানান।</span></span>
+                    <x-push-button topic="account" off="চালু করুন" on="✓ চালু আছে (বন্ধ করতে টিপুন)" />
+                </div>
+                <p class="pb-3 text-sm font-bold" data-push-status role="status"></p>
+                <p class="pb-3 text-sm" data-push-unsupported hidden>এই ব্রাউজারে ফোনে খবর পাঠানো যায় না। Chrome বা Firefox-এ খুলে দেখুন।</p>
+                <p class="pb-3 text-sm text-ink2" data-push-ios hidden>আইফোনে: আগে Safari-তে <strong>শেয়ার</strong> (□↑) → <strong>Add to Home Screen</strong>। তারপর হোম স্ক্রিনের হাতপাখা থেকে খুলে এখানে চালু করুন। <a href="{{ Url::to('/app') }}#iphone" class="underline">ছবিসহ দেখুন</a></p>
+            @endif
+        </div>
+        @if (\App\Support\WebPush::publicKey())
+            @php($pushSections = \App\Models\Section::where('is_active', true)->where('slug', '!=', \App\Models\Section::KIDS)->orderBy('sort')->get(['id', 'name_bn']))
+            <details class="group mt-3 rounded-2xl border-2 border-navy bg-white">
+                <summary class="{{ $more }}"><span>রোজকার খবর বা শুধু কিছু বিভাগের খবর<span class="block text-sm font-medium text-ink2">ইচ্ছে হলে</span></span><span class="transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+                <div class="border-t-2 border-rule p-4">
+                    <x-push-button topic="daily" off="রোজ সন্ধ্যায় সব নতুন লেখার খবর চাই" on="✓ রোজকার খবর চালু (বন্ধ করতে টিপুন)" />
+                    <p class="mt-4 font-bold">যে বিভাগের নতুন লেখা চান, টিপুন:</p>
+                    <div class="mt-2 flex flex-wrap gap-2">@foreach ($pushSections as $ps)<x-push-button :topic="'section:'.$ps->id" :off="$ps->name_bn" :on="'✓ '.$ps->name_bn" :small="true" />@endforeach</div>
+                    <p class="mt-3 text-sm text-ink2">প্রতিটি ফোন বা কম্পিউটারে আলাদা করে চালু করতে হয়।</p>
+                </div>
+            </details>
+        @endif
+
+        <h2 id="reading" class="mt-8 scroll-mt-24 font-display text-2xl font-extrabold">আমার পড়ার খাতা</h2>
+        <div class="{{ $card }}">
+            <form method="POST" action="{{ Url::to('/account/reading-history') }}">@csrf
+                <input type="hidden" name="on" value="{{ $user->reading_history ? 0 : 1 }}">
+                <button class="{{ $setRow }} w-full text-left" role="switch" aria-checked="{{ $user->reading_history ? 'true' : 'false' }}">
+                    <span><span class="block text-lg font-bold">কী পড়ছি মনে রাখুন</span><span class="block text-ink2">“যেখানে থেমেছিলেন” আর “সম্প্রতি পড়েছেন” এর জন্য। শুধু আপনি দেখতে পান। এক বছরের পুরনো হিসেব নিজে থেকেই মুছে যায়।</span></span>
+                    {!! $switch((bool) $user->reading_history) !!}
+                </button>
+            </form>
+            <details class="group border-t border-rule py-3">
+                <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                    <span><span class="block text-lg font-bold">পড়ার খাতা মুছে দিন</span><span class="block text-ink2">শুধু কোন লেখা কতটা পড়েছেন, সেই হিসেব মুছবে। “পরে পড়ব”, “ভালো লেগেছে” আর আপনার নিজের লেখা যেমন আছে থাকবে।</span></span>
+                    <span class="flex h-11 flex-none items-center rounded-full border-2 border-navy px-4 font-bold">মুছুন</span></summary>
+                <form method="POST" action="{{ Url::to('/account/reading-history/clear') }}" class="mt-3 rounded-xl bg-peach-light p-3">@csrf
+                    <p class="font-bold">সত্যিই মুছবেন? পরে আর ফেরানো যাবে না।</p>
+                    <button class="mt-2 h-12 rounded-full bg-navy px-6 font-bold text-white">হ্যাঁ, মুছে দিন</button>
+                </form>
+            </details>
+        </div>
+
+        <h2 id="security" class="mt-8 scroll-mt-24 font-display text-2xl font-extrabold">পাসওয়ার্ড</h2>
+        <details class="group mt-3 rounded-2xl border-2 border-navy bg-white" @if ($errors->hasAny(['current_password', 'password'])) open @endif>
+            <summary class="{{ $more }}"><span>পাসওয়ার্ড বদলান</span><span class="transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+            <form method="POST" action="{{ Url::to('/account/password') }}" class="border-t-2 border-rule p-4">@csrf
+                <x-field name="current_password" type="password" label="এখনকার পাসওয়ার্ড" autocomplete="current-password" required />
+                <x-field name="password" type="password" label="নতুন পাসওয়ার্ড" autocomplete="new-password" required hint="অন্তত ১০ অক্ষর, অক্ষর আর সংখ্যা দুই-ই।" />
+                <x-field name="password_confirmation" type="password" label="নতুন পাসওয়ার্ড আবার" autocomplete="new-password" required />
+                <button class="h-12 rounded-full bg-red px-8 font-bold text-white">বদলান</button>
+                <p class="mt-3 text-sm text-ink2">এখনকার পাসওয়ার্ড মনে নেই? লগ-আউট করে ঢোকার পাতায় “পাসওয়ার্ড ভুলে গেছেন?” টিপুন, ই-মেলে নতুন পাসওয়ার্ডের লিংক যাবে।</p>
+            </form>
+        </details>
+        <details class="group mt-3 rounded-2xl border-2 border-navy bg-white" @if ($setup || session('recovery_codes') || $errors->has('code')) open @endif>
+            <summary class="{{ $more }}"><span>বাড়তি সুরক্ষা {{ $twoFactorOn ? '(চালু আছে)' : '' }}<span class="block text-sm font-medium text-ink2">ইচ্ছে হলে। না করলেও কোনও অসুবিধা নেই।</span></span><span class="transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+            <div class="border-t-2 border-rule p-4">
+                @if ($twoFactorOn)
+                    <p>ঢোকার সময় পাসওয়ার্ডের পরে ফোনের অ্যাপের ৬ অঙ্কের কোডও লাগে।</p>
+                    @if (session('recovery_codes'))
+                        <div class="mt-4 rounded-2xl border-2 border-red bg-peach-light p-4">
+                            <strong>এই কোডগুলো এখনই লিখে রাখুন</strong>
+                            <p class="text-sm">ফোন হারালে এর একটি দিয়ে ঢোকা যাবে (প্রতিটি একবার)। এগুলো আর দেখানো হবে না।</p>
+                            <ul class="mt-2 grid grid-cols-1 gap-1 font-mono text-sm sm:grid-cols-2">@foreach (session('recovery_codes') as $code)<li>{{ $code }}</li>@endforeach</ul>
+                        </div>
+                    @endif
+                    @unless ($user->hasRole(\App\Enums\Role::Editor))
+                        <form method="POST" action="{{ Url::to('/account/2fa/disable') }}" class="mt-4">@csrf
+                            <x-field name="current_password" type="password" label="বন্ধ করতে পাসওয়ার্ড দিন" autocomplete="current-password" required />
+                            <button class="h-11 rounded-full border-2 border-navy px-5 font-bold">বন্ধ করুন</button>
+                        </form>
+                    @endunless
+                @elseif ($setup)
+                    <ol class="list-decimal space-y-2 pl-5">
+                        <li>ফোনে একটি কোডের অ্যাপ খুলুন (Google Authenticator, Microsoft Authenticator বা 2FAS)।</li>
+                        <li>এই ছবিটি (QR কোড) অ্যাপ দিয়ে স্ক্যান করুন।</li>
+                    </ol>
+                    @if ($setup['qr'])<img src="{{ $setup['qr'] }}" alt="QR কোড" class="mt-3 h-44 w-44 rounded-xl border-2 border-navy bg-white p-2">@endif
+                    <p class="mt-2 text-sm text-ink2">স্ক্যান না হলে হাতে লিখুন: <code class="break-all rounded bg-peach-light px-1 font-mono">{{ $setup['secret'] }}</code></p>
+                    <form method="POST" action="{{ Url::to('/account/2fa/confirm') }}" class="mt-4">@csrf
+                        <x-field name="code" label="৩. অ্যাপে দেখানো ৬ অঙ্কের কোড" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+                        <button class="h-12 rounded-full bg-red px-6 font-bold text-white">চালু করুন</button>
+                    </form>
+                @else
+                    <p>কেউ আপনার পাসওয়ার্ড জেনে গেলেও আপনার ফোনের কোড ছাড়া ঢুকতে পারবে না। এর জন্য ফোনে একটা কোডের অ্যাপ লাগে।</p>
+                    <form method="POST" action="{{ Url::to('/account/2fa/start') }}" class="mt-3">@csrf<button class="h-12 rounded-full border-2 border-navy px-6 font-bold">চালু করতে চাই</button></form>
+                @endif
             </div>
         </details>
-        @endif
+
+        <h2 class="mt-8 font-display text-2xl font-extrabold">সাহায্য</h2>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <a href="{{ Url::to('/contact-us') }}" class="flex h-12 items-center rounded-full border-2 border-navy bg-white px-5 font-bold hover:bg-peach-light">আমাদের লিখুন</a>
+            <span class="text-ink2">বা ওপরের “প্রশ্ন আছে?” টিপুন।</span>
         </div>
-        <form method="POST" action="{{ Url::to('/logout') }}" class="mt-10 border-t-2 border-rule pt-6 text-center">@csrf<button class="min-h-11 font-bold text-red underline">লগ-আউট</button></form>
+
+        <form method="POST" action="{{ Url::to('/logout') }}" class="mt-10">@csrf
+            <button class="h-14 w-full rounded-full bg-navy text-lg font-bold text-white">লগ-আউট</button>
+            <p class="mt-2 text-center text-ink2">এই ফোনে অ্যাকাউন্ট থেকে বেরিয়ে যাবেন। পরে আবার ই-মেল আর পাসওয়ার্ড দিয়ে ঢুকতে পারবেন।</p>
+        </form>
+        </div>
     </x-account-shell>
 </x-layouts.app>

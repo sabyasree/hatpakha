@@ -2,7 +2,7 @@
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
-    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif>
+    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
         {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text --}}
         <div class="absolute left-full top-[85vh] ml-10 hidden h-[calc(100%-85vh)] w-[300px] min-[1440px]:block">
             <div class="sticky top-24"><x-ad-slot spot="sidebar" :height="600" class="!my-0" /></div>
@@ -22,7 +22,7 @@
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
         <div class="mt-5 flex items-center gap-3">
             @foreach ($post->authors->take(1) as $a)
-                <a href="{{ $a->url() }}" class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gradient-to-br from-red to-red-dark text-xl font-extrabold text-white" aria-hidden="true">{{ $a->initial() }}</a>
+                <a href="{{ $a->url() }}" class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gradient-to-br from-red to-red-dark text-xl font-extrabold text-white" aria-hidden="true" tabindex="-1">{{ $a->initial() }}</a>
             @endforeach
             <div class="min-w-0 flex-1">
                 <div class="text-lg"><x-byline :post="$post" /></div>
@@ -232,7 +232,7 @@
                             <button class="h-12 rounded-full bg-red px-6 font-bold text-white">মন্তব্য পাঠান</button>
                         </div>
                         <p class="mt-3 text-xs text-ink2">
-                            @guest সম্পাদক দেখে প্রকাশ করেন। <a class="font-bold text-sky-deep underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
+                            @guest সম্পাদক দেখে প্রকাশ করেন। <a class="font-bold text-sky-night underline" href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#comments') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
                             ভদ্র ও প্রাসঙ্গিক মন্তব্য প্রকাশ পায়। লিংক, ওয়েবসাইট বা ই-মেলের ঠিকানা দেওয়া যায় না; বিজ্ঞাপন বা কটু কথাও নয়।
                         </p>
                     </div>

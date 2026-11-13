@@ -43,7 +43,7 @@
                 <div class="mt-4 rounded-2xl border-2 border-dashed border-navy p-6 text-center">
                     <p>"{{ $q }}" দিয়ে কিছু পাওয়া গেল না।</p>
                     @if ($suggest)
-                        <p class="mt-3 text-lg">আপনি কি খুঁজছিলেন: <a href="{{ \App\Support\Url::to('/search') }}?q={{ rawurlencode($suggest) }}" class="font-bold text-sky-deep underline">{{ $suggest }}</a>?</p>
+                        <p class="mt-3 text-lg">আপনি কি খুঁজছিলেন: <a href="{{ \App\Support\Url::to('/search') }}?q={{ rawurlencode($suggest) }}" class="font-bold text-sky-night underline">{{ $suggest }}</a>?</p>
                     @else
                         <p class="mt-2 text-ink2">কম শব্দে খুঁজে দেখুন, যেমন শুধু লেখকের নাম বা কবিতার একটি লাইনের দুটি শব্দ।</p>
                     @endif
