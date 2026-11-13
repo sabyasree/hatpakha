@@ -221,4 +221,29 @@ class SubmissionTest extends TestCase
 
         $this->assertStringNotContainsString('<script', \App\Support\TextDiff::compare('<p>ক</p>', '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>')['html'], 'Escaped');
     }
+
+    public function test_an_editors_own_changes_in_the_desk_are_kept_with_the_text_before(): void
+    {
+        // Owner (D171): "I made some changes and saved; it is not showing any change history."
+        $this->actingAs($this->writer)->post('/submit/', $this->poem())->assertRedirect();
+        $post = \App\Models\Post::latest('id')->first();
+        \App\Models\PostVersion::query()->delete();   // like a piece sent in before versions were kept
+        $editor = User::factory()->create(['role' => Role::Editor, 'name' => 'Sompadok']);
+        $this->actingAs($editor);
+
+        $post->fresh()->forceFill(['body_html' => $post->body_html])->save();   // saved without changing a word
+        $this->assertSame(0, $post->versions()->count());
+
+        $post->fresh()->forceFill(['body_html' => str_replace('দুপুর', 'সন্ধ্যা', $post->body_html)])->save();
+        $this->assertSame(['before', 'desk_edit'], $post->versions()->pluck('kind')->all());
+        $this->assertSame($editor->id, $post->versions()->reorder('id', 'desc')->first()->user_id);
+        $history = view('filament.post-history', ['post' => $post->fresh()])->render();
+        $this->assertStringContainsString('ডেস্কে বদল করা হল', $history);
+        $this->assertStringContainsString('Sompadok', $history);
+        $this->assertStringContainsString('<ins style="background:#D7F0DC;text-decoration:none">সন্ধ্যা</ins>', $history);
+
+        auth()->logout();   // imports and scheduled jobs (no person) never add versions
+        $post->fresh()->forceFill(['title' => 'অন্য নাম'])->save();
+        $this->assertSame(2, $post->versions()->count());
+    }
 }

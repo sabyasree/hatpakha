@@ -75,6 +75,25 @@ class Post extends Model
                 Redirect::firstOrCreate(['from_path' => '/'.$post->slug.'/'], ['to_path' => null, 'status_code' => 410]);
             }
         });
+        // D171 (owner: "I made changes and saved; no change history"): an editor's change to the words in /desk is kept,
+        // with the text from just before the first one. Writers' own rounds are kept when they send (SubmissionController).
+        static::updated(function (self $post) {
+            if (! $post->wasChanged(['title', 'body_html']) || ! auth()->user()?->hasRole(\App\Enums\Role::Editor)) {
+                return;
+            }
+            $oldTitle = (string) $post->getOriginal('title');
+            $oldBody = (string) $post->getOriginal('body_html');
+            if (\App\Support\TextDiff::compare($oldBody, (string) $post->body_html, $oldTitle, (string) $post->title)['same']) {
+                return;   // tidying only, no word changed
+            }
+            rescue(function () use ($post, $oldTitle, $oldBody) {
+                if (! PostVersion::where('post_id', $post->id)->exists()) {
+                    PostVersion::create(['post_id' => $post->id, 'kind' => 'before', 'title' => $oldTitle, 'body_html' => $oldBody,
+                        'user_id' => $post->submitted_by, 'created_at' => $post->submitted_at ?? $post->created_at ?? now()]);
+                }
+                PostVersion::snap($post, 'desk_edit', null, auth()->id());
+            }, null, false);
+        });
         // Spelling-forgiving search (2026-11-12): keep the folded keys fresh whenever a piece is saved.
         static::saved(function (self $post) {
             if ($post->wasChanged(['title', 'body_html', 'excerpt', 'status']) || $post->wasRecentlyCreated) {

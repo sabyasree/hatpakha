@@ -41,7 +41,6 @@ class EditPost extends EditRecord
             \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
             // D171 (owner): every round with the writer, and what changed each time
             Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
-                ->visible(fn (Post $record) => $record->versions()->exists())
                 ->modalHeading(fn (Post $record) => __('বদলের ইতিহাস').': '.$record->title)
                 ->modalContent(fn (Post $record) => view('filament.post-history', ['post' => $record]))
                 ->modalWidth('4xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন')),

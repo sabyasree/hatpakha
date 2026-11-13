@@ -2394,5 +2394,9 @@
     "আগের সব বার দেখতে উপরের \"বদলের ইতিহাস\" টিপুন।": "To see every round, press \"Change history\" at the top.",
     "লেখক পাঠালেন": "Writer sent it",
     "সম্পাদক বদল চাইলেন": "Editor asked for changes",
-    "লেখক আবার পাঠালেন": "Writer sent it again"
+    "লেখক আবার পাঠালেন": "Writer sent it again",
+    "এখনও কোনো বদল রাখা নেই। এখন থেকে ডেস্কে লেখা বা শিরোনাম বদলে সেভ করলে, লেখক আবার পাঠালে বা আপনি বদল চাইলে, প্রতিবার এখানে থাকবে। (বদল রাখা শুরু হয়েছে ১৩ নভেম্বর ২০২৬ থেকে; তার আগের বদল জানা নেই।)": "No changes kept yet. From now on, every time the text or title is changed and saved in the desk, the writer sends it again, or you ask for changes, it is kept here. (Changes are kept from 13 November 2026; earlier changes are not known.)",
+    "বদল করেছেন:": "Changed by:",
+    "ডেস্কে বদল করা হল": "Changed in the desk",
+    "ডেস্কে বদলের আগের লেখা": "The text before the desk changes"
 }
