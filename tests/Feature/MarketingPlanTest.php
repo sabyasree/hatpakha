@@ -399,4 +399,26 @@ class MarketingPlanTest extends TestCase
         $fresh = MarketingPlan::dress(self::social(['kind' => 'custom', 'title' => 'new', 'texts' => ['facebook' => 'ক', 'instagram' => '']]));
         $this->assertSame('19 19:35', $fresh->slot_at->timezone('Asia/Kolkata')->format('d H:i'), 'Today\'s own post still gets the first evening time');
     }
+
+    /** D187: the plan lives on Kolkata time, whatever the server's or Google's clock says, and is quiet at night there. */
+    public function test_everything_follows_kolkata_time_and_nothing_goes_out_at_night(): void
+    {
+        Http::fake(['graph.facebook.com/*/111/feed' => Http::response(['id' => '111_8']), 'graph.facebook.com/*' => Http::response([])]);
+        $this->assertSame('UTC', config('app.timezone'), 'The server keeps UTC; the plan converts');
+        $s = self::social(['kind' => 'custom', 'title' => 'রাত', 'texts' => ['facebook' => 'ক', 'instagram' => ''], 'slot_at' => Carbon::parse('2026-11-19 21:15', 'Asia/Kolkata')->utc()]);
+        Carbon::setTestNow(Carbon::parse('2026-11-19 23:10', 'Asia/Kolkata'));
+        $this->assertSame(0, MarketingPlan::run(), 'Late at night in Bengal: it waits');
+        Carbon::setTestNow(Carbon::parse('2026-11-20 06:40', 'Asia/Kolkata'));
+        $this->assertSame(0, MarketingPlan::run());
+        Carbon::setTestNow(Carbon::parse('2026-11-20 07:05', 'Asia/Kolkata'));
+        $this->assertSame(1, MarketingPlan::run(), 'In the morning it goes');
+        $this->assertNotNull($s->fresh()->fb_post_id);
+
+        // Google counts hours in the Analytics account's zone. A peak at 15:00 UTC is 20:30 in Kolkata.
+        Setting::put('analytics.timezone', 'UTC');
+        $hours = array_map(fn ($h) => ['hour' => (string) $h, 'sessions' => $h === 15 ? 500 : ($h === 3 ? 300 : 10)], range(0, 23));
+        [$new] = \App\Support\MarketingAnalyst::tune(['ga' => ['hours' => $hours], 'social' => ['by_kind' => []]]);
+        $this->assertSame('20:35', $new['evening']);
+        $this->assertSame('09:05', $new['morning'], '03:00 UTC is 08:30 in Kolkata');
+    }
 }
