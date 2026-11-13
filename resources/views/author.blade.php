@@ -103,6 +103,14 @@
                 <div class="mt-6 max-w-[720px] rounded-2xl bg-peach-light p-5"><div class="text-lg font-extrabold">এই প্রোফাইল কি আপনার?</div>
                     <p class="mt-1 text-ink2">ছবি আর পরিচিতি যোগ করতে <a href="{{ \App\Support\Url::to('/contact-us') }}" class="font-bold underline">আমাদের জানান</a>; যাচাই করে প্রোফাইলটি আপনার অ্যাকাউন্টে জুড়ে দেওয়া হবে।</p></div>
             @endif
+            {{-- D178: the badges this writer has earned on Hatpakha --}}
+            @if ($author->user && ($earned = \App\Support\Badges::earned($author->user)))
+                <ul class="mt-5 flex flex-wrap gap-4" aria-label="হাতপাখার ব্যাজ">
+                    @foreach ($earned as $b)
+                        <li class="flex w-24 flex-col items-center text-center" title="{{ \App\Support\Bn::num((string) $b['count']).(str_starts_with($b['unit'], 'টি') ? '' : ' ').$b['unit'] }}">{!! \App\Support\Badges::medalSvg($b['key'], $b['tier'], 96) !!}<span class="mt-1 text-xs font-bold leading-tight">{{ $b['name'] }}<span class="block font-medium text-ink2">{{ $b['tierName'] }}</span></span></li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
 
         <h2 class="mt-12 border-t-2 border-navy pt-6 font-display text-3xl font-extrabold">লেখা</h2>

@@ -32,7 +32,7 @@ class SerialsTest extends TestCase
         Claude::$fake = function ($purpose, $user, $schema) {
             $this->seen[] = [$purpose, $user, $schema];
             $ep = ['title' => 'বন্ধ দরজা', 'paragraphs' => ['রাত বারোটায় দরজায় টোকা পড়ল।', 'দরজা খুলে দেখি কেউ নেই, শুধু একটা চিঠি।'],
-                'summary' => 'অমল রাতে একটি চিঠি পায়।', 'image_prompt' => 'an old door at night'];
+                'summary' => 'অমল রাতে একটি চিঠি পায়।', 'image_prompt' => 'an old door at night', 'teaser' => 'চিঠির খামে যে ঠিকানা, সে বাড়ি ত্রিশ বছর আগে পুড়ে গেছে।'];
 
             return in_array('cover_prompt', $schema['required'] ?? [], true)
                 ? ['title' => 'ছায়ার বাড়ি', 'logline' => 'পুরনো বাড়ির দরজায় রোজ রাতে টোকা পড়ে।', 'setting' => 'উত্তর কলকাতা',
@@ -61,6 +61,10 @@ class SerialsTest extends TestCase
         $this->assertStringContainsString('পর্ব ১', $ep1->title);
         $this->assertStringContainsString('<idea>', $this->seen[0][1], 'The owner\'s idea is passed as data');
 
+        // D172: the writer is told how to bring readers back, and gives one "next episode" line
+        $this->assertContains('teaser', $this->seen[1][2]['properties']['episode']['required']);
+        $this->assertSame('চিঠির খামে যে ঠিকানা, সে বাড়ি ত্রিশ বছর আগে পুড়ে গেছে।', $ep1->episode_teaser);
+
         $this->assertSame(0, SerialWriter::keepAhead(), 'A proposed serial waits for the owner');
         $serial->activate();
         $this->assertSame(0, SerialWriter::keepAhead(), 'Episode 1 is still unpublished: already one ahead');
@@ -70,6 +74,9 @@ class SerialsTest extends TestCase
         $this->assertSame('draft', $ep2->status);
         $this->assertCount(3, $this->seen, 'Plan, episode 1, episode 2: separate requests so none is cut off');
         $this->assertStringContainsString('অমল রাতে একটি চিঠি পায়', $this->seen[2][1], 'The story so far is given, for continuity');
+        $this->get($ep1->fresh()->url())->assertOk()->assertSee('পরের পর্বে')->assertSee('ত্রিশ বছর আগে পুড়ে গেছে');   // shown until episode 2 is out
+        $ep2->forceFill(['status' => 'published', 'published_at' => now()->subSecond()])->save();
+        $this->get($ep1->fresh()->url())->assertDontSee('ত্রিশ বছর আগে পুড়ে গেছে');
     }
 
     public function test_publishing_the_first_episode_starts_the_serial_and_readers_can_follow_it(): void

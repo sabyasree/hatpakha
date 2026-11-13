@@ -2,7 +2,7 @@
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
-    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
+    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif @if ($post->isLive() && ! $post->isKids()) data-quote-by="{{ $post->authors->map->publicName()->implode(', ') }}" data-quote-title="{{ $post->title }}" data-quote-url="{{ $post->url() }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
         {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text.
              D167: from 1280px (common laptops) as a narrow 160px ad, the 300px one from 1500px; both fit the margin even with a 17px scrollbar. --}}
         <div class="absolute left-full top-[85vh] ml-8 hidden h-[calc(100%-85vh)] w-[160px] min-[1280px]:block min-[1500px]:ml-10 min-[1500px]:w-[300px]">
@@ -101,6 +101,10 @@
                     <a href="{{ $post->episodeSibling(1)->url() }}" class="mt-2 flex min-h-14 items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 font-bold text-white">
                         <span>পরের পর্ব: {{ $post->episodeSibling(1)->episodeLabel() }}</span><span aria-hidden="true">→</span></a>
                 @elseif (! $post->isLastEpisode())
+                    @if ($post->episode_teaser)
+                        {{-- D172: one line about what comes next, so readers come back --}}
+                        <p class="mt-2 rounded-xl bg-white p-3 font-serif text-lg"><strong class="font-sans text-sm text-red">পরের পর্বে</strong><br>{{ $post->episode_teaser }}</p>
+                    @endif
                     <p class="mt-2 font-serif text-lg">পরের পর্ব আসবে {{ $post->serial->dayName() }}।</p>
                     <div class="mt-3">@include('serial-follow', ['serial' => $post->serial, 'following' => $post->serial->isFollowedBy(auth()->user())])</div>
                 @endif
@@ -146,6 +150,9 @@
             <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
+        @if ($post->isLive() && ! $post->isKids())
+            <p class="mt-3 text-sm text-ink2"><span aria-hidden="true" class="font-serif text-lg text-red">❝</span> কোনো লাইন ভালো লাগল? আঙুল চেপে ধরে লাইনটা বেছে নিন, তারপর “এই লাইন শেয়ার করুন” টিপুন। হাতপাখার কার্ড হয়ে যাবে।</p>
+        @endif
 
         @unless ($post->isKids())
             <x-ad-slot spot="article" :height="250" />
@@ -257,4 +264,26 @@
         <x-newsletter-signup variant="card" />
     </article>
 
+    @if ($post->isLive() && ! $post->isKids())
+        {{-- D173 (owner): a reader picks a line and shares it as a Hatpakha card. The card is drawn in the browser. --}}
+        <button type="button" data-quote-pill hidden class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-navy px-5 font-bold text-white shadow-[3px_3px_0_#CB1B32] md:bottom-6">
+            <span aria-hidden="true" class="font-serif text-2xl leading-none text-peach">❝</span> এই লাইন শেয়ার করুন</button>
+        <div data-quote-dialog hidden class="fixed inset-0 z-[70] flex items-end justify-center bg-navy/60 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quote-dialog-h">
+            <div class="max-h-[100dvh] w-full max-w-[460px] overflow-y-auto rounded-t-3xl border-2 border-navy bg-paper p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:rounded-3xl">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 id="quote-dialog-h" class="font-display text-xl font-extrabold">আপনার বেছে নেওয়া লাইন</h2>
+                    <button type="button" data-quote-close class="flex h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-bold">✕ বন্ধ</button>
+                </div>
+                <canvas data-quote-canvas width="1080" height="1080" class="mt-3 block h-auto w-full rounded-2xl border border-rule" aria-label="শেয়ার করার ছবি"></canvas>
+                <div class="mt-3 grid gap-2">
+                    <button type="button" data-quote-share class="flex h-12 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শেয়ার করুন</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" data-quote-download class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-3 font-bold">ছবি নামান</button>
+                        <a data-quote-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-3 font-bold">WhatsApp-এ লেখা</a>
+                    </div>
+                </div>
+                <p data-quote-msg role="status" class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night"></p>
+            </div>
+        </div>
+    @endif
 </x-layouts.app>

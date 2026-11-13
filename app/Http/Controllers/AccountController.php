@@ -282,6 +282,15 @@ class AccountController extends Controller
         return redirect(Url::to('/account/settings').'#reading')->with('status', $on ? __('পড়ার হিস্টরি চালু হল।') : __('পড়ার হিস্টরি বন্ধ হল। আগের হিস্টরি মুছতে চাইলে নিচের “মুছুন” টিপুন।'));
     }
 
+    /** D177: show or hide my name on the games' leaderboard. */
+    public function boardSwitch(Request $request)
+    {
+        $on = $request->boolean('on');
+        $request->user()->forceFill(['board_hidden' => ! $on])->save();
+
+        return redirect(Url::to('/account/settings').'#games')->with('status', $on ? __('লিডারবোর্ডে আপনার নাম দেখা যাবে।') : __('লিডারবোর্ডে আপনার নাম আর দেখা যাবে না।'));
+    }
+
     public function readingHistoryClear(Request $request)
     {
         \App\Support\ReadingHistory::clear($request->user());

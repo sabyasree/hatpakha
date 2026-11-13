@@ -2,6 +2,9 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../../public/js/hp-khela.js';
+@source '../../public/js/hp-jobdo.js';
+@source '../../public/js/hp-report.js';
 
 /* Design tokens: ONLY the logo palette + tints/shades (docs/DESIGN.md). Do not add other hues. */
 @theme {

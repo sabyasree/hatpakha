@@ -56,6 +56,18 @@
             </details>
         @endif
 
+        {{-- D177: the games' leaderboard --}}
+        <h2 id="games" class="mt-8 scroll-mt-24 font-display text-2xl font-extrabold">{{ __('খেলা') }}</h2>
+        <div class="{{ $card }}">
+            <form method="POST" action="{{ Url::to('/account/board') }}">@csrf
+                <input type="hidden" name="on" value="{{ $user->board_hidden ? 1 : 0 }}">
+                <button class="{{ $setRow }} w-full text-left" role="switch" aria-checked="{{ $user->board_hidden ? 'false' : 'true' }}">
+                    <span><span class="block text-lg font-bold">{{ __('লিডারবোর্ডে আমার নাম দেখান') }}</span><span class="block text-ink2">{{ __('বন্ধ করলেও খেলতে পারবেন, পয়েন্ট আর ব্যাজ জমবে; শুধু তালিকায় নাম থাকবে না।') }}</span></span>
+                    {!! $switch(! $user->board_hidden) !!}
+                </button>
+            </form>
+        </div>
+
         <h2 id="reading" class="mt-8 scroll-mt-24 font-display text-2xl font-extrabold">{{ __('পড়ার হিস্টরি') }}</h2>
         <div class="{{ $card }}">
             <form method="POST" action="{{ Url::to('/account/reading-history') }}">@csrf

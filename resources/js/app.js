@@ -559,3 +559,183 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
     const done = () => { const t = b.textContent; b.textContent = b.dataset.copied || '✓'; setTimeout(() => { b.textContent = t; }, 2500); };
     if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done).catch(() => {});
 }));
+
+// D173 (owner): "share this line". A reader selects a line in a piece; we draw a Hatpakha quote card on a canvas
+// (plain canvas text, so it works on iPhones too) and hand it to the phone's share sheet, or download it.
+(() => {
+    const article = document.querySelector('article[data-quote-url]');
+    const pill = document.querySelector('[data-quote-pill]');
+    const dialog = document.querySelector('[data-quote-dialog]');
+    if (!article || !pill || !dialog) return;
+    const canvas = dialog.querySelector('[data-quote-canvas]');
+    const msg = dialog.querySelector('[data-quote-msg]');
+    const { quoteBy: by, quoteTitle: title, quoteUrl: url } = article.dataset;
+    const MAX = 280;
+    let quote = '';
+    let opener = null;
+
+    const picked = () => {
+        const sel = getSelection();
+        if (!sel || sel.isCollapsed || !sel.rangeCount) return '';
+        const body = sel.getRangeAt(0).commonAncestorContainer;
+        const el = body.nodeType === 1 ? body : body.parentElement;
+        if (!el || !el.closest('.prose-bn, .poem-bn') || !article.contains(el)) return '';
+        const text = sel.toString().replace(/[ \t ]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+        if (text.length > MAX) return 'long';
+        return text.length >= 8 ? text : '';
+    };
+    const label = pill.innerHTML;
+    let timer;
+    document.addEventListener('selectionchange', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            if (!dialog.hidden) return;
+            const p = picked();
+            pill.hidden = !p;
+            if (p === 'long') pill.textContent = 'একটু ছোট অংশ বেছে নিন (২-৪ লাইন)'; else pill.innerHTML = label;
+        }, 250);
+    });
+
+    const wrap = (g, text, width) => {
+        const lines = [];
+        for (const para of text.split('\n')) {
+            let line = '';
+            for (const word of para.split(' ')) {
+                const next = line ? line + ' ' + word : word;
+                if (line && g.measureText(next).width > width) { lines.push(line); line = word; } else line = next;
+            }
+            lines.push(line);
+        }
+        return lines;
+    };
+    const draw = async () => {
+        const g = canvas.getContext('2d');
+        const W = 1080;
+        try {
+            await Promise.all([document.fonts.load("600 60px 'Noto Serif Bengali'", quote), document.fonts.load("64px 'Galada'", 'হাতপাখা'), document.fonts.load("700 30px 'Anek Bangla'", by + title)]);
+        } catch (e) { /* the system's Bengali font is used */ }
+        g.fillStyle = '#FBEBD8'; g.fillRect(0, 0, W, W);
+        g.textBaseline = 'alphabetic';
+        g.fillStyle = '#CB1B32'; g.font = "64px 'Galada', 'Anek Bangla', sans-serif"; g.fillText('হাতপাখা', 64, 124);
+        let size = 68; let lines = [];
+        for (; size >= 34; size -= 4) {
+            g.font = `600 ${size}px 'Noto Serif Bengali', serif`;
+            lines = wrap(g, quote, W - 176);
+            if (lines.length * size * 1.5 <= 600) break;
+        }
+        const lh = size * 1.5;
+        let y = 230 + (600 - lines.length * lh) / 2 + size;
+        g.fillStyle = '#CB1B32'; g.font = "700 150px 'Noto Serif Bengali', serif"; g.fillText('“', 76, y - size * 0.35);
+        g.fillStyle = '#13212C'; g.font = `600 ${size}px 'Noto Serif Bengali', serif`;
+        for (const l of lines) { g.fillText(l, 88, y); y += lh; }
+        g.fillStyle = '#CB1B32'; g.fillRect(88, 880, W - 176, 4);
+        g.fillStyle = '#13212C'; g.font = "700 32px 'Anek Bangla', sans-serif";
+        let credit = by ? by + ' · ' + title : title;
+        while (g.measureText(credit).width > W - 176 && credit.length > 10) credit = credit.slice(0, -2).trimEnd() + '…';
+        g.fillText(credit, 88, 940);
+        g.fillStyle = '#4D5A63'; g.font = "600 26px 'Anek Bangla', sans-serif";
+        g.fillText('hatpakha.com', 88, 1010);
+        const issn = 'ISSN 2321-3035'; g.fillText(issn, W - 88 - g.measureText(issn).width, 1010);
+    };
+    const text = () => `“${quote.replace(/\n/g, ' / ')}”\n— ${by ? by + ', ' : ''}${title}\n${url}`;
+    const file = () => new Promise((ok) => canvas.toBlob((b) => ok(b ? new File([b], 'hatpakha-line.png', { type: 'image/png' }) : null), 'image/png'));
+    const close = () => { dialog.hidden = true; document.documentElement.style.overflow = ''; opener?.focus?.(); };
+
+    pill.addEventListener('click', async () => {
+        quote = picked();
+        if (quote === 'long') return;
+        if (!quote) { pill.hidden = true; return; }
+        opener = pill; pill.hidden = true; msg.textContent = '';
+        dialog.querySelector('[data-quote-wa]').href = 'https://wa.me/?text=' + encodeURIComponent(text());
+        dialog.hidden = false; document.documentElement.style.overflow = 'hidden';
+        await draw();
+        dialog.querySelector('[data-quote-share]').focus();
+    });
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
+    dialog.querySelector('[data-quote-close]').addEventListener('click', close);
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dialog.hidden) close(); });
+    const download = async () => {
+        const a = document.createElement('a');
+        a.download = 'hatpakha-line.png'; a.href = canvas.toDataURL('image/png'); a.click();
+        msg.textContent = 'ছবিটি নামানো হয়েছে। WhatsApp, ফেসবুক বা ইনস্টাগ্রামে দিন।';
+    };
+    dialog.querySelector('[data-quote-download]').addEventListener('click', download);
+    dialog.querySelector('[data-quote-share]').addEventListener('click', async () => {
+        const f = await file();
+        if (f && navigator.canShare && navigator.canShare({ files: [f] })) {
+            try { await navigator.share({ files: [f], text: text() }); } catch (e) { /* closed the sheet */ }
+            return;
+        }
+        if (navigator.share) {
+            try { await navigator.share({ text: text(), url }); return; } catch (e) { return; }
+        }
+        download();
+    });
+})();
+
+// D180 (owner): share a badge. The medal (our own SVG) and the words are drawn on a canvas, then shared or downloaded.
+(() => {
+    const dialog = document.querySelector('[data-badge-dialog]');
+    if (!dialog) return;
+    const canvas = dialog.querySelector('[data-badge-canvas]');
+    const msg = dialog.querySelector('[data-badge-msg]');
+    let text = '';
+    let opener = null;
+    const close = () => { dialog.hidden = true; document.documentElement.style.overflow = ''; opener?.focus?.(); };
+    const fit = (g, t, max) => { let s = t; while (g.measureText(s).width > max && s.length > 6) s = s.slice(0, -2).trimEnd() + '…'; return s; };
+    const draw = async (btn) => {
+        const g = canvas.getContext('2d');
+        const W = 1080;
+        const { name, tier, who, line } = btn.dataset;
+        try { await Promise.all([document.fonts.load("800 80px 'Anek Bangla'", name + tier + who + line), document.fonts.load("64px 'Galada'", 'হাতপাখা')]); } catch (e) { /* system font */ }
+        g.fillStyle = '#FFFBF4'; g.fillRect(0, 0, W, W);
+        g.fillStyle = '#FBEBD8'; g.fillRect(0, 0, W, 520);
+        g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+        g.fillStyle = '#CB1B32'; g.font = "64px 'Galada', 'Anek Bangla', sans-serif"; g.fillText('হাতপাখা', 64, 124);
+        const li = btn.closest('li');
+        const svg = (li.querySelector('[data-medal-full]')?.content.querySelector('svg') || li.querySelector('[data-medal] svg')).cloneNode(true);   // the large medal carries the badge's name
+        svg.setAttribute('width', '480'); svg.setAttribute('height', '520');
+        try {   // the words inside the medal need our font inside the picture too
+            const font = await fetch('/fonts/anek-bangla-bengali.woff2').then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
+            const latin = await fetch('/fonts/anek-bangla-latin.woff2').then((r) => r.blob()).then((b) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
+            const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+            style.textContent = `@font-face{font-family:'Anek Bangla';font-weight:400 800;src:url(${font}) format('woff2');unicode-range:U+0980-09FF,U+200C-200D,U+25CC}@font-face{font-family:'Anek Bangla';font-weight:400 800;src:url(${latin}) format('woff2')}`;
+            svg.insertBefore(style, svg.firstChild);
+        } catch (e) { /* the phone's own Bengali font */ }
+        const img = new Image();
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+        try { await img.decode(); await new Promise((r) => setTimeout(r, 120)); g.drawImage(img, (W - 480) / 2, 150, 480, 520); } catch (e) { /* the words alone */ }
+        // D181: the medal says which badge; the words under it say what was done, who did it, and the tier
+        g.textAlign = 'center'; g.fillStyle = '#13212C';
+        g.font = "800 72px 'Anek Bangla', sans-serif"; g.fillText(fit(g, line, W - 140), W / 2, 790);
+        if (who) { g.font = "600 46px 'Anek Bangla', sans-serif"; g.fillText(fit(g, who, W - 160), W / 2, 862); }
+        g.fillStyle = '#CB1B32'; g.font = "700 44px 'Anek Bangla', sans-serif"; g.fillText(tier, W / 2, who ? 934 : 880);
+        g.fillStyle = '#4D5A63'; g.font = "600 28px 'Anek Bangla', sans-serif";
+        g.textAlign = 'left'; g.fillText('hatpakha.com', 64, 1024);
+        g.textAlign = 'right'; g.fillText('ISSN 2321-3035', W - 64, 1024);
+        g.textAlign = 'left';
+    };
+    document.querySelectorAll('[data-badge-share]').forEach((btn) => btn.addEventListener('click', async () => {
+        opener = btn; msg.textContent = '';
+        text = msg.dataset.text.replace(':name', btn.dataset.name).replace(':tier', btn.dataset.tierName) + '\n' + btn.dataset.line + '\n' + msg.dataset.url;
+        dialog.querySelector('[data-badge-wa]').href = 'https://wa.me/?text=' + encodeURIComponent(text);
+        dialog.hidden = false; document.documentElement.style.overflow = 'hidden';
+        await draw(btn);
+        dialog.querySelector('[data-badge-send]').focus();
+    }));
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });
+    dialog.querySelector('[data-badge-close]').addEventListener('click', close);
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dialog.hidden) close(); });
+    const download = () => {
+        const a = document.createElement('a');
+        a.download = 'hatpakha-badge.png'; a.href = canvas.toDataURL('image/png'); a.click();
+        msg.textContent = msg.dataset.done;
+    };
+    dialog.querySelector('[data-badge-download]').addEventListener('click', download);
+    dialog.querySelector('[data-badge-send]').addEventListener('click', async () => {
+        const f = await new Promise((ok) => canvas.toBlob((b) => ok(b ? new File([b], 'hatpakha-badge.png', { type: 'image/png' }) : null), 'image/png'));
+        if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text }); } catch (e) { /* closed */ } return; }
+        if (navigator.share) { try { await navigator.share({ text }); } catch (e) { /* closed */ } return; }
+        download();
+    });
+})();

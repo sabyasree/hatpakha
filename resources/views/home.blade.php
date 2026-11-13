@@ -47,6 +47,26 @@
     </section>
     @endif
 
+    {{-- D174: the daily word game, one tap from the front page --}}
+    <section class="border-b-2 border-navy bg-peach-light">
+        <a href="{{ \App\Support\Url::to('/khela') }}" class="mx-auto flex max-w-[1320px] items-center gap-4 px-5 py-4 hover:bg-white">
+            <span class="flex flex-none gap-1" aria-hidden="true">@foreach (['শ', 'ব্দ', 'খে', 'লা'] as $t)<span class="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-navy bg-white font-serif text-lg font-bold shadow-[2px_2px_0_#13212C] {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
+            <span class="min-w-0 flex-1"><span class="block text-lg font-extrabold leading-tight">আজকের শব্দ-খেলা</span><span class="block text-sm text-ink2">শব্দ-খেলা, ধাঁধা আর শব্দজব্দ: রোজ নতুন। সঙ্গে লিডারবোর্ড আর ব্যাজ।</span></span>
+            <span class="flex h-11 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
+        </a>
+    </section>
+
+    {{-- D175: পাঠকের কলম, this week's theme: anyone can write in a minute --}}
+    @if ($kolom = \App\Models\ReaderPrompt::current())
+    <section class="border-b-2 border-navy">
+        <a href="{{ \App\Support\Url::to('/kolom') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 hover:bg-peach-light">
+            <span class="font-hand text-2xl text-red">পাঠকের কলম</span>
+            <span class="min-w-0 flex-1 text-lg"><strong class="font-serif">“{{ $kolom->title }}”</strong> <span class="text-ink2">এ সপ্তাহের বিষয়। এক মিনিটে লিখুন, সেরা দশটি রবিবার ছাপা হবে।</span></span>
+            <span class="flex h-11 flex-none items-center rounded-full border-2 border-navy bg-white px-5 font-bold">লিখুন →</span>
+        </a>
+    </section>
+    @endif
+
     @if ($poemOfDay)
     {{-- Poem poster (the editor's pick when there is one, D78: with the editor's reason) --}}
     <section class="relative overflow-hidden text-paper" style="background: linear-gradient(160deg,#13212C,#12304A)" aria-labelledby="poem-h">

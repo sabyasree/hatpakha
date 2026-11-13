@@ -42,6 +42,9 @@
                 @endforeach
             </ol>
             @if ($serial->status === 'active')
+                @if ($teaser = $episodes->last()?->episode_teaser)
+                    <p class="mt-4 rounded-xl border-2 border-navy bg-sky-tint p-3 font-serif text-lg"><strong class="font-sans text-sm text-red">পরের পর্বে</strong><br>{{ $teaser }}</p>
+                @endif
                 <p class="mt-3 font-bold text-ink2">পরের পর্ব আসবে {{ $serial->dayName() }}।</p>
             @endif
             <x-ad-slot spot="list" :height="250" />

@@ -125,7 +125,7 @@
             <div class="hp-mk-item" wire:key="mk-{{ $s->id }}">
                 <div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;align-items:center">
                     <strong>{{ $s->title }}</strong>
-                    <span class="hp-muted">{{ __(['piece' => 'লেখা', 'issue' => 'সংখ্যা', 'weekly' => 'সাপ্তাহিক পরিকল্পনা', 'spotlight' => 'লেখক পরিচিতি', 'festival' => 'উৎসব', 'contest' => 'প্রতিযোগিতা', 'archive' => 'আর্কাইভ থেকে', 'custom' => 'নিজের বিষয়', 'poster' => 'পোস্টার'][$s->kind] ?? $s->kind) }}
+                    <span class="hp-muted">{{ __(['piece' => 'লেখা', 'issue' => 'সংখ্যা', 'weekly' => 'সাপ্তাহিক পরিকল্পনা', 'spotlight' => 'লেখক পরিচিতি', 'festival' => 'উৎসব', 'contest' => 'প্রতিযোগিতা', 'archive' => 'আর্কাইভ থেকে', 'custom' => 'নিজের বিষয়', 'poster' => 'পোস্টার', 'kolom' => 'পাঠকের কলম'][$s->kind] ?? $s->kind) }}
                         · {{ $s->created_at->locale(app()->getLocale())->diffForHumans() }}</span>
                 </div>
                 <div class="hp-mk-cols">

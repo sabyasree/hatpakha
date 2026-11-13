@@ -26,7 +26,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     use HasFactory, Notifiable;
 
     /** D166: reading history is on until the reader switches it off (same default as the database). */
-    protected $attributes = ['reading_history' => true, 'is_reviewer' => false];
+    protected $attributes = ['reading_history' => true, 'is_reviewer' => false, 'board_hidden' => false];
 
     protected function casts(): array
     {
@@ -41,6 +41,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'mail_opt_out' => 'boolean',
             'reading_history' => 'boolean',
             'is_reviewer' => 'boolean',
+            'board_hidden' => 'boolean',
             'bot_reasons' => 'array',
             'bot_checked_at' => 'datetime',
         ];
