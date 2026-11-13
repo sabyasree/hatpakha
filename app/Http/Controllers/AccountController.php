@@ -251,7 +251,8 @@ class AccountController extends Controller
                 ->whereIn('author_id', \App\Models\Author::where('user_id', $request->user()->id)->select('id'))->first();
 
             // D166: straight to the new certificate (the walk-through found the old jump to the list confusing)
-            return $made ? redirect($made->verifyUrl()) : back(302, [], Url::to('/account/writings'))->with('status', 'আপনার শংসাপত্র তৈরি হয়েছে।');
+            return $made ? redirect($made->verifyUrl())->with('status', 'আপনার সার্টিফিকেট তৈরি হয়েছে। নিচের বোতাম থেকে ছবি বা PDF নামান, প্রিন্ট করুন বা WhatsApp-এ পাঠান। পরে আবার পাবেন “আমার লেখা”-য়, লেখার পাশের “সার্টিফিকেট” বোতামে।')
+                : back(302, [], Url::to('/account'))->with('status', 'এই লেখার সার্টিফিকেট এখান থেকে তৈরি করা গেল না। সম্পাদককে লিখুন, তাঁরা দেখে দেবেন।');
         }
         \App\Models\EditorTask::propose('certificate_request', 'লেখক শংসাপত্র চেয়েছেন: '.$post->title, ['by' => $request->user()->id], $post);
 

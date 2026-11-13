@@ -18,6 +18,10 @@
         }
     </style>
     <section class="mx-auto max-w-[1100px] px-5 py-10">
+        @if (session('status'))
+            {{-- D166: what to do next, right after the writer made it (screen only) --}}
+            <div role="status" class="mb-6 flex items-start gap-2 rounded-2xl bg-navy p-4 font-bold text-white print:hidden"><span aria-hidden="true">✓</span><span>{{ session('status') }}</span></div>
+        @endif
         <div class="text-center font-hand text-3xl text-red">শংসাপত্র যাচাই</div>
         @if ($c->isValid())
             <p class="mt-3 text-center font-bold text-sky-night">✓ এই শংসাপত্রটি বৈধ। হাতপাখা {{ \App\Support\Bn::date($c->issued_at) }} এটি দিয়েছে।</p>

@@ -83,8 +83,10 @@ class CertificateTest extends TestCase
         $this->assertSame($new->id, Certificate::sole()->post_id);
 
         $this->actingAs($writer)->get('/account/writings/')->assertOk()->assertSee('শংসাপত্র চাই');
-        $this->actingAs($writer)->post('/account/certificate/'.$old->id.'/')->assertRedirect();
+        $made = $this->actingAs($writer)->post('/account/certificate/'.$old->id.'/');
         $this->assertTrue(Certificate::where('post_id', $old->id)->exists(), 'Automatic on: given at once');
+        $made->assertRedirect(Certificate::where('post_id', $old->id)->sole()->verifyUrl());   // owner: "whats next?" - straight to it
+        $this->followRedirects($made)->assertSee('আপনার সার্টিফিকেট তৈরি হয়েছে')->assertSee('PDF / প্রিন্ট')->assertSee('WhatsApp');
 
         \App\Models\Setting::put('certificates.auto', '0');
         $other = User::factory()->create(['email_verified_at' => now()]);
