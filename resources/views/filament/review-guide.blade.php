@@ -21,6 +21,24 @@
 <div style="{{ $box }};font-size:.95rem;line-height:1.7">
     <p style="font-weight:700;font-size:1.05rem;margin:0">{{ __('এই লেখা নিয়ে কী করবেন') }}</p>
 
+    @if (($last = $post->versions()->reorder('id', 'desc')->first()) && $last->kind === 'resubmitted')
+        {{-- D171 (owner): a piece that came back after "বদল চাই": the writer's note and what changed, first --}}
+        @php
+            $before = $last->previous();
+            $d = $before ? \App\Support\TextDiff::compare($before->body_html, $last->body_html, $before->title, $last->title) : null;
+        @endphp
+        <div style="margin-top:.6rem;padding:.7rem .9rem;border-radius:.7rem;background:rgba(45,170,226,.12)">
+            <p style="margin:0;font-weight:700">{{ __('লেখক বদল করে আবার পাঠিয়েছেন') }}@if ($d) · <span style="font-weight:400">{{ $d['same'] ? __('লেখায় কোনো বদল নেই') : __('+:a শব্দ, −:r শব্দ', ['a' => Bn::num((string) $d['added']), 'r' => Bn::num((string) $d['removed'])]) }}</span>@endif</p>
+            <p style="margin:.3rem 0 0;white-space:pre-line">@if ($last->note)<strong>{{ __('লেখকের কথা:') }}</strong> {{ $last->note }}@else{{ __('লেখক কোনো কথা লেখেননি।') }}@endif</p>
+            @if ($d && ! $d['same'])
+                <details style="margin-top:.4rem"><summary style="cursor:pointer;font-weight:700">{{ __('কী বদলেছে দেখুন') }} <span style="font-weight:400;opacity:.7">({{ __('সবুজ: নতুন, লাল: বাদ গেছে') }})</span></summary>
+                    <div style="max-height:24rem;overflow:auto;margin-top:.4rem;border-left:3px solid rgba(127,127,127,.3);padding-left:.8rem">{!! $d['html'] !!}</div>
+                </details>
+            @endif
+            <p style="margin:.3rem 0 0;font-size:.85rem;opacity:.75">{{ __('আগের সব বার দেখতে উপরের "বদলের ইতিহাস" টিপুন।') }}</p>
+        </div>
+    @endif
+
     <ol style="margin:.5rem 0 0;padding-inline-start:1.2rem;list-style:decimal">
         <li>
             {{ __('নিচে লেখাটি পড়ুন।') }}

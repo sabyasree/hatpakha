@@ -203,13 +203,22 @@
                 </label>
                 <p data-error="original" hidden class="mt-2 text-sm font-bold text-red" role="alert">জমা দেওয়ার আগে এই ঘরে টিক দিন।</p>
 
+                @if ($post->status === 'changes')
+                    {{-- D171 (owner): when sending it back, the writer can say what they changed or why they kept it --}}
+                    <label class="mt-6 block rounded-2xl border-2 border-navy bg-white p-4">
+                        <span class="block text-lg font-bold">সম্পাদককে কিছু বলবেন? <span class="font-normal text-ink2">(ইচ্ছে হলে)</span></span>
+                        <span class="block text-sm text-ink2">কী বদলালেন, বা কোনটা কেন যেমন ছিল তেমন রাখলেন। লেখার সঙ্গে সম্পাদকের কাছে যাবে।</span>
+                        <textarea name="writer_note" rows="3" maxlength="2000" class="mt-2 block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg" placeholder="যেমন: শেষ স্তবকটা নতুন করে লিখেছি; নামটা যেমন ছিল রেখেছি।">{{ old('writer_note') }}</textarea>
+                    </label>
+                @endif
+
                 {{-- 5. Actions: fixed at the bottom on phones (like a social app), at the end on wider screens --}}
                 <div data-action-bar class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-navy bg-paper/95 px-4 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
                     <div class="mx-auto flex max-w-[820px] items-center gap-2">
                         <button type="submit" name="action" value="draft" formnovalidate class="flex h-12 flex-none items-center rounded-full px-3 text-sm font-bold text-ink2 underline sm:px-4 sm:text-base" data-draft-btn>খসড়া রাখুন</button>
                         <span data-bar-status hidden class="min-w-0 flex-1 truncate text-xs font-semibold text-sky-night sm:hidden"></span>
                         <button type="button" id="preview-btn" class="h-12 flex-none rounded-full border-2 border-navy bg-white px-4 font-bold sm:px-6">কেমন দেখাবে</button>
-                        <button type="submit" name="action" value="submit" class="h-12 flex-1 rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">জমা দিন</button>
+                        <button type="submit" name="action" value="submit" class="h-12 flex-1 rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">{{ $post->status === 'changes' ? 'আবার পাঠান' : 'জমা দিন' }}</button>
                     </div>
                 </div>
             </form>

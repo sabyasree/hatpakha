@@ -144,7 +144,9 @@ class SubmissionController extends Controller
             'cover' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
             'remove_cover' => ['nullable', 'boolean'],
             'contest_id' => ['nullable', 'integer'],
+            'writer_note' => ['nullable', 'string', 'max:2000'],   // D171: a note to the editor when sending it back
         ], [
+            'writer_note.max' => 'সম্পাদককে লেখা কথা ২০০০ অক্ষরের মধ্যে রাখুন।',
             'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
             'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
             'title.required' => 'শিরোনাম দিন।',
@@ -193,6 +195,8 @@ class SubmissionController extends Controller
         RateLimiter::hit('submit:'.$request->user()->id, 86400);
         $wasChanges = $post->status === 'changes';
         $post->forceFill(['status' => 'pending', 'submitted_at' => now(), 'originality_confirmed_at' => now()])->save();
+        // D171: a copy of what was sent, with the writer's note on a second round, so the desk sees what changed
+        \App\Models\PostVersion::snap($post, $wasChanges ? 'resubmitted' : 'submitted', $wasChanges ? ($data['writer_note'] ?? null) : null, $request->user()->id);
         if ($request->user()->role === Role::Reader) {
             $request->user()->forceFill(['role' => Role::Writer])->save();
         }

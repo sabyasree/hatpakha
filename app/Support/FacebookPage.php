@@ -96,8 +96,48 @@ final class FacebookPage
 
             return [false, $why];
         }
-        $s->forceFill(['status' => 'posted', 'posted_at' => now(), 'posted_by' => $by, 'fb_post_id' => (string) $id, 'fb_error' => null, 'fb_scheduled_at' => null])->save();
+        $s->forceFill(['fb_post_id' => (string) $id, 'fb_error' => null, 'fb_scheduled_at' => null])->save();
+        $s->settle($by);   // D170: stays in the list while Instagram is still to do
         AuditLog::record('marketing.facebook', null, ['social_post' => $s->id, 'fb' => (string) $id, 'by' => $by]);
+
+        return [true, (string) $id];
+    }
+
+    /**
+     * D170 (owner): post one card as a photo on the Page, with the Facebook text (link included, since a photo post
+     * shows no link preview). A post may carry several cards over time, so an earlier Facebook post doesn't stop it.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    public static function publishCard(SocialPost $s, string $cardPath, string $key, ?int $by = null): array
+    {
+        if (! self::ready()) {
+            return [false, self::configured() ? __('শুধু আসল সাইট থেকে ফেসবুকে পোস্ট হয়') : __('ফেসবুকের চাবি দেওয়া নেই')];
+        }
+        if (blank($s->texts['facebook'] ?? null)) {
+            return [false, __('ফেসবুকের লেখা নেই')];
+        }
+        $subject = $s->subject;
+        if (($subject instanceof Post && ! $subject->isLive()) || ($subject instanceof Issue && $subject->status !== 'published')) {
+            return [false, __('লেখা বা সংখ্যাটি এখনও প্রকাশিত নয়')];
+        }
+        $token = (string) config('services.facebook_page.token');
+        $params = ['caption' => trim((string) $s->texts['facebook']), 'url' => asset(ltrim($cardPath, '/')), 'access_token' => $token];
+        if (filled($secret = config('services.facebook_page.app_secret'))) {
+            $params['appsecret_proof'] = hash_hmac('sha256', $token, (string) $secret);
+        }
+        $url = 'https://graph.facebook.com/'.config('services.facebook_page.graph_version').'/'.config('services.facebook_page.id').'/photos';
+        $res = rescue(fn () => Http::asForm()->timeout(25)->post($url, $params), null, false);
+        $id = $res?->json('post_id') ?? $res?->json('id');
+        if (! $res || ! $res->successful() || ! $id) {
+            $why = mb_substr((string) ($res?->json('error.message') ?? ($res ? 'HTTP '.$res->status() : 'no connection')), 0, 280);
+            AuditLog::record('marketing.facebook_failed', null, ['social_post' => $s->id, 'card' => $key, 'error' => $why]);
+
+            return [false, $why];
+        }
+        $s->forceFill(['fb_post_id' => $s->fb_post_id ?: (string) $id, 'fb_error' => null] + InstagramPage::cardPosted($s, $key, 'facebook', (string) $id))->save();
+        AuditLog::record('marketing.facebook', null, ['social_post' => $s->id, 'fb' => (string) $id, 'card' => $key, 'by' => $by]);
+        $s->settle($by);
 
         return [true, (string) $id];
     }

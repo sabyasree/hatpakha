@@ -269,6 +269,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D162: archive redesign (issues, collections, year timeline, year page filters and most-read picks) and /sonkha/ as the all-issues page
 - [x] D164: Brevo webhook: hard bounces and complaints suppress the address (like SES)
 - [x] Owner (done 2026-11-12): copied the address from /desk → চিঠি → পাঠানোর পথ into Brevo → Transactional → Settings → Webhook (tick Hard bounce, Spam, Invalid email, Blocked, Unsubscribed)
+- [x] D171: writer's note when sending back ("আবার পাঠান"); desk sees +/− words, the note and the changes; "বদলের ইতিহাস" on every piece
+- [x] D170: marketing: every card (incl. quote cards) can go to Facebook or Instagram; "আরও উদ্ধৃতি কার্ড"; posting to Facebook keeps the post ready for Instagram
 - [x] D169: account, sign-in and menus in plain Bengali (সাইন ইন, লাইব্রেরি, প্রোফাইল, সেটিংস…) with an English button; choice kept per person
 - [ ] Later (if wanted): English versions of the account e-mails; English names for sections in the English menus
 - [x] D168: human reviewers: "যাচাইকারী" switch on users, "যাচাইয়ে পাঠান" on any piece, reviewer reads blind in their account, own view first then the AI's, /desk → যাচাইকারীর মতামত

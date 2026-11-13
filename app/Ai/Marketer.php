@@ -46,6 +46,54 @@ final class Marketer
     }
 
     /**
+     * D170 (owner: "no option to generate more cards"): up to three more lines for quote cards, each copied EXACTLY
+     * from the piece (checked here; anything not found word for word is dropped). Without AI, or if it finds none,
+     * striking-looking lines are picked from the piece itself. Returns how many new lines were added.
+     */
+    public static function moreQuotes(SocialPost $s): int
+    {
+        $post = $s->subject;
+        if (! $post instanceof Post) {
+            return 0;
+        }
+        $text = trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n"], (string) $post->body_html))));
+        $flat = fn (string $x) => trim(preg_replace('/\s+/u', ' ', $x));
+        $have = array_map($flat, $s->quotes());
+        $ok = fn (string $q) => $q !== '' && mb_strlen($q) >= 20 && mb_strlen($q) <= 200 && str_contains($flat($text), $flat($q)) && ! in_array($flat($q), $have, true);
+
+        $found = [];
+        [$d] = Claude::json('marketing', self::RULES.' Pick up to 3 more striking lines for quote cards, each copied EXACTLY from the piece (one line or one or two sentences, 30-160 characters), different from the lines already used.',
+            '<piece><title>'.e($post->title).'</title><text>'.e(mb_substr($text, 0, 6000)).'</text></piece><already_used>'.e(implode("\n", $have)).'</already_used>',
+            ['type' => 'object', 'properties' => ['quotes' => ['type' => 'array', 'items' => ['type' => 'string']]], 'required' => ['quotes'], 'additionalProperties' => false],
+            config('ai.anthropic.tags_model'), 800, $post->id);
+        foreach ((array) ($d['quotes'] ?? []) as $q) {
+            $q = trim((string) $q);
+            if ($ok($q) && count($found) < 3) {
+                $found[] = $q;
+                $have[] = $flat($q);
+            }
+        }
+        if (! $found) {   // no AI: the piece's own lines, middle-length ones first
+            $lines = preg_split('/(?<=[।!?])\s+|\n+/u', $text) ?: [];
+            usort($lines, fn ($a, $b) => abs(mb_strlen(trim($a)) - 90) <=> abs(mb_strlen(trim($b)) - 90));
+            foreach ($lines as $q) {
+                $q = trim($q);
+                if ($ok($q) && count($found) < 3) {
+                    $found[] = $q;
+                    $have[] = $flat($q);
+                }
+            }
+        }
+        if ($found) {
+            $texts = (array) $s->texts;
+            $texts['quotes'] = array_values(array_merge((array) ($texts['quotes'] ?? []), $found));
+            $s->forceFill(['texts' => $texts])->save();
+        }
+
+        return count($found);
+    }
+
+    /**
      * Something to post every day (D57): a piece that just went live, otherwise a favourite from the
      * archive (what readers still read, with a picture, not shared in the last six months).
      */

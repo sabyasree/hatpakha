@@ -106,4 +106,63 @@ class InstagramPageTest extends TestCase
         $this->assertSame('fb-1', $auto->fresh()->fb_post_id);
         $this->assertSame('ig-media-1', $auto->fresh()->ig_media_id);
     }
+
+    public function test_posting_to_facebook_keeps_the_post_ready_for_instagram(): void
+    {
+        // Owner (D170): "If I share to Facebook, the post goes away; I can't share it on Instagram."
+        $this->fakeInstagram();
+        $s = $this->social('1080x1080');
+        $this->assertTrue(\App\Support\FacebookPage::publish($s)[0]);
+        $s->refresh();
+        $this->assertSame('ready', $s->status, 'Still in the list: Instagram is not done yet');
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('ফেসবুক পেজে পোস্ট হয়েছে')->assertSee('ইনস্টাগ্রামে দিন');
+
+        $this->assertTrue(\App\Support\InstagramPage::publish($s)[0]);
+        $this->assertSame('posted', $s->fresh()->status, 'Both done: it moves to "posted" by itself');
+    }
+
+    public function test_any_card_goes_to_facebook_or_instagram_as_a_picture_even_after_an_earlier_post(): void
+    {
+        // Owner (D170): "the quote card has no option to share on Instagram and Facebook".
+        Http::fake([
+            '*/307497312677802/photos' => Http::response(['id' => 'photo-1', 'post_id' => '307497312677802_9']),
+            '*/17841400000000000/media' => Http::response(['id' => 'container-2']),
+            '*/17841400000000000/media_publish' => Http::response(['id' => 'ig-media-2']),
+            '*/ig-media-2*' => Http::response(['permalink' => 'https://www.instagram.com/p/q2/']),
+        ]);
+        $s = $this->social();
+        $s->forceFill(['ig_media_id' => 'ig-old', 'texts' => ['quote' => 'নদী বয়ে যায়'] + $s->texts])->save();   // the share card already went up
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('এই ছবি ফেসবুকে')->assertSee('এই ছবি ইনস্টাগ্রামে');
+
+        $page->set('cardJpeg', UploadedFile::fake()->image('q.jpg', 1080, 1080))->call('cardPost', $s->id, 'q0', 'facebook');
+        $page->set('cardJpeg', UploadedFile::fake()->image('q.jpg', 1080, 1080))->call('cardPost', $s->id, 'q0', 'instagram');
+        $s->refresh();
+        $this->files[] = public_path($s->texts['card_images']['q0']);
+        $this->assertStringStartsWith('media/cards/', $s->texts['card_images']['q0']);
+        $this->assertArrayNotHasKey('card_image', $s->texts, 'The share card (used by automatic posts) is not replaced');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/photos') && str_contains($r['url'], '/media/cards/') && str_contains($r['caption'], $s->subject->url()));
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/media') && str_contains((string) $r['image_url'], '/media/cards/'));
+        $this->assertSame(['facebook', 'instagram'], array_keys($s->texts['card_posts']['q0']));
+        $this->assertSame('ig-old', $s->ig_media_id, 'The first Instagram post stays the post\'s link');
+
+        $page->call('cardPost', $s->id, '../../x', 'facebook');   // only real card names
+        Http::assertSentCount(4);
+    }
+
+    public function test_more_quote_cards_use_only_lines_copied_exactly_from_the_piece(): void
+    {
+        config(['ai.enabled' => false]);
+        $post = $this->makePost(['slug' => 'q-'.uniqid(), 'title' => 'ঘাট', 'format' => 'prose',
+            'body_html' => '<p>নদীর ঘাটে সন্ধ্যা নামে, আর মাঝিরা একে একে নৌকা বাঁধে।</p><p>ছোট।</p><p>মা বলতেন, জল কখনও একই জায়গায় থাকে না, মানুষও না।</p>']);
+        $s = SocialPost::create(['kind' => 'piece', 'subject_type' => $post->getMorphClass(), 'subject_id' => $post->id, 'title' => 'ঘাট',
+            'texts' => ['facebook' => 'f', 'whatsapp' => 'w', 'instagram' => 'i', 'quote' => 'নদীর ঘাটে সন্ধ্যা নামে, আর মাঝিরা একে একে নৌকা বাঁধে।']]);
+        $this->assertSame(1, \App\Ai\Marketer::moreQuotes($s));
+        $this->assertSame(['মা বলতেন, জল কখনও একই জায়গায় থাকে না, মানুষও না।'], $s->fresh()->texts['quotes'], 'A new line, word for word, never the one already used');
+        $this->assertSame(0, \App\Ai\Marketer::moreQuotes($s->fresh()), 'Nothing left: says so instead of inventing');
+        $this->assertCount(2, $s->fresh()->quotes());
+    }
 }
