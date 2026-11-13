@@ -333,6 +333,37 @@ final class FacebookPage
         return (bool) $id;
     }
 
+    /** What each permission of the Page token lets the marketing plan do (owner: "how to check you can comment on Facebook?"). */
+    public const NEEDS = [
+        'pages_manage_posts' => 'ফেসবুকে পোস্ট, ছবি ও রিল দেওয়া',
+        'pages_read_engagement' => 'পোস্টে কত কমেন্ট, শেয়ার হল তা পড়া',
+        'pages_manage_engagement' => 'ধাঁধার উত্তর আমাদের পোস্টের নিচে কমেন্ট করা',
+        'read_insights' => 'কতজন পোস্ট দেখলেন (রিচ) আর অনুসরণকারীর সংখ্যা পড়া',
+        'instagram_basic' => 'ইনস্টাগ্রাম অ্যাকাউন্টটি চেনা',
+        'instagram_content_publish' => 'ইনস্টাগ্রামে ছবি ও রিল দেওয়া',
+        'instagram_manage_insights' => 'ইনস্টাগ্রামে কতজন দেখলেন, সেভ করলেন তা পড়া',
+    ];
+
+    /**
+     * Ask Facebook what the Page token is allowed to do and when it runs out.
+     *
+     * @return array{ok: bool, scopes: list<string>, expires: ?string, error: ?string}
+     */
+    public static function permissions(): array
+    {
+        if (! self::ready()) {
+            return ['ok' => false, 'scopes' => [], 'expires' => null, 'error' => self::configured() ? (string) __('শুধু আসল সাইট থেকে ফেসবুকে পোস্ট হয়') : (string) __('ফেসবুকের চাবি দেওয়া নেই')];
+        }
+        [$res] = self::graph('debug_token', ['input_token' => (string) config('services.facebook_page.token')], true);
+        $d = (array) ($res?->json('data') ?? []);
+        if (! $res?->successful() || ! ($d['is_valid'] ?? false)) {
+            return ['ok' => false, 'scopes' => [], 'expires' => null, 'error' => (string) ($d['error']['message'] ?? self::why($res))];
+        }
+        $exp = (int) ($d['expires_at'] ?? 0);
+
+        return ['ok' => true, 'scopes' => array_values(array_map('strval', (array) ($d['scopes'] ?? []))), 'expires' => $exp > 0 ? \Illuminate\Support\Carbon::createFromTimestamp($exp)->timezone('Asia/Kolkata')->format('d/m/Y') : null, 'error' => null];
+    }
+
     public static function followers(): ?int
     {
         if (! self::ready()) {

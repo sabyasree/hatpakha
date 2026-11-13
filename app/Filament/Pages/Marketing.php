@@ -225,6 +225,25 @@ class Marketing extends Page
         Notification::make()->title($on ? __('নিজে থেকে পোস্ট চালু হয়েছে') : __('নিজে থেকে পোস্ট বন্ধ হয়েছে'))->success()->send();
     }
 
+    /** Owner (2026-11-14): "I can't see the weekly report": make it now, without waiting for Sunday night. Admins only. */
+    public function reviewNow(): void
+    {
+        if (! \App\Filament\Support\Deleting::isAdmin()) {
+            return;
+        }
+        \App\Support\MarketingStats::collect();
+        \App\Support\MarketingAnalyst::review();
+        Notification::make()->title(__('সপ্তাহের হিসাব তৈরি হয়েছে'))->success()->send();
+    }
+
+    /** Owner: "how to check you can comment on Facebook?" Asks Facebook what the Page's key may do. */
+    public array $fbCheck = [];
+
+    public function checkFacebook(): void
+    {
+        $this->fbCheck = \App\Support\FacebookPage::permissions();
+    }
+
     public function dismiss(int $id): void
     {
         SocialPost::findOrFail($id)->forceFill(['status' => 'dismissed'])->save();

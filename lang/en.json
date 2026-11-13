@@ -2567,5 +2567,20 @@
     "এই পোস্টটি একেবারে মুছে ফেলবেন?": "Delete this post for good?",
     "কোনো পোস্ট না চাইলে “থামান” টিপুন: সেটি আর নিজে থেকে যাবে না। “খুলে দেখুন” টিপলে ফেসবুক বা ইনস্টাগ্রামে পোস্টটি খুলবে।": "To hold a post back, press “Stop”: it will not go out by itself. “Open it” opens the post on Facebook or Instagram.",
     "সময় ঠিক করা": "Scheduled",
-    "(ভারতীয় সময়)": "(India time)"
+    "(ভারতীয় সময়)": "(India time)",
+    "সপ্তাহের হিসাব তৈরি হয়েছে": "The week's review is ready",
+    "এখনই দেখতে চাইলে “এখনই হিসাব করুন” টিপুন।": "To see it now, press “Review now”.",
+    "এখনই হিসাব করুন": "Review now",
+    "ফেসবুক কী কী করতে দিচ্ছে, দেখুন": "See what Facebook allows",
+    "ফেসবুক উত্তর দেয়নি": "Facebook did not answer",
+    "নিজে দেখতে: developers.facebook.com → Tools → Access Token Debugger-এ পেজের চাবিটি বসান (চাবিটি আর কোথাও দেবেন না)।": "To check yourself: at developers.facebook.com → Tools → Access Token Debugger, paste the Page's key (never give the key anywhere else).",
+    "চাবির মেয়াদ শেষ": "The key expires on",
+    "চাবির মেয়াদ শেষ হয় না।": "The key does not expire.",
+    "ফেসবুকে পোস্ট, ছবি ও রিল দেওয়া": "Post text, pictures and reels on Facebook",
+    "পোস্টে কত কমেন্ট, শেয়ার হল তা পড়া": "Read how many comments and shares a post got",
+    "ধাঁধার উত্তর আমাদের পোস্টের নিচে কমেন্ট করা": "Comment the riddle's answer under our own post",
+    "কতজন পোস্ট দেখলেন (রিচ) আর অনুসরণকারীর সংখ্যা পড়া": "Read how many saw a post (reach) and the follower count",
+    "ইনস্টাগ্রাম অ্যাকাউন্টটি চেনা": "Know the Instagram account",
+    "ইনস্টাগ্রামে ছবি ও রিল দেওয়া": "Post pictures and reels on Instagram",
+    "ইনস্টাগ্রামে কতজন দেখলেন, সেভ করলেন তা পড়া": "Read how many saw or saved an Instagram post"
 }
