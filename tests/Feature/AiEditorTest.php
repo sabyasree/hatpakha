@@ -281,4 +281,36 @@ class AiEditorTest extends TestCase
             ->mountAction('requestChanges')->assertActionMounted('requestChanges')
             ->assertSchemaComponentExists('email_preview', 'mountedActionSchema0');
     }
+
+    /** D192 (owner: "how to apply the corrections as an admin, without sending back to the writer?"). */
+    public function test_admin_applies_small_fixes_at_once_without_sending_the_piece_back(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $writer = User::factory()->create();
+        $post = $this->makePost(['slug' => 'draft-fix', 'title' => 'বৃষ্টি', 'status' => 'pending', 'published_at' => null, 'body_html' => '<p>আমি করিনা ভয়, মেঘলা আকাশ ।</p>']);
+        $post->forceFill(['submitted_by' => $writer->id])->save();
+        $this->packageFor($post, [['original' => 'করিনা', 'replacement' => 'করি না', 'kind' => 'spelling'], ['original' => 'আকাশ ।', 'replacement' => 'আকাশ।', 'kind' => 'spacing'],
+            ['original' => 'মেঘলা আকাশ', 'replacement' => 'কালো আকাশ', 'kind' => 'spelling']]);   // the last one changes a word: never from here
+        $this->assertCount(2, \App\Ai\EditorPackage::waitingFixes($post->fresh()));
+        $this->assertCount(1, \App\Ai\EditorPackage::wordChanges($post->fresh()));
+
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])
+            ->mountAction('applyFixes')->assertSchemaStateSet(['edits' => [0, 1]], 'mountedActionSchema0')
+            ->setActionData(['edits' => [0]])->callMountedAction()->assertHasNoFormErrors();
+        $post->refresh();
+        $this->assertStringContainsString('করি না', $post->body_html);
+        $this->assertStringContainsString('আকাশ ।', $post->body_html, 'The unticked fix stays out');
+        $this->assertStringContainsString('মেঘলা আকাশ', $post->body_html, 'Never a word change');
+        $this->assertSame('pending', $post->status, 'The piece stays where it is');
+        \Illuminate\Support\Facades\Notification::assertNothingSent();
+        $this->assertSame([1], array_keys(\App\Ai\EditorPackage::waitingFixes($post)), 'What is already in is no longer offered');
+        $this->assertSame(0, \App\Ai\EditorPackage::applyNow($post, [2]), 'A word change cannot be forced through');
+
+        // The writer is told of both rounds of fixes in the next letter, each once.
+        \App\Ai\EditorPackage::applySafeEdits($post->fresh(), [1]);
+        $this->assertSame([['original' => 'করিনা', 'replacement' => 'করি না'], ['original' => 'আকাশ ।', 'replacement' => 'আকাশ।']], $post->fresh()->review_fixes);
+    }
 }

@@ -239,6 +239,27 @@ class PostsTable
                     Review::reject($record, auth()->user(), $data['note']);
                     Notification::make()->title(__('লেখককে ই-মেল পাঠানো হয়েছে'))->send();
                 }),
+            // D192 (owner: "how to apply the corrections as an admin, without sending back to the writer?"): the small
+            // fixes go into the piece now; nothing is sent and the piece stays where it is.
+            Action::make('applyFixes')->label(__('সংশোধন বসান'))->icon('heroicon-o-check-badge')->color('gray')
+                ->visible(fn (Post $record) => $record->status !== 'changes' && EditorPackage::waitingFixes($record) !== [])
+                ->modalHeading(fn (Post $record) => __('ছোট সংশোধন বসান: ').$record->title)->modalSubmitActionLabel(__('লেখায় বসান'))
+                ->modalDescription(__('টিক দেওয়া সংশোধনগুলো এখনই লেখায় বসবে। লেখকের কাছে কিছু যাবে না, লেখার অবস্থাও বদলাবে না। পরে লেখককে যে চিঠি যাবে, তাতে এই সংশোধনগুলোর তালিকা থাকবে। কী বদলাল তা “বদলের ইতিহাস”-এ দেখা যাবে।'))
+                ->schema([
+                    CheckboxList::make('edits')->label(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপের ভুল'))
+                        ->options(fn (Post $record) => EditorPackage::waitingFixes($record))
+                        ->default(fn (Post $record) => array_keys(EditorPackage::waitingFixes($record)))
+                        ->bulkToggleable()->columns(1)->required(),
+                    \Filament\Forms\Components\Placeholder::make('word_changes')->label(__('শব্দ বদলের প্রস্তাব (এখান থেকে বসে না)'))
+                        ->visible(fn (Post $record) => EditorPackage::wordChanges($record) !== [])
+                        ->content(fn (Post $record) => new \Illuminate\Support\HtmlString(e(implode("\n", EditorPackage::wordChanges($record))).'<br><span style="opacity:.75">'
+                            .e(__('এগুলো লেখকের শব্দ বদলায়, তাই লেখকের সম্মতি লাগে: “মনোনীত” করার সময় টিক দিলে লেখক আগে দেখে সম্মতি দেবেন। নিজে হাতে বদলাতে চাইলে নিচে লেখাটি সম্পাদনা করুন।')).'</span>'))
+                        ->extraAttributes(['style' => 'white-space:pre-line']),
+                ])
+                ->action(function (Post $record, array $data) {
+                    $n = EditorPackage::applyNow($record, (array) ($data['edits'] ?? []));
+                    Notification::make()->title($n ? Bn::num((string) $n).__('টি সংশোধন লেখায় বসানো হয়েছে') : __('কোনো সংশোধন বসানো যায়নি; লেখায় শব্দগুলো আর নেই'))->{$n ? 'success' : 'warning'}()->send();
+                }),
             // AI report (3d): advice for editors only; the decision stays with a person. The footer goes straight on
             // to the three decisions, the AI's choice first (owner, 2026-11-12: "whats next?").
             Action::make('aiReport')->label(__('এআই রিপোর্ট'))->icon('heroicon-o-sparkles')->color('info')

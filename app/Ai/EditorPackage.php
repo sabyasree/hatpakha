@@ -150,7 +150,58 @@ final class EditorPackage
     /** Remember the small fixes, so the writer's e-mail and page can list them (D160). */
     private static function rememberFixes(Post $post, array $applied): void
     {
-        $post->forceFill(['review_fixes' => $applied ? array_map(fn ($e) => ['original' => $e['original'], 'replacement' => $e['replacement']], $applied) : null])->save();
+        // Fixes the editor already put in by hand this round (D192) are listed together with these, once.
+        $earlier = array_values(array_filter((array) $post->review_fixes, fn ($e) => ! empty($e['desk'])));
+        $all = [];
+        foreach (array_merge($earlier, $applied) as $e) {
+            $all[$e['original'].'→'.$e['replacement']] = ['original' => $e['original'], 'replacement' => $e['replacement']];
+        }
+        $post->forceFill(['review_fixes' => $all ? array_values($all) : null])->save();
+    }
+
+    /**
+     * D192 (owner, 2026-11-14: "how to apply the corrections as an admin, without sending back to the writer?"): the
+     * small fixes that are still waiting, i.e. whose words are still in the piece. Spelling, punctuation, spacing and
+     * typos only; a change of the writer's words is never put in from here.
+     *
+     * @return array<int, string> index => "ভুল → ঠিক · কী ধরনের"
+     */
+    public static function waitingFixes(Post $post): array
+    {
+        $text = html_entity_decode(strip_tags(preg_replace('~<br\s*/?>~i', "\n", (string) $post->body_html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $options = self::editOptions($post);
+        $out = [];
+        foreach (self::safeIndexes($post) as $i) {
+            $original = (string) (self::edits($post)[$i]['original'] ?? '');
+            if ($original !== '' && (str_contains($text, $original) || str_contains((string) $post->body_html, $original))) {
+                $out[$i] = $options[$i];
+            }
+        }
+
+        return $out;
+    }
+
+    /** The changes of the writer's words the AI suggested: shown, never applied without the writer. @return list<string> */
+    public static function wordChanges(Post $post): array
+    {
+        return array_values(array_diff_key(self::editOptions($post), array_flip(self::safeIndexes($post))));
+    }
+
+    /**
+     * Put the ticked small fixes into the piece now. The piece stays where it is (no e-mail, no change of status); the
+     * fixes are remembered, so the writer is told of them in the next letter about this piece. Returns how many went in.
+     */
+    public static function applyNow(Post $post, array $chosen): int
+    {
+        $edits = self::edits($post);
+        $keep = array_intersect(array_map('intval', $chosen), array_keys(self::waitingFixes($post)));
+        $applied = self::applyEdits($post, array_intersect_key($edits, array_flip($keep)));
+        if ($applied) {
+            $mine = array_map(fn ($e) => ['original' => $e['original'], 'replacement' => $e['replacement'], 'desk' => true], $applied);
+            $post->forceFill(['review_fixes' => array_values(array_merge(array_filter((array) $post->review_fixes, fn ($e) => ! empty($e['desk'])), $mine))])->save();
+        }
+
+        return count($applied);
     }
 
     /** "ভুল → ঠিক" lines for the ticked small fixes, for the e-mail preview before anything is applied. */

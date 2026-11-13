@@ -2653,5 +2653,14 @@
     "ডেস্কে": "In the desk",
     "সাইটে": "On the site",
     "পেছনের কাজে": "In a background job",
-    "এই অংশটি এখন দেখানো গেল না। বাকি কাজ করা যাবে; ত্রুটিটি নথিভুক্ত হয়েছে।": "This part could not be shown just now. The rest still works; the error has been noted."
+    "এই অংশটি এখন দেখানো গেল না। বাকি কাজ করা যাবে; ত্রুটিটি নথিভুক্ত হয়েছে।": "This part could not be shown just now. The rest still works; the error has been noted.",
+    "সংশোধন বসান": "Apply corrections",
+    "ছোট সংশোধন বসান: ": "Apply small corrections: ",
+    "লেখায় বসান": "Put into the piece",
+    "টিক দেওয়া সংশোধনগুলো এখনই লেখায় বসবে। লেখকের কাছে কিছু যাবে না, লেখার অবস্থাও বদলাবে না। পরে লেখককে যে চিঠি যাবে, তাতে এই সংশোধনগুলোর তালিকা থাকবে। কী বদলাল তা “বদলের ইতিহাস”-এ দেখা যাবে।": "The ticked corrections go into the piece now. Nothing is sent to the writer and the piece's status does not change. The next letter to the writer about this piece will list these corrections. What changed can be seen in “Change history”.",
+    "বানান, যতিচিহ্ন, ফাঁক আর টাইপের ভুল": "Spelling, punctuation, spacing and typos",
+    "শব্দ বদলের প্রস্তাব (এখান থেকে বসে না)": "Suggested word changes (not applied from here)",
+    "এগুলো লেখকের শব্দ বদলায়, তাই লেখকের সম্মতি লাগে: “মনোনীত” করার সময় টিক দিলে লেখক আগে দেখে সম্মতি দেবেন। নিজে হাতে বদলাতে চাইলে নিচে লেখাটি সম্পাদনা করুন।": "These change the writer's words, so they need the writer's consent: tick them when approving and the writer will see them and agree first. To change something by hand, edit the piece below.",
+    "টি সংশোধন লেখায় বসানো হয়েছে": " corrections put into the piece",
+    "কোনো সংশোধন বসানো যায়নি; লেখায় শব্দগুলো আর নেই": "No correction could be applied; the words are no longer in the piece"
 }
