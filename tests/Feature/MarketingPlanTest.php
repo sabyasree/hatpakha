@@ -334,4 +334,24 @@ class MarketingPlanTest extends TestCase
         $this->assertStringContainsString('এ সপ্তাহে আরও', $html);
         $this->assertStringContainsString(e($blocks[0]['line']), $html);
     }
+
+    /** D185: nothing from the children's section goes out by itself; an old story is shared every day. */
+    public function test_kids_pieces_are_left_out_and_old_stories_are_shared(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['id' => '111_8'])]);
+        $kids = \App\Models\Section::firstOrCreate(['slug' => \App\Models\Section::KIDS], ['name_bn' => 'ছোটদের হাতপাখা', 'name_en' => 'Kids', 'format' => 'prose']);
+        $piece = $this->makePost(['slug' => 'chhoto', 'title' => 'টুনটুনির গল্প']);
+        $piece->forceFill(['section_id' => $kids->id])->saveQuietly();
+        $this->assertTrue(\App\Ai\Marketer::kids($piece->fresh()));
+        $this->assertNull(\App\Ai\Marketer::forPiece($piece->fresh()), 'Not made by itself');
+
+        $s = self::social(['kind' => 'piece', 'subject_type' => $piece->getMorphClass(), 'subject_id' => $piece->id, 'title' => $piece->title,
+            'texts' => ['facebook' => 'ক', 'instagram' => '', 'quote' => 'খ'], 'slot_at' => now()->subMinutes(5)]);
+        $this->assertSame(0, MarketingPlan::run());
+        $this->assertNull($s->fresh()->fb_post_id);
+        $this->assertNull($s->fresh()->slot_at, 'Taken out of the queue; still there for the owner to post by hand');
+        $this->assertSame(0, MarketingPlan::run(), 'And not put back');
+        MarketingPlan::plan(Carbon::parse('2026-11-21', 'Asia/Kolkata'));
+        $this->assertNotSame('line', SocialPost::where('plan_key', '2026-11-21:reel')->first()?->design['reel']['t'] ?? null, 'No reel from a children\'s piece');
+    }
 }

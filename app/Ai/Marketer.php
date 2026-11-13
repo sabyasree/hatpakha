@@ -23,8 +23,8 @@ final class Marketer
     {
         // Owner (2026-11-11): the posts for a piece the team just drafted are ready on the marketing page before it is
         // published ($draft); the link works once the owner publishes it.
-        if ((! $post->isLive() && ! $draft) || (! $force && SocialPost::hasFor($post, $kind))) {
-            return null;
+        if ((! $post->isLive() && ! $draft) || (! $force && (SocialPost::hasFor($post, $kind) || self::kids($post)))) {
+            return null;   // D185: nothing from the children's section unless the owner picks the piece by hand
         }
         $post->loadMissing('authors', 'section');
         $text = trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n"], (string) $post->body_html))));
@@ -111,27 +111,42 @@ final class Marketer
         return count($found);
     }
 
+    /** D185 (owner, 2026-11-13): the children's section is not promoted for now ("kids' stories are not so good yet"). */
+    public static function kids(?Post $post): bool
+    {
+        $section = $post?->section;
+
+        return $section !== null && ($section->slug === \App\Models\Section::KIDS || $section->nav_group === 'kids');
+    }
+
     /**
-     * Something to post every day (D57): a piece that just went live, otherwise a favourite from the
-     * archive (what readers still read, with a picture, not shared in the last six months).
+     * Something to post every day (D57), now two things (D185, owner: "the old stories are very good, the team will
+     * share them"): a piece that just went live, AND one from the archive, a story first (what readers still read,
+     * not shared in the last six months). Never from the children's section.
      */
     public static function daily(bool $force = false): ?SocialPost
     {
-        if (! $force && SocialPost::where('created_at', '>=', now('Asia/Kolkata')->startOfDay()->utc())->whereIn('kind', ['piece', 'archive'])->exists()) {
-            return null;
+        $today = now('Asia/Kolkata')->startOfDay()->utc();
+        $madeToday = fn (string $kind) => ! $force && SocialPost::where('created_at', '>=', $today)->where('kind', $kind)->exists();
+        $notKids = fn ($q) => $q->where('slug', '!=', \App\Models\Section::KIDS)->where(fn ($x) => $x->whereNull('nav_group')->orWhere('nav_group', '!=', 'kids'));
+        $marketed = SocialPost::whereIn('kind', ['piece', 'archive'])->where('created_at', '>=', now()->subMonths(6))->whereNotNull('subject_id')->select('subject_id');
+        $made = null;
+        if (! $madeToday('piece') && ($new = Post::published()->where('published_at', '>=', now()->subDays(3))->whereNotIn('id', $marketed)->whereHas('section', $notKids)->latest('published_at')->first())) {
+            $made = self::forPiece($new);
         }
-        $marketed = SocialPost::whereIn('kind', ['piece', 'archive'])->where('created_at', '>=', now()->subMonths(6))->select('subject_id');
-        if ($new = Post::published()->where('published_at', '>=', now()->subDays(3))->whereNotIn('id', $marketed)->latest('published_at')->first()) {
-            return self::forPiece($new);
+        if (! $madeToday('archive')) {
+            $popular = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(60)->toDateString())->groupBy('post_id')->orderByRaw('SUM(views) DESC')->limit(60)->pluck('post_id');
+            $base = fn () => Post::published()->whereNotIn('id', $marketed)->where('published_at', '<', now()->subMonths(3))
+                ->whereHas('section', fn ($q) => $notKids($q)->where('slug', '!=', 'editorial'));
+            $story = fn ($q) => $q->whereHas('section', fn ($x) => $x->where('slug', 'short-stories'));
+            $pick = $story($base())->whereIn('id', $popular)->inRandomOrder()->first()
+                ?? $story($base())->inRandomOrder()->first()
+                ?? $base()->whereIn('id', $popular)->inRandomOrder()->first()
+                ?? $base()->inRandomOrder()->first();
+            $made = ($pick ? self::forPiece($pick, 'archive') : null) ?? $made;
         }
-        $popular = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(60)->toDateString())->groupBy('post_id')->orderByRaw('SUM(views) DESC')->limit(30)->pluck('post_id');
-        $base = fn () => Post::published()->whereNotIn('id', $marketed)->where('published_at', '<', now()->subMonths(3))
-            ->whereHas('section', fn ($q) => $q->where('slug', '!=', 'editorial'));
-        $pick = $base()->whereIn('id', $popular)->inRandomOrder()->first()
-            ?? $base()->whereNotNull('featured_image_path')->inRandomOrder()->first()
-            ?? $base()->inRandomOrder()->first();
 
-        return $pick ? self::forPiece($pick, 'archive') : null;
+        return $made;
     }
 
     /** The owner's own idea (D57): a greeting, an announcement, a question for readers. Plain facts given by the owner only. */

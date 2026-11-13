@@ -277,6 +277,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D183: every posted link is tagged for Google Analytics; the Sunday review puts Analytics, Facebook, Instagram, newsletter, notification and site numbers on one card, moves the posting times and the reel mix by fixed rules, and writes a plain report, lessons and asks (marketing page → সপ্তাহের হিসাব)
 - [ ] Owner, after the release: run "Marketing studio" once by hand in GitHub → Actions to see the first cards; check the Page token has permission to comment (for the riddle answers) and to read insights (for reach); open a WhatsApp Channel if there is none
 - [x] D184: invite links and the বন্ধু medal, "আমার সপ্তাহ" share words, Friday top-three post (privacy page updated), weekly letter with come-back blocks (still sent only on the owner's click)
+- [x] D185: marketing leaves out the children's section; an old story from the archive is shared every day
 - [ ] Marketing, next: drafted replies to comments on our Facebook posts (owner sends); "আমার সপ্তাহ" as a picture card; share buttons inside the writers' published e-mail (touches an owner-edited template: ask first); day-early serial episode for inviters
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম

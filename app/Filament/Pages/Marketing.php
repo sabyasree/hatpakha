@@ -83,7 +83,7 @@ class Marketing extends Page
     private static function archivePick(): ?SocialPost
     {
         $p = Post::published()->whereNotIn('id', SocialPost::where('created_at', '>=', now()->subMonths(6))->whereNotNull('subject_id')->select('subject_id'))
-            ->where('published_at', '<', now()->subMonths(3))->inRandomOrder()->first();
+            ->where('published_at', '<', now()->subMonths(3))->whereHas('section', fn ($q) => $q->where('slug', '!=', \App\Models\Section::KIDS))->inRandomOrder()->first();
 
         return $p ? \App\Ai\Marketer::forPiece($p, 'archive', true) : null;
     }
