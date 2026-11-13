@@ -21,6 +21,16 @@ Route::get('/robots.txt', [SitemapController::class, 'robots']);
 Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
 
 // D127/D128: Hatpakha as an app, and phone notifications (with or without an account)
+// D174: শব্দ-খেলা, the daily word jumble (the same five words for everyone, by the Kolkata date)
+Route::get('/khela', function () {
+    $game = \App\Support\WordGame::day();
+
+    return view('game', ['game' => $game, 'seo' => new \App\Seo\Seo(
+        title: 'শব্দ-খেলা: রোজ পাঁচটা বাংলা শব্দ',
+        description: 'হাতপাখার রোজকার শব্দের খেলা। এলোমেলো অক্ষর সাজিয়ে পাঁচটা বাংলা শব্দ বানান, বন্ধুদের সঙ্গে মিলিয়ে দেখুন। রোজ রাত বারোটায় নতুন খেলা।',
+        canonical: \App\Support\Url::to('/khela'),
+    )]);
+})->name('game');
 Route::get('/app', [\App\Http\Controllers\AppController::class, 'page'])->name('app');
 // D169: বাংলা / English for the sign-in pages, account and menus. Back to the same page (on-site paths only).
 Route::get('/language/{lang}', function (\Illuminate\Http\Request $request, string $lang) {

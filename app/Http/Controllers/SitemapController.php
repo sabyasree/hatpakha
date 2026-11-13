@@ -115,6 +115,7 @@ class SitemapController extends Controller
             $type === 'sections' => Section::where('is_active', true)->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->updated_at, 'image' => null])
                 ->push(['loc' => Url::to('/archive'), 'lastmod' => now(), 'image' => null])
                 ->when(ArchiveController::liveIssues()->isNotEmpty(), fn ($c) => $c->push(['loc' => Url::to('/sonkha'), 'lastmod' => now(), 'image' => null]))   // all issues (2026-11-12)
+                ->push(['loc' => Url::to('/khela'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D174: the daily word game
                 ->merge(collect(array_keys(ArchiveController::yearCounts()))->map(fn ($y) => ['loc' => Url::to("/archive/{$y}"), 'lastmod' => null, 'image' => null])),
             $type === 'authors' => Author::where('published_count', '>=', 3)->get()->map(fn ($a) => ['loc' => $a->url(), 'lastmod' => $a->updated_at, 'image' => null]),
             $type === 'pages' => Page::published()->where('noindex', false)->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->updated_at, 'image' => null])
