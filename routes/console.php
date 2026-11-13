@@ -66,8 +66,11 @@ Schedule::call(fn () => \App\Support\FacebookPage::due())->name('facebook timed 
 Schedule::call(fn () => \App\Support\MarketingPlan::plan())->name('marketing plan tomorrow')->dailyAt('20:20')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\MarketingPlan::plan(now('Asia/Kolkata')))->name('marketing plan today')->dailyAt('05:40')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\MarketingPlan::run())->name('marketing posts')->everyFiveMinutes()->withoutOverlapping(10);
-Schedule::call(fn () => \App\Support\MarketingStats::collect())->name('marketing numbers')->dailyAt('07:10')->timezone('Asia/Kolkata')->withoutOverlapping(30);
-Schedule::call(fn () => \App\Support\MarketingStats::lessons())->name('marketing lessons')->weeklyOn(0, '21:30')->timezone('Asia/Kolkata');
+Schedule::call(function () {
+    \App\Support\MarketingStats::collect();
+    \App\Support\MarketingAnalyst::visits();   // D183: visits each tagged post brought (Google Analytics)
+})->name('marketing numbers')->dailyAt('07:10')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+Schedule::call(fn () => \App\Support\MarketingAnalyst::review())->name('marketing review')->weeklyOn(0, '21:30')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\PushNotifier::streakSaver())->name('streak reminder')->dailyAt('20:45')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 
 // D175: পাঠকের কলম. Monday morning the week's theme opens and readers are invited; the AI reads entries through the

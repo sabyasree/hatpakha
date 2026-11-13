@@ -303,6 +303,17 @@ final class InstagramPage
         return [true, (string) ($s->ig_permalink ?: $id)];
     }
 
+    public static function followers(): ?int
+    {
+        if (! self::ready()) {
+            return null;
+        }
+        [, $auth, $base] = self::auth();
+        $n = rescue(fn () => Http::timeout(15)->get($base.config('services.facebook_page.instagram_id'), ['fields' => 'followers_count'] + $auth)->json('followers_count'), null, false);
+
+        return $n !== null ? (int) $n : null;
+    }
+
     /** Likes, comments, and (when the token may read them) reach, saves and shares. */
     public static function numbers(SocialPost $s): array
     {

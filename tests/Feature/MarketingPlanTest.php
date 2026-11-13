@@ -168,7 +168,7 @@ class MarketingPlanTest extends TestCase
         MarketingPlan::run();
         $card = SocialPost::where('plan_key', '2026-11-20:riddle')->firstOrFail();
         $this->assertSame('111_8', $card->fb_post_id);
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/111/feed') && str_ends_with($r['link'], '/khela/dhadha/'));
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/111/feed') && str_contains($r['link'], '/khela/dhadha/?utm_source=facebook'));
 
         Carbon::setTestNow(Carbon::parse('2026-11-20 17:00', 'Asia/Kolkata'));   // the reel was never drawn: dropped, not posted as text
         MarketingPlan::run();
@@ -237,5 +237,45 @@ class MarketingPlanTest extends TestCase
         }
         auth()->logout();
         $this->postJson('/push/', ['endpoint' => 'https://fcm.googleapis.com/fcm/send/def', 'keys' => ['p256dh' => rtrim(strtr(base64_encode(str_repeat('a', 65)), '+/', '-_'), '='), 'auth' => rtrim(strtr(base64_encode(str_repeat('b', 16)), '+/', '-_'), '=')], 'add' => ['games']])->assertStatus(422);
+    }
+
+    /** D183: links carry a tag for Google Analytics, and the weekly review changes the plan by fixed rules. */
+    public function test_links_are_tagged_and_the_weekly_review_tunes_the_plan_from_the_numbers(): void
+    {
+        $s = self::social(['kind' => 'riddle', 'format' => 'card', 'title' => 'ধাঁধা', 'texts' => ['facebook' => "ধাঁধা\n\n".url('/khela/dhadha').'/']]);
+        $tagged = \App\Support\MarketingAnalyst::tag($s->texts['facebook'], $s, 'facebook');
+        $this->assertStringEndsWith('/khela/dhadha/?utm_source=facebook&utm_medium=social&utm_campaign=riddle&utm_content=sp'.$s->id, $tagged);
+        $this->assertSame('hatpakha.com/khela', \App\Support\MarketingAnalyst::tag('hatpakha.com/khela', $s, 'facebook'), 'Only real links are touched');
+
+        $this->assertSame(\App\Support\MarketingAnalyst::DEFAULTS, \App\Support\MarketingAnalyst::tuning());
+        $hours = [];
+        foreach (range(0, 23) as $h) {
+            $hours[] = ['hour' => (string) $h, 'sessions' => $h === 8 ? 300 : ($h === 21 ? 400 : 20)];   // readers come at 8 and at 21
+        }
+        $card = ['ga' => ['hours' => $hours], 'social' => ['by_kind' => [
+            ['what' => 'riddle / reel', 'posts' => 4, 'reach' => 2000, 'talk' => 40.0], ['what' => 'piece / reel', 'posts' => 3, 'reach' => 500, 'talk' => 5.0]]]];
+        [$new, $why] = \App\Support\MarketingAnalyst::tune($card);
+        $this->assertSame(['morning' => '08:05', 'evening' => '20:35', 'midday' => 'riddle'], $new);
+        $this->assertCount(3, $why);
+        $this->assertSame($new, \App\Support\MarketingAnalyst::tuning());
+        [, $again] = \App\Support\MarketingAnalyst::tune($card);
+        $this->assertSame([], $again, 'Nothing changes twice');
+        [$few] = \App\Support\MarketingAnalyst::tune(['ga' => ['hours' => [['hour' => '3', 'sessions' => 5]]], 'social' => ['by_kind' => []]]);
+        $this->assertSame($new, $few, 'Too few numbers change nothing');
+
+        // The plan follows: morning card at 08:05, a line reel only on Tuesday and Saturday.
+        MarketingPlan::plan(Carbon::parse('2026-11-26', 'Asia/Kolkata'));   // a Thursday
+        $this->assertSame('08:05', SocialPost::where('plan_key', '2026-11-26:riddle')->firstOrFail()->slot_at->timezone('Asia/Kolkata')->format('H:i'));
+        $this->assertSame('riddle', SocialPost::where('plan_key', '2026-11-26:reel')->firstOrFail()->design['reel']['t']);
+        $this->assertSame('20:35', MarketingPlan::evening()->timezone('Asia/Kolkata')->format('H:i'));
+
+        // The review runs without Google or AI set up, keeps the site's own counts, and shows on the page.
+        User::factory()->count(2)->create();
+        $data = \App\Support\MarketingAnalyst::review();
+        $this->assertGreaterThanOrEqual(2, $data['card']['site']['signups']['now']);
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('সপ্তাহের হিসাব')->assertSee('নতুন সদস্য')->assertSee('০৮:০৫');
     }
 }

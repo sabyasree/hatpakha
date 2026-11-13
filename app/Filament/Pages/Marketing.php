@@ -283,7 +283,7 @@ class Marketing extends Page
         $schedule = SocialPost::whereBetween('slot_at', [$from, $from->copy()->addDays(2)])->orderBy('slot_at')->limit(30)->get()
             ->map(fn (SocialPost $s) => ['s' => $s, 'sum' => \App\Support\MarketingStats::sum($s)]);
 
-        return ['schedule' => $schedule, 'whatsapp' => \App\Support\MarketingPlan::whatsapp(), 'lessons' => \App\Support\MarketingStats::saved(), 'plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
+        return ['schedule' => $schedule, 'whatsapp' => \App\Support\MarketingPlan::whatsapp(), 'lessons' => \App\Support\MarketingStats::saved(), 'review' => \App\Support\MarketingAnalyst::saved(), 'plans' => $plans, 'newsletter' => $newsletter, 'readers' => $readers, 'items' => $items->map(fn (SocialPost $s) => ['s' => $s, 'card' => self::card($s), 'link' => self::link($s)])];
     }
 
     /** The page a post is about (D87): the piece, the issue, else the home page. */

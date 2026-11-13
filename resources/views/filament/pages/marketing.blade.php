@@ -1,5 +1,5 @@
 {{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
-@php $d = $this->data(); $schedule = $d['schedule']; $whatsapp = $d['whatsapp']; $lessons = $d['lessons']; @endphp
+@php $d = $this->data(); $schedule = $d['schedule']; $whatsapp = $d['whatsapp']; $lessons = $d['lessons']; $review = $d['review']; @endphp
 @php $isAdmin = \App\Filament\Support\Deleting::isAdmin(); @endphp
 <x-filament-panels::page>
     <style>
@@ -64,7 +64,7 @@
                         </td>
                         <td style="padding:.3rem .5rem;white-space:nowrap">{{ $formats[$p->format] ?? $p->format }}</td>
                         <td style="padding:.3rem .5rem">{{ $state }}</td>
-                        <td style="padding:.3rem .5rem;white-space:nowrap">@if ($p->metrics){{ __('দেখেছেন') }} {{ \App\Support\Bn::num((string) $row['sum']['reach']) }} · {{ __('কমেন্ট, শেয়ার, সেভ') }} {{ \App\Support\Bn::num((string) $row['sum']['talk']) }}@endif</td>
+                        <td style="padding:.3rem .5rem;white-space:nowrap">@if ($p->metrics){{ __('দেখেছেন') }} {{ \App\Support\Bn::num((string) $row['sum']['reach']) }} · {{ __('কমেন্ট, শেয়ার, সেভ') }} {{ \App\Support\Bn::num((string) $row['sum']['talk']) }}@if (isset($p->metrics['site']['visits'])) · {{ __('সাইটে এসেছেন') }} {{ \App\Support\Bn::num((string) $p->metrics['site']['visits']) }}@endif @endif</td>
                     </tr>
                 @endforeach
                 </tbody>
@@ -76,15 +76,63 @@
             <div class="hp-mk-text" x-ref="wa">{{ $whatsapp }}</div>
             <x-filament::button size="sm" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem" x-on:click="navigator.clipboard.writeText($refs.wa.innerText); copied = true; setTimeout(() => copied = false, 2000)"><span x-show="!copied">{{ __('কপি') }}</span><span x-show="copied" x-cloak>{{ __('কপি হয়েছে') }}</span></x-filament::button>
         </div>
-        @if (($lessons['lessons'] ?? []) || ($lessons['table'] ?? []))
-            <div style="margin-top:1rem">
-                <b>{{ __('গত চার সপ্তাহে কী শিখলাম') }}</b>
-                @if ($lessons['lessons'] ?? [])<ul style="margin:.3rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($lessons['lessons'] as $l)<li>{{ $l }}</li>@endforeach</ul>@endif
-                @if ($lessons['table'] ?? [])
-                    <p class="hp-muted" style="margin-top:.4rem">@foreach ($lessons['table'] as $t){{ $t['what'] }}: {{ __('গড়ে দেখেছেন') }} {{ \App\Support\Bn::num((string) $t['reach']) }}, {{ __('সাড়া') }} {{ \App\Support\Bn::num((string) $t['talk']) }}@if (! $loop->last) · @endif @endforeach</p>
+        {{-- D183: the analyst's weekly review: every number on one card, what changed in the plan, what to do next --}}
+        @php
+            $card = $review['card'] ?? [];
+            $bn = fn ($n) => \App\Support\Bn::num((string) $n);
+            $pair = fn ($x) => $x ? $bn($x['now']).' ('.__('আগের সপ্তাহে').' '.$bn($x['before']).')' : '—';
+            $tune = \App\Support\MarketingAnalyst::tuning();
+        @endphp
+        <div style="margin-top:1rem">
+            <b>{{ __('সপ্তাহের হিসাব') }}</b>
+            <p class="hp-muted">{{ __('প্রতি রবিবার রাতে বিশ্লেষক গুগল অ্যানালিটিক্স, ফেসবুক, ইনস্টাগ্রাম, নিউজলেটার, ফোনের নোটিফিকেশন আর সাইটের নিজের সংখ্যা মিলিয়ে দেখে, আর তা থেকে পরের সপ্তাহের পরিকল্পনা বদলায়।') }}
+                {{ __('এখন পোস্টের সময়') }}: {{ $bn($tune['morning']) }}, {{ $bn('13:30') }}, {{ $bn($tune['evening']) }}.</p>
+            @if (! $card)
+                <p class="hp-muted">{{ __('প্রথম হিসাব আসবে এই রবিবার রাতে।') }}</p>
+            @else
+                @if ($review['report'] ?? [])<ul style="margin:.3rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['report'] as $l)<li>{{ $l }}</li>@endforeach</ul>@endif
+                @if ($review['changes'] ?? [])
+                    <p style="margin-top:.5rem"><b>{{ __('পরিকল্পনায় যা বদলাল') }}</b></p>
+                    <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['changes'] as $l)<li>{{ $l }}</li>@endforeach</ul>
                 @endif
-            </div>
-        @endif
+                @if ($review['asks'] ?? [])
+                    <p style="margin-top:.5rem"><b>{{ __('আপনার করার মতো') }}</b></p>
+                    <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($review['asks'] as $l)<li>{{ $l }}</li>@endforeach</ul>
+                @endif
+                <div class="hp-mk-cols" style="margin-top:.6rem;font-size:.9rem">
+                    <div class="hp-mk-text"><b>{{ __('সাইট') }}</b>
+{{ __('নতুন সদস্য') }}: {{ $pair($card['site']['signups'] ?? null) }}
+{{ __('খেলেছেন') }}: {{ $pair($card['site']['players'] ?? null) }}
+{{ __('পাঠকের কলমে লেখা') }}: {{ $pair($card['site']['kolom_entries'] ?? null) }}
+{{ __('নিউজলেটারে নতুন') }}: {{ $pair($card['site']['newsletter_signups'] ?? null) }}
+{{ __('কমেন্ট') }}: {{ $pair($card['site']['comments'] ?? null) }}</div>
+                    @if ($card['ga']['now'] ?? null)
+                        <div class="hp-mk-text"><b>{{ __('গুগল অ্যানালিটিক্স (৭ দিন)') }}</b>
+{{ __('পাঠক') }}: {{ $bn((int) $card['ga']['now']['activeUsers']) }} ({{ __('আগের সপ্তাহে') }} {{ $bn((int) ($card['ga']['before']['activeUsers'] ?? 0)) }})
+@if ($card['ga']['returning_share'] !== null){{ __('ফিরে আসা পাঠক') }}: {{ $bn($card['ga']['returning_share']) }}%
+@endif
+{{ __('কোথা থেকে এলেন') }}: @foreach (array_slice($card['ga']['sources'], 0, 6) as $r){{ $r['sessionSource'] }} {{ $bn((int) $r['sessions']) }}@if (! $loop->last), @endif @endforeach
+
+@if ($card['ga']['campaigns']){{ __('কোন পোস্ট থেকে') }}: @foreach (array_slice($card['ga']['campaigns'], 0, 6) as $r){{ $r['sessionCampaignName'] }} {{ $bn((int) $r['sessions']) }}@if (! $loop->last), @endif @endforeach
+@endif</div>
+                    @endif
+                    <div class="hp-mk-text"><b>{{ __('ফেসবুক ও ইনস্টাগ্রাম') }}</b>
+@foreach ($card['social']['followers'] ?? [] as $net => $n){{ $net }}: {{ $bn($n) }} {{ __('অনুসরণকারী') }}
+@endforeach
+@foreach (array_slice($card['social']['by_kind'] ?? [], 0, 6) as $t){{ $t['what'] }}: {{ __('গড়ে দেখেছেন') }} {{ $bn($t['reach']) }}, {{ __('সাড়া') }} {{ $bn($t['talk']) }}
+@endforeach</div>
+                    <div class="hp-mk-text"><b>{{ __('নিউজলেটার ও নোটিফিকেশন') }}</b>
+@foreach ($card['newsletter'] ?? [] as $n){{ \Illuminate\Support\Str::limit($n['subject'], 40) }}: {{ $bn($n['sent']) }} {{ __('জনকে পাঠানো') }}, {{ $bn($n['click_rate']) }}% {{ __('ক্লিক করেছেন') }}
+@endforeach
+@foreach ($card['push'] ?? [] as $n){{ $n['kind'] }}: {{ $bn($n['sent']) }} {{ __('পাঠানো') }}, {{ $bn($n['opened']) }} {{ __('খুলেছেন') }}
+@endforeach</div>
+                </div>
+            @endif
+            @if ($lessons['lessons'] ?? [])
+                <p style="margin-top:.5rem"><b>{{ __('পোস্ট লেখার জন্য শিক্ষা') }}</b></p>
+                <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($lessons['lessons'] as $l)<li>{{ $l }}</li>@endforeach</ul>
+            @endif
+        </div>
     </x-filament::section>
 
     <x-filament::section icon="heroicon-o-question-mark-circle" collapsible>

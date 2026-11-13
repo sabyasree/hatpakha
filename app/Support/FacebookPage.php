@@ -49,7 +49,7 @@ final class FacebookPage
         $link = Marketing::link($s);
         $message = trim(preg_replace('/\s*'.preg_quote($link, '/').'\s*$/u', '', $text));   // the preview shows the link
 
-        return ['edge' => 'feed', 'message' => $message, 'link' => $link];
+        return ['edge' => 'feed', 'message' => $message, 'link' => MarketingAnalyst::tag($link, $s, 'facebook')];   // D183: Analytics can tell which post brought a reader
     }
 
     /** May this one go up? Text present, not already up, and its piece or issue is live. */
@@ -231,7 +231,7 @@ final class FacebookPage
             return [false, $why];
         }
         $page = (string) config('services.facebook_page.id');
-        $text = trim((string) $s->texts['facebook']);
+        $text = MarketingAnalyst::tag(trim((string) $s->texts['facebook']), $s, 'facebook');
         $id = null;
         $res = null;
         if ($s->format === 'reel') {
@@ -293,6 +293,16 @@ final class FacebookPage
         }
 
         return (bool) $id;
+    }
+
+    public static function followers(): ?int
+    {
+        if (! self::ready()) {
+            return null;
+        }
+        [$res] = self::graph((string) config('services.facebook_page.id'), ['fields' => 'followers_count'], true);
+
+        return $res?->successful() && $res->json('followers_count') !== null ? (int) $res->json('followers_count') : null;
     }
 
     /** What readers did with a post: reactions, comments, shares, and how many saw it (when the token may read that). */

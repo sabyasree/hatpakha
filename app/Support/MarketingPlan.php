@@ -41,20 +41,23 @@ final class MarketingPlan
         $day = ($day ?? now(self::TZ)->addDay())->copy()->timezone(self::TZ)->startOfDay();
         $date = $day->toDateString();
         $at = fn (int $h, int $m) => $day->copy()->setTime($h, $m)->utc();
+        $tune = MarketingAnalyst::tuning();   // D183: times and the reel mix follow the numbers
+        [$mh, $mm] = array_map('intval', explode(':', $tune['morning']));
         $before = $day->copy()->subDay();
         $old = WordGame::number($before) >= 1 ? WordGame::riddle($before)['words'][0] : null;   // yesterday's riddle, once the games have begun
         $made = 0;
 
         // Morning: the riddle (Wednesday: a word).
         if ($day->dayOfWeekIso === 3 && ($w = collect(WordGame::day($day)['words'])->last())) {
-            $made += self::quiz($date.':word', 'word', 'শব্দ ধরুন', 'আজকের শব্দ', $w['clue'], $w['answer'], Url::to('/khela'), $at(9, 5), $day, 'কোন শব্দ? কমেন্টে লিখুন। ঠিক উত্তর কাল সকালে।', null);
+            $made += self::quiz($date.':word', 'word', 'শব্দ ধরুন', 'আজকের শব্দ', $w['clue'], $w['answer'], Url::to('/khela'), $at($mh, $mm), $day, 'কোন শব্দ? কমেন্টে লিখুন। ঠিক উত্তর কাল সকালে।', null);
         } else {
             $r = WordGame::riddle($day)['words'][0];
-            $made += self::quiz($date.':riddle', 'riddle', 'আজকের ধাঁধা', 'আজকের ধাঁধা', $r['clue'], $r['answer'], Url::to('/khela/dhadha'), $at(9, 5), $day, 'উত্তর কমেন্টে লিখুন। ঠিক উত্তর কাল সকালে।', $old['answer'] ?? null);
+            $made += self::quiz($date.':riddle', 'riddle', 'আজকের ধাঁধা', 'আজকের ধাঁধা', $r['clue'], $r['answer'], Url::to('/khela/dhadha'), $at($mh, $mm), $day, 'উত্তর কমেন্টে লিখুন। ঠিক উত্তর কাল সকালে।', $old['answer'] ?? null);
         }
 
         // Midday: a reel. A line from a new piece on Tuesday, Thursday and Saturday; else yesterday's riddle with its answer.
-        $line = in_array($day->dayOfWeekIso, [2, 4, 6], true) || ! $old ? self::lineReel($date.':reel', $at(13, 30)) : 0;
+        $lineDays = ['mix' => [2, 4, 6], 'riddle' => [2, 6], 'line' => [1, 2, 4, 5, 6]][$tune['midday']];
+        $line = in_array($day->dayOfWeekIso, $lineDays, true) || ! $old ? self::lineReel($date.':reel', $at(13, 30)) : 0;
         if ($line) {
             $made += $line;
         } elseif ($old) {
@@ -159,13 +162,14 @@ final class MarketingPlan
         return $s;
     }
 
-    /** The next free evening time: 19:35, then 21:15, then the next day. */
+    /** The next free evening time: the evening time (19:35 unless the numbers moved it), then 100 minutes later, then the next day. */
     public static function evening(): Carbon
     {
         $day = now(self::TZ)->startOfDay();
+        [$eh, $em] = array_map('intval', explode(':', MarketingAnalyst::tuning()['evening']));
         for ($i = 0; $i < 14; $i++) {
-            foreach ([[19, 35], [21, 15]] as [$h, $m]) {
-                $slot = $day->copy()->addDays($i)->setTime($h, $m)->utc();
+            foreach ([0, 100] as $later) {   // the evening time, then 100 minutes later
+                $slot = $day->copy()->addDays($i)->setTime($eh, $em)->addMinutes($later)->utc();
                 if ($slot->gt(now()->addMinutes(20)) && ! SocialPost::where('slot_at', $slot)->exists()) {
                     return $slot;
                 }
@@ -243,7 +247,7 @@ final class MarketingPlan
     {
         $parts = ['আজ হাতপাখায়'];
         if ($p = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(2))->latest('published_at')->first()) {
-            $parts[] = 'নতুন লেখা: '.$p->title.(($by = $p->authors->first()?->publicName()) ? ' — '.$by : '')."\n".$p->url();
+            $parts[] = 'নতুন লেখা: '.$p->title.(($by = $p->authors->first()?->publicName()) ? ' — '.$by : '')."\n".$p->url().'?utm_source=whatsapp&utm_medium=social&utm_campaign=daily';
         }
         if (WordGame::number() >= 1) {
             $parts[] = 'আজকের ধাঁধা: '.WordGame::riddle()['words'][0]['clue']."\nউত্তর মিলিয়ে নিন: ".Url::to('/khela/dhadha');
