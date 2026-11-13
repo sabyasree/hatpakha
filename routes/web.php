@@ -22,6 +22,17 @@ Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
 
 // D127/D128: Hatpakha as an app, and phone notifications (with or without an account)
 Route::get('/app', [\App\Http\Controllers\AppController::class, 'page'])->name('app');
+// D169: বাংলা / English for the sign-in pages, account and menus. Back to the same page (on-site paths only).
+Route::get('/language/{lang}', function (\Illuminate\Http\Request $request, string $lang) {
+    $back = (string) $request->query('back', '/');
+    if (! str_starts_with($back, '/') || str_starts_with($back, '//') || str_contains($back, '\\')) {
+        $back = '/';
+    }
+    $request->user()?->forceFill(['site_locale' => $lang === 'en' ? 'en' : null])->save();
+
+    return redirect($back)->withCookie(cookie()->forever(\App\Http\Middleware\SiteLocale::COOKIE, $lang));
+})->whereIn('lang', ['bn', 'en'])->middleware('throttle:30,1')->name('language');
+
 Route::post('/push', [\App\Http\Controllers\AppController::class, 'subscribe'])->middleware('throttle:20,1');
 Route::post('/push/off', [\App\Http\Controllers\AppController::class, 'unsubscribe'])->middleware('throttle:20,1');
 Route::post('/push/state', [\App\Http\Controllers\AppController::class, 'state'])->middleware('throttle:60,1');
