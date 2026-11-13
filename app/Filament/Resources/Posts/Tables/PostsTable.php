@@ -50,7 +50,9 @@ class PostsTable
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(self::STATUS[$state] ?? $state))
                     ->color(fn ($state) => match ($state) { 'published' => 'success', 'pending' => 'warning', 'archived', 'rejected' => 'gray', default => 'info' }),
-                TextColumn::make('published_at')->label(__('প্রকাশ'))->date('j M Y')->sortable()->toggleable(),
+                TextColumn::make('published_at')->label(__('প্রকাশ'))->date('j M Y')->sortable()->toggleable()
+                    // a scheduled piece also shows its hour, in Kolkata time
+                    ->description(fn ($record) => $record->status === 'scheduled' && $record->published_at ? $record->published_at->timezone('Asia/Kolkata')->format('g:i A').' '.__('(ভারতীয় সময়)') : null),
                 TextColumn::make('submitted_at')->label(__('জমা'))->date('j M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('latestAiReview.score')->label(__('এআই'))->badge()->placeholder('—')
                     ->formatStateUsing(fn ($state) => \App\Support\Bn::num((string) $state).__('/১০'))
