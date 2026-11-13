@@ -3,8 +3,9 @@
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
     <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
-        {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text --}}
-        <div class="absolute left-full top-[85vh] ml-10 hidden h-[calc(100%-85vh)] w-[300px] min-[1440px]:block">
+        {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text.
+             D167: from 1280px (common laptops) as a narrow 160px ad, the 300px one from 1500px; both fit the margin even with a 17px scrollbar. --}}
+        <div class="absolute left-full top-[85vh] ml-8 hidden h-[calc(100%-85vh)] w-[160px] min-[1280px]:block min-[1500px]:ml-10 min-[1500px]:w-[300px]">
             <div class="sticky top-24"><x-ad-slot spot="sidebar" :height="600" class="!my-0" /></div>
         </div>
         <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-sm text-ink2">
@@ -62,7 +63,19 @@
         @endif
 
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer) — the only raw output allowed. --}}
-        <div class="{{ $post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6' }}{{ $post->isKids() ? ' kids-read' : '' }}" lang="{{ $post->language }}">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html)) !!}</div>
+        @php
+            $bodyHtml = \App\Support\Images::renderBody(\App\Support\Embeds::render($post->body_html));
+            $bodyClass = ($post->isPoem() ? 'poem-bn mt-8 text-center'.($post->poemLinesAreParagraphs() ? ' poem-tight' : '') : 'prose-bn mt-6').($post->isKids() ? ' kids-read' : '');
+            $bodyHalves = \App\Support\Ads::splitForMid($bodyHtml, $post);   // D167: one ad near the middle of a long story only
+        @endphp
+        @if ($bodyHalves)
+            <div class="{{ $bodyClass }}" lang="{{ $post->language }}">{!! $bodyHalves[0] !!}</div>
+            <x-ad-slot spot="article_mid" :height="280" class="!mb-2 !mt-10" />
+            <p class="mb-8 text-center text-sm font-semibold text-ink2">লেখাটি চলছে <span aria-hidden="true">↓</span></p>
+            <div class="prose-bn" lang="{{ $post->language }}">{!! $bodyHalves[1] !!}</div>
+        @else
+            <div class="{{ $bodyClass }}" lang="{{ $post->language }}">{!! $bodyHtml !!}</div>
+        @endif
 
         @if ($post->isKids() && $post->glossaryRows())
             {{-- D101: hard words, for children learning Bengali abroad --}}

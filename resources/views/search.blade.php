@@ -39,6 +39,7 @@
                         @if ($p->search_snippet)<span class="mt-1 block border-l-2 border-red pl-2 font-serif text-ink2">“{{ $p->search_snippet }}”</span>@endif
                     </span>
                 </a>
+                @if ($loop->iteration % 10 === 0 && $loop->remaining > 2)<x-ad-slot spot="list" :height="250" class="!my-6" />@endif {{-- D167 --}}
             @empty
                 <div class="mt-4 rounded-2xl border-2 border-dashed border-navy p-6 text-center">
                     <p>"{{ $q }}" দিয়ে কিছু পাওয়া গেল না।</p>
