@@ -35,8 +35,16 @@ final class SerialWriter
         .'This is fiction: invent ordinary Bengali characters freely, but never a real, living person, a real crime or a real family. '
         .'Each episode: 1200-1800 words of scenes, not summary; dialogue that sounds like people talk in Kolkata or the district (চলিত, a little dialect where it fits); '
         .'one clear movement in the story; a recurring detail or motif readers will recognise. '
-        .'For a serial, the ending is different from an essay: close each episode on a hook that comes out of the story itself (a discovery, a line of dialogue, a door that should be locked and is not), '
-        .'never on a melodramatic question to the reader like "কী হবে এবার?". The final episode resolves the story honestly and leaves one quiet image. '
+        // D172 (owner: "make the serials more engaging and curious, so readers come back")
+        .'Readers must want the next episode. So: (1) Open in the middle of something happening, never with weather, waking up or a recap; a reader who missed last week is caught up by one natural line inside the first scene. '
+        .'(2) Every episode ANSWERS one question the reader was carrying and OPENS a bigger one; never answer everything, never withhold everything. '
+        .'(3) Somewhere past the middle, something turns: a person is not who we thought, an object is in the wrong place, a safe assumption breaks. '
+        .'(4) Plant small things early (a remark, an object, a habit) and pay them off episodes later; readers love to say "I noticed that". '
+        .'(5) Give each main character a want and a secret, and let the reader know a little more than one character does, so they worry for them. '
+        .'(6) Raise the cost as the serial goes on: what the character can lose must grow. '
+        .'For a serial, the ending is different from an essay: stop one beat EARLY, on a hook that comes out of the story itself (a discovery, a line of dialogue that changes what we know, a door that should be locked and is not, a decision made but not yet acted on). '
+        .'The hook is a concrete image or line, never an explanation of why it matters, and never a melodramatic question to the reader like "কী হবে এবার?". '
+        .'Vary the kind of hook from episode to episode. The final episode resolves the story honestly, pays off what was planted, and leaves one quiet image. '
         .'Keep every name, place, date and fact consistent with the story so far.';
 
     /**
@@ -51,7 +59,7 @@ final class SerialWriter
         [$genre, $brief] = self::WRITERS[$writer];
         [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
             .'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
-            .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens and how it ends. '
+            .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens, which question it answers, which bigger question it opens, and the image or line it ends on. Put the strongest turn near the middle of the serial and a false ending two episodes before the last. '
             .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
             '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt'], 'properties' => [
@@ -101,7 +109,7 @@ final class SerialWriter
             ."\n<so_far>".e($story).'</so_far>'
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
             ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))
-            .' The title is only this episode\'s own short title (2-5 words): never the serial\'s name, never "পর্ব" or a number. Also give its private summary and an image_prompt.',
+            .' The title is only this episode\'s own short title (2-5 words): never the serial\'s name, never "পর্ব" or a number. Also give its private summary, an image_prompt, and a teaser: ONE short Bengali line (under 20 words) that will be printed under this episode as "পরের পর্বে" to make readers come back for the NEXT episode: it hints at what is coming (from the plan) through a concrete detail or a question in the story\'s own world, gives nothing away, and is not a question to the reader. For the final episode the teaser is an empty string.',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
             (string) config('ai.anthropic.writer_model'), 64000);   // thinking + up to 1800 Bengali words; streamed
         if (! is_array($d) || empty($d['episode']['paragraphs'])) {
@@ -151,9 +159,9 @@ final class SerialWriter
 
     private static function episodeSchema(): array
     {
-        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs', 'summary', 'image_prompt'], 'properties' => [
+        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs', 'summary', 'image_prompt', 'teaser'], 'properties' => [
             'title' => ['type' => 'string'], 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
-            'summary' => ['type' => 'string'], 'image_prompt' => ['type' => 'string'],
+            'summary' => ['type' => 'string'], 'image_prompt' => ['type' => 'string'], 'teaser' => ['type' => 'string'],
         ]];
     }
 
@@ -167,6 +175,7 @@ final class SerialWriter
             'excerpt' => mb_substr($serial->logline ?? '', 0, 300),
             'body_html' => collect((array) $e['paragraphs'])->map(fn ($p) => '<p>'.e(trim((string) $p)).'</p>')->implode(''),
             'section_id' => $sec?->id, 'serial_id' => $serial->id, 'episode_no' => $n, 'episode_summary' => mb_substr(trim((string) $e['summary']), 0, 2000),
+            'episode_teaser' => filled($e['teaser'] ?? null) ? mb_substr(trim((string) $e['teaser']), 0, 300) : null,   // D172
             'format' => 'prose', 'language' => 'bn', 'status' => 'draft',
             'slug' => 'desk-serial-'.$serial->id.'-'.$n.'-'.Str::lower(Str::random(4)),
             'ai_drafted_at' => now(),

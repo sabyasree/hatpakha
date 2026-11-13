@@ -101,6 +101,10 @@
                     <a href="{{ $post->episodeSibling(1)->url() }}" class="mt-2 flex min-h-14 items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 font-bold text-white">
                         <span>পরের পর্ব: {{ $post->episodeSibling(1)->episodeLabel() }}</span><span aria-hidden="true">→</span></a>
                 @elseif (! $post->isLastEpisode())
+                    @if ($post->episode_teaser)
+                        {{-- D172: one line about what comes next, so readers come back --}}
+                        <p class="mt-2 rounded-xl bg-white p-3 font-serif text-lg"><strong class="font-sans text-sm text-red">পরের পর্বে</strong><br>{{ $post->episode_teaser }}</p>
+                    @endif
                     <p class="mt-2 font-serif text-lg">পরের পর্ব আসবে {{ $post->serial->dayName() }}।</p>
                     <div class="mt-3">@include('serial-follow', ['serial' => $post->serial, 'following' => $post->serial->isFollowedBy(auth()->user())])</div>
                 @endif

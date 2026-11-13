@@ -29,6 +29,10 @@ class PostForm
                     ->helperText(__('প্রকাশিত লেখার ঠিকানা বদলালে পুরনো ঠিকানা থেকে পাঠক নিজে থেকেই নতুনটিতে পৌঁছবেন।'))
                     ->unique(ignoreRecord: true),
                 Textarea::make('excerpt')->label(__('সারাংশ'))->rows(2),
+                // D172: one line under a serial episode about what comes next
+                TextInput::make('episode_teaser')->label(__('পরের পর্বে (এক লাইন)'))->maxLength(300)
+                    ->visible(fn (?Post $record) => (bool) $record?->serial_id)
+                    ->helperText(__('পর্বের শেষে "পরের পর্বে" লেখার নিচে দেখায়, পরের পর্ব প্রকাশ না হওয়া পর্যন্ত। কিছু ফাঁস না করে কৌতূহল জাগান। খালি রাখলে দেখাবে না।')),
                 RichEditor::make('body_html')->label(__('লেখার পাঠ'))->required()
                     ->toolbarButtons([['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'], ['h3', 'blockquote', 'bulletList', 'orderedList', 'horizontalRule'], ['alignStart', 'alignCenter', 'alignEnd'], ['link', 'clearFormatting', 'undo', 'redo']])
                     // Stored alignment is a ta-* class (D40); the editor reads it as text-align.
