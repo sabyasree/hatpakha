@@ -4,7 +4,7 @@
 <nav aria-label="সব বিভাগ" class="{{ $wide ? 'grid grid-cols-3 gap-x-6 gap-y-4' : 'space-y-4' }}">
     @foreach ($menu['groups'] as $g)
         <div>
-            <p class="mb-1 px-3 text-sm font-bold text-ink2">{{ $g['label'] }}</p>
+            <p class="mb-1 px-3 text-sm font-bold text-ink2">{{ __($g['label']) }}</p>
             <ul class="grid {{ $wide ? 'grid-cols-1' : 'grid-cols-2' }} gap-1">
                 @foreach ($g['links'] as [$name, $href, $lang])
                     <li><a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">{{ $name }}</a></li>

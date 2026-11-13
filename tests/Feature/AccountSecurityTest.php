@@ -104,7 +104,7 @@ class AccountSecurityTest extends TestCase
         $user = User::factory()->create();
         // D166: no warning on the first page; extra security is offered calmly on "ই-মেল ও পাসওয়ার্ড".
         $this->actingAs($user)->get('/account/reading/')->assertOk()->assertDontSee('অ্যাকাউন্টটি আরও নিরাপদ করুন');
-        $this->get('/account/settings/')->assertOk()->assertSee('বাড়তি সুরক্ষা')->assertSee('না করলেও কোনও অসুবিধা নেই');
+        $this->get('/account/settings/')->assertOk()->assertSee('টু-স্টেপ ভেরিফিকেশন')->assertSee('না করলেও কোনও অসুবিধা নেই');
         $this->post('/account/2fa/start/')->assertRedirect();
         $secret = session('2fa_setup');
         $this->get('/account/settings/')->assertSee('QR');

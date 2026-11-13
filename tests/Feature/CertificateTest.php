@@ -82,7 +82,7 @@ class CertificateTest extends TestCase
         $this->assertSame(1, Certificate::autoIssue(), 'Only the piece published after the switch');
         $this->assertSame($new->id, Certificate::sole()->post_id);
 
-        $this->actingAs($writer)->get('/account/writings/')->assertOk()->assertSee('শংসাপত্র চাই');
+        $this->actingAs($writer)->get('/account/writings/')->assertOk()->assertSee('সার্টিফিকেট চাই');
         $made = $this->actingAs($writer)->post('/account/certificate/'.$old->id.'/');
         $this->assertTrue(Certificate::where('post_id', $old->id)->exists(), 'Automatic on: given at once');
         $made->assertRedirect(Certificate::where('post_id', $old->id)->sole()->verifyUrl());   // owner: "whats next?" - straight to it

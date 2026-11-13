@@ -18,16 +18,16 @@ class AccountRedesignTest extends TestCase
     public function test_header_says_amar_or_dhukun_and_the_more_sheet_holds_everything(): void
     {
         $this->get('/')->assertOk()
-            ->assertSee('>ঢুকুন</a>', false)                 // header, before signing in
-            ->assertSee('data-more-open', false)->assertSee('সব কিছু')->assertSee('নতুন অ্যাকাউন্ট খুলুন')
+            ->assertSee('>সাইন ইন</a>', false)                 // header, before signing in
+            ->assertSee('data-more-open', false)->assertSee('মেনু')->assertSee('সাইন আপ')
             ->assertSee('পুরনো লেখা')->assertSee('সাহায্য ও যোগাযোগ')
             ->assertDontSee('>আর্কাইভ</span>', false);         // the archive moved from the bar into the sheet
 
         $reader = User::factory()->create(['role' => Role::Reader, 'name' => 'মিতা সেন']);
         $this->actingAs($reader)->get('/')->assertOk()
             ->assertSee('aria-label="আমার অ্যাকাউন্ট"', false)->assertSee('নমস্কার, মিতা')
-            ->assertSee('সাপ্তাহিক ই-মেল চালু/বন্ধ, ফোনে খবর, পাসওয়ার্ড বদল')   // each account row says what is inside
-            ->assertSee('লগ-আউট')->assertDontSee('নতুন লেখা পাঠান</span>', false);
+            ->assertSee('ই-মেল, পাসওয়ার্ড, সাপ্তাহিক ই-মেল, ফোনে নোটিফিকেশন')   // each account row says what is inside
+            ->assertSee('লগ আউট')->assertDontSee('নতুন লেখা পাঠান</span>', false);
     }
 
     public function test_a_reader_lands_on_amar_pora_and_never_sees_writing_pages(): void
@@ -35,7 +35,7 @@ class AccountRedesignTest extends TestCase
         $reader = User::factory()->create(['role' => Role::Reader]);
         $this->actingAs($reader)->get('/account/')->assertRedirect(url('/account/reading').'/');
         $page = $this->get('/account/reading/')->assertOk()
-            ->assertSee('আমার পড়া')->assertSee('আমার পাতা')->assertSee('ই-মেল ও পাসওয়ার্ড')
+            ->assertSee('লাইব্রেরি')->assertSee('প্রোফাইল')->assertSee('সেটিংস')
             ->assertSee('কীভাবে লেখা পাঠাবেন')->assertDontSee('+ নতুন লেখা পাঠান')->assertDontSee('অ্যাকাউন্টটি আরও নিরাপদ করুন')
             ->getContent();
         $this->assertStringContainsString('grid-cols-3', $page, 'A reader has three tabs');
@@ -106,7 +106,7 @@ class AccountRedesignTest extends TestCase
         DB::table('post_views')->insert(['post_id' => $live->id, 'day' => now()->toDateString(), 'views' => 18]);
 
         $this->actingAs($user)->get('/account/')->assertOk()
-            ->assertSee('নমস্কার, রিনা')->assertSee('আপনার কাজ আছে')->assertSee('শেষ স্তবকটা আর একবার পড়ে দেখবেন?')
+            ->assertSee('নমস্কার, রিনা')->assertSee('আপনাকে দেখতে হবে')->assertSee('শেষ স্তবকটা আর একবার পড়ে দেখবেন?')
             ->assertSee('লেখাটি খুলে ঠিক করুন')->assertSee('১৮ বার খোলা হয়েছে')
             ->assertSee('https://wa.me/?text=', false)->assertSee('সার্টিফিকেট')->assertSee('লিংক কপি')
             ->assertSee('ছবি ও নাম বদলান')->assertSee('grid-cols-4', false);
@@ -118,7 +118,7 @@ class AccountRedesignTest extends TestCase
         $user = User::factory()->create(['role' => Role::Writer, 'name' => 'rina']);
         $author = Author::create(['slug' => 'rina', 'display_name' => 'rina', 'user_id' => $user->id, 'published_count' => 1]);
         $this->actingAs($user)->post('/account/profile/', ['name_bn' => 'রিনা বসু', 'bio' => 'হাওড়ায় থাকি।'])
-            ->assertRedirect(url('/account/profile').'/')->assertSessionHas('status', 'রাখা হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।');
+            ->assertRedirect(url('/account/profile').'/')->assertSessionHas('status', 'সেভ হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।');
         $this->assertSame('রিনা বসু', $author->fresh()->display_name_bn);
         $this->assertSame('রিনা বসু', $user->fresh()->name);
     }
@@ -127,10 +127,10 @@ class AccountRedesignTest extends TestCase
     {
         $reader = User::factory()->create(['role' => Role::Reader]);
         $this->actingAs($reader)->get('/account/settings/')->assertOk()
-            ->assertSee('সপ্তাহে একটা ই-মেল')->assertSee('এখন চালু')->assertSee('role="switch"', false)
-            ->assertSee('কী পড়ছি মনে রাখুন')->assertSee('“পরে পড়ব”, “ভালো লেগেছে” আর আপনার নিজের লেখা যেমন আছে থাকবে')
-            ->assertSee('হ্যাঁ, মুছে দিন')->assertSee('পাসওয়ার্ড বদলান')->assertSee('বাড়তি সুরক্ষা')->assertSee('লগ-আউট');
+            ->assertSee('সাপ্তাহিক ই-মেল')->assertSee('>চালু<', false)->assertSee('role="switch"', false)
+            ->assertSee('পড়ার হিস্টরি রাখুন')->assertSee('সেভ করা লেখা, লাইক করা লেখা আর আপনার নিজের লেখা যেমন আছে থাকবে')
+            ->assertSee('হ্যাঁ, মুছে দিন')->assertSee('পাসওয়ার্ড বদলান')->assertSee('টু-স্টেপ ভেরিফিকেশন')->assertSee('লগ আউট');
         $this->post('/account/newsletter/', ['newsletter' => 0]);
-        $this->get('/account/settings/')->assertSee('এখন বন্ধ');
+        $this->get('/account/settings/')->assertSee('>বন্ধ<', false);
     }
 }

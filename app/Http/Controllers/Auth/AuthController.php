@@ -26,7 +26,7 @@ class AuthController extends Controller
 {
     public static function seo(string $title): Seo
     {
-        return new Seo(title: $title, noindex: true);
+        return new Seo(title: __($title), noindex: true, lang: app()->getLocale());   // D169: বাংলা or English
     }
 
     public function showLogin(Request $request)
@@ -38,7 +38,7 @@ class AuthController extends Controller
             $request->session()->put('url.intended', Url::to(rtrim($path, '/')).($hash ? '#'.$hash : ''));
         }
 
-        return view('auth.login', ['seo' => self::seo('লগ-ইন')]);
+        return view('auth.login', ['seo' => self::seo('সাইন ইন')]);
     }
 
     public function login(Request $request)
@@ -49,7 +49,7 @@ class AuthController extends Controller
         $credentials = ['email' => strtolower($data['email']), 'password' => $data['password']];
         if (! Auth::validate($credentials)) {
             AuditLog::record('user.login_failed', null, ['email_hash' => hash('sha256', $credentials['email'])]);
-            throw ValidationException::withMessages(['email' => 'ইমেল বা পাসওয়ার্ড মিলছে না।']);
+            throw ValidationException::withMessages(['email' => __('ই-মেল বা পাসওয়ার্ড মিলছে না।')]);
         }
         $user = User::where('email', $credentials['email'])->firstOrFail();
         // D59: with 2FA on, the password alone is not enough; the code is asked on the next page.
@@ -68,7 +68,7 @@ class AuthController extends Controller
             return redirect(Url::to('/login'));
         }
 
-        return view('auth.two-factor', ['seo' => self::seo('দুই-ধাপের যাচাই')]);
+        return view('auth.two-factor', ['seo' => self::seo('টু-স্টেপ ভেরিফিকেশন')]);
     }
 
     public function twoFactor(Request $request)
@@ -78,7 +78,7 @@ class AuthController extends Controller
         if (! $user || now()->timestamp - (int) ($pending['at'] ?? 0) > 600) {
             $request->session()->forget('2fa');
 
-            return redirect(Url::to('/login'))->withErrors(['email' => 'সময় পেরিয়ে গেছে। আবার লগ-ইন করুন।']);
+            return redirect(Url::to('/login'))->withErrors(['email' => __('সময় পেরিয়ে গেছে। আবার সাইন ইন করুন।')]);
         }
         $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
         $code = preg_replace('/\s+/', '', $data['code']);
@@ -88,7 +88,7 @@ class AuthController extends Controller
             : $this->useRecoveryCode($user, $code);
         if (! $ok) {
             AuditLog::record('user.2fa_failed', $user);
-            throw ValidationException::withMessages(['code' => 'কোডটি মিলছে না। অ্যাপের নতুন কোড দিন।']);
+            throw ValidationException::withMessages(['code' => __('কোড মিলছে না। অ্যাপে এখন যে কোড দেখাচ্ছে, সেটা দিন।')]);
         }
         $request->session()->forget('2fa');
 
@@ -116,7 +116,7 @@ class AuthController extends Controller
         // D121: an account the owner confirmed as a bot can't sign in.
         if ($user->bot_review === 'bot') {
             AuditLog::record('user.login_refused_bot', null, ['user' => $user->id]);
-            throw ValidationException::withMessages(['email' => 'এই অ্যাকাউন্টে এখন লগ-ইন করা যাচ্ছে না। ভুল মনে হলে যোগাযোগ পাতায় জানান।']);
+            throw ValidationException::withMessages(['email' => __('এই অ্যাকাউন্টে এখন সাইন ইন করা যাচ্ছে না। ভুল মনে হলে যোগাযোগ পাতায় জানান।')]);
         }
         Auth::login($user, $remember);
         $request->session()->regenerate();
@@ -129,7 +129,7 @@ class AuthController extends Controller
     public static function checkHuman(Request $request, string $field, string $action): void
     {
         if (! \App\Support\Turnstile::passes($request->input('cf-turnstile-response'), $request->ip(), $action)) {
-            throw ValidationException::withMessages([$field => 'আপনি মানুষ কি না যাচাই হয়নি। আবার চেষ্টা করুন।']);
+            throw ValidationException::withMessages([$field => __('আপনি মানুষ কি না, তা বোঝা যায়নি। আবার চেষ্টা করুন।')]);
         }
     }
 
@@ -145,14 +145,14 @@ class AuthController extends Controller
     public function showRegister()
     {
         // Encrypted timestamp: a form posted back in under 3 seconds is a bot.
-        return view('auth.register', ['seo' => self::seo('অ্যাকাউন্ট খুলুন'), 'started' => Crypt::encryptString((string) now()->timestamp)]);
+        return view('auth.register', ['seo' => self::seo('সাইন আপ'), 'started' => Crypt::encryptString((string) now()->timestamp)]);
     }
 
     public function register(Request $request)
     {
         // Honeypot: real people never see or fill the "website" field.
         if (filled($request->input('website')) || ! $this->humanSpeed((string) $request->input('started'))) {
-            throw ValidationException::withMessages(['email' => 'কিছু একটা ঠিক হয়নি। পাতাটি আবার খুলে চেষ্টা করুন।']);
+            throw ValidationException::withMessages(['email' => __('কিছু একটা ঠিক হয়নি। পাতাটি আবার খুলে চেষ্টা করুন।')]);
         }
         $data = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:80'],
@@ -160,9 +160,9 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', PasswordRule::min(10)->letters()->numbers()->uncompromised()],
             'terms' => ['accepted'],
         ], [
-            'terms.accepted' => 'শর্তাবলি মেনে নিতে হবে।',
-            'password.confirmed' => 'দুটি পাসওয়ার্ড মেলেনি।',
-            'password.uncompromised' => 'এই পাসওয়ার্ডটি অন্য কোনো সাইটের ফাঁস হওয়া তালিকায় আছে। অন্য একটি পাসওয়ার্ড দিন।',
+            'terms.accepted' => __('শর্তাবলি মেনে নিতে হবে।'),
+            'password.confirmed' => __('দুটো পাসওয়ার্ড মেলেনি।'),
+            'password.uncompromised' => __('এই পাসওয়ার্ড আগে কোনো সাইট থেকে ফাঁস হয়েছে। অন্য একটি পাসওয়ার্ড দিন।'),
         ]);
         self::checkHuman($request, 'email', 'register');
         $email = strtolower($data['email']);
@@ -176,7 +176,7 @@ class AuthController extends Controller
 
                 return $check;
             }
-            throw ValidationException::withMessages(['email' => 'এই ইমেলে আগেই অ্যাকাউন্ট আছে। লগ-ইন করুন।']);   // test servers only (no real mail)
+            throw ValidationException::withMessages(['email' => __('এই ই-মেলে আগেই অ্যাকাউন্ট আছে। সাইন ইন করুন।')]);   // test servers only (no real mail)
         }
 
         $user = new User();
@@ -203,12 +203,12 @@ class AuthController extends Controller
 
     public function checkEmail(Request $request)
     {
-        return view('auth.check-email', ['seo' => self::seo('ই-মেল দেখুন'), 'email' => (string) $request->session()->get('register_email', '')]);
+        return view('auth.check-email', ['seo' => self::seo('ইনবক্স দেখুন'), 'email' => (string) $request->session()->get('register_email', '')]);
     }
 
     public function showForgot()
     {
-        return view('auth.forgot', ['seo' => self::seo('পাসওয়ার্ড ভুলে গেছেন')]);
+        return view('auth.forgot', ['seo' => self::seo('পাসওয়ার্ড ভুলে গেছেন?')]);
     }
 
     public function sendResetLink(Request $request)
@@ -218,7 +218,7 @@ class AuthController extends Controller
         Password::sendResetLink(['email' => strtolower((string) $request->input('email'))]);
 
         // Same answer whether or not the account exists (no account enumeration).
-        return back()->with('status', 'এই ইমেলে অ্যাকাউন্ট থাকলে নতুন পাসওয়ার্ড বানানোর লিংক পাঠানো হয়েছে। ইনবক্স আর স্প্যাম ফোল্ডার দেখুন।');
+        return back()->with('status', __('এই ই-মেলে অ্যাকাউন্ট থাকলে নতুন পাসওয়ার্ড দেওয়ার লিংক পাঠানো হয়েছে। ইনবক্স আর স্প্যাম ফোল্ডার দেখুন।'));
     }
 
     public function showReset(Request $request, string $token)
@@ -232,7 +232,7 @@ class AuthController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', PasswordRule::min(10)->letters()->numbers()->uncompromised()],
-        ], ['password.confirmed' => 'দুটি পাসওয়ার্ড মেলেনি।', 'password.uncompromised' => 'এই পাসওয়ার্ডটি অন্য কোনো সাইটের ফাঁস হওয়া তালিকায় আছে। অন্য একটি পাসওয়ার্ড দিন।']);
+        ], ['password.confirmed' => __('দুটো পাসওয়ার্ড মেলেনি।'), 'password.uncompromised' => __('এই পাসওয়ার্ড আগে কোনো সাইট থেকে ফাঁস হয়েছে। অন্য একটি পাসওয়ার্ড দিন।')]);
 
         $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $user, string $password) {
             $user->forceFill(['password' => $password, 'legacy_password' => null, 'remember_token' => Str::random(60)])->save();
@@ -241,10 +241,10 @@ class AuthController extends Controller
         });
 
         if ($status !== Password::PASSWORD_RESET) {
-            throw ValidationException::withMessages(['email' => 'লিংকটি পুরনো বা ভুল। আবার "পাসওয়ার্ড ভুলে গেছেন" থেকে নতুন লিংক নিন।']);
+            throw ValidationException::withMessages(['email' => __('লিংকটি পুরনো বা ভুল। "পাসওয়ার্ড ভুলে গেছেন?" থেকে নতুন লিংক নিন।')]);
         }
 
-        return redirect(Url::to('/login'))->with('status', 'পাসওয়ার্ড বদলে গেছে। এবার লগ-ইন করুন।');
+        return redirect(Url::to('/login'))->with('status', __('পাসওয়ার্ড বদলে গেছে। এবার সাইন ইন করুন।'));
     }
 
     private function humanSpeed(string $started): bool

@@ -51,7 +51,7 @@ class SubmissionTest extends TestCase
         $this->assertSame(2, substr_count($post->body_html, '<p>'), 'Blank line = new stanza');
         $this->assertSame(Role::Writer, $this->writer->fresh()->role);
         $this->assertSame($this->writer->id, $post->authors->first()->user_id);
-        $this->get('/account/')->assertSee('বৃষ্টির দিন')->assertSee('জমা পড়েছে');
+        $this->get('/account/')->assertSee('বৃষ্টির দিন')->assertSee('পাঠানো হয়েছে');
 
         // Not public, and no longer editable.
         $this->get('/'.$post->slug.'/')->assertNotFound();

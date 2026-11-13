@@ -21,17 +21,15 @@ final class ChatBot
 
     /** How the account pages work (D84), so the helper can guide a writer around them. Facts only. */
     public const ACCOUNT_GUIDE = <<<'TXT'
-Opening the account: tap the round button with the first letter of your name at the top right of any page (on a computer it says "আমার লেখা"). Not signed in yet: tap "লগ-ইন" at the top right.
-The account (আমার অ্যাকাউন্ট) has five tabs along the top:
-- সারসংক্ষেপ: what needs the writer now ("আপনার পালা": pieces sent back to fix "ঠিক করুন", pieces to approve "দেখে সম্মতি দিন", drafts "লিখতে থাকুন"), pieces with the editor and their step (জমা, পড়া হচ্ছে, মনোনীত, প্রকাশিত), recently published. The red "নতুন লেখা পাঠান" button starts a new piece.
-- লেখা: every piece, with filter buttons (সব, ঠিক করতে হবে, খসড়া, সম্পাদকের কাছে, প্রকাশিত, শংসাপত্র, অন্যান্য) and a search box. Each piece has a small three-dot button (⋯) on its right; tapping it opens that piece's choices.
-- প্রোফাইল: the writer page readers see: photo, cover, name, links, about. "লেখক-পাতা দেখুন" opens the public page. Press "প্রোফাইল রাখুন" to save.
-- পড়ার তালিকা: saved pieces and followed writers.
-- সেটিংস: password, two-step verification (দুই-ধাপের যাচাই, optional, with an authenticator app and recovery codes), and letters (the newsletter tick box).
-Certificates (শংসাপত্র): only a PUBLISHED piece gets one. Usually it is made by itself when the piece is published, and the writer gets an e-mail.
-To see it: 1) open the account, 2) tap the tab "লেখা", 3) tap the filter button "শংসাপত্র", 4) tap the three-dot button (⋯) next to the piece, 5) tap "শংসাপত্র দেখুন". It opens as a page; it can be saved as a picture or a file, or printed. It has a QR code that proves it is real.
-If a published piece has no certificate: in step 3 tap "প্রকাশিত" instead, then the three-dot button next to the piece, then "শংসাপত্র চাই". The editor makes it.
-Sign out: "লগ-আউট" at the bottom of the সারসংক্ষেপ tab. Forgot password: "পাসওয়ার্ড ভুলে গেছেন?" on the sign-in page.
+The site can show the account, sign-in pages and menus in Bengali or English: the "English" / "বাংলা" button on the sign-in page, at the top of the account, in Settings (সেটিংস), and in the "আরও" (More) menu. Below, Bengali labels are given with the English in brackets.
+Opening the account: tap "অ্যাকাউন্ট" (Account) at the top right of any page; on a phone also "আরও" (More) in the bottom bar, then the account rows at the top of the menu. Not signed in yet: tap "সাইন ইন" (Sign in) at the top right. New: "সাইন আপ" (Sign up).
+The account has these tabs along the top:
+- আমার লেখা (My writing), only for writers: first "আপনাকে দেখতে হবে" (pieces sent back: "লেখাটি খুলে ঠিক করুন"; pieces to agree to: "দেখে সম্মতি দিন"), then drafts ("খুলে লিখতে থাকুন"), then "সম্পাদকের কাছে" (with the editor) with its steps, then published pieces with "WhatsApp-এ পাঠান", "সার্টিফিকেট" (Certificate) and "পড়ে দেখুন", then "আমার পাঠক" (reads), then "আমার লেখক-পাতা" (the writer page) with "লিংক কপি". The red "নতুন লেখা পাঠান" (Send new writing) button starts a new piece. "সব দেখুন" opens every piece, with filter buttons (সব, ঠিক করতে হবে, খসড়া, সম্পাদকের কাছে, প্রকাশিত, সার্টিফিকেট, অন্যান্য), a search box and a three-dot button (⋯) beside each piece.
+- লাইব্রেরি (Library): "পড়া চালিয়ে যান" (continue reading, where they stopped), "আপনার জন্য নতুন লেখা" (new from writers they follow), "সেভ করা লেখা" (saved), "ফলো করছেন" (following), liked and recently read pieces. A reader who is not a writer starts here.
+- প্রোফাইল (Profile): photo, name, about (and for writers, links and cover). Press "সেভ করুন" (Save).
+- সেটিংস (Settings): language, the weekly e-mail on/off, phone notifications, reading history (on/off, and delete), password, and "টু-স্টেপ ভেরিফিকেশন" (two-step verification, optional, with an authenticator app). "লগ আউট" (Log out) is at the bottom, and also in the "আরও" menu.
+Certificates (সার্টিফিকেট): only a PUBLISHED piece gets one. On "আমার লেখা", tap "সার্টিফিকেট" beside the published piece: if there is one it opens; if not, it is made then (or the editor is asked). It opens as a page with buttons to save it as a picture or PDF, print it, or share it on WhatsApp. It has a QR code that proves it is real. In the full list, the ⋯ menu has "সার্টিফিকেট দেখুন" or "সার্টিফিকেট চাই".
+Forgot password: "পাসওয়ার্ড ভুলে গেছেন?" (Forgot password?) on the sign-in page.
 TXT;
 
     /** @param array<int, array{role: string, text: string}> $history @return array{answer: string, escalated: bool} */

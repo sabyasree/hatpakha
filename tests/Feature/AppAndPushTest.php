@@ -108,7 +108,7 @@ class AppAndPushTest extends TestCase
         $b = $this->browser();
         $keys = ['p256dh' => $b['p256dh'], 'auth' => $b['auth']];
         $this->actingAs($user)->get('/account/settings/')->assertOk()->assertSee('<meta name="hp-push-key" content="'.config('services.webpush.public_key').'">', false)
-            ->assertSee('data-push-topic="account"', false)->assertSee('ফোনে খবর');
+            ->assertSee('data-push-topic="account"', false)->assertSee('নোটিফিকেশন');
 
         $this->postJson('/push/', ['endpoint' => 'https://evil.example/hook', 'keys' => $keys, 'add' => ['account']])->assertStatus(422);
         $this->postJson('/push/', ['endpoint' => 'https://169.254.169.254/x', 'keys' => $keys, 'add' => ['account']])->assertStatus(422);

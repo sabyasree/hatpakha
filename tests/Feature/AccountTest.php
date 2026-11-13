@@ -31,7 +31,7 @@ class AccountTest extends TestCase
         $this->assertSame(Role::Reader, $user->role);
         // D166: a reader's "আমার" opens "আমার পড়া"; no writing pages until they write.
         $this->get('/account/')->assertRedirect(url('/account/reading').'/');
-        $this->get('/account/reading/')->assertOk()->assertSee('নমস্কার, রিনা')->assertSee('আমার পড়া')->assertSee('পরে পড়ব')->assertDontSee('আমার লেখা</span>', false);
+        $this->get('/account/reading/')->assertOk()->assertSee('নমস্কার, রিনা')->assertSee('লাইব্রেরি')->assertSee('পরে পড়ব')->assertDontSee('আমার লেখা</span>', false);
 
         $this->post('/logout/')->assertRedirect(url('/').'/');
         $this->get('/account/')->assertRedirect(url('/login'));
@@ -61,7 +61,7 @@ class AccountTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->create(['email' => 'w@example.com']);
-        $same = 'এই ইমেলে অ্যাকাউন্ট থাকলে';
+        $same = 'এই ই-মেলে অ্যাকাউন্ট থাকলে';
         $this->post('/forgot-password/', ['email' => 'nobody@example.com'])->assertSessionHas('status', fn ($s) => str_contains($s, $same));
         $this->post('/forgot-password/', ['email' => 'w@example.com'])->assertSessionHas('status', fn ($s) => str_contains($s, $same));
 
@@ -80,7 +80,7 @@ class AccountTest extends TestCase
         $this->makePost(['slug' => 'theirs', 'title' => 'অন্যের লেখা']);
 
         $this->actingAs($me)->get('/account/')->assertOk()->assertSee('আমার কবিতা')->assertSee('সম্পাদকের কাছে')->assertDontSee('অন্যের লেখা');
-        $this->actingAs($me)->get('/account/writings/')->assertOk()->assertSee('আমার কবিতা')->assertSee('জমা পড়েছে')->assertDontSee('অন্যের লেখা');
+        $this->actingAs($me)->get('/account/writings/')->assertOk()->assertSee('আমার কবিতা')->assertSee('পাঠানো হয়েছে')->assertDontSee('অন্যের লেখা');
     }
 
     public function test_every_post_status_has_a_bengali_label(): void
@@ -91,7 +91,7 @@ class AccountTest extends TestCase
 
     public function test_old_login_url_is_a_real_page_again(): void
     {
-        $this->get('/login/')->assertOk()->assertSee('লগ-ইন');
+        $this->get('/login/')->assertOk()->assertSee('সাইন ইন');
     }
 
     /** Owner + UX review: a busy writer's account stays short: 20 rows a page, filters, search, separate settings. */
@@ -105,7 +105,7 @@ class AccountTest extends TestCase
         $this->makePost(['slug' => 'fix', 'title' => 'ঠিক করার লেখা', 'status' => 'changes', 'review_note' => 'শেষটা ছোট করুন'], $a);
         $this->actingAs($me);
 
-        $home = $this->get('/account/')->assertOk()->assertSee('আপনার কাজ আছে')->assertSee('শেষটা ছোট করুন')->assertSee('৪৫টি লেখা প্রকাশিত');
+        $home = $this->get('/account/')->assertOk()->assertSee('আপনাকে দেখতে হবে')->assertSee('শেষটা ছোট করুন')->assertSee('৪৫টি লেখা প্রকাশিত');
         $this->assertLessThan(4, substr_count($home->getContent(), 'প্রকাশিত ১'), 'Home shows only a few recent pieces');
 
         $page = $this->get('/account/writings/?status=published')->assertOk()->assertSee('আরও দেখুন (২৫টি বাকি)');
@@ -113,8 +113,8 @@ class AccountTest extends TestCase
         $this->get('/account/writings/?status=published&page=3')->assertOk()->assertDontSee('আরও দেখুন');
         $this->get('/account/writings/?q='.urlencode('প্রকাশিত 7'))->assertOk()->assertSee('প্রকাশিত 7')->assertDontSee('প্রকাশিত 8');
         $this->get('/account/writings/?status=action')->assertSee('ঠিক করার লেখা')->assertDontSee('প্রকাশিত 1<');
-        $this->get('/account/profile/')->assertOk()->assertSee('আপনার নাম (বাংলায়)')->assertSee('রাখুন')->assertSee('আরও কিছু যোগ করুন')->assertSee('aria-current="page"', false);
-        $this->get('/account/settings/')->assertOk()->assertSee('পাসওয়ার্ড বদলান')->assertSee('সপ্তাহে একটা ই-মেল')->assertSee('লগ-আউট')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
+        $this->get('/account/profile/')->assertOk()->assertSee('আপনার নাম (বাংলায়)')->assertSee('সেভ করুন')->assertSee('আরও কিছু যোগ করুন')->assertSee('aria-current="page"', false);
+        $this->get('/account/settings/')->assertOk()->assertSee('পাসওয়ার্ড বদলান')->assertSee('সাপ্তাহিক ই-মেল')->assertSee('লগ আউট')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
         $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect(url('/account/settings').'/#letters');
     }
 

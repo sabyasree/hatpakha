@@ -18,7 +18,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use SensitiveParameter;
 
-#[Fillable(['name', 'email', 'password', 'role', 'spam_reason', 'is_reviewer'])]
+#[Fillable(['name', 'email', 'password', 'role', 'spam_reason', 'is_reviewer', 'site_locale'])]
 #[Hidden(['password', 'legacy_password', 'remember_token', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication, MustVerifyEmail
 {

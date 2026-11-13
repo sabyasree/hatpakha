@@ -200,14 +200,15 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
     input.classList.add('pr-24');
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = 'দেখান';
+    const en = document.documentElement.lang === 'en';   // D169
+    btn.textContent = en ? 'Show' : 'দেখান';
     btn.className = 'absolute right-1 top-1/2 h-11 -translate-y-1/2 rounded-full px-3 text-sm font-bold text-sky-night hover:bg-sky-tint';
     btn.setAttribute('aria-pressed', 'false');
-    btn.setAttribute('aria-label', 'পাসওয়ার্ড দেখান');
+    btn.setAttribute('aria-label', en ? 'Show password' : 'পাসওয়ার্ড দেখান');
     btn.addEventListener('click', () => {
         const show = input.type === 'password';
         input.type = show ? 'text' : 'password';
-        btn.textContent = show ? 'লুকান' : 'দেখান';
+        btn.textContent = show ? (en ? 'Hide' : 'লুকান') : (en ? 'Show' : 'দেখান');
         btn.setAttribute('aria-pressed', String(show));
         input.focus();
     });

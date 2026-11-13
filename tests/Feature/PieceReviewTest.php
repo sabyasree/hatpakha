@@ -67,8 +67,8 @@ class PieceReviewTest extends TestCase
         $r = PieceReview::create(['post_id' => $post->id, 'reviewer_id' => $reviewer->id, 'request_note' => 'শেষটা দেখবেন']);
         $this->actingAs($reviewer);
 
-        $this->get('/account/reading/')->assertSee('যাচাইয়ের জন্য ১টি লেখা আপনার অপেক্ষায়');
-        $this->get('/')->assertSee('যাচাইয়ের লেখা')->assertSee('১টি লেখা পড়া বাকি');   // the "আরও" sheet
+        $this->get('/account/reading/')->assertSee('রিভিউ করার জন্য ১টি লেখা আপনার অপেক্ষায়');
+        $this->get('/')->assertSee('রিভিউ করার লেখা')->assertSee('১টি লেখা পড়া বাকি');   // the "আরও" sheet
         $this->get('/account/review/')->assertOk()->assertSee('নদীর গল্প')->assertSee('শেষটা দেখবেন');
 
         $page = $this->get('/account/review/'.$r->id.'/')->assertOk()
