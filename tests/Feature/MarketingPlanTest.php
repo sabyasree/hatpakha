@@ -278,4 +278,60 @@ class MarketingPlanTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('সপ্তাহের হিসাব')->assertSee('নতুন সদস্য')->assertSee('০৮:০৫');
     }
+
+    /** D184: invite links and the বন্ধু medal, the Friday leaderboard post, and the weekly letter's come-back blocks. */
+    public function test_invites_count_only_friends_who_read_or_play_and_earn_the_friend_medal(): void
+    {
+        $me = User::factory()->create();
+        $code = \App\Support\Invites::code($me);
+        $this->assertSame($code, \App\Support\Invites::code($me->fresh()), 'One link for good');
+        $this->get('/bondhu/'.$code.'/')->assertRedirect()->assertCookie(\App\Support\Invites::COOKIE, $code);
+        $this->get('/bondhu/'.str_repeat('Z', 8).'/')->assertRedirect()->assertCookie(\App\Support\Invites::COOKIE, '');
+
+        $friend = User::factory()->create();
+        $request = \Illuminate\Http\Request::create('/register', 'POST');
+        $request->cookies->set(\App\Support\Invites::COOKIE, $code);
+        \App\Support\Invites::claim($friend, $request);
+        \App\Support\Invites::claim($me, $request);
+        $this->assertSame($me->id, $friend->fresh()->invited_by);
+        $this->assertNull($me->fresh()->invited_by, 'Nobody invites themselves');
+        $this->assertSame(0, \App\Support\Invites::count($me), 'Signing up alone is not enough');
+        DB::table('game_scores')->insert(['user_id' => $friend->id, 'game' => 'word', 'day' => now('Asia/Kolkata')->toDateString(), 'points' => 50, 'seconds' => 60, 'created_at' => now()]);
+        $this->assertSame(1, \App\Support\Invites::count($me));
+        $badge = collect(\App\Support\Badges::for($me))->firstWhere('key', 'friend');
+        $this->assertSame(1, $badge['tier']);
+        $this->assertStringContainsString('<svg', \App\Support\Badges::medalSvg('friend', 1, 200));
+
+        $this->actingAs($me)->get('/account/profile/')->assertOk()->assertSee('বন্ধুকে হাতপাখায় আনুন')->assertSee('/bondhu/'.$code.'/')->assertSee('https://wa.me/?text=', false);
+    }
+
+    public function test_friday_names_the_top_three_only_when_three_show_their_names(): void
+    {
+        $friday = Carbon::parse('2026-11-20', 'Asia/Kolkata');
+        $users = User::factory()->count(3)->create();
+        foreach ($users as $i => $u) {
+            DB::table('game_scores')->insert(['user_id' => $u->id, 'game' => 'word', 'day' => now('Asia/Kolkata')->toDateString(), 'points' => 100 - $i * 10, 'seconds' => 60, 'created_at' => now()]);
+        }
+        $users[2]->forceFill(['board_hidden' => true])->save();
+        MarketingPlan::plan($friday);
+        $this->assertFalse(SocialPost::where('plan_key', '2026-11-20:board')->exists(), 'Two names are not a top three');
+        $users[2]->forceFill(['board_hidden' => false])->save();
+        MarketingPlan::plan($friday);
+        $board = SocialPost::where('plan_key', '2026-11-20:board')->firstOrFail();
+        $this->assertSame('17:00', $board->slot_at->timezone('Asia/Kolkata')->format('H:i'));
+        $this->assertCount(3, $board->design['slides'][0]['rows']);
+        $this->assertStringContainsString($users[0]->name, $board->texts['facebook']);
+    }
+
+    public function test_the_weekly_letter_carries_come_back_blocks_with_their_own_links(): void
+    {
+        $blocks = \App\Ai\EditorJobs::comeBack();
+        $this->assertSame('আজকের ধাঁধা', $blocks[0]['title']);
+        $n = \App\Models\Newsletter::create(['subject' => 'চিঠি', 'intro' => 'ক', 'closing' => 'খ', 'audience' => 'readers', 'source' => 'ai_weekly', 'status' => 'draft', 'items' => []]);
+        $n->forceFill(['extras' => $blocks])->save();
+        $this->assertStringContainsString('/khela/dhadha/?utm_source=hatpakha-chithi', \App\Support\NewsletterLinks::target($n->fresh(), 'x0'));
+        $html = view('emails.newsletter', ['newsletter' => $n->fresh(), 'deliveryId' => null, 'unsubscribeUrl' => url('/')])->render();
+        $this->assertStringContainsString('এ সপ্তাহে আরও', $html);
+        $this->assertStringContainsString(e($blocks[0]['line']), $html);
+    }
 }

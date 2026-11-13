@@ -36,6 +36,19 @@
             </a>
         </td></tr>
     @endforeach
+    {{-- D184: reasons to come back this week (today's riddle, the open theme, a running serial) --}}
+    @if ($n->extras)
+        <tr><td style="padding:18px 28px 2px;font-size:15px;font-weight:700;color:#4D5A63">এ সপ্তাহে আরও</td></tr>
+        @foreach ((array) $n->extras as $i => $it)
+            <tr><td style="padding:6px 28px">
+                <a href="{{ $link('x'.$i) }}" style="display:block;background:#FBEBD8;border-radius:10px;padding:14px 16px;text-decoration:none;color:#13212C">
+                    <span style="display:block;font-size:17px;font-weight:700;color:#7A1022">{{ $it['title'] }}</span>
+                    @if (! empty($it['line']))<span style="display:block;font-size:16px;margin-top:4px;line-height:1.6">{{ $it['line'] }}</span>@endif
+                    @if (! empty($it['author']))<span style="display:block;font-size:14px;color:#4D5A63;margin-top:4px">{{ $it['author'] }} →</span>@endif
+                </a>
+            </td></tr>
+        @endforeach
+    @endif
     <tr><td style="padding:18px 28px 6px;font-size:17px;line-height:1.75">
         @foreach (preg_split('/\n{2,}/', trim((string) $n->closing)) as $p)
             @if (trim($p) !== '')<p style="margin:0 0 14px">{!! $para(trim($p)) !!}</p>@endif

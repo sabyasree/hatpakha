@@ -188,6 +188,7 @@ class AuthController extends Controller
             'mail_opt_out' => ! $request->boolean('newsletter', true),
         ])->save();
         AuditLog::record('user.registered', $user);
+        \App\Support\Invites::claim($user, $request);   // D184: who invited them, if they came by a friend's link
         \App\Support\BotCheck::check($user);   // D121: a likely bot is flagged for the owner to review (never blocked here)
         event(new Registered($user)); // sends the verification email when real mail is configured
         \App\Http\Controllers\Auth\VerifyEmailController::claimSend($user->id);   // so the "check your e-mail" page doesn't send a second one

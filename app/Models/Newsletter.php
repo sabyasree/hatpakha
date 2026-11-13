@@ -18,7 +18,7 @@ class Newsletter extends Model
 
     protected function casts(): array
     {
-        return ['items' => 'array', 'queued_at' => 'datetime', 'sent_at' => 'datetime'];
+        return ['items' => 'array', 'extras' => 'array', 'queued_at' => 'datetime', 'sent_at' => 'datetime'];
     }
 
     public function deliveries(): HasMany { return $this->hasMany(NewsletterDelivery::class); }

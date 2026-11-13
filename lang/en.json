@@ -706,7 +706,7 @@
     "সাপ্তাহিক চিঠি (ই-মেল নিউজলেটার)": "Weekly letter (email newsletter)",
     "সাপ্তাহিক চিঠি (নিউজলেটার)": "Weekly letter (newsletter)",
     "যাঁরা নিজে সম্মতি দিয়েছেন, শুধু তাঁরাই পান": "Only readers who opted in receive it",
-    "জন": "people",
+    "জন": "",
     "প্রতি শনিবার সন্ধ্যায় খসড়া তৈরি হয়; এখনই চাইলে উপরের \"নতুন পোস্ট তৈরি করুন\" → \"সাপ্তাহিক চিঠি\"।": "A draft is made every Saturday evening; for one now use \"Create a new post\" → \"Weekly letter\" above.",
     "আজকের কাজ-এ দেখে পাঠান": "Review and send in Today",
     "এখন কোনো খসড়া নেই।": "No draft right now.",
@@ -2547,5 +2547,14 @@
     "ক্লিক করেছেন": "clicked",
     "খুলেছেন": "opened",
     "পোস্ট লেখার জন্য শিক্ষা": "Lessons for writing posts",
-    "সাইটে এসেছেন": "came to the site"
+    "সাইটে এসেছেন": "came to the site",
+    "বন্ধু": "Friend",
+    "বন্ধুকে হাতপাখায় আনলে": "For bringing a friend to Hatpakha",
+    "জন বন্ধু এসেছেন": " friends joined",
+    "বন্ধুকে হাতপাখায় আনুন": "Bring a friend to Hatpakha",
+    "আপনার লিংক দিয়ে কোনো বন্ধু এসে সদস্য হলে, আর একটি লেখা পড়লে বা খেলা খেললে, আপনি \"বন্ধু\" ব্যাজ পাবেন: ১ জনে ব্রোঞ্জ, ৫ জনে রুপো, ১৫ জনে সোনা।": "When a friend comes by your link, signs up and reads a piece or plays a game, you earn the \"Friend\" badge: bronze at 1, silver at 5, gold at 15.",
+    "এ পর্যন্ত এসেছেন": "Joined so far",
+    "হোয়াটসঅ্যাপে পাঠান": "Send on WhatsApp",
+    "লেখাটি কপি করুন": "Copy the text",
+    "শুধু লিংক কপি": "Copy only the link"
 }

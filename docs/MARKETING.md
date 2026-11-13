@@ -122,6 +122,8 @@ Each play gets four to six weeks. Keep what moves a number; drop what does not.
 night the analyst puts Analytics, Facebook, Instagram, the newsletter, notifications and the site's own counts on one
 card, moves the posting times and the reel mix by fixed rules, and writes a short report, lessons and asks for the owner.
 
+**Built (D184):** invite links with the বন্ধু medal (play 6, without the day-early episode), "আমার সপ্তাহ" share words and the Friday top three (play 4), and the weekly letter's come-back blocks.
+
 ## 7. Order of building
 
 1. **Formats and rhythm:** the cards (line, word, riddle, leaderboard), the weekly calendar, link-last posts,

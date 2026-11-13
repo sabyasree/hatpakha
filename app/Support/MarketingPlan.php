@@ -73,6 +73,21 @@ final class MarketingPlan
             ]);
         }
 
+        // Friday, late afternoon: the week's top three in the games (only people who show their name on the leaderboard; D184).
+        if ($day->dayOfWeekIso === 5 && count($rows = GameScores::board('week', null, 3)['rows']) === 3) {
+            $url = Url::to('/khela/board');
+            $list = collect($rows)->map(fn ($r, $i) => Bn::num((string) ($i + 1)).'. '.$r['name'].' — '.Bn::num((string) $r['points']))->implode("\n");
+            $made += self::make($date.':board', [
+                'kind' => 'board', 'format' => 'card', 'title' => 'এ সপ্তাহের সেরা তিন ('.Bn::date($day).')', 'slot_at' => $at(17, 0),
+                'design' => ['slides' => [['t' => 'board', 'chip' => 'খেলার সেরা', 'title' => 'এ সপ্তাহে এগিয়ে', 'rows' => array_map(fn ($r) => [$r['name'], $r['points']], $rows), 'note' => 'আপনিও খেলুন: hatpakha.com/khela']]],
+                'texts' => [
+                    'facebook' => "এ সপ্তাহে হাতপাখার শব্দের খেলায় এগিয়ে:\n\n{$list}\n\nঅভিনন্দন! রবিবার রাত পর্যন্ত সময় আছে, আপনিও নাম তুলুন:\n\n".$url,
+                    'instagram' => "এ সপ্তাহে হাতপাখার শব্দের খেলায় এগিয়ে:\n\n{$list}\n\nআপনিও খেলুন: hatpakha.com/khela (লিংক বায়োতে)\n\n#হাতপাখা #শব্দেরখেলা #ধাঁধা #বাংলা",
+                    'whatsapp' => '', 'link' => $url,
+                ],
+            ]);
+        }
+
         return $made;
     }
 

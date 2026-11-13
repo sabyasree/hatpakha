@@ -10,6 +10,12 @@
   {!! $link((string) $i) !!}
 
 @endforeach
+@foreach ((array) $newsletter->extras as $i => $it)
+* {{ $it['title'] }}
+  {{ $it['line'] ?? '' }}
+  {!! $link('x'.$i) !!}
+
+@endforeach
 {!! $newsletter->closing !!}
 
 {{ $newsletter->cta_label ?: 'হাতপাখা খুলুন' }}: {!! $link('cta') !!}
