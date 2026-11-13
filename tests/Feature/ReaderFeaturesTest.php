@@ -63,4 +63,14 @@ class ReaderFeaturesTest extends TestCase
         $this->makePost(['status' => 'published', 'slug' => 'k', 'published_at' => now()], $writer);
         $this->get('/k/')->assertSee('কবিতা লিখি।')->assertSee('মাসের লেখক')->assertSee('অনুসরণ করুন')->assertSee('-এর সব লেখা', false);
     }
+
+    public function test_a_reader_can_share_a_line_as_a_card_from_any_live_piece(): void
+    {
+        // D173 (owner): select a line → "এই লাইন শেয়ার করুন" → a Hatpakha card drawn in the browser.
+        $post = $this->makePost(['slug' => 'line', 'title' => 'নদীর গান']);
+        $this->get($post->url())->assertOk()->assertSee('data-quote-pill', false)->assertSee('data-quote-canvas', false)
+            ->assertSee('data-quote-title="নদীর গান"', false)->assertSee('এই লাইন শেয়ার করুন');
+        $post->forceFill(['status' => 'draft'])->save();
+        $this->actingAs(\App\Models\User::factory()->create(['role' => \App\Enums\Role::Admin]))->get($post->url())->assertDontSee('data-quote-pill', false);
+    }
 }
