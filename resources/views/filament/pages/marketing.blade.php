@@ -1,5 +1,5 @@
 {{-- Marketing desk (D51, D70). Inline styles: /desk has no utility CSS. Cards use the logo palette only. --}}
-@php $d = $this->data(); $schedule = $d['schedule']; $whatsapp = $d['whatsapp']; $lessons = $d['lessons']; $review = $d['review']; @endphp
+@php $d = $this->data(); $schedule = $d['schedule']; $whatsapp = $d['whatsapp']; $lessons = $d['lessons']; $review = $d['review']; $comments = $d['comments']; @endphp
 @php $isAdmin = \App\Filament\Support\Deleting::isAdmin(); @endphp
 <x-filament-panels::page>
     <style>
@@ -157,6 +157,34 @@
                 <ul style="margin:.2rem 0 0;padding-left:1.2rem;line-height:1.8">@foreach ($lessons['lessons'] as $l)<li>{{ $l }}</li>@endforeach</ul>
             @endif
         </div>
+    </x-filament::section>
+
+    {{-- D189: readers' comments under our posts: what the team answered by itself, and what it left for the owner --}}
+    <x-filament::section icon="heroicon-o-chat-bubble-left-right" collapsible>
+        <x-slot name="heading">{{ __('পাঠকের কমেন্ট ও আমাদের উত্তর') }}</x-slot>
+        @php $repliesOn = \App\Support\CommentReplies::auto(); @endphp
+        @if ($isAdmin)
+            <x-slot name="afterHeader"><x-filament::button size="sm" color="gray" wire:click="toggleReplies" wire:confirm="{{ $repliesOn ? __('কমেন্টের উত্তর দেওয়া বন্ধ করবেন?') : __('চালু করলে দল নিজে থেকে কমেন্টের উত্তর দেবে। চালু করবেন?') }}">{{ $repliesOn ? __('উত্তর দেওয়া বন্ধ করুন') : __('উত্তর দেওয়া চালু করুন') }}</x-filament::button></x-slot>
+        @endif
+        <p class="hp-muted">{{ $repliesOn
+            ? __('ফেসবুক ও ইনস্টাগ্রামে আমাদের পোস্টের নিচে পাঠকের ভালো লাগা, নিজের স্মৃতি বা সহজ প্রশ্নের উত্তর দল নিজেই দেয় (দিনের বেলায়, কমেন্টের অন্তত দশ মিনিট পরে)। অভিযোগ, রাগ, রাজনীতি, ধর্ম বা যা নিয়ে সন্দেহ, তার উত্তর দেয় না: সেগুলো নিচে “আপনি দেখুন” হয়ে থাকে। ধাঁধার পোস্টে উত্তর দেয় না।')
+            : __('এখন কমেন্টের উত্তর নিজে থেকে যায় না।') }}</p>
+        @forelse ($comments as $c)
+            <div style="border-top:1px solid rgba(127,127,127,.2);padding:.6rem 0">
+                <div class="hp-muted" style="font-size:.8rem">{{ $c->network === 'instagram' ? 'Instagram' : 'Facebook' }} · {{ \Illuminate\Support\Str::limit($c->post?->title, 60) }} · {{ __(\App\Support\CommentReplies::STATUSES[$c->status] ?? $c->status) }}@if ($c->reason) · {{ $c->reason }}@endif</div>
+                <div style="margin-top:.2rem"><b>{{ __('পাঠক') }}:</b> {{ $c->text }}</div>
+                @if ($c->reply)<div style="margin-top:.2rem"><b>{{ __('হাতপাখা') }}:</b> {{ $c->reply }}</div>@endif
+                <div style="margin-top:.3rem;display:flex;gap:.4rem">
+                    @if ($c->status === 'replied')
+                        <x-filament::button size="xs" color="danger" wire:click="deleteReply({{ $c->id }})" wire:confirm="{{ __('এই উত্তরটি মুছে ফেলবেন?') }}">{{ __('উত্তরটি মুছুন') }}</x-filament::button>
+                    @elseif ($c->status === 'flagged')
+                        <x-filament::button size="xs" color="gray" wire:click="seenComment({{ $c->id }})">{{ __('দেখেছি') }}</x-filament::button>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <p class="hp-muted" style="margin-top:.5rem">{{ __('এখনও কোনো কমেন্ট আসেনি।') }}</p>
+        @endforelse
     </x-filament::section>
 
     <x-filament::section icon="heroicon-o-question-mark-circle" collapsible>
