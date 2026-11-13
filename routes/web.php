@@ -25,16 +25,12 @@ Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
 Route::get('/kolom', [\App\Http\Controllers\KolomController::class, 'index'])->name('kolom');
 Route::post('/kolom', [\App\Http\Controllers\KolomController::class, 'store'])->middleware('throttle:6,1');
 Route::get('/kolom/{slug}', [\App\Http\Controllers\KolomController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('kolom.show');
-// D174: শব্দ-খেলা, the daily word jumble (the same five words for everyone, by the Kolkata date)
-Route::get('/khela', function () {
-    $game = \App\Support\WordGame::day();
-
-    return view('game', ['game' => $game, 'seo' => new \App\Seo\Seo(
-        title: 'শব্দ-খেলা: রোজ পাঁচটা বাংলা শব্দ',
-        description: 'হাতপাখার রোজকার শব্দের খেলা। এলোমেলো অক্ষর সাজিয়ে পাঁচটা বাংলা শব্দ বানান, বন্ধুদের সঙ্গে মিলিয়ে দেখুন। রোজ রাত বারোটায় নতুন খেলা।',
-        canonical: \App\Support\Url::to('/khela'),
-    )]);
-})->name('game');
+// D174, D177: the daily games and their leaderboard
+Route::get('/khela', [\App\Http\Controllers\GameController::class, 'word'])->name('game');
+Route::get('/khela/dhadha', [\App\Http\Controllers\GameController::class, 'riddle'])->name('game.riddle');
+Route::get('/khela/shobdojobdo', [\App\Http\Controllers\GameController::class, 'crossword'])->name('game.cross');
+Route::get('/khela/board', [\App\Http\Controllers\GameController::class, 'board'])->name('game.board');
+Route::post('/khela/score', [\App\Http\Controllers\GameController::class, 'score'])->middleware(['auth', 'throttle:20,1'])->name('game.score');
 Route::get('/app', [\App\Http\Controllers\AppController::class, 'page'])->name('app');
 // D169: বাংলা / English for the sign-in pages, account and menus. Back to the same page (on-site paths only).
 Route::get('/language/{lang}', function (\Illuminate\Http\Request $request, string $lang) {
@@ -168,6 +164,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     // D166: "আমার পড়া": how far a signed-in reader read a piece (only while their switch is on), the switch, and clearing it.
     Route::post('/reading/{post}', [\App\Http\Controllers\AccountController::class, 'readingProgress'])->whereNumber('post')->middleware('throttle:reading')->name('reading.progress');
     Route::post('/account/reading-history', [\App\Http\Controllers\AccountController::class, 'readingHistorySwitch']);
+    Route::post('/account/board', [\App\Http\Controllers\AccountController::class, 'boardSwitch']);   // D177
     Route::post('/account/reading-history/clear', [\App\Http\Controllers\AccountController::class, 'readingHistoryClear'])->middleware('throttle:5,1');
     Route::post('/account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->middleware('throttle:5,1');
     Route::post('/account/2fa/start', [\App\Http\Controllers\AccountController::class, 'twoFactorStart'])->middleware('throttle:10,1');

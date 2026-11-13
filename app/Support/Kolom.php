@@ -24,6 +24,41 @@ final class Kolom
 
     public const PER_PERSON = 3;
 
+    public const AUTO = 'kolom.auto';
+
+    /**
+     * D176 (owner: "get rid of the admin click, I want it mostly automated"): on unless the owner switches it off in
+     * /desk → পাঠকের কলম. On: the AI's picks are published on Sunday morning and the two posts go to the Facebook Page
+     * by themselves. Only entries the AI has read and passed are ever published without a person.
+     */
+    public static function auto(): bool
+    {
+        return \App\Models\Setting::get(self::AUTO) !== '0';
+    }
+
+    /** With the automatic switch on, a পাঠকের কলম post goes to the Facebook Page at once (live site only). */
+    private static function share(SocialPost $s): void
+    {
+        if (self::auto() && FacebookPage::ready()) {
+            rescue(fn () => FacebookPage::publish($s->fresh()), null, false);
+        }
+    }
+
+    /** Sunday morning: publish the proposed picks by themselves, if every one of them was read and passed by the AI. */
+    public static function autoPublish(): bool
+    {
+        $p = ReaderPrompt::where('status', 'closed')->latest('id')->first();
+        if (! self::auto() || ! $p) {
+            return false;
+        }
+        $picked = $p->picked()->get();
+        if ($picked->isEmpty() || $picked->contains(fn (ReaderEntry $e) => $e->ai_score === null)) {
+            return false;   // nothing to show, or unread entries: the owner's task stays open
+        }
+
+        return self::publish($p);
+    }
+
     /** @return list<array{0: string, 1: string, 2: string}> */
     public static function themes(): array
     {
@@ -41,7 +76,7 @@ final class Kolom
             'slug' => 'w'.($n + 1).'-'.Str::lower(Str::random(4)), 'kind' => $kind, 'title' => $title, 'ask' => $ask,
             'max_chars' => self::LIMITS[$kind], 'status' => 'open', 'opens_at' => now(), 'closes_at' => now()->addDays(6)->setTimezone('Asia/Kolkata')->setTime(18, 0)->utc(),
         ]);
-        self::announce($prompt);
+        self::share(self::announce($prompt));
         AuditLog::record('kolom.opened', null, ['prompt' => $prompt->id]);
 
         return $prompt;
@@ -101,7 +136,8 @@ final class Kolom
         self::screen(200);
         $p->update(['status' => 'closed', 'closes_at' => now()]);
         // AI-scored first; without AI the first to arrive, so the owner still gets a proposal to edit.
-        $best = $p->entries()->whereIn('status', ['ok', 'new'])->orderByDesc('ai_score')->orderBy('id')->get()
+        $pool = $p->entries()->where('status', 'ok')->exists() ? ['ok'] : ['ok', 'new'];   // unread ones only when the AI read nothing
+        $best = $p->entries()->whereIn('status', $pool)->orderByDesc('ai_score')->orderBy('id')->get()
             ->unique(fn (ReaderEntry $e) => $e->sender_hash ?: 'e'.$e->id)->take(self::PICKS);
         ReaderEntry::whereIn('id', $best->pluck('id'))->update(['status' => 'picked']);
         if ($p->entries()->exists()) {
@@ -121,12 +157,13 @@ final class Kolom
         }
         $p->update(['status' => 'published', 'published_at' => now()]);
         $lines = $picked->take(3)->map(fn (ReaderEntry $e) => '“'.Str::limit(preg_replace('/\s+/u', ' ', $e->body), 140).'” — '.$e->shownName())->implode("\n\n");
-        SocialPost::create(['kind' => 'kolom', 'title' => 'পাঠকের কলম, বাছাই: '.$p->title, 'texts' => [
+        $social = SocialPost::create(['kind' => 'kolom', 'title' => 'পাঠকের কলম, বাছাই: '.$p->title, 'texts' => [
             'facebook' => "পাঠকের কলম: “{$p->title}”\nএ সপ্তাহে পাঠকেরা যা লিখলেন, তার থেকে বাছাই:\n\n{$lines}\n\nসব কটি পড়ুন, আর নতুন সপ্তাহের বিষয়ে আপনিও লিখুন:\n\n".$p->url(),
             'whatsapp' => "পাঠকের কলম “{$p->title}”: পাঠকদের সেরা লেখাগুলো ছাপা হল। পড়ুন, আর এ সপ্তাহে আপনিও লিখুন: ".$p->url(),
             'instagram' => "পাঠকের কলম: “{$p->title}”\n\n{$lines}\n\nসব কটি: hatpakha.com/kolom (লিংক বায়োতে)\n\n#হাতপাখা #পাঠকেরকলম #বাংলা #বাংলাসাহিত্য",
             'quote' => Str::limit(preg_replace('/\s+/u', ' ', (string) $picked->first()->body), 180), 'link' => $p->url(), 'kolom' => $p->id,
         ]]);
+        self::share($social);
         EditorTask::open('kolom')->where('subject_id', $p->id)->get()->each->close('done');
         AuditLog::record('kolom.published', null, ['prompt' => $p->id, 'by' => $by, 'entries' => $picked->count()]);
 

@@ -269,11 +269,15 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D162: archive redesign (issues, collections, year timeline, year page filters and most-read picks) and /sonkha/ as the all-issues page
 - [x] D164: Brevo webhook: hard bounces and complaints suppress the address (like SES)
 - [x] Owner (done 2026-11-12): copied the address from /desk → চিঠি → পাঠানোর পথ into Brevo → Transactional → Settings → Webhook (tick Hard bounce, Spam, Invalid email, Blocked, Unsubscribed)
+- [x] D176: পাঠকের কলম publishes by itself on Sunday 08:00 (only AI-passed entries); switch in /desk → পাঠকের কলম
+- [x] D177: ধাঁধা and শব্দজব্দ; leaderboard (today, week, all time); 1,002 words and 200 riddles (no repeat for 200 days)
+- [x] D178: seven badges in three tiers on the profile and on writers' pages
+- [ ] Owner: a native reader should skim `database/content/word-game.php` and `riddles.php` (spellings such as শিঙাড়া/সিঙাড়া, West Bengal forms such as দেশলাই, a few place names of temples used as landmarks)
+- [ ] Owner: say whether the privacy page should mention that game scores and names show on the leaderboard (can be hidden in Settings)
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode
 - [x] D173: readers select a line → "এই লাইন শেয়ার করুন" → quote card (canvas; share, download, WhatsApp)
 - [x] D174: শব্দ-খেলা at /khela/ (daily word jumble, streak, share)
 - [x] D175: পাঠকের কলম at /kolom/ (weekly theme; agents open, invite, screen and propose; owner publishes)
-- [ ] Owner: each Saturday evening or Sunday, /desk → পাঠকের কলম → look at the ten → "বাছাই প্রকাশ করুন"
 - [ ] Later (owner): আমার পাড়া (reader memories of places), readers' vote for বর্ষসেরা; a second game (ধাঁধা or শব্দজব্দ) once শব্দ-খেলা has a few weeks of numbers
 - [x] D171: writer's note when sending back ("আবার পাঠান"); desk sees +/− words, the note and the changes; "বদলের ইতিহাস" on every piece
 - [x] D170: marketing: every card (incl. quote cards) can go to Facebook or Instagram; "আরও উদ্ধৃতি কার্ড"; posting to Facebook keeps the post ready for Instagram

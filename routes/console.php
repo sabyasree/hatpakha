@@ -68,3 +68,4 @@ Schedule::call(fn () => \App\Support\FacebookPage::autoPost())->name('facebook a
 Schedule::call(fn () => \App\Support\Kolom::openWeek())->name('reader theme opens')->weeklyOn(1, '06:10')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\Kolom::screen())->name('reader entries screened')->hourlyAt(25);
 Schedule::call(fn () => \App\Support\Kolom::pickWeek())->name('reader entries picked')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');
+Schedule::call(fn () => \App\Support\Kolom::autoPublish())->name('reader picks published')->weeklyOn(0, '08:00')->timezone('Asia/Kolkata');   // D176

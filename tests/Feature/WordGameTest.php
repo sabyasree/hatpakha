@@ -32,10 +32,10 @@ class WordGameTest extends TestCase
             $this->assertArrayNotHasKey($word, $seen, 'Listed twice: '.$word);
             $seen[$word] = true;
         }
-        $this->assertGreaterThanOrEqual(100, count($seen));
+        $this->assertGreaterThanOrEqual(915, count($seen), 'Enough words for six months of five a day');
     }
 
-    public function test_everyone_gets_the_same_five_words_each_day_and_no_repeats_for_weeks(): void
+    public function test_everyone_gets_the_same_five_words_each_day_and_no_repeats_for_six_months(): void
     {
         $day = Carbon::parse('2026-11-20', 'Asia/Kolkata');
         $a = WordGame::day($day);
@@ -48,12 +48,12 @@ class WordGameTest extends TestCase
             $this->assertSame($letters, $sorted, 'Same letters');
         }
         $used = [];
-        for ($d = 0; $d < 25; $d++) {
+        for ($d = 0; $d < 183; $d++) {
             foreach (WordGame::day(Carbon::parse(WordGame::START, 'Asia/Kolkata')->addDays($d))['words'] as $w) {
                 $used[] = $w['answer'];
             }
         }
-        $this->assertCount(125, array_unique($used), 'No word comes back within 25 days');
+        $this->assertCount(915, array_unique($used), 'Owner: no word comes back within six months');
     }
 
     public function test_the_page_shows_the_game_without_printing_the_answers_and_is_linked(): void

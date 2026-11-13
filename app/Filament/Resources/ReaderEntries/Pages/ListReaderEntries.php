@@ -65,6 +65,17 @@ class ListReaderEntries extends ListRecords
                     ReaderPrompt::current()?->update(['title' => trim(strip_tags($data['title'])), 'ask' => trim(strip_tags($data['ask']))]);
                     Notification::make()->title(__('বদলানো হয়েছে'))->body(__('ডাকার পোস্টটি আগেই তৈরি হয়ে থাকলে মার্কেটিং পাতায় সেটি নিজে বদলে নিন।'))->success()->send();
                 }),
+            // D176: the owner's switch for "by itself"
+            Action::make('auto')->icon('heroicon-o-bolt')->color(fn () => Kolom::auto() ? 'success' : 'gray')
+                ->label(fn () => Kolom::auto() ? __('নিজে থেকে প্রকাশ: চালু') : __('নিজে থেকে প্রকাশ: বন্ধ'))
+                ->visible($admin)->requiresConfirmation()
+                ->modalHeading(fn () => Kolom::auto() ? __('নিজে থেকে প্রকাশ বন্ধ করবেন?') : __('নিজে থেকে প্রকাশ চালু করবেন?'))
+                ->modalDescription(__('চালু থাকলে: সোমবার বিষয় খোলে ও ডাকার পোস্ট ফেসবুকে যায়; শনিবার এআই সেরা দশটি বাছে; রবিবার সকাল ৮টায় সেগুলো নিজে থেকে প্রকাশ হয় আর ফলের পোস্ট ফেসবুকে যায়। এআই যে লেখা পড়ে পাশ করেনি, তা কখনও নিজে থেকে প্রকাশ হয় না। বন্ধ থাকলে প্রতি সপ্তাহে আপনি "বাছাই প্রকাশ করুন" টিপবেন।'))
+                ->action(function () {
+                    \App\Models\Setting::put(Kolom::AUTO, Kolom::auto() ? '0' : '1');
+                    \App\Models\AuditLog::record('kolom.auto', null, ['on' => Kolom::auto()]);
+                    Notification::make()->title(Kolom::auto() ? __('চালু হল') : __('বন্ধ হল'))->success()->send();
+                }),
             Action::make('page')->label(__('পাতাটি দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->color('gray')
                 ->url(\App\Support\Url::to('/kolom'))->openUrlInNewTab(),
         ];

@@ -4,21 +4,23 @@
     use App\Support\Bn;
     use App\Support\Url;
     $no = max(1, $game['no']);
-    $payload = ['no' => $no, 'date' => $game['date'], 'url' => Url::to('/khela'),
+    $riddle = ($kind ?? 'word') === 'riddle';
+    $payload = ['kind' => $riddle ? 'riddle' : 'word', 'no' => $no, 'date' => $game['date'], 'url' => Url::to($riddle ? '/khela/dhadha' : '/khela'),
         'words' => array_map(fn ($w) => ['a' => base64_encode($w['answer']), 'n' => count(\App\Support\WordGame::letters($w['answer'])), 'f' => base64_encode(\App\Support\WordGame::letters($w['answer'])[0]), 'clue' => $w['clue'], 'tiles' => $w['tiles']], $game['words'])];
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-khela>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-khela @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+        @include('partials.game-nav', ['on' => $riddle ? 'riddle' : 'word'])
         <div class="flex items-end justify-between gap-3">
             <div>
-                <p class="font-hand text-2xl text-red">রোজ পাঁচটা শব্দ</p>
-                <h1 class="font-display text-4xl font-extrabold leading-tight">শব্দ-খেলা</h1>
+                <p class="font-hand text-2xl text-red">{{ $riddle ? 'রোজ একটা ধাঁধা' : 'রোজ পাঁচটা শব্দ' }}</p>
+                <h1 class="font-display text-4xl font-extrabold leading-tight">{{ $riddle ? 'ধাঁধা' : 'শব্দ-খেলা' }}</h1>
             </div>
             <p class="text-right text-sm font-bold text-ink2">খেলা নং {{ Bn::num((string) $no) }}<br><span data-khela-streak></span></p>
         </div>
-        <p class="mt-2 text-ink2">এলোমেলো অক্ষরগুলো টিপে টিপে ঠিক শব্দটা বানান। সূত্র দেওয়া আছে। সবার জন্য আজ একই পাঁচটা শব্দ।</p>
+        <p class="mt-2 text-ink2">{{ $riddle ? 'ধাঁধাটা পড়ে ভাবুন, তারপর নিচের অক্ষরে টিপে টিপে উত্তরটা বানান। কয়েকটা বাড়তি অক্ষরও মেশানো আছে।' : 'এলোমেলো অক্ষরগুলো টিপে টিপে ঠিক শব্দটা বানান। সূত্র দেওয়া আছে। সবার জন্য আজ একই পাঁচটা শব্দ।' }}</p>
 
-        <ol class="mt-5 flex gap-2" aria-label="আজকের পাঁচটি শব্দ" data-khela-dots>
+        <ol class="mt-5 flex gap-2 {{ $riddle ? 'hidden' : '' }}" aria-label="আজকের শব্দ" data-khela-dots>
             @foreach ($game['words'] as $i => $w)
                 <li class="flex h-3 flex-1 rounded-full bg-rule" data-dot></li>
             @endforeach
@@ -49,7 +51,8 @@
                 <a data-khela-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
             </div>
             <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-khela-share-msg></p>
-            <h2 class="mt-4 font-display text-xl font-extrabold">আজকের শব্দ</h2>
+            @include('partials.game-board-line')
+            <h2 class="mt-4 font-display text-xl font-extrabold">{{ $riddle ? 'উত্তর' : 'আজকের শব্দ' }}</h2>
             <ul class="mt-2 divide-y divide-rule" data-khela-answers></ul>
             <p class="mt-4 font-bold">নতুন খেলা আসবে রাত বারোটায়। <span class="text-ink2" data-khela-next></span></p>
             <a href="{{ url('/') }}/" class="mt-3 inline-flex min-h-11 items-center font-bold text-sky-night underline">এবার একটা ভালো লেখা পড়ুন →</a>
@@ -59,6 +62,7 @@
         <details class="mt-6 rounded-2xl border border-rule bg-white p-4">
             <summary class="flex min-h-11 cursor-pointer items-center font-bold">কীভাবে খেলবেন</summary>
             <ul class="mt-2 list-disc space-y-1 ps-6 text-ink2">
+                @if ($riddle)<li>উত্তরের অক্ষরগুলোর সঙ্গে কয়েকটা বাড়তি অক্ষর মেশানো আছে। সব অক্ষর লাগবে না।</li>@endif
                 <li>নিচের অক্ষরে টিপলে সেটি উপরের ঘরে বসে। ভুল হলে উপরের অক্ষরে টিপে ফেরত নিন।</li>
                 <li>সব ঘর ভরলে নিজে থেকেই মিলিয়ে দেখা হয়।</li>
                 <li>🟦 নিজে পেরেছেন · 🟨 একটা অক্ষর দেখে পেরেছেন · 🟥 উত্তর দেখেছেন।</li>
@@ -67,5 +71,5 @@
         </details>
         <script type="application/json" data-khela-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     </section>
-    <script src="{{ asset('js/hp-khela.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-khela.js') }}?v=2" defer></script>
 </x-layouts.app>

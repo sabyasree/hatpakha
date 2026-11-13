@@ -6,7 +6,8 @@
     const $ = (s) => root.querySelector('[data-khela-' + s + ']');
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const answer = (w) => new TextDecoder().decode(Uint8Array.from(atob(w.a), (c) => c.charCodeAt(0)));
-    const KEY = 'hp-khela';
+    const riddle = data.kind === 'riddle';
+    const KEY = riddle ? 'hp-dhadha' : 'hp-khela';
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window: play without saving */ } };
@@ -28,8 +29,8 @@
     const tileClass = 'flex h-14 min-w-14 items-center justify-center rounded-2xl border-2 border-navy px-3 font-serif text-2xl font-bold';
     const render = () => {
         const w = word();
-        $('count').textContent = 'শব্দ ' + bn(day.i + 1) + ' / ' + bn(data.words.length) + ' · ' + bn(w.n) + ' অক্ষরের';
-        $('clue').textContent = 'সূত্র: ' + w.clue;
+        $('count').textContent = riddle ? 'উত্তর ' + bn(w.n) + ' অক্ষরের' : 'শব্দ ' + bn(day.i + 1) + ' / ' + bn(data.words.length) + ' · ' + bn(w.n) + ' অক্ষরের';
+        $('clue').textContent = riddle ? w.clue : 'সূত্র: ' + w.clue;
         const slots = $('slots'); slots.textContent = '';
         for (let k = 0; k < w.n; k++) {
             const b = document.createElement('button');
@@ -102,13 +103,27 @@
         const secs = Math.max(1, Math.round(((day.end || Date.now()) - day.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
         const grid = day.results.map((r) => ({ g: '🟦', y: '🟨', r: '🟥' }[r])).join('');
-        return { good, time, grid, text: 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\nআপনিও খেলুন: ' + data.url };
+        return { good, time, grid, text: (riddle ? 'হাতপাখার ধাঁধা #' + bn(data.no) + '\n“' + data.words[0].clue + '”\n' + (good ? 'আমি পেরেছি ' : 'আমি পারিনি ') + grid + ' · ' + time : 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid) + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\nআপনিও খেলুন: ' + data.url };
+    };
+    // D177: a signed-in player's result goes to the leaderboard (once a day)
+    const sendScore = () => {
+        const url = root.dataset.scoreUrl;
+        if (!url || day.sent) return;
+        fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },
+            body: JSON.stringify({ game: data.kind, day: data.date, seconds: Math.max(1, Math.round(((day.end || Date.now()) - day.start) / 1000)), results: day.results }) })
+            .then((r) => r.ok ? r.json() : null).then((j) => {
+                if (!j || !j.ok) return;
+                day.sent = true; save();
+                const el = root.querySelector('[data-khela-board-msg]');
+                if (el) el.textContent = '✓ লিডারবোর্ডে উঠল: আজ ' + bn(j.points) + ' পয়েন্ট';
+            }).catch(() => {});
     };
     const finish = () => {
         $('board').hidden = true; $('done').hidden = false; dots(); showStreak();
         const s = shareText();
-        $('cheer').textContent = s.good === data.words.length ? 'সাবাশ! সব কটা পেরেছেন' : (s.good >= 3 ? 'বেশ হয়েছে!' : 'কাল আবার চেষ্টা করুন');
-        $('score').textContent = bn(s.good) + ' / ' + bn(data.words.length) + ' · সময় ' + s.time;
+        $('cheer').textContent = s.good === data.words.length ? (riddle ? 'সাবাশ! ঠিক ধরেছেন' : 'সাবাশ! সব কটা পেরেছেন') : (s.good >= 3 ? 'বেশ হয়েছে!' : 'কাল আবার চেষ্টা করুন');
+        $('score').textContent = riddle ? 'সময় ' + s.time : bn(s.good) + ' / ' + bn(data.words.length) + ' · সময় ' + s.time;
+        sendScore();
         $('grid').textContent = s.grid;
         $('streak-line').textContent = streakNow() > 0 ? '🔥 টানা ' + bn(streakNow()) + ' দিন খেলছেন। কাল এলে ' + bn(streakNow() + 1) + ' হবে।' : '';
         $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(s.text);
