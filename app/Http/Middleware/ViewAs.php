@@ -34,10 +34,17 @@ class ViewAs
     }
 
     /** Busiest writers first: the best demo of what a writer with many pieces sees. */
-    public static function choices(string $search = ''): array
+    /** A person picked from the search (not in the first 30) still needs a label, or the form calls the choice invalid. */
+    public static function choiceLabel(mixed $id): ?string
+    {
+        return self::choices('', (int) $id)[(int) $id] ?? null;
+    }
+
+    public static function choices(string $search = '', ?int $id = null): array
     {
         return User::query()->whereIn('role', [Role::Reader->value, Role::Writer->value, Role::TrustedWriter->value])
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%')))
+            ->when($id !== null, fn ($q) => $q->where('users.id', $id))
             ->leftJoin('authors', 'authors.user_id', '=', 'users.id')
             ->leftJoin('author_post', 'author_post.author_id', '=', 'authors.id')
             ->groupBy('users.id', 'users.name', 'users.role')

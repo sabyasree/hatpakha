@@ -269,6 +269,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D162: archive redesign (issues, collections, year timeline, year page filters and most-read picks) and /sonkha/ as the all-issues page
 - [x] D164: Brevo webhook: hard bounces and complaints suppress the address (like SES)
 - [x] Owner (done 2026-11-12): copied the address from /desk → চিঠি → পাঠানোর পথ into Brevo → Transactional → Settings → Webhook (tick Hard bounce, Spam, Invalid email, Blocked, Unsubscribed)
+- [x] D166: account redesign (UX review, scenarios with three non-technical readers): header "আমার"/"ঢুকুন"; phone bar "আরও" opens one sheet with everything (account first, লগ-আউট, issue, search, archive, sections); readers land on আমার পড়া (যেখানে থেমেছিলেন, আপনার জন্য নতুন, পরে পড়ব, যাঁদের অনুসরণ করেন); writers on আমার লেখা (আপনার কাজ আছে, drafts, with the editor, published with reads/WhatsApp/certificate, own page link); আমার পাতা; ই-মেল ও পাসওয়ার্ড with plain on/off switches; reading history (on by default, switch off, clear, kept 1 year; privacy page updated); "write for us" line for readers
+- [x] D166: browser walk-through (visitor, reader, writer, laptop: 45 checks) and accessibility pass (axe WCAG 2.2 AA: 0 issues; 320px and 200% zoom; keyboard; 44px tap targets). Found and fixed on the way: rate limits shared between routes, post-page progress clash, link colour contrast, white text on light blue badges
+- [ ] Owner: try it on staging with 2-3 readers (script in the release note); a same-e-mail sign-up gets "account already exists, log in / forgot password" by e-mail (D59)
 - [x] D163: writers shown by an old login get the name from their own profile (or keep it); runs once on deploy
 - [x] D161: /desk → পাঠানো চিঠি: a copy of every letter to a writer, exactly as sent
 - [x] D160: the writer's e-mail and edit page list the small corrections (ভুল → ঠিক)

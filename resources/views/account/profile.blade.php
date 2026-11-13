@@ -1,58 +1,63 @@
-{{-- The writer's profile, its own main tab (owner): what readers see on the writer page. --}}
+{{-- D166 "আমার পাতা" (owner + UX review + tests with older users): a reader sets a photo and a name; a writer also a
+     Bengali name, a few lines about themselves, and (folded away) city, links and a wide picture for the writer page. --}}
 @php
-    use App\Support\Bn;
     use App\Support\Url;
+    $acct = \App\Support\AccountMenu::for($user);
+    $writer = $acct['writer'];
     $avatar = $author?->avatar_path;
+    $in = 'mt-1 block h-14 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg';
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="profile" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
-        <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
-            <div>
-                <h2 class="font-display text-2xl font-extrabold">লেখক-প্রোফাইল</h2>
-                <p class="text-sm text-ink2">আপনার লেখক-পাতায় পাঠকেরা যা দেখবেন: ছবি, প্রচ্ছদ, নাম, নিজের কথা।</p>
+        @if ($writer)
+            <p class="text-ink2">এই তথ্য আপনার লেখক-পাতায় আর প্রতিটি লেখার নিচে পাঠকেরা দেখেন।@if ($author && $author->published_count > 0) <a href="{{ $author->url() }}" class="font-bold text-sky-night underline">লেখক-পাতাটি দেখুন</a>@endif</p>
+        @endif
+        <form method="POST" action="{{ Url::to('/account/profile') }}" enctype="multipart/form-data" class="mt-4 max-w-xl">
+            @csrf
+            <div class="flex flex-col items-center text-center">
+                <img data-preview="avatar" @if ($avatar) src="{{ $avatar }}" @endif alt="" class="{{ $avatar ? '' : 'hidden' }} h-24 w-24 rounded-full border-2 border-navy object-cover">
+                @unless ($avatar)<span data-preview-fallback="avatar" class="flex h-24 w-24 items-center justify-center rounded-full border-2 border-navy bg-peach text-4xl font-extrabold" aria-hidden="true">{{ $acct['initial'] }}</span>@endunless
+                <label class="mt-3 inline-flex h-12 cursor-pointer items-center rounded-full border-2 border-navy bg-white px-6 font-bold hover:bg-peach-light">
+                    {{ $avatar ? 'ছবি বদলান' : 'ছবি দিন' }}<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" data-preview-input="avatar" class="sr-only"></label>
+                <p class="mt-1 text-sm text-ink2">ফোনের যেকোনো ছবি চলবে।{{ $writer ? ' মুখের ছবি হলে ভালো।' : '' }}</p>
+                @if ($avatar)<label class="mt-1 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="remove_avatar" value="1"> ছবি সরিয়ে দিন</label>@endif
             </div>
-            @if ($author && $author->published_count > 0)
-                <a href="{{ $author->url() }}" class="flex h-11 items-center rounded-full border-2 border-navy bg-white px-4 text-sm font-bold hover:bg-peach-light">লেখক-পাতা দেখুন ↗</a>
-            @endif
-        </div>
-            <form method="POST" action="{{ Url::to('/account/profile') }}" enctype="multipart/form-data" class="overflow-hidden rounded-3xl border-2 border-navy bg-white">
-                @csrf
-                {{-- Live preview of cover + photo --}}
-                <div class="relative h-36 bg-sky md:h-48">
-                    <img data-preview="cover" @if ($author?->cover_path) src="{{ $author->cover_path }}" @endif alt="" class="{{ $author?->cover_path ? '' : 'hidden' }} h-full w-full object-cover">
-                    @unless ($author?->cover_path)<div class="halftone absolute inset-0" aria-hidden="true"></div>@endunless
-                    <label class="absolute right-3 top-3 flex h-10 cursor-pointer items-center rounded-full bg-white/95 px-4 text-sm font-bold shadow">
-                        প্রচ্ছদ বদলান<input type="file" name="cover" accept="image/jpeg,image/png,image/webp" data-preview-input="cover" class="sr-only"></label>
-                </div>
-                <div class="px-4 pb-5 sm:px-5">
-                    <div class="-mt-12 flex items-end gap-4">
-                        <div class="relative">
-                            <img data-preview="avatar" @if ($avatar) src="{{ $avatar }}" @endif alt="" class="{{ $avatar ? '' : 'hidden' }} h-24 w-24 rounded-full border-4 border-white object-cover outline outline-2 outline-navy">
-                            @unless ($avatar)<span data-preview-fallback="avatar" class="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-peach to-peach-deep text-4xl font-extrabold outline outline-2 outline-navy" aria-hidden="true">{{ mb_substr($user->name, 0, 1) }}</span>@endunless
-                        </div>
-                        <label class="mb-1 flex h-10 cursor-pointer items-center rounded-full border-2 border-navy px-4 text-sm font-bold">
-                            ছবি দিন<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" data-preview-input="avatar" class="sr-only"></label>
-                    </div>
-                    <p class="mt-2 text-xs text-ink2">ছবি: বর্গাকার ভালো (অন্তত ২৪০×২৪০)। প্রচ্ছদ: চওড়া ছবি (৩:১, অন্তত ৭৫০ পিক্সেল)। JPG/PNG/WebP, ৮ MB পর্যন্ত।
-                        @if ($avatar)<label class="ml-2 inline-flex items-center gap-1"><input type="checkbox" name="remove_avatar" value="1"> ছবি সরান</label>@endif
-                        @if ($author?->cover_path)<label class="ml-2 inline-flex items-center gap-1"><input type="checkbox" name="remove_cover" value="1"> প্রচ্ছদ সরান</label>@endif
-                    </p>
 
-                    <div class="mt-5 grid gap-x-5 sm:grid-cols-2">
-                        <x-field name="name" label="ছাপার নাম" :value="$user->name" maxlength="80" required hint="লেখার সঙ্গে এই নাম ছাপা হয়।" />
-                        <x-field name="name_bn" label="বাংলায় নাম (ঐচ্ছিক)" :value="$author?->display_name_bn" maxlength="80" hint="থাকলে লেখক-পাতায় এটাই দেখাবে।" />
-                        <x-field name="city" label="শহর (ঐচ্ছিক)" :value="$author?->city" maxlength="60" />
-                        <x-field name="website" type="url" label="ওয়েবসাইট (ঐচ্ছিক)" :value="$author?->links['website'] ?? null" placeholder="https://" />
-                        <x-field name="facebook" type="url" label="ফেসবুক (ঐচ্ছিক)" :value="$author?->links['facebook'] ?? null" placeholder="https://facebook.com/…" />
-                        <x-field name="instagram" type="url" label="ইনস্টাগ্রাম (ঐচ্ছিক)" :value="$author?->links['instagram'] ?? null" placeholder="https://instagram.com/…" />
+            @if ($writer)
+                <label class="mt-6 block"><span class="text-lg font-bold">আপনার নাম (বাংলায়)</span>
+                    <input name="name_bn" value="{{ old('name_bn', $author?->display_name_bn) }}" maxlength="80" class="{{ $in }}" placeholder="যেমন: মনোরমা চক্রবর্তী">
+                    <span class="mt-1 block text-sm text-ink2">লেখার সঙ্গে এই নামটিই ছাপা হয়।</span></label>
+                <label class="mt-5 block"><span class="text-lg font-bold">নাম ইংরেজিতে</span> <span class="text-ink2">(ইচ্ছে হলে)</span>
+                    <input name="name" value="{{ old('name', $user->name) }}" maxlength="80" class="{{ $in }}" lang="en"></label>
+                <label class="mt-5 block"><span class="text-lg font-bold">নিজের কথা</span>
+                    <textarea name="bio" rows="4" maxlength="1000" class="mt-1 block w-full rounded-xl border-2 border-navy bg-white p-3 text-lg" placeholder="যেমন: হাওড়ায় থাকি, কবিতা লিখি কলেজের দিন থেকে।">{{ old('bio', $author?->bio) }}</textarea>
+                    <span class="mt-1 block text-sm text-ink2">দু-চার লাইন। পাঠকেরা আপনাকে চিনবেন।</span></label>
+                <details class="group mt-5 rounded-xl border-2 border-navy bg-white" @if ($errors->hasAny(['city', 'website', 'facebook', 'instagram', 'cover'])) open @endif>
+                    <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 font-bold [&::-webkit-details-marker]:hidden">
+                        <span>আরও কিছু যোগ করুন<span class="block text-sm font-medium text-ink2">ইচ্ছে হলে: শহর, ফেসবুক, ওয়েবসাইট, লেখক-পাতার মাথায় একটা চওড়া ছবি</span></span>
+                        <span class="transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+                    <div class="border-t-2 border-rule p-4">
+                        <x-field name="city" label="শহর" :value="$author?->city" maxlength="60" />
+                        <x-field name="facebook" type="url" label="ফেসবুক পাতার ঠিকানা" :value="$author?->links['facebook'] ?? null" placeholder="https://facebook.com/…" />
+                        <x-field name="instagram" type="url" label="ইনস্টাগ্রাম" :value="$author?->links['instagram'] ?? null" placeholder="https://instagram.com/…" />
+                        <x-field name="website" type="url" label="ওয়েবসাইট" :value="$author?->links['website'] ?? null" placeholder="https://" />
+                        <p class="font-bold">লেখক-পাতার মাথার চওড়া ছবি</p>
+                        <img data-preview="cover" @if ($author?->cover_path) src="{{ $author->cover_path }}" @endif alt="" class="{{ $author?->cover_path ? '' : 'hidden' }} mt-2 h-24 w-full rounded-xl border-2 border-navy object-cover">
+                        <label class="mt-2 inline-flex h-11 cursor-pointer items-center rounded-full border-2 border-navy px-4 font-bold">ছবি দিন<input type="file" name="cover" accept="image/jpeg,image/png,image/webp" data-preview-input="cover" class="sr-only"></label>
+                        @if ($author?->cover_path)<label class="ml-2 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="remove_cover" value="1"> সরিয়ে দিন</label>@endif
                     </div>
-                    <label class="block">
-                        <span class="mb-1 block font-bold">নিজের কথা (ঐচ্ছিক)</span>
-                        <textarea name="bio" rows="4" maxlength="1000" class="block w-full rounded-xl border-2 border-navy bg-white p-3 text-lg" placeholder="দু-চার লাইনে নিজের কথা: কী লেখেন, কোথা থেকে…">{{ old('bio', $author?->bio) }}</textarea>
-                        <span class="mt-1 block text-sm text-ink2">১০০০ অক্ষর পর্যন্ত। সাধারণ লেখা; লিংক উপরের ঘরে দিন।</span>
-                    </label>
-                    <button class="mt-5 h-12 rounded-full bg-red px-8 font-bold text-white">প্রোফাইল রাখুন</button>
-                </div>
-            </form>
+                </details>
+            @else
+                <label class="mt-6 block"><span class="text-lg font-bold">আপনার নাম</span>
+                    <input name="name" value="{{ old('name', $user->name) }}" maxlength="80" required class="{{ $in }}">
+                    <span class="mt-1 block text-sm text-ink2">মন্তব্যে পাঠকেরা এই নামটি দেখবেন। বাংলায় বা ইংরেজিতে, যেভাবে চান।</span></label>
+                <div class="mt-5"><span class="text-lg font-bold">ই-মেল</span>
+                    <div class="mt-1 flex h-14 items-center rounded-xl border-2 border-rule bg-peach-light px-4 text-ink2">{{ $user->email }}</div>
+                    <span class="mt-1 block text-sm text-ink2">এই ই-মেল দিয়েই ঢোকেন। বদলাতে চাইলে <a href="{{ Url::to('/contact-us') }}" class="font-bold text-sky-night underline">আমাদের লিখুন</a>।</span></div>
+            @endif
+            <button class="mt-6 h-14 w-full rounded-full bg-red text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">রাখুন</button>
+        </form>
+        <a href="{{ Url::to('/account/settings') }}" class="mt-6 flex min-h-14 max-w-xl items-center justify-between gap-3 rounded-xl border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">
+            <span>ই-মেল বা ফোনের খবর বন্ধ করবেন? পাসওয়ার্ড বদলাবেন?<span class="block text-sm font-medium text-ink2">ই-মেল ও পাসওয়ার্ড</span></span><span aria-hidden="true">›</span></a>
     </x-account-shell>
 </x-layouts.app>

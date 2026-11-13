@@ -10,7 +10,7 @@
             <button class="h-12 w-full rounded-full bg-red font-bold text-white">লগ-ইন</button>
         </form>
         <div class="mt-6 flex flex-col gap-3 text-center">
-            <a href="{{ \App\Support\Url::to('/forgot-password') }}" class="font-semibold text-sky-deep underline">পাসওয়ার্ড ভুলে গেছেন?</a>
+            <a href="{{ \App\Support\Url::to('/forgot-password') }}" class="inline-flex min-h-11 items-center font-semibold text-sky-night underline">পাসওয়ার্ড ভুলে গেছেন?</a>
         </div>
     </x-form-card>
 </x-layouts.app>

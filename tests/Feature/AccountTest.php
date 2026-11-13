@@ -29,7 +29,9 @@ class AccountTest extends TestCase
             ->assertRedirect(url('/account').'/');
         $user = User::where('email', 'rina@example.com')->first();
         $this->assertSame(Role::Reader, $user->role);
-        $this->get('/account/')->assertOk()->assertSee('আমার লেখা')->assertSee('রিনা দাস');
+        // D166: a reader's "আমার" opens "আমার পড়া"; no writing pages until they write.
+        $this->get('/account/')->assertRedirect(url('/account/reading').'/');
+        $this->get('/account/reading/')->assertOk()->assertSee('নমস্কার, রিনা')->assertSee('আমার পড়া')->assertSee('পরে পড়ব')->assertDontSee('আমার লেখা</span>', false);
 
         $this->post('/logout/')->assertRedirect(url('/').'/');
         $this->get('/account/')->assertRedirect(url('/login'));
@@ -103,7 +105,7 @@ class AccountTest extends TestCase
         $this->makePost(['slug' => 'fix', 'title' => 'ঠিক করার লেখা', 'status' => 'changes', 'review_note' => 'শেষটা ছোট করুন'], $a);
         $this->actingAs($me);
 
-        $home = $this->get('/account/')->assertOk()->assertSee('আপনার পালা')->assertSee('শেষটা ছোট করুন')->assertSee('৪৫ প্রকাশিত');
+        $home = $this->get('/account/')->assertOk()->assertSee('আপনার কাজ আছে')->assertSee('শেষটা ছোট করুন')->assertSee('৪৫টি লেখা প্রকাশিত');
         $this->assertLessThan(4, substr_count($home->getContent(), 'প্রকাশিত ১'), 'Home shows only a few recent pieces');
 
         $page = $this->get('/account/writings/?status=published')->assertOk()->assertSee('আরও দেখুন (২৫টি বাকি)');
@@ -111,8 +113,8 @@ class AccountTest extends TestCase
         $this->get('/account/writings/?status=published&page=3')->assertOk()->assertDontSee('আরও দেখুন');
         $this->get('/account/writings/?q='.urlencode('প্রকাশিত 7'))->assertOk()->assertSee('প্রকাশিত 7')->assertDontSee('প্রকাশিত 8');
         $this->get('/account/writings/?status=action')->assertSee('ঠিক করার লেখা')->assertDontSee('প্রকাশিত 1<');
-        $this->get('/account/profile/')->assertOk()->assertSee('লেখক-প্রোফাইল')->assertSee('প্রোফাইল রাখুন')->assertSee('aria-current="page"', false);
-        $this->get('/account/settings/')->assertOk()->assertSee('নিরাপত্তা')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
+        $this->get('/account/profile/')->assertOk()->assertSee('আপনার নাম (বাংলায়)')->assertSee('রাখুন')->assertSee('আরও কিছু যোগ করুন')->assertSee('aria-current="page"', false);
+        $this->get('/account/settings/')->assertOk()->assertSee('পাসওয়ার্ড বদলান')->assertSee('সপ্তাহে একটা ই-মেল')->assertSee('লগ-আউট')->assertSee('id="letters"', false)->assertDontSee('প্রোফাইল রাখুন');
         $this->post('/account/newsletter/', ['newsletter' => 0])->assertRedirect(url('/account/settings').'/#letters');
     }
 
@@ -134,6 +136,19 @@ class AccountTest extends TestCase
             ->callAction('viewAs', ['user' => $writer->id])->assertHasNoActionErrors()->assertRedirect(url('/account').'/');
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.view_as', 'subject_id' => $writer->id, 'user_id' => $admin->id]);
 
+        // Owner report: someone found by searching (not among the first 30) was "invalid".
+        $quiet = User::factory()->create(['role' => Role::Reader, 'name' => 'Dr Quiet Reader']);
+        User::factory()->count(31)->create(['role' => Role::Reader])->each(function (User $u, int $i) {
+            $a = Author::create(['display_name' => 'W'.$i, 'slug' => 'w-'.$i, 'user_id' => $u->id]);
+            $p = \App\Models\Post::create(['title' => 'P'.$i, 'slug' => 'p-'.$i, 'status' => 'draft', 'body_html' => '<p>x</p>']);
+            $p->authors()->attach($a->id, ['position' => 0]);
+        });
+        $this->assertArrayNotHasKey($quiet->id, \App\Http\Middleware\ViewAs::choices());
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->callAction('viewAs', ['user' => $quiet->id])->assertHasNoActionErrors();
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->callAction('viewAs', ['user' => $writer->id])->assertHasNoActionErrors();
+
         $page = $this->get('/account/')->assertOk()->assertSee('Busy Writer')->assertSee('Busy one')->assertSee('চোখে দেখছেন')->assertSee('বন্ধ করুন');
         $this->assertStringContainsString('no-store', (string) $page->headers->get('Cache-Control'));
         $this->get('/account/writings/')->assertOk()->assertSee('Busy one');
@@ -150,13 +165,13 @@ class AccountTest extends TestCase
 
         // Stop: back to the admin
         $this->post('/view-as/stop/')->assertRedirect('/desk');
-        $this->get('/account/')->assertOk()->assertSee('Owner')->assertDontSee('চোখে দেখছেন');
+        $this->get('/account/reading/')->assertOk()->assertSee('Owner')->assertDontSee('চোখে দেখছেন');
 
         // Never as staff; ends by itself after 30 minutes
         $this->assertNull(\App\Http\Middleware\ViewAs::start($editor));
         \App\Http\Middleware\ViewAs::start($writer);
         $this->travel(31)->minutes();
-        $this->get('/account/')->assertOk()->assertDontSee('চোখে দেখছেন')->assertSee('দেখা শেষ হয়েছে');
+        $this->get('/account/reading/')->assertOk()->assertDontSee('চোখে দেখছেন')->assertSee('দেখা শেষ হয়েছে');
     }
 
     public function test_only_an_admin_can_view_as(): void
@@ -166,7 +181,7 @@ class AccountTest extends TestCase
         $this->assertNull(\App\Http\Middleware\ViewAs::start($writer));
         // a forged session flag does nothing for a non-admin
         $this->withSession(['view_as' => ['user' => $writer->id, 'by' => auth()->id(), 'at' => now()->timestamp]])
-            ->get('/account/')->assertOk()->assertDontSee('চোখে দেখছেন');
+            ->get('/account/reading/')->assertOk()->assertDontSee('চোখে দেখছেন');
     }
 
     /** D94 (owner): once submitted or published, the writer can't change a piece; they ask the editor. */

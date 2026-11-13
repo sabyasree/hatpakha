@@ -32,7 +32,7 @@
             </div>
             <p class="mt-3 text-center text-sm text-ink2">PDF-এর জন্য "PDF / প্রিন্ট" টিপে "Save as PDF" বাছুন (A4, আড়াআড়ি)।</p>
             @if ($c->post && $c->post->isLive())
-                <p class="mt-6 text-center"><a href="{{ $c->post->url() }}" class="font-bold text-sky-deep underline">লেখাটি পড়ুন</a></p>
+                <p class="mt-6 text-center"><a href="{{ $c->post->url() }}" class="font-bold text-sky-night underline">লেখাটি পড়ুন</a></p>
             @endif
         @else
             <div class="mx-auto mt-6 max-w-[680px] rounded-3xl border-2 border-red bg-white p-8 text-center text-red">এই শংসাপত্রটি বাতিল করা হয়েছে।</div>

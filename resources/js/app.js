@@ -17,6 +17,43 @@ if (article && navigator.sendBeacon) {
     setTimeout(send, 5000);
 }
 
+// D166 "আমার পড়া": for a signed-in reader who keeps it on, how far they read this piece (the furthest point, sent when
+// they leave), and "যেখানে থেমেছিলেন" opening the piece at that point (#resume-60).
+const tracked = document.querySelector('[data-read-track]');
+if (tracked) {
+    let furthest = 0;
+    let sentAt = -1;
+    const measure = () => {
+        const r = tracked.getBoundingClientRect();
+        if (r.height <= 0) return;
+        const seen = Math.min(r.height, window.innerHeight - r.top);
+        furthest = Math.max(furthest, Math.round((100 * Math.max(0, seen)) / r.height));
+    };
+    const flush = () => {
+        if (furthest < 3 || furthest === sentAt || !navigator.sendBeacon) return;
+        sentAt = furthest;
+        const data = new FormData();
+        data.append('p', String(Math.min(100, furthest)));
+        data.append('_token', tracked.dataset.readToken);
+        navigator.sendBeacon(tracked.dataset.readTrack, data);
+    };
+    // Also save a few seconds after the reader stops scrolling: phones (iOS Safari above all) don't always send on leaving.
+    let idle;
+    addEventListener('scroll', () => {
+        measure();
+        clearTimeout(idle);
+        if (furthest - Math.max(0, sentAt) >= 10) idle = setTimeout(flush, 3000);
+    }, { passive: true });
+    addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    addEventListener('pagehide', flush);
+    const resume = location.hash.match(/^#resume-(\d{1,3})$/);
+    if (resume) {
+        const r = tracked.getBoundingClientRect();
+        scrollTo({ top: Math.max(0, scrollY + r.top + (r.height * Math.min(95, +resume[1])) / 100 - innerHeight * 0.6) });
+    }
+    measure();
+}
+
 // Profile photo / cover: show the chosen picture straight away (D59). The server re-checks and crops it.
 document.querySelectorAll('[data-preview-input]').forEach((input) => {
     input.addEventListener('change', () => {
@@ -164,7 +201,7 @@ document.querySelectorAll('input[type="password"]').forEach((input) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = 'দেখান';
-    btn.className = 'absolute right-1.5 top-1/2 h-10 -translate-y-1/2 rounded-full px-3 text-sm font-bold text-sky-deep hover:bg-sky-tint';
+    btn.className = 'absolute right-1 top-1/2 h-11 -translate-y-1/2 rounded-full px-3 text-sm font-bold text-sky-night hover:bg-sky-tint';
     btn.setAttribute('aria-pressed', 'false');
     btn.setAttribute('aria-label', 'পাসওয়ার্ড দেখান');
     btn.addEventListener('click', () => {
@@ -246,11 +283,13 @@ document.querySelectorAll('form[data-undoable]').forEach((form) => {
             toast.setAttribute('data-undo-toast', '');
             toast.setAttribute('role', 'status');
             toast.className = 'fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-navy px-4 py-3 font-bold text-white shadow-[4px_4px_0_#CB1B32] md:bottom-6';
-            toast.innerHTML = '<span class="flex-1"></span><button type="button" class="h-10 rounded-full bg-paper px-4 text-navy">ফিরিয়ে আনুন</button>';
+            // D166: the message stays until the reader does something else (older readers need time), with its own ✕.
+            toast.innerHTML = '<span class="flex-1"></span><button type="button" class="h-11 rounded-full bg-paper px-4 text-navy">ফিরিয়ে আনুন</button><button type="button" class="h-11 w-11 rounded-full text-xl" aria-label="বন্ধ করুন">✕</button>';
             toast.querySelector('span').textContent = form.dataset.undoable;
-            toast.querySelector('button').addEventListener('click', () => send().then(() => { if (row) row.hidden = false; toast.remove(); }));
+            const [undo, close] = toast.querySelectorAll('button');
+            undo.addEventListener('click', () => send().then(() => { if (row) row.hidden = false; toast.remove(); }));
+            close.addEventListener('click', () => toast.remove());
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 6000);
         }).catch(() => form.submit());
     });
 });
@@ -459,3 +498,63 @@ const hpPush = (() => {
     window.addEventListener('appinstalled', () => setTimeout(show, 800));
     if (hpStandalone()) setTimeout(show, 1500);
 })();
+
+// D166: "আরও" in the phone's bottom bar opens the "সব কিছু" sheet. It closes with ✕ বন্ধ করুন, the dim area, Esc,
+// "আরও" again, or the phone's back button (opening adds a history step, so back closes the sheet, not the page).
+(() => {
+    const sheet = document.querySelector('[data-more-sheet]');
+    const opener = document.querySelector('[data-more-open]');
+    if (!sheet || !opener) return;
+    const panel = sheet.querySelector('[role=dialog]');
+    let open = false;
+    const focusables = () => [...panel.querySelectorAll('a[href], button, input, [tabindex]:not([tabindex="-1"])')].filter((el) => !el.hidden);
+    const show = () => {
+        if (open) return;
+        open = true;
+        sheet.hidden = false;
+        opener.setAttribute('aria-expanded', 'true');
+        document.documentElement.style.overflow = 'hidden';
+        document.querySelectorAll('[data-install]').forEach((el) => { el.dataset.wasHidden = el.hidden ? '1' : ''; el.hidden = true; });
+        history.pushState({ hpMore: true }, '');
+        panel.querySelector('[data-more-close]')?.focus();
+    };
+    const hide = (fromHistory) => {
+        if (!open) return;
+        open = false;
+        sheet.hidden = true;
+        opener.setAttribute('aria-expanded', 'false');
+        document.documentElement.style.overflow = '';
+        document.querySelectorAll('[data-install]').forEach((el) => { if (el.dataset.wasHidden === '') el.hidden = false; });
+        if (!fromHistory && history.state && history.state.hpMore) history.back();
+        opener.focus();
+    };
+    opener.addEventListener('click', () => (open ? hide(false) : show()));
+    sheet.querySelectorAll('[data-more-close]').forEach((b) => b.addEventListener('click', () => hide(false)));
+    addEventListener('popstate', () => hide(true));
+    addEventListener('keydown', (e) => {
+        if (!open) return;
+        if (e.key === 'Escape') hide(false);
+        if (e.key === 'Tab') {
+            const f = focusables();
+            if (!f.length) return;
+            if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+            else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+        }
+    });
+    // Following a link inside the sheet: first take back the history step the sheet added, then go (so "back" on the
+    // next page returns to this page, not to this page with the sheet).
+    panel.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href]');
+        if (!a || e.metaKey || e.ctrlKey || e.shiftKey || !(history.state && history.state.hpMore)) return;
+        e.preventDefault();
+        open = false;
+        addEventListener('popstate', () => location.assign(a.href), { once: true });
+        history.back();
+    });
+})();
+
+// D166: "লিংক কপি" (the writer page's address): copy, then say so on the button.
+document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+    const done = () => { const t = b.textContent; b.textContent = b.dataset.copied || '✓'; setTimeout(() => { b.textContent = t; }, 2500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done).catch(() => {});
+}));

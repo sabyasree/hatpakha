@@ -44,7 +44,7 @@
 .prose-bn h2 { font-size: 1.5em; }
 .prose-bn h3 { font-size: 1.25em; }
 .prose-bn h4 { font-size: 1.1em; color: var(--color-red-dark); }
-.prose-bn a { color: var(--color-sky-deep); text-decoration: underline; text-underline-offset: 3px; }
+.prose-bn a { color: var(--color-sky-night); text-decoration: underline; text-underline-offset: 3px; }
 .prose-bn strong, .prose-bn b { font-weight: 700; }
 .prose-bn ul, .prose-bn ol { margin: 0 0 1.05em; padding-left: 1.4em; }
 .prose-bn ul { list-style: disc; }

@@ -135,6 +135,10 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/change/{post}', [\App\Http\Controllers\AccountController::class, 'requestChange'])->whereNumber('post')->middleware('throttle:10,1');   // D94
     Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/newsletter', [\App\Http\Controllers\AccountController::class, 'updateNewsletter']);
+    // D166: "আমার পড়া": how far a signed-in reader read a piece (only while their switch is on), the switch, and clearing it.
+    Route::post('/reading/{post}', [\App\Http\Controllers\AccountController::class, 'readingProgress'])->whereNumber('post')->middleware('throttle:reading')->name('reading.progress');
+    Route::post('/account/reading-history', [\App\Http\Controllers\AccountController::class, 'readingHistorySwitch']);
+    Route::post('/account/reading-history/clear', [\App\Http\Controllers\AccountController::class, 'readingHistoryClear'])->middleware('throttle:5,1');
     Route::post('/account/password', [\App\Http\Controllers\AccountController::class, 'updatePassword'])->middleware('throttle:5,1');
     Route::post('/account/2fa/start', [\App\Http\Controllers\AccountController::class, 'twoFactorStart'])->middleware('throttle:10,1');
     Route::post('/account/2fa/confirm', [\App\Http\Controllers\AccountController::class, 'twoFactorConfirm'])->middleware('throttle:6,1');

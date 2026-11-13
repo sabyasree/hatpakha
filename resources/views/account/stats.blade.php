@@ -8,7 +8,7 @@
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="writings" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
-        <a href="{{ \App\Support\Url::to('/account/writings') }}" class="inline-flex min-h-11 items-center text-sm font-bold text-sky-deep underline">← আমার লেখা</a>
+        <a href="{{ \App\Support\Url::to('/account/writings') }}" class="inline-flex min-h-11 items-center text-sm font-bold text-sky-night underline">← আমার লেখা</a>
         <h2 class="font-display text-3xl font-extrabold">আমার পাঠক</h2>
         <p class="mt-1 text-ink2">আপনার লেখা কতবার পড়া হচ্ছে, কতজনের ভালো লাগছে।</p>
 

@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('password-reset', fn (Request $r) => Limit::perHour(3)->by($r->ip()));
         RateLimiter::for('register', fn (Request $r) => Limit::perHour(5)->by($r->ip()));
         RateLimiter::for('submit', fn (Request $r) => Limit::perDay(3)->by((string) ($r->user()?->id ?? $r->ip())));
+        // D166: reading-progress pings get their own counter (plain throttle:N,1 limits share one per user, so 120 pings a
+        // minute would use up the 10 a minute for saving the profile).
+        RateLimiter::for('reading', fn (Request $r) => Limit::perMinute(120)->by('reading|'.($r->user()?->id ?? $r->ip())));
         RateLimiter::for('comment', fn (Request $r) => $r->user()
             ? [Limit::perMinute(3)->by('u'.$r->user()->id), Limit::perHour(20)->by('u'.$r->user()->id)]
             : [Limit::perMinute(2)->by($r->ip()), Limit::perHour(6)->by($r->ip())]);

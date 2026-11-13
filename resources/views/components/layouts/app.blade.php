@@ -77,8 +77,8 @@
                 </details>
             </nav>
             <div class="flex min-w-0 items-center gap-1 max-[359px]:gap-0 sm:gap-3">
-                {{-- Phones and tablets: every section, grouped, with English and the archive --}}
-                <details class="relative lg:hidden" data-menu>
+                {{-- Tablets: every section, grouped. Phones use "আরও" in the bottom bar instead (D166). --}}
+                <details class="relative hidden md:block lg:hidden" data-menu>
                     <summary class="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full px-3 font-bold max-[359px]:px-2 hover:bg-peach-light [&::-webkit-details-marker]:hidden">বিভাগ <span aria-hidden="true">▾</span></summary>
                     <div class="fixed inset-x-3 top-[4.75rem] z-50 max-h-[calc(100dvh-10.5rem)] overflow-y-auto rounded-2xl border-2 border-navy bg-paper p-3 shadow-[4px_4px_0_#13212C] sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[22rem]">
                         <x-menu-panel :menu="$menu" />
@@ -87,13 +87,16 @@
                 <a href="{{ \App\Support\Url::to('/search') }}" class="flex h-11 w-11 flex-none items-center justify-center rounded-full hover:bg-peach-light max-[359px]:w-10" aria-label="খুঁজুন" title="খুঁজুন">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
                 </a>
+                {{-- D166: a labelled way to one's own page ("আমার"), or "ঢুকুন" before signing in --}}
                 @auth
-                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 min-w-11 flex-none items-center justify-center font-bold hover:text-red" aria-label="আমার লেখা">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-navy bg-peach-light sm:hidden" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
-                        <span class="hidden sm:inline">আমার লেখা</span>
+                    @php $hdrAcct = \App\Support\AccountMenu::for(auth()->user()); @endphp
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 flex-none items-center gap-2 rounded-full border-2 border-navy bg-white py-0 pl-1 pr-4 font-bold hover:bg-peach-light {{ request()->is('account*') ? '!bg-navy text-white' : '' }}" aria-label="আমার অ্যাকাউন্ট">
+                        @if ($hdrAcct['avatar'])<img src="{{ $hdrAcct['avatar'] }}" alt="" class="h-8 w-8 rounded-full border-2 border-navy object-cover">
+                        @else<span class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-navy bg-peach text-sm font-extrabold text-navy" aria-hidden="true">{{ $hdrAcct['initial'] }}</span>@endif
+                        <span aria-hidden="true">আমার</span>
                     </a>
                 @else
-                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap px-1 font-bold hover:text-red">লগ-ইন</a>
+                    <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">ঢুকুন</a>
                 @endauth
                 <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">লেখা পাঠান</a>
             </div>
@@ -102,6 +105,12 @@
 
     <main id="main">{{ $slot }}</main>
 
+    @if (request()->attributes->get('hp.compact-footer'))
+    {{-- D166: account pages end with one quiet line, not the whole footer --}}
+    <footer class="mt-10 border-t-2 border-navy px-5 py-4 text-sm text-ink2">
+        <div class="mx-auto flex max-w-[1000px] items-center justify-between gap-4"><span>হাতপাখা · ISSN 2321-3035</span><a href="{{ \App\Support\Url::to('/contact-us') }}" class="flex min-h-11 items-center font-bold text-sky-night underline">সাহায্য</a></div>
+    </footer>
+    @else
     <footer class="mt-16 bg-navy text-paper">
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 py-12">
             <div>
@@ -132,6 +141,7 @@
             </div>
         </div>
     </footer>
+    @endif
 
     {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, "লিখুন" as a raised sticker, safe-area padding. --}}
     @php
@@ -140,17 +150,18 @@
             ['কবিতা', \App\Support\Url::to('/category/poetry'), request()->is('category/poetry*'), 'poem'],
             ['লিখুন', \App\Support\Url::to('/submit'), request()->is('submit*', 'submissions*'), 'write'],
             ['গল্প', \App\Support\Url::to('/category/short-stories'), request()->is('category/short-stories*'), 'story'],
-            ['আর্কাইভ', \App\Support\Url::to('/archive'), request()->is('archive*'), 'archive'],
+            ['আরও', '#more-sheet', false, 'more'],   // D166 (owner): "আরও" opens one sheet with everything, the account included
         ];
         $icons = [
             'home' => '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
             'poem' => '<path d="M20 4c-7 1-12 6-13 13l-3 3"/><path d="M7 17c4 0 8-3 9-8"/>',
             'write' => '<path d="M12 5v14M5 12h14"/>',
             'story' => '<path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/>',
-            'archive' => '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
+            'more' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
         ];
     @endphp
     @unless (request()->is('sonkha/*/boi*') || request()->attributes->get('hp.no-bottom-nav'))
+    @include('partials.more-sheet', ['menu' => $menu])
     <nav aria-label="প্রধান" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
             @if ($ic === 'write')
@@ -158,6 +169,11 @@
                     <span class="-mt-5 flex h-11 w-11 items-center justify-center rounded-full border-2 border-navy bg-red text-white shadow-[2px_2px_0_#13212C]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg></span>
                     <span class="mt-0.5 text-red">{{ $label }}</span>
                 </a>
+            @elseif ($ic === 'more')
+                <button type="button" data-more-open aria-controls="more-sheet" aria-expanded="false" class="flex h-16 flex-col items-center justify-center gap-0.5 font-bold aria-expanded:text-red">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg>
+                    <span>{{ $label }}</span>
+                </button>
             @else
                 <a href="{{ $href }}" class="flex h-16 flex-col items-center justify-center gap-0.5 {{ $on ? 'text-red' : '' }}" @if ($on) aria-current="page" @endif>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $icons[$ic] !!}</svg>

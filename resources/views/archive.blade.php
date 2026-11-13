@@ -17,7 +17,7 @@
                 <a href="{{ \App\Support\Url::to('/bornomala') }}" class="flex min-h-11 items-center rounded-full bg-sky px-4 font-bold text-navy hover:bg-sky-light">অ আ ক খ — বর্ণমালা →</a>
             </nav>
             @if (($age ?? null) && $posts->total() === 0)
-                <p class="mt-6 font-serif text-lg text-ink2">এই বয়সের লেখা এখনও নেই। <a href="{{ $section->url() }}" class="font-bold text-sky-deep underline">সব বয়সের লেখা দেখুন</a></p>
+                <p class="mt-6 font-serif text-lg text-ink2">এই বয়সের লেখা এখনও নেই। <a href="{{ $section->url() }}" class="font-bold text-sky-night underline">সব বয়সের লেখা দেখুন</a></p>
             @endif
         @endif
         @if (($section ?? null) && $posts->total() === 0 && ! ($age ?? null))

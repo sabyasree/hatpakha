@@ -51,7 +51,7 @@
                     <h2 class="mt-1 font-display text-3xl font-extrabold"><a href="{{ $editorial->url() }}" class="hover:text-red">{{ $editorial->title }}</a></h2>
                     <p class="mt-1 text-sm text-ink2">{{ $editorial->authors->map->publicName()->implode(', ') }}</p>
                     @if ($editorial->excerpt)<p class="mt-2 font-serif text-lg text-ink2">{{ $editorial->excerpt }}</p>@endif
-                    <a href="{{ $editorial->url() }}" class="mt-2 inline-block font-bold text-sky-deep underline">পুরোটা পড়ুন →</a>
+                    <a href="{{ $editorial->url() }}" class="mt-2 inline-block font-bold text-sky-night underline">পুরোটা পড়ুন →</a>
                 @else
                     @foreach (preg_split('/\n{2,}/', trim($issue->editor_note)) as $para)<p class="mt-3 font-serif text-lg">{{ trim($para) }}</p>@endforeach
                 @endif

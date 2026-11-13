@@ -25,7 +25,7 @@
         <section class="mx-auto max-w-[1120px] px-5 py-6" aria-labelledby="issues">
             <div class="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 id="issues" class="font-display text-2xl font-extrabold">সংখ্যা</h2>
-                <a href="{{ Url::to('/sonkha') }}" class="inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব সংখ্যা →</a>
+                <a href="{{ Url::to('/sonkha') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সব সংখ্যা →</a>
             </div>
             <div class="mt-4 grid gap-6 lg:grid-cols-[5fr_7fr]">
                 <a href="{{ $latestIssue->url() }}" class="flex items-center gap-5 rounded-2xl border-2 border-navy bg-peach-light p-4 shadow-[4px_4px_0_#13212C] hover:bg-peach">
@@ -64,7 +64,7 @@
         <section class="mx-auto max-w-[1120px] px-5 py-6" aria-labelledby="collections-h">
             <div class="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 id="collections-h" class="font-display text-2xl font-extrabold">সংকলন</h2>
-                <a href="{{ Url::to('/sonkolon') }}" class="inline-flex min-h-11 items-center font-bold text-sky-deep underline">সব সংকলন →</a>
+                <a href="{{ Url::to('/sonkolon') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সব সংকলন →</a>
             </div>
             <ul class="-mx-5 mt-4 flex snap-x gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-4">
                 @foreach ($collections as $collection)

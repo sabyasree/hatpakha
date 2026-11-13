@@ -102,7 +102,9 @@ class AccountSecurityTest extends TestCase
     public function test_writer_can_turn_on_two_factor_from_the_account_page(): void
     {
         $user = User::factory()->create();
-        $this->actingAs($user)->get('/account/')->assertOk()->assertSee('অ্যাকাউন্টটি আরও নিরাপদ করুন');
+        // D166: no warning on the first page; extra security is offered calmly on "ই-মেল ও পাসওয়ার্ড".
+        $this->actingAs($user)->get('/account/reading/')->assertOk()->assertDontSee('অ্যাকাউন্টটি আরও নিরাপদ করুন');
+        $this->get('/account/settings/')->assertOk()->assertSee('বাড়তি সুরক্ষা')->assertSee('না করলেও কোনও অসুবিধা নেই');
         $this->post('/account/2fa/start/')->assertRedirect();
         $secret = session('2fa_setup');
         $this->get('/account/settings/')->assertSee('QR');
