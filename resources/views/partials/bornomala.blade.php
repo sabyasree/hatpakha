@@ -25,7 +25,7 @@
     </section>
 @endforeach
 @if ($letters->whereNotNull('audio')->isNotEmpty())
-    <p class="mt-6 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ@if ($letters->whereNotNull('pic')->isNotEmpty()) · ছবি: এআই-এর সাহায্যে আঁকা@endif</p>
+    <p class="mt-6 text-sm text-ink2">কণ্ঠ: হাতপাখার যন্ত্রকণ্ঠ@if ($letters->whereNotNull('pic')->isNotEmpty()) · ছবি: এআই@endif</p>
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         (() => {
             const player = new Audio();
@@ -35,7 +35,7 @@
         })();
     </script>
 @elseif ($letters->whereNotNull('pic')->isNotEmpty())
-    <p class="mt-6 text-sm text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>
+    <p class="mt-6 text-[11px] text-ink2">ছবি: এআই</p>
 @endif
 @if ($kids)
     <a href="{{ $kids->url() }}" class="mt-10 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-sky-tint px-4 py-3 font-bold hover:bg-peach-light">

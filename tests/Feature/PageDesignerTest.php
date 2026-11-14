@@ -46,7 +46,7 @@ class PageDesignerTest extends TestCase
         $this->assertSame('hero', PageDesigner::design($this->makePost(['featured_image_path' => $wide, 'format' => 'poem']))['layout']);
         $this->assertSame('none', PageDesigner::design($this->makePost())['layout']);
         $this->assertSame('none', PageDesigner::design($this->makePost(['featured_image_path' => 'wp-content/uploads/missing.jpg']))['layout'], 'A missing file leaves no hole');
-        $this->assertSame('ছবি: এআই-এর সাহায্যে আঁকা', PageDesigner::design($this->makePost(['featured_image_path' => $wide, 'image_is_ai' => true]))['credit']);
+        $this->assertSame('ছবি: এআই', PageDesigner::design($this->makePost(['featured_image_path' => $wide, 'image_is_ai' => true]))['credit']);
     }
 
     public function test_pictures_inside_the_text_are_placed_with_their_shape_and_caption(): void

@@ -42,7 +42,7 @@
                 @if ($set = \App\Support\Images::srcset('/'.$post->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="(max-width: 760px) 100vw, 720px">@endif
                 <img src="{{ asset($post->featured_image_path) }}" alt="{{ $post->featured_image_alt }}" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" fetchpriority="high" class="mx-auto mt-7 block h-auto max-h-[80vh] w-auto max-w-full rounded-2xl">
             </picture>
-            @if ($post->image_is_ai)<p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>@endif
+            @if ($post->image_is_ai)<p class="mt-1 text-right text-[11px] leading-none text-ink2">ছবি: এআই</p>@endif
         @elseif (! $post->isPoem())
             {{-- The made-up title card repeats the title: shown on wider screens only (mobile UX review). --}}
             <x-title-card :post="$post" class="mt-7 hidden !aspect-[16/7] sm:block" />

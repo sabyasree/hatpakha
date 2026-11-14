@@ -180,7 +180,7 @@ class AiEditorTest extends TestCase
         $post->refresh();
         $this->assertSame(1536, $post->featured_image_width);
         $this->assertTrue($post->image_is_ai);
-        $this->get('/nodi-bhor/')->assertSee('ছবি: এআই-এর সাহায্যে আঁকা');
+        $this->get('/nodi-bhor/')->assertSee('ছবি: এআই<', false);
         \App\Ai\Claude::$fake = null;
         foreach (glob(public_path('media/covers/*/*/*')) ?: [] as $f) { @unlink($f); }
     }
