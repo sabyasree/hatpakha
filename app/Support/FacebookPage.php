@@ -207,7 +207,11 @@ final class FacebookPage
 
     private static function why($res): string
     {
-        return mb_substr((string) ($res?->json('error.message') ?? ($res ? 'HTTP '.$res->status() : 'no connection')), 0, 280);
+        // the upload server answers in its own shape (debug_info), not error.message
+        $said = $res?->json('error.message') ?? $res?->json('debug_info.message') ?? $res?->json('message');
+        $said ??= $res && trim((string) $res->body()) !== '' && ! $res->successful() ? 'HTTP '.$res->status().': '.trim(strip_tags((string) $res->body())) : null;
+
+        return mb_substr((string) ($said ?? ($res ? 'HTTP '.$res->status() : 'no connection')), 0, 280);
     }
 
     /**
@@ -238,8 +242,17 @@ final class FacebookPage
             [$res] = self::graph($page.'/video_reels', ['upload_phase' => 'start']);
             $videoId = $res?->json('video_id');
             if ($videoId) {
-                $up = rescue(fn () => Http::withHeaders(['Authorization' => 'OAuth '.config('services.facebook_page.token'), 'file_url' => asset(ltrim($video, '/'))])
-                    ->timeout(60)->post('https://rupload.facebook.com/video-upload/'.config('services.facebook_page.graph_version').'/'.$videoId), null, false);
+                // The file is on this server, so hand Facebook the video itself. Asking Facebook to fetch it from our
+                // address failed with a bare "HTTP 422" (14 Nov 2026); fetching stays only as the fallback.
+                $to = 'https://rupload.facebook.com/video-upload/'.config('services.facebook_page.graph_version').'/'.$videoId;
+                $auth = ['Authorization' => 'OAuth '.config('services.facebook_page.token')];
+                $file = public_path(ltrim($video, '/'));
+                $up = is_file($file) ? rescue(fn () => Http::withHeaders($auth + ['offset' => '0', 'file_size' => (string) filesize($file)])
+                    ->withBody((string) file_get_contents($file), 'application/octet-stream')->timeout(120)->post($to), null, false) : null;
+                if (! $up || ! $up->successful()) {
+                    $byUrl = rescue(fn () => Http::withHeaders($auth + ['file_url' => asset(ltrim($video, '/'))])->timeout(60)->post($to), null, false);
+                    $up = $byUrl && ($byUrl->successful() || ! $up) ? $byUrl : $up;
+                }
                 if ($up && $up->successful()) {
                     [$res] = self::graph($page.'/video_reels', ['upload_phase' => 'finish', 'video_id' => $videoId, 'video_state' => 'PUBLISHED', 'description' => $text]);
                     $id = $res?->successful() ? (string) $videoId : null;

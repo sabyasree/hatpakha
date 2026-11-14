@@ -104,6 +104,23 @@ class MarketingPlanTest extends TestCase
         @unlink(public_path($card->media['images'][0]));
     }
 
+    public function test_a_reel_on_this_server_is_handed_to_facebook_itself_and_a_refusal_keeps_facebooks_words(): void
+    {
+        // A reel whose file is on this server is handed over itself; a refusal is recorded with Facebook's own words.
+        @mkdir(public_path('media/cards'), 0775, true);
+        file_put_contents(public_path('media/cards/t-reel.mp4'), 'video-bytes');
+        try {
+            $r2 = SocialPost::forceCreate(['title' => 'রিল', 'kind' => 'reel', 'format' => 'reel', 'status' => 'ready', 'texts' => ['facebook' => 'রিল'], 'media' => ['video' => 'media/cards/t-reel.mp4']]);
+            Http::fake(['graph.facebook.com/*/111/video_reels' => Http::response(['video_id' => 'v2']), 'rupload.facebook.com/*' => Http::response(['debug_info' => ['message' => 'Video too short']], 422)]);
+            [$ok, $why] = \App\Support\FacebookPage::send($r2);
+            $this->assertFalse($ok);
+            $this->assertSame('Video too short', $why);
+            Http::assertSent(fn ($r) => str_contains($r->url(), 'rupload.facebook.com/video-upload') && str_ends_with($r->url(), '/v2') && ($r->header('file_size')[0] ?? '') === '11' && $r->body() === 'video-bytes');
+        } finally {
+            @unlink(public_path('media/cards/t-reel.mp4'));
+        }
+    }
+
     public function test_due_posts_go_out_in_their_format_wait_for_their_picture_and_keep_to_the_cap(): void
     {
         Http::fake([
