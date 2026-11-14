@@ -68,19 +68,22 @@ final class WordGame
 
     public const HARD_FROM = '2026-11-16';
 
+    public const HARD_PER_DAY = 2;
+
     /**
-     * D199 (owner: "can we add words which are a little tough"): the harder word of the day, or null before HARD_FROM.
-     * Its own list (database/content/word-game-hard.php, none of them in the everyday list), shuffled once per round,
-     * so none comes back until all have been used. Readers' fixes (D179) apply to it like to any word.
+     * D199 (owner: "can we add words which are a little tough", then "yes, two words is good"): the two harder words of
+     * the day, shorter first; none before HARD_FROM. Their own list (database/content/word-game-hard.php, none of
+     * them in the everyday list), shuffled once per round, so none comes back until all have been used (383 words:
+     * 191 days). Readers' fixes (D179) apply to them like to any word.
      *
-     * @return array{0: string, 1: string}|null
+     * @return list<array{0: string, 1: string}>
      */
-    public static function hardWord(?Carbon $day = null): ?array
+    public static function hardWords(?Carbon $day = null): array
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $i = (int) Carbon::parse(self::HARD_FROM, 'Asia/Kolkata')->diffInDays($day, false);
         if ($i < 0) {
-            return null;
+            return [];
         }
         $list = require database_path('content/word-game-hard.php');
         $fixes = self::fixes('word', $day);
@@ -90,13 +93,21 @@ final class WordGame
             }
         }
         $count = count($list);
-        mt_srand(6607 + intdiv($i, $count));
+        $perRound = intdiv($count, self::HARD_PER_DAY);
+        mt_srand(6607 + intdiv($i, $perRound));
         $order = range(0, $count - 1);
         shuffle($order);
         mt_srand();
-        $word = self::at($list, $order[$i % $count]);
+        $out = [];
+        for ($k = 0; $k < self::HARD_PER_DAY; $k++) {
+            $word = self::at($list, $order[($i % $perRound) * self::HARD_PER_DAY + $k]);
+            if ($word[0] !== '') {
+                $out[] = $word;
+            }
+        }
+        usort($out, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
 
-        return $word[0] !== '' ? $word : null;
+        return $out;
     }
 
     /** @return list<array{0: string, 1: string}> the words in play today */
@@ -311,10 +322,10 @@ final class WordGame
         $picked = array_slice($order, ($index % $perCycle) * self::PER_DAY, self::PER_DAY);
         $words = array_map(fn ($i) => self::at($all, $i), $picked);
         usort($words, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
-        // D199: from HARD_FROM the day's last word is a harder one, from its own list and in its own order (so the
-        // everyday words' order, and "no word again within six months", stay exactly as they were).
-        if ($hard = self::hardWord($day)) {
-            $words[self::PER_DAY - 1] = $hard;
+        // D199: from HARD_FROM the day's last two words are harder ones, from their own list and in their own order
+        // (so the everyday words' order, and "no word again within six months", stay exactly as they were).
+        foreach (self::hardWords($day) as $k => $hard) {
+            $words[self::PER_DAY - self::HARD_PER_DAY + $k] = $hard;
         }
 
         mt_srand(4421 + $index);
