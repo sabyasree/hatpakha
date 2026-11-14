@@ -739,3 +739,11 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
         download();
     });
 })();
+
+// D193: the "new serial" fields on the submission form show only when that choice is picked.
+document.querySelectorAll('[data-serial-choice]').forEach((sel) => {
+    const box = sel.closest('details')?.querySelector('[data-serial-new]');
+    const paint = () => { if (box) box.hidden = sel.value !== 'new'; };
+    sel.addEventListener('change', paint);
+    paint();
+});

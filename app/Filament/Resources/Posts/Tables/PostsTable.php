@@ -162,11 +162,11 @@ class PostsTable
                 ->schema([
                     // The AI editor's copy-edits (D42): only spelling/punctuation/spacing/typos are ticked by default.
                     CheckboxList::make('edits')->label(__('এআই-এর সংশোধন (টিক দেওয়াগুলো লেখায় বসবে)'))
-                        ->options(fn (Post $record) => EditorPackage::editOptions($record))
-                        ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
+                        ->options(fn (Post $record) => EditorPackage::openOptions($record))   // what is already in the piece is not offered again
+                        ->default(fn (Post $record) => EditorPackage::openSafe($record))
                         ->bulkToggleable()->columns(1)->live()
                         ->helperText(__('"শব্দ বদল" টিক দিলে লেখক আগে দেখে সম্মতি দেবেন, তারপর প্রকাশ হবে।'))
-                        ->visible(fn (Post $record) => EditorPackage::edits($record) !== []),
+                        ->visible(fn (Post $record) => EditorPackage::openOptions($record) !== []),
                     // Proofreader (D50): a typo fix in the title, and its note for the editor.
                     Toggle::make('title_fix')->label(fn (Post $record) => __('শিরোনাম ঠিক করুন: ').($record->proof['title_fix'] ?? ''))->default(true)
                         ->visible(fn (Post $record) => ($record->proof['title_fix'] ?? '') !== ''),
@@ -212,10 +212,10 @@ class PostsTable
                     self::emailPreview('changes'),
                     CheckboxList::make('edits')->label(__('ছোট সংশোধনগুলো এখনই লেখায় বসান'))
                         ->helperText(__('বানান, যতিচিহ্ন, ফাঁক আর টাইপো। লেখক সংশোধিত লেখাটি পাবেন; ই-মেলে টিক দেওয়া সংশোধনগুলোর তালিকা থাকে। শব্দ বদল এখানে নেই।'))
-                        ->options(fn (Post $record) => array_intersect_key(EditorPackage::editOptions($record), array_flip(EditorPackage::safeIndexes($record))))
-                        ->default(fn (Post $record) => EditorPackage::safeIndexes($record))
+                        ->options(fn (Post $record) => EditorPackage::waitingFixes($record))
+                        ->default(fn (Post $record) => EditorPackage::openSafe($record))
                         ->bulkToggleable()->columns(1)->live()
-                        ->visible(fn (Post $record) => EditorPackage::safeIndexes($record) !== []),
+                        ->visible(fn (Post $record) => EditorPackage::openSafe($record) !== []),
                 ])
                 ->action(function (Post $record, array $data) {
                     $fixed = EditorPackage::applySafeEdits($record, (array) ($data['edits'] ?? []));

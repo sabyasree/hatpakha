@@ -2662,5 +2662,11 @@
     "শব্দ বদলের প্রস্তাব (এখান থেকে বসে না)": "Suggested word changes (not applied from here)",
     "এগুলো লেখকের শব্দ বদলায়, তাই লেখকের সম্মতি লাগে: “মনোনীত” করার সময় টিক দিলে লেখক আগে দেখে সম্মতি দেবেন। নিজে হাতে বদলাতে চাইলে নিচে লেখাটি সম্পাদনা করুন।": "These change the writer's words, so they need the writer's consent: tick them when approving and the writer will see them and agree first. To change something by hand, edit the piece below.",
     "টি সংশোধন লেখায় বসানো হয়েছে": " corrections put into the piece",
-    "কোনো সংশোধন বসানো যায়নি; লেখায় শব্দগুলো আর নেই": "No correction could be applied; the words are no longer in the piece"
+    "কোনো সংশোধন বসানো যায়নি; লেখায় শব্দগুলো আর নেই": "No correction could be applied; the words are no longer in the piece",
+    "লেখকের প্রস্তাব": "The writer's proposal",
+    "আনুমানিক পর্ব": "Expected episodes",
+    "প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।": "The first episode is waiting on the Pieces page. Approving it starts the serial; declining it means the serial does not start. The writer writes this serial's episodes; the AI does not.",
+    "এখনও যাচাই হয়নি: ওয়েবে খোঁজা যায়নি।": "Not checked yet: the web search did not work.",
+    "“এআই দিয়ে পড়ান” টিপে আবার চেষ্টা করা যায়।": "Press “Read with AI” to try again.",
+    "নিজে থেকে আবার চেষ্টা হবে।": "It will be tried again by itself."
 }

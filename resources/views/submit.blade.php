@@ -104,6 +104,53 @@
                     </details>
                 @endif
 
+                {{-- D193: a serial of one's own. "নতুন" proposes one with this piece as its first episode; later pieces join it. --}}
+                @php
+                    $mySerials = \App\Models\Serial::where('user_id', auth()->id())->whereIn('status', ['proposed', 'active', 'paused'])->orderByDesc('id')->get();
+                    $ownSerial = $post->serial_id ? $mySerials->firstWhere('id', $post->serial_id) : null;
+                    $serialNow = old('serial', $ownSerial ? ($ownSerial->status === 'proposed' && (int) $post->episode_no === 1 ? 'new' : (string) $ownSerial->id) : '');
+                    $proposal = $ownSerial && $ownSerial->status === 'proposed' ? $ownSerial : null;
+                @endphp
+                @unless ($post->serial_id && ! $ownSerial)
+                    <details class="mb-5 rounded-2xl border-2 border-navy bg-sky-tint p-4" @if ($serialNow !== '' || $errors->has('serial') || $errors->has('serial_title') || $errors->has('serial_plan') || $errors->has('serial_count')) open @endif>
+                        <summary class="cursor-pointer font-bold">ধারাবাহিক লিখতে চান? <span class="font-normal text-ink2">(কয়েক পর্বের গল্প বা লেখা)</span></summary>
+                        <p class="mt-2 text-sm text-ink2">ধারাবাহিক মানে একটাই গল্প বা লেখা, পর্বে পর্বে। প্রথম পর্বের সঙ্গে পুরো গল্পের একটা ছোট পরিকল্পনা পাঠান। সম্পাদক পড়ে জানাবেন। প্রথম পর্ব প্রকাশ হলে ধারাবাহিক শুরু; তারপর প্রতিটি নতুন পর্ব এই ফর্ম থেকেই পাঠাবেন।</p>
+                        <label class="mt-3 block font-bold" for="serial">এই লেখাটি</label>
+                        <select id="serial" name="serial" data-serial-choice class="mt-1 block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg">
+                            <option value="">ধারাবাহিক নয়, একটাই লেখা</option>
+                            @foreach ($mySerials->where('status', '!=', 'proposed') as $ms)
+                                <option value="{{ $ms->id }}" @selected($serialNow === (string) $ms->id)>“{{ $ms->title }}”-এর পরের পর্ব (পর্ব {{ \App\Support\Bn::num((string) ((int) $post->serial_id === $ms->id && $post->episode_no ? $post->episode_no : $ms->nextEpisodeNo())) }})</option>
+                            @endforeach
+                            @if ($proposal || $mySerials->where('status', 'proposed')->isEmpty())
+                                <option value="new" @selected($serialNow === 'new')>নতুন ধারাবাহিকের প্রথম পর্ব</option>
+                            @endif
+                        </select>
+                        @error('serial')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
+                        @if (! $proposal && $mySerials->where('status', 'proposed')->isNotEmpty())
+                            <p class="mt-2 text-sm text-ink2">আপনার ধারাবাহিকের প্রস্তাব “{{ $mySerials->firstWhere('status', 'proposed')->title }}” সম্পাদকের কাছে আছে। উত্তর এলে পরের পর্ব পাঠাতে পারবেন।</p>
+                        @endif
+                        <div data-serial-new @if ($serialNow !== 'new') hidden @endif class="mt-4 space-y-4">
+                            <div>
+                                <label class="block font-bold" for="serial_title">ধারাবাহিকের নাম</label>
+                                <input id="serial_title" name="serial_title" maxlength="150" value="{{ old('serial_title', $proposal?->title) }}" class="mt-1 block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg" autocomplete="off">
+                                <p class="mt-1 text-sm text-ink2">পুরো ধারাবাহিকের নাম। নিচের “শিরোনাম” হবে এই পর্বের নাম।</p>
+                                @error('serial_title')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block font-bold" for="serial_plan">পুরো গল্পটা কোন দিকে যাবে</label>
+                                <textarea id="serial_plan" name="serial_plan" rows="5" maxlength="3000" class="mt-1 block w-full rounded-xl border-2 border-navy bg-white p-3 text-lg leading-relaxed">{{ old('serial_plan', $proposal?->plan) }}</textarea>
+                                <p class="mt-1 text-sm text-ink2">কয়েক লাইনে: কাদের নিয়ে, কোথায়, শেষে কোথায় পৌঁছবে। এটা শুধু সম্পাদক পড়বেন, পাঠকেরা দেখবেন না।</p>
+                                @error('serial_plan')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block font-bold" for="serial_count">আনুমানিক কত পর্ব</label>
+                                <input id="serial_count" name="serial_count" type="number" inputmode="numeric" min="2" max="60" value="{{ old('serial_count', $proposal?->planned_count) }}" class="mt-1 block h-12 w-32 rounded-xl border-2 border-navy bg-white px-3 text-lg">
+                                @error('serial_count')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
+                            </div>
+                        </div>
+                    </details>
+                @endunless
+
                 {{-- 2. The writing: title, then the text, in one clean card --}}
                 <div class="rounded-2xl border-2 border-navy bg-white shadow-[4px_4px_0_#13212C] focus-within:border-sky-deep">
                     <label class="block border-b-2 border-rule px-4 pt-3">

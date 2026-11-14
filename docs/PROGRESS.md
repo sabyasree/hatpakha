@@ -286,6 +286,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: in production ENV_FILE set MAIL_BREVO_DAILY_LIMIT=2000 and MAIL_BREVO_MONTHLY_LIMIT=4400, then redeploy
 - [x] D191: errors kept and shown in /desk → সাইটের ত্রুটি and the morning note; awkward-pieces test over every desk dialog; previews that cannot break their dialog
 - [x] D192: "সংশোধন বসান": the AI's small corrections applied to a piece at once, without sending it back
+- [x] D193: writers can propose their own serial on the submission form and send its episodes; the AI never writes a writer's serial
 - [ ] Marketing, next: "আমার সপ্তাহ" as a picture card; share buttons inside the writers' published e-mail (touches an owner-edited template: ask first); day-early serial episode for inviters
 - [x] D181: medals redrawn after a UX review: a large emblem per badge, tier by colour + edge + stars, name on a banner at large sizes
 - [x] D180: medal badges with the logo's fan; share card for earned badges; privacy page updated for games, leaderboard, badges, পাঠকের কলম

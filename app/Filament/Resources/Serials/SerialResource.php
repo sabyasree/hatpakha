@@ -66,7 +66,14 @@ class SerialResource extends Resource
             TextInput::make('title')->label(__('নাম'))->required()->maxLength(150),
             Textarea::make('logline')->label(__('এক-দুই লাইনে গল্প (পাঠক দেখবেন)'))->rows(2)->maxLength(400),
             Select::make('day')->label(__('নতুন পর্ব কোন দিন'))->options(\App\Support\Lang::t(Serial::DAYS))->required(),
-            Section::make(__('গল্পের পরিকল্পনা (শুধু ডেস্কে)'))->collapsible()->schema([
+            // D193: a writer's own serial: who proposed it and their plan for the whole story
+            Section::make(__('লেখকের প্রস্তাব'))->visible(fn (?Serial $record) => (bool) $record?->user_id)->schema([
+                \Filament\Forms\Components\Placeholder::make('writer_plan')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(
+                    '<p><b>'.e(__('লেখক')).':</b> '.e((string) \App\Models\User::find($record?->user_id)?->name).' · <b>'.e(__('আনুমানিক পর্ব')).':</b> '.e(\App\Support\Bn::num((string) (int) $record?->planned_count)).'</p>'
+                    .'<p style="white-space:pre-line;margin-top:.5rem">'.e((string) $record?->plan).'</p>'
+                    .'<p style="opacity:.75;margin-top:.5rem">'.e(__('প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।')).'</p>')),
+            ]),
+            Section::make(__('গল্পের পরিকল্পনা (শুধু ডেস্কে)'))->collapsible()->visible(fn (?Serial $record) => ! $record?->user_id)->schema([
                 \Filament\Forms\Components\Placeholder::make('bible_view')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(self::bibleHtml($record))),
             ]),
             Section::make(__('পর্ব'))->collapsible()->schema([

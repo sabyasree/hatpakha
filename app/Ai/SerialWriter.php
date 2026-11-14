@@ -123,7 +123,8 @@ final class SerialWriter
     public static function keepAhead(): int
     {
         $done = 0;
-        foreach (Serial::where('status', 'active')->get() as $s) {
+        // Only the desk's own serials: a writer's serial is written by the writer alone (D193).
+        foreach (Serial::where('status', 'active')->whereNull('user_id')->get() as $s) {
             if (! $s->episodes()->whereIn('status', ['draft', 'pending', 'scheduled'])->exists()) {
                 [$p] = self::next($s);
                 $done += $p ? 1 : 0;

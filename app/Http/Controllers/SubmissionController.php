@@ -132,6 +132,51 @@ class SubmissionController extends Controller
         return response()->json(['poem' => $post->format === 'poem', 'html' => Embeds::render($post->body_html)]);
     }
 
+    /**
+     * D193 (owner, 2026-11-14: "if anyone wants to write a serial, how will they start?"): the piece is an episode of the
+     * writer's own serial. "new" proposes a serial (name, the whole story in a few lines, how many episodes) with this
+     * piece as its first episode; the editor decides, and publishing that episode starts the serial. Afterwards the
+     * writer picks the serial and each new piece becomes its next episode. Only one's own serials, never the desk's.
+     */
+    private function serial(Request $request, Post $post, array $data): void
+    {
+        $choice = (string) ($data['serial'] ?? '');
+        $user = $request->user();
+        $mine = fn () => \App\Models\Serial::where('user_id', $user->id)->whereIn('status', ['proposed', 'active', 'paused']);
+        if (in_array($post->status, ['published', 'scheduled'], true)) {
+            return;
+        }
+        if ($choice === 'new') {
+            if ($mine()->where('status', 'proposed')->where('id', '!=', (int) $post->serial_id)->exists()) {
+                throw ValidationException::withMessages(['serial' => 'আপনার একটি ধারাবাহিকের প্রস্তাব সম্পাদকের কাছে আছে। উত্তর এলে আর একটি পাঠাতে পারবেন।']);
+            }
+            $fields = ['title' => strip_tags((string) $data['serial_title']), 'plan' => strip_tags((string) $data['serial_plan']), 'planned_count' => (int) $data['serial_count']];
+            $own = $post->serial_id ? $mine()->where('status', 'proposed')->find($post->serial_id) : null;
+            if ($own) {
+                $own->forceFill($fields)->save();   // still a draft of the same proposal
+            } else {
+                $own = \App\Models\Serial::create($fields + ['user_id' => $user->id, 'status' => 'proposed', 'day' => 6]);
+                $post->forceFill(['serial_id' => $own->id, 'episode_no' => 1])->save();
+            }
+
+            return;
+        }
+        if (ctype_digit($choice) && ($serial = $mine()->find((int) $choice))) {
+            if ((int) $post->serial_id !== $serial->id) {
+                $post->forceFill(['serial_id' => $serial->id, 'episode_no' => $serial->nextEpisodeNo()])->save();
+            }
+
+            return;
+        }
+        // "No": the piece leaves the writer's own serial (the serial itself stays; an unused proposal is removed).
+        if ($post->serial_id && ($old = $mine()->find($post->serial_id))) {
+            $post->forceFill(['serial_id' => null, 'episode_no' => null])->save();
+            if ($old->status === 'proposed' && ! $old->episodes()->exists()) {
+                $old->delete();
+            }
+        }
+    }
+
     private function save(Request $request, Post $post)
     {
         $submitting = $request->input('action') === 'submit';
@@ -145,7 +190,18 @@ class SubmissionController extends Controller
             'remove_cover' => ['nullable', 'boolean'],
             'contest_id' => ['nullable', 'integer'],
             'writer_note' => ['nullable', 'string', 'max:2000'],   // D171: a note to the editor when sending it back
+            // D193: this piece is an episode of the writer's own serial ("new" proposes one)
+            'serial' => ['nullable', 'string', 'max:12'],
+            'serial_title' => ['required_if:serial,new', 'nullable', 'string', 'min:2', 'max:150'],
+            'serial_plan' => ['required_if:serial,new', 'nullable', 'string', 'min:80', 'max:3000'],
+            'serial_count' => ['required_if:serial,new', 'nullable', 'integer', 'min:2', 'max:60'],
         ], [
+            'serial_title.required_if' => 'ধারাবাহিকের নাম দিন।',
+            'serial_plan.required_if' => 'পুরো গল্পটা কোন দিকে যাবে, কয়েক লাইনে লিখুন।',
+            'serial_plan.min' => 'গল্পের পরিকল্পনা আর একটু খুলে লিখুন (অন্তত দু-তিন লাইন)।',
+            'serial_count.required_if' => 'আনুমানিক কত পর্ব হবে, লিখুন।',
+            'serial_count.min' => 'ধারাবাহিকে অন্তত দুটি পর্ব লাগে।',
+            'serial_count.max' => 'পর্বের সংখ্যা ৬০-এর মধ্যে রাখুন।',
             'writer_note.max' => 'সম্পাদককে লেখা কথা ২০০০ অক্ষরের মধ্যে রাখুন।',
             'cover.max' => 'ছবিটি ৮ MB-এর মধ্যে হতে হবে।',
             'cover.mimetypes' => 'শুধু JPG, PNG বা WebP ছবি দেওয়া যায়।',
@@ -182,6 +238,7 @@ class SubmissionController extends Controller
         if (! $post->contest_id || \App\Models\Contest::openNow()->whereKey($post->contest_id)->exists()) {
             $post->forceFill(['contest_id' => $contestId ?: null])->save();
         }
+        $this->serial($request, $post, $data);
         if ($request->hasFile('cover')) {
             \App\Support\CoverImage::attach($post, $request->file('cover'));
         } elseif ($request->boolean('remove_cover')) {
