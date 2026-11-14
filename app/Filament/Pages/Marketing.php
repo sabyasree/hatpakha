@@ -116,6 +116,24 @@ class Marketing extends Page
             : Notification::make()->title(__('ফেসবুকে যায়নি'))->body($msg)->danger()->send();
     }
 
+    /** Owner (2026-11-14, a reel Facebook refused: "how to repost. no place"): try again only where it failed. */
+    public function sendAgain(int $id): void
+    {
+        $s = SocialPost::findOrFail($id);
+        $said = [];
+        if (filled($s->fb_error) && ! $s->fb_post_id) {
+            [$ok, $msg] = \App\Support\FacebookPage::send($s, auth()->id());
+            $said[] = 'Facebook: '.($ok ? __('গেছে') : __('যায়নি').': '.$msg);
+        }
+        $s->refresh();
+        if (filled($s->ig_error) && ! $s->ig_media_id) {
+            $s->forceFill(['ig_error' => null, 'ig_container' => null])->save();
+            [$ok, $msg] = \App\Support\InstagramPage::send($s, auth()->id());
+            $said[] = 'Instagram: '.($ok ? __('গেছে') : __('যায়নি').': '.$msg);
+        }
+        Notification::make()->title(__('আবার পাঠানো হলো'))->body(implode("\n", $said) ?: __('পাঠানোর কিছু বাকি নেই'))->send();
+    }
+
     /** Instagram: keep the card the browser just uploaded with the post (also done ahead of time for automatic posts). */
     public function storeCard(int $id): bool
     {

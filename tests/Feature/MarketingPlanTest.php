@@ -111,11 +111,20 @@ class MarketingPlanTest extends TestCase
         file_put_contents(public_path('media/cards/t-reel.mp4'), 'video-bytes');
         try {
             $r2 = SocialPost::forceCreate(['title' => 'রিল', 'kind' => 'reel', 'format' => 'reel', 'status' => 'ready', 'texts' => ['facebook' => 'রিল'], 'media' => ['video' => 'media/cards/t-reel.mp4']]);
-            Http::fake(['graph.facebook.com/*/111/video_reels' => Http::response(['video_id' => 'v2']), 'rupload.facebook.com/*' => Http::response(['debug_info' => ['message' => 'Video too short']], 422)]);
+            Http::fake(['graph.facebook.com/*/111/video_reels' => Http::sequence()->push(['video_id' => 'v2'])->push(['video_id' => 'v3'])->push(['success' => true]),
+                'rupload.facebook.com/*' => Http::sequence()->push(['debug_info' => ['message' => 'Video too short']], 422)->push(['debug_info' => ['message' => 'Video too short']], 422)->push(['success' => true])]);
             [$ok, $why] = \App\Support\FacebookPage::send($r2);
             $this->assertFalse($ok);
             $this->assertSame('Video too short', $why);
             Http::assertSent(fn ($r) => str_contains($r->url(), 'rupload.facebook.com/video-upload') && str_ends_with($r->url(), '/v2') && ($r->header('file_size')[0] ?? '') === '11' && $r->body() === 'video-bytes');
+
+            // The owner tries again from the schedule table: only the side that failed is sent.
+            $this->assertSame('Video too short', $r2->fresh()->fb_error);
+            $r2->forceFill(['slot_at' => now()])->save();
+            $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+            \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+            \Livewire\Livewire::test(\App\Filament\Pages\Marketing::class)->assertSee('আবার পাঠান')->call('sendAgain', $r2->id);
+            $this->assertSame(['v3', null], [$r2->fresh()->fb_post_id, $r2->fresh()->fb_error]);
         } finally {
             @unlink(public_path('media/cards/t-reel.mp4'));
         }
