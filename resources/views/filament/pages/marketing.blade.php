@@ -79,6 +79,9 @@
                             @elseif ($p->status === 'dismissed' && ! $sent)
                                 <x-filament::button size="xs" color="gray" wire:click="restore({{ $p->id }})">{{ __('আবার চালু') }}</x-filament::button>
                             @endif
+                            @if (filled($p->fb_error) || filled($p->ig_error))
+                                <x-filament::button size="xs" icon="heroicon-o-arrow-path" wire:click="sendAgain({{ $p->id }})" wire:loading.attr="disabled" wire:target="sendAgain({{ $p->id }})">{{ __('আবার পাঠান') }}</x-filament::button>
+                            @endif
                             @if ($isAdmin && ! $sent)
                                 <x-filament::button size="xs" color="danger" wire:click="deleteSocial({{ $p->id }})" wire:confirm="{{ __('এই পোস্টটি একেবারে মুছে ফেলবেন?') }}">{{ __('মুছুন') }}</x-filament::button>
                             @endif
