@@ -246,4 +246,43 @@ class SubmissionTest extends TestCase
         $post->fresh()->forceFill(['title' => 'অন্য নাম'])->save();
         $this->assertSame(2, $post->versions()->count());
     }
+
+    /** D193 (owner: "if anyone wants to write a serial, how will they start?"). */
+    public function test_a_writer_proposes_a_serial_and_later_sends_its_next_episode(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::clear('submit:'.$this->writer->id);
+        $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('ধারাবাহিক লিখতে চান?')->assertSee('নতুন ধারাবাহিকের প্রথম পর্ব');
+        // The plan is needed with a new serial.
+        $this->post('/submit/', $this->poem(['serial' => 'new', 'serial_title' => 'নদীর ওপারে']))->assertSessionHasErrors(['serial_plan', 'serial_count']);
+
+        $plan = 'এক স্কুলমাস্টার তিরিশ বছর পরে নিজের গ্রামে ফেরেন। পুরনো বন্ধু, পুরনো ঝগড়া, আর একটা না-বলা কথা। শেষে তিনি থেকে যাবেন কি না, সেটাই গল্প।';
+        $this->post('/submit/', $this->poem(['title' => 'প্রথম পর্ব: ফেরা', 'serial' => 'new', 'serial_title' => 'নদীর ওপারে', 'serial_plan' => $plan, 'serial_count' => 8]))->assertRedirect();
+        $serial = \App\Models\Serial::where('user_id', $this->writer->id)->firstOrFail();
+        $first = Post::where('serial_id', $serial->id)->firstOrFail();
+        $this->assertSame(['proposed', 'নদীর ওপারে', 8, 1, 'pending'], [$serial->status, $serial->title, $serial->planned_count, $first->episode_no, $first->status]);
+        $this->assertFalse($serial->isPublic(), 'Nothing is public until the editor takes the first episode');
+
+        // One proposal at a time.
+        $this->post('/submit/', $this->poem(['title' => 'আর একটা', 'serial' => 'new', 'serial_title' => 'অন্য গল্প', 'serial_plan' => $plan, 'serial_count' => 5]))->assertSessionHasErrors('serial');
+
+        // The editor approves the first episode: the serial starts.
+        \App\Support\Review::approve($first->fresh(), User::factory()->create(['role' => Role::Admin]));
+        $serial->refresh();
+        $this->assertSame('active', $serial->status);
+        $this->assertTrue($serial->isPublic());
+        $this->get($serial->url())->assertOk()->assertSee('নদীর ওপারে');
+
+        // The next piece is picked as the serial's next episode.
+        $this->get('/submit/')->assertSee('“নদীর ওপারে”-এর পরের পর্ব (পর্ব ২)');
+        $this->post('/submit/', $this->poem(['title' => 'দ্বিতীয় পর্ব', 'serial' => (string) $serial->id]))->assertRedirect();
+        $second = Post::where('serial_id', $serial->id)->where('episode_no', 2)->firstOrFail();
+        $this->assertSame('pending', $second->status);
+
+        // Never someone else's serial, never the desk's; and the AI never writes a writer's serial.
+        $other = User::factory()->create(['role' => Role::Writer, 'email_verified_at' => now()]);
+        $this->actingAs($other)->post('/submit/', $this->poem(['title' => 'ঢুকে পড়া', 'serial' => (string) $serial->id]));
+        $this->assertNull(Post::where('title', 'ঢুকে পড়া')->firstOrFail()->serial_id);
+        $second->forceFill(['status' => 'published', 'published_at' => now()])->saveQuietly();
+        $this->assertSame(0, \App\Ai\SerialWriter::keepAhead(), 'The writer writes it, not the AI');
+    }
 }
