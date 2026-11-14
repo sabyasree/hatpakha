@@ -10,7 +10,7 @@
         @endunless
         @if ($serial->cover_path)
             <img src="{{ asset($serial->cover_path) }}" alt="" width="{{ $serial->cover_width }}" height="{{ $serial->cover_height }}" fetchpriority="high" class="mt-4 block h-auto max-h-[70vh] w-full rounded-2xl object-cover">
-            <p class="mt-1 text-right text-xs text-ink2">ছবি: এআই-এর সাহায্যে আঁকা</p>
+            <p class="mt-1 text-right text-[11px] leading-none text-ink2">ছবি: এআই</p>
         @endif
         <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-bold">
             <span class="rounded-full bg-red px-3 py-1 text-white">ধারাবাহিক</span>

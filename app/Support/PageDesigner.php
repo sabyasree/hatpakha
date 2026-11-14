@@ -70,7 +70,7 @@ final class PageDesigner
             'layout' => $layout,
             'hero' => $hero,
             'body' => self::body((string) $post->body_html, $hero['src'] ?? null, $post->featured_image_path),
-            'credit' => $hero && $post->image_is_ai ? 'ছবি: এআই-এর সাহায্যে আঁকা' : null,
+            'credit' => $hero && $post->image_is_ai ? 'ছবি: এআই' : null,
         ];
     }
 
