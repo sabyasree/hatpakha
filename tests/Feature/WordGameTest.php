@@ -33,6 +33,39 @@ class WordGameTest extends TestCase
             $seen[$word] = true;
         }
         $this->assertGreaterThanOrEqual(915, count($seen), 'Enough words for six months of five a day');
+
+        // D199: the harder words follow the same rules, and none of them is also an everyday word.
+        $hard = require database_path('content/word-game-hard.php');
+        foreach ($hard as [$word, $clue]) {
+            $l = WordGame::letters($word);
+            $this->assertSame($word, implode('', $l), $word);
+            $this->assertTrue(count($l) >= 3 && count($l) <= 6, $word.' has '.count($l).' letters');
+            $this->assertGreaterThan(1, count(array_unique($l)), $word);
+            $this->assertTrue(mb_strlen($clue) >= 6 && ! str_contains($clue, $word), 'Clue for '.$word.' must not give the word');
+            $this->assertArrayNotHasKey($word, $seen, 'Listed twice, or already an everyday word: '.$word);
+            $seen[$word] = true;
+        }
+        $this->assertGreaterThanOrEqual(183, count($hard), 'Enough harder words for six months of one a day');
+    }
+
+    /** D199 (owner: "can we add words which are a little tough"): one harder word a day, last, never repeated within six months. */
+    public function test_the_last_word_of_the_day_is_a_harder_one_and_none_repeats_for_six_months(): void
+    {
+        $from = Carbon::parse(WordGame::HARD_FROM, 'Asia/Kolkata');
+        $this->assertNull(WordGame::hardWord($from->copy()->subDay()), 'The days before stay as they were');
+        $hardList = array_column(require database_path('content/word-game-hard.php'), 0);
+        $day = WordGame::day($from);
+        $this->assertCount(5, $day['words']);
+        $this->assertContains($day['words'][4]['answer'], $hardList, 'The fifth word is the harder one');
+        foreach (array_slice($day['words'], 0, 4) as $w) {
+            $this->assertNotContains($w['answer'], $hardList, 'The first four stay everyday words');
+        }
+        $this->assertSame($day, WordGame::day($from->copy()->addHours(20)), 'Same for everyone all day');
+        $used = [];
+        for ($d = 0; $d < 183; $d++) {
+            $used[] = WordGame::day($from->copy()->addDays($d))['words'][4]['answer'];
+        }
+        $this->assertCount(183, array_unique($used), 'No harder word comes back within six months');
     }
 
     public function test_everyone_gets_the_same_five_words_each_day_and_no_repeats_for_six_months(): void
