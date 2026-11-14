@@ -359,6 +359,21 @@ class MarketingPlanTest extends TestCase
         $html = view('emails.newsletter', ['newsletter' => $n->fresh(), 'deliveryId' => null, 'unsubscribeUrl' => url('/')])->render();
         $this->assertStringContainsString('এ সপ্তাহে আরও', $html);
         $this->assertStringContainsString(e($blocks[0]['line']), $html);
+
+        // Owner (2026-11-14): a weekend letter must not invite readers to a theme that closes the same day.
+        Carbon::setTestNow(Carbon::parse('2026-11-16 06:10', 'Asia/Kolkata'));   // Monday
+        $open = \App\Support\Kolom::openWeek();
+        $this->assertSame('2026-11-21 18:00', $open->closes_at->timezone('Asia/Kolkata')->format('Y-m-d H:i'), 'Closes when the picking really happens: Saturday 6pm');
+        $kolom = fn () => collect(\App\Ai\EditorJobs::comeBack())->first(fn ($b) => str_starts_with($b['title'], 'পাঠকের কলম'));
+        Carbon::setTestNow(Carbon::parse('2026-11-17 10:00', 'Asia/Kolkata'));
+        $this->assertSame('পাঠকের কলম: '.$open->title, $kolom()['title'], 'Early in the week: the open theme');
+        Carbon::setTestNow(Carbon::parse('2026-11-21 17:00', 'Asia/Kolkata'));   // Saturday, the letter is drafted
+        [, $next] = \App\Support\Kolom::nextTheme();
+        $this->assertNotSame($open->title, $next);
+        $this->assertStringContainsString('সোমবার থেকে নতুন বিষয় "'.$next.'"', $kolom()['title']);
+        $this->assertStringEndsWith('/kolom/', $kolom()['url']);
+        Carbon::setTestNow(Carbon::parse('2026-11-23 06:10', 'Asia/Kolkata'));
+        $this->assertSame($next, \App\Support\Kolom::openWeek()->title, 'And that is the theme that opens on Monday');
     }
 
     /** D185: nothing from the children's section goes out by itself; an old story is shared every day. */

@@ -31,6 +31,24 @@ class SubmissionTest extends TestCase
             'body' => "আকাশ ভরা মেঘ\nভিজে গেছে মাঠ\n\nতোমার কথা মনে পড়ে\nসারা দুপুর", 'original' => '1', 'action' => 'submit'], $extra);
     }
 
+    /** Owner (2026-11-14): "many people started submitting. How will you decide which is for the সংখ্যা and which are normal?" */
+    public function test_the_writer_says_on_the_form_whether_a_piece_is_for_the_return_issue(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-20 10:00', 'Asia/Kolkata'));
+        $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('এই লেখাটি “ফিরে আসা সংখ্যা”-র জন্য');
+        $this->post('/submit/', $this->poem(['for_issue' => '1', 'action' => 'draft']));
+        $post = Post::where('submitted_by', $this->writer->id)->latest('id')->firstOrFail();
+        $this->assertSame('phire-asha', \App\Models\Issue::findOrFail($post->issue_id)->slug);
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('name="for_issue" value="1" checked', false);
+        $this->post('/submit/'.$post->id.'/', $this->poem(['for_issue' => '0']));
+        $this->assertNull($post->fresh()->issue_id, 'Unticked: an ordinary piece');
+        $this->assertSame('pending', $post->fresh()->status);
+
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-12-08 10:00', 'Asia/Kolkata'));
+        $this->get('/submit/')->assertOk()->assertDontSee('ফিরে আসা সংখ্যা');
+    }
+
     public function test_guests_are_sent_to_login_first(): void
     {
         $this->get('/submit/')->assertRedirect(url('/login'));

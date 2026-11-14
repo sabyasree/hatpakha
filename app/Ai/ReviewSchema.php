@@ -7,17 +7,25 @@ final class ReviewSchema
 {
     public const FLAGS = ['hate', 'sexual', 'violence', 'defamation', 'spam_links', 'personal_data', 'possible_plagiarism'];
 
+    public const THEME_FITS = ['yes', 'partly', 'no'];
+
     /** @param array<int,string> $sections allowed section slugs */
     public static function schema(array $sections): array
     {
         $str = ['type' => 'string'];
         $list = ['type' => 'array', 'items' => $str];
 
+        // D204: while a themed issue is taking pieces, the report also says whether this piece fits its theme.
+        $theme = \App\Support\WriterInvites::open() ? [
+            'theme_fit' => ['type' => 'string', 'enum' => self::THEME_FITS, 'description' => 'Does the piece itself fit the theme of the special issue named in the message? yes: the theme is at its heart; partly: it touches the theme; no: it is about something else'],
+            'theme_reason' => ['type' => 'string', 'description' => 'One plain line for the editor, in Bengali, pointing at what in the piece shows this'],
+        ] : [];
+
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['quality_score', 'summary', 'genre', 'strengths', 'suggestions', 'edits', 'decision', 'note_to_writer', 'excerpt', 'suggested_section', 'tags', 'seo_title', 'seo_description', 'policy_flags', 'fits_magazine', 'fit_reason'],
-            'properties' => [
+            'required' => ['quality_score', 'summary', 'genre', 'strengths', 'suggestions', 'edits', 'decision', 'note_to_writer', 'excerpt', 'suggested_section', 'tags', 'seo_title', 'seo_description', 'policy_flags', 'fits_magazine', 'fit_reason', ...array_keys($theme)],
+            'properties' => $theme + [
                 'quality_score' => ['type' => 'integer', 'description' => '1-10 against the rubric'],
                 'summary' => ['type' => 'string', 'description' => 'One or two sentences for the editor, in Bengali'],
                 'genre' => $str,
@@ -56,6 +64,10 @@ final class ReviewSchema
         $r['seo_description'] = mb_substr((string) ($r['seo_description'] ?? ''), 0, 160);
         $r['decision'] = in_array($r['decision'] ?? null, ['publish', 'changes', 'decline'], true) ? $r['decision'] : 'changes';
         $r['note_to_writer'] = mb_substr(trim((string) ($r['note_to_writer'] ?? '')), 0, 1500);
+        if (isset($r['theme_fit'])) {
+            $r['theme_fit'] = in_array($r['theme_fit'], self::THEME_FITS, true) ? $r['theme_fit'] : 'no';
+            $r['theme_reason'] = mb_substr(trim(strip_tags((string) ($r['theme_reason'] ?? ''))), 0, 300);
+        }
         $r['letter'] = 2;   // the note is a whole letter (suggestions woven in); older reports had a short note
         $r['excerpt'] = mb_substr(trim(strip_tags((string) ($r['excerpt'] ?? ''))), 0, 200);
         $edits = [];

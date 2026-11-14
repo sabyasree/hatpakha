@@ -143,17 +143,25 @@ class WriterInvitesTest extends TestCase
         $answered = $this->writer('answered', 3);
         $wrote = $this->writer('wrote', 3);
         foreach ([$quiet, $answered, $wrote] as $a) {
-            WriterInvite::create(['author_id' => $a->id, 'user_id' => $a->user_id, 'subject' => 'ক', 'body' => 'খ', 'status' => 'sent', 'sent_at' => now()]);
+            WriterInvite::create(['author_id' => $a->id, 'user_id' => $a->user_id, 'subject' => 'ক', 'body' => 'খ', 'status' => 'sent', 'sent_at' => Carbon::parse('2026-11-13 10:00', 'Asia/Kolkata')]);
         }
         WriterInvite::where('author_id', $answered->id)->update(['answer' => 'later']);
         $piece = $this->makePost(['slug' => 'notun', 'title' => 'ফেরা', 'status' => 'pending', 'published_at' => null], $wrote);
-        $piece->forceFill(['submitted_by' => $wrote->user_id, 'submitted_at' => now()->addDays(2)])->saveQuietly();
+        $piece->forceFill(['submitted_by' => $wrote->user_id, 'submitted_at' => Carbon::parse('2026-11-14 15:00', 'Asia/Kolkata')])->saveQuietly();
 
         Carbon::setTestNow(Carbon::parse('2026-11-18 10:15', 'Asia/Kolkata'));
         $this->assertSame(1, WriterInvites::match());
         $this->assertSame($piece->id, WriterInvite::where('author_id', $wrote->id)->first()->piece_id);
         $this->assertSame('phire-asha', $piece->fresh()->issue->slug ?? \App\Models\Issue::find($piece->fresh()->issue_id)->slug);
         $this->assertSame('pending', $piece->fresh()->status, 'Marked for the issue, not published');
+
+        // From 15 November the writer says so on the form; an invited writer's piece is no longer marked by itself.
+        $later = $this->writer('later', 3);
+        WriterInvite::create(['author_id' => $later->id, 'user_id' => $later->user_id, 'subject' => 'ক', 'body' => 'খ', 'status' => 'sent', 'sent_at' => now()->subDays(3), 'answer' => 'yes']);
+        $other = $this->makePost(['slug' => 'onyo', 'title' => 'অন্য লেখা', 'status' => 'pending', 'published_at' => null], $later);
+        $other->forceFill(['submitted_by' => $later->user_id, 'submitted_at' => now()->subDay()])->saveQuietly();
+        $this->assertSame(1, WriterInvites::match());
+        $this->assertNull($other->fresh()->issue_id, 'Noted against the invitation, but not put in the issue');
         $this->assertSame(0, WriterInvites::remind(), 'Too early');
 
         Carbon::setTestNow(Carbon::parse('2026-11-26 11:15', 'Asia/Kolkata'));

@@ -73,7 +73,15 @@ TXT;
     {
         $text = trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n\n"], (string) $post->body_html))));
 
-        return "Section chosen by the writer: ".($post->section?->name_en ?? 'unknown')."\n"
+        $theme = '';
+        if (\App\Support\WriterInvites::open()) {   // D204
+            $marked = $post->issue_id && (int) $post->issue_id === (int) \App\Models\Issue::where('slug', \App\Support\WriterInvites::ISSUE_SLUG)->value('id');
+            $theme = 'A special issue is taking pieces now: the "ফিরে আসা সংখ্যা". Its theme is ফিরে আসা (coming back: to a place, a person, a habit, to writing itself). '
+                .'The writer '.($marked ? 'sent this piece for that issue' : 'did not mark this piece for that issue').'. '
+                ."In theme_fit and theme_reason say whether the piece itself fits the theme. Judge this apart from quality: it must not change quality_score, decision or fits_magazine, and note_to_writer must not mention it.\n";
+        }
+
+        return $theme."Section chosen by the writer: ".($post->section?->name_en ?? 'unknown')."\n"
             ."<submission>\n<title>".e($post->title)."</title>\n<text>\n{$text}\n</text>\n</submission>";
     }
 }
