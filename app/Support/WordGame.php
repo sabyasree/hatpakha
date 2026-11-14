@@ -66,6 +66,50 @@ final class WordGame
         return $list[$i] ?? ['', ''];
     }
 
+    public const HARD_FROM = '2026-11-16';
+
+    public const HARD_PER_DAY = 2;
+
+    /**
+     * D199 (owner: "can we add words which are a little tough", then "yes, two words is good"): the two harder words of
+     * the day, shorter first; none before HARD_FROM. Their own list (database/content/word-game-hard.php, none of
+     * them in the everyday list), shuffled once per round, so none comes back until all have been used (383 words:
+     * 191 days). Readers' fixes (D179) apply to them like to any word.
+     *
+     * @return list<array{0: string, 1: string}>
+     */
+    public static function hardWords(?Carbon $day = null): array
+    {
+        $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
+        $i = (int) Carbon::parse(self::HARD_FROM, 'Asia/Kolkata')->diffInDays($day, false);
+        if ($i < 0) {
+            return [];
+        }
+        $list = require database_path('content/word-game-hard.php');
+        $fixes = self::fixes('word', $day);
+        foreach ($list as $k => $row) {
+            if ($f = $fixes[$row[0]] ?? null) {
+                $list[$k] = $f['action'] === 'remove' ? null : [$f['new_word'] ?: $row[0], $f['new_clue'] ?: $row[1]];
+            }
+        }
+        $count = count($list);
+        $perRound = intdiv($count, self::HARD_PER_DAY);
+        mt_srand(6607 + intdiv($i, $perRound));
+        $order = range(0, $count - 1);
+        shuffle($order);
+        mt_srand();
+        $out = [];
+        for ($k = 0; $k < self::HARD_PER_DAY; $k++) {
+            $word = self::at($list, $order[($i % $perRound) * self::HARD_PER_DAY + $k]);
+            if ($word[0] !== '') {
+                $out[] = $word;
+            }
+        }
+        usort($out, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
+
+        return $out;
+    }
+
     /** @return list<array{0: string, 1: string}> the words in play today */
     public static function words(?Carbon $day = null): array
     {
@@ -128,39 +172,78 @@ final class WordGame
      *
      * @return array{no: int, date: string, size: int, words: list<array{answer: string, clue: string, row: int, col: int, down: bool, letters: list<string>}>, bank: list<string>}
      */
-    public static function crossword(?Carbon $day = null): array
+    /**
+     * D201 (owner: "for শব্দজব্দ can we do 3 level. easy, medium and expert. And change the words accordingly").
+     * key => [name, url part, game key in game_scores, most letters in a word, words wanted, board, full points, cost of one shown square]
+     */
+    public const LEVELS = [
+        'easy' => ['সহজ', 'sohoj', 'cross1', 3, 5, 9, 60, 5],
+        'medium' => ['মাঝারি', '', 'cross', 5, 6, 11, 100, 10],
+        'hard' => ['কঠিন', 'kothin', 'cross3', 7, 9, 12, 150, 25],
+    ];
+
+    public static function crosswordUrl(string $level = 'medium'): string
+    {
+        return Url::to('/khela/shobdojobdo'.(self::LEVELS[$level][1] !== '' ? '/'.self::LEVELS[$level][1] : ''));
+    }
+
+    public static function crossword(?Carbon $day = null, string $level = 'medium'): array
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $index = max(0, self::number($day) - 1);
+        [, , , $maxLetters, $want, $board] = self::LEVELS[$level];
 
-        return \Illuminate\Support\Facades\Cache::remember('hp.cross.'.$day->toDateString().'.'.count(self::words($day)).'.'.count(self::fixes('word', $day)), 90000, function () use ($day, $index) {
+        return \Illuminate\Support\Facades\Cache::remember('hp.cross.'.$level.'.'.$day->toDateString().'.'.count(self::words($day)).'.'.count(self::fixes('word', $day)), 90000, function () use ($day, $index, $level, $maxLetters, $want, $board) {
             $today = array_column(self::day($day)['words'], 'answer');
+            // মাঝারি keeps the seed it always had, so today's puzzle does not change under a player
+            $seed = 3301 + ['easy' => 500000, 'medium' => 0, 'hard' => 900000][$level];
+            $everyday = array_values(array_filter(self::words($day), fn ($w) => ! in_array($w[0], $today, true)));
+            $tough = [];
+            if ($level === 'hard') {   // the harder list first, everyday words only to join them up
+                $fixes = self::fixes('word', $day);
+                foreach (require database_path('content/word-game-hard.php') as $row) {
+                    $f = $fixes[$row[0]] ?? null;
+                    if (($f['action'] ?? '') === 'remove' || in_array($row[0], $today, true)) {
+                        continue;
+                    }
+                    $tough[] = $f ? [$f['new_word'] ?: $row[0], $f['new_clue'] ?: $row[1]] : $row;
+                }
+            }
             $best = null;
             for ($try = 0; $try < 12; $try++) {
-                mt_srand(3301 + $index * 13 + $try);
-                $list = array_values(array_filter(self::words($day), fn ($w) => ! in_array($w[0], $today, true)));
+                mt_srand($seed + $index * 13 + $try);
+                $list = $everyday;
                 shuffle($list);
-                $made = self::buildGrid(array_slice($list, 0, 260));
+                $list = array_slice($list, 0, 260);
+                if ($tough) {
+                    shuffle($tough);
+                    $list = array_merge(array_slice($tough, 0, 200), array_slice($list, 0, 60));
+                }
+                $made = self::buildGrid($list, $want, $maxLetters, $board);
                 if (! $best || count($made['words']) > count($best['words'])) {
                     $best = $made;
                 }
-                if (count($best['words']) >= 6) {
+                if (count($best['words']) >= $want) {
                     break;
                 }
             }
-            mt_srand(3301 + $index);
+            mt_srand($seed + $index);
             $bank = array_values(array_unique(array_merge(...array_column($best['words'], 'letters'))));
+            if ($level === 'hard') {   // a few letters that belong nowhere, so the bank alone does not give the answers away
+                $spare = array_values(array_diff(array_unique(array_merge(...array_map(fn ($w) => self::letters($w[0]), array_slice($everyday, 0, 40)))), $bank));
+                shuffle($spare);
+                $bank = array_merge($bank, array_slice($spare, 0, 6));
+            }
             shuffle($bank);
             mt_srand();
 
-            return ['no' => max(1, $index + 1), 'date' => $day->toDateString(), 'size' => $best['size'], 'words' => $best['words'], 'bank' => $bank];
+            return ['no' => max(1, $index + 1), 'date' => $day->toDateString(), 'level' => $level, 'size' => $best['size'], 'words' => $best['words'], 'bank' => $bank];
         });
     }
 
     /** Greedy crossword on a 9×9 board of অক্ষর, then cropped. @param list<array{0: string, 1: string}> $list */
-    private static function buildGrid(array $list, int $want = 6): array
+    private static function buildGrid(array $list, int $want = 6, int $maxLetters = 5, int $n = 11): array
     {
-        $n = 11;
         $grid = [];
         $placed = [];
         $fits = function (array $letters, int $r, int $c, bool $down) use (&$grid, $n): int {
@@ -205,11 +288,11 @@ final class WordGame
         };
         foreach ($list as $w) {
             $letters = self::letters($w[0]);
-            if (count($letters) > 5) {
+            if (count($letters) > $maxLetters || count($letters) < 2) {
                 continue;
             }
             if (! $placed) {
-                $put($w, $letters, 5, intdiv($n - count($letters), 2), false);
+                $put($w, $letters, intdiv($n, 2), intdiv($n - count($letters), 2), false);
 
                 continue;
             }
@@ -278,6 +361,11 @@ final class WordGame
         $picked = array_slice($order, ($index % $perCycle) * self::PER_DAY, self::PER_DAY);
         $words = array_map(fn ($i) => self::at($all, $i), $picked);
         usort($words, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
+        // D199: from HARD_FROM the day's last two words are harder ones, from their own list and in their own order
+        // (so the everyday words' order, and "no word again within six months", stay exactly as they were).
+        foreach (self::hardWords($day) as $k => $hard) {
+            $words[self::PER_DAY - self::HARD_PER_DAY + $k] = $hard;
+        }
 
         mt_srand(4421 + $index);
         $out = [];

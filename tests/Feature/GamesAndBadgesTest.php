@@ -149,4 +149,61 @@ class GamesAndBadgesTest extends TestCase
         $this->assertFalse(\App\Support\Kolom::autoPublish(), 'Nothing the AI has not read goes out without a person');
         $this->assertSame('closed', $q->fresh()->status);
     }
+
+    /** D201 (owner: "for শব্দজব্দ can we do 3 level… change the words accordingly… rearrange the badge"). */
+    public function test_the_crossword_has_three_levels_a_day_each_with_its_own_words_points_and_page(): void
+    {
+        $hardList = array_column(require database_path('content/word-game-hard.php'), 0);
+        $day = \Illuminate\Support\Carbon::parse('2026-11-20', 'Asia/Kolkata');
+        foreach (range(0, 20) as $add) {
+            $d = $day->copy()->addDays($add * 9);
+            [$easy, $mid, $hard] = [WordGame::crossword($d, 'easy'), WordGame::crossword($d, 'medium'), WordGame::crossword($d, 'hard')];
+            $this->assertSame($mid, WordGame::crossword($d), 'মাঝারি is the puzzle there always was');
+            $this->assertGreaterThanOrEqual(4, count($easy['words']));
+            $this->assertLessThanOrEqual(3, max(array_map(fn ($w) => count($w['letters']), $easy['words'])), 'সহজ: short words only');
+            $this->assertSame([], array_intersect(array_column($easy['words'], 'answer'), $hardList));
+            $this->assertGreaterThanOrEqual(8, count($hard['words']), 'কঠিন: a bigger grid');
+            $this->assertGreaterThanOrEqual(5, count(array_intersect(array_column($hard['words'], 'answer'), $hardList)), 'কঠিন: mostly the harder words');
+            $this->assertLessThanOrEqual(12, $hard['size'], 'Still fits a phone');
+            $this->assertSame([], array_diff(array_merge(...array_column($hard['words'], 'letters')), $hard['bank']), 'Every letter needed is in the bank');
+        }
+
+        $hard = WordGame::crossword(null, 'hard');
+        $this->get('/khela/shobdojobdo/')->assertOk()->assertSee('সহজ')->assertSee('কঠিন')->assertSee('/khela/shobdojobdo/kothin/', false);
+        $page = $this->get('/khela/shobdojobdo/kothin/')->assertOk()->assertSee($hard['words'][0]['clue'])->assertSee('"key":"cross3"', false)
+            ->assertSee('<link rel="canonical" href="'.\App\Support\Url::to('/khela/shobdojobdo/kothin').'"', false)->getContent();
+        $this->assertStringNotContainsString('"'.$hard['words'][0]['answer'].'"', $page);
+        $this->get('/khela/shobdojobdo/sohoj/')->assertOk()->assertSee('"key":"cross1"', false);
+        $this->get('/khela/shobdojobdo/majhari/')->assertNotFound();
+
+        $today = now('Asia/Kolkata')->toDateString();
+        $u = User::factory()->create();
+        $this->actingAs($u)->postJson('/khela/score', ['game' => 'cross1', 'day' => $today, 'seconds' => 40, 'hints' => 2, 'solved' => true])->assertJson(['points' => 50]);
+        $this->postJson('/khela/score', ['game' => 'cross', 'day' => $today, 'seconds' => 40, 'hints' => 0, 'solved' => true])->assertJson(['points' => 100]);
+        $this->postJson('/khela/score', ['game' => 'cross3', 'day' => $today, 'seconds' => 40, 'hints' => 1, 'solved' => true])->assertJson(['points' => 125]);
+        $this->assertSame(275, (int) DB::table('game_scores')->where('user_id', $u->id)->sum('points'), 'All three count on the same day');
+        $this->postJson('/khela/report', ['game' => 'cross3', 'word' => $hard['words'][0]['answer'], 'reason' => 'hard'])->assertOk();
+    }
+
+    public function test_the_crossword_medal_asks_for_harder_levels_at_each_tier(): void
+    {
+        $u = User::factory()->create();
+        $add = function (string $game, int $n, int $points = 50) use ($u) {
+            static $day = 0;
+            foreach (range(1, $n) as $i) {
+                DB::table('game_scores')->insert(['user_id' => $u->id, 'game' => $game, 'day' => now()->subDays(++$day)->toDateString(), 'points' => $points, 'seconds' => 60]);
+            }
+        };
+        $medal = fn () => collect(Badges::for($u))->firstWhere('key', 'cross');
+        $add('cross1', 9);
+        $add('cross', 3, 0);   // gave up: not solved
+        $this->assertSame(0, $medal()['tier']);
+        $add('cross1', 21);
+        $this->assertSame([1, 0, 25], [$medal()['tier'], $medal()['count'], $medal()['next']], 'Thirty easy ones: bronze, and silver needs মাঝারি or কঠিন');
+        $add('cross', 25);
+        $this->assertSame([2, 0, 50], [$medal()['tier'], $medal()['count'], $medal()['next']]);
+        $add('cross3', 50);
+        $this->assertSame([3, 'সোনা', 100], [$medal()['tier'], $medal()['tierName'], $medal()['percent']]);
+        $this->assertStringContainsString('<svg', Badges::medalSvg('cross', 3, 200));
+    }
 }

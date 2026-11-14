@@ -117,6 +117,7 @@ class SitemapController extends Controller
                 ->when(ArchiveController::liveIssues()->isNotEmpty(), fn ($c) => $c->push(['loc' => Url::to('/sonkha'), 'lastmod' => now(), 'image' => null]))   // all issues (2026-11-12)
                 ->push(['loc' => Url::to('/khela'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D174: the daily word game
                 ->push(['loc' => Url::to('/khela/dhadha'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D177
+                ->push(['loc' => Url::to('/khela/shobdojobdo/sohoj'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo/kothin'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D201
                 ->push(['loc' => Url::to('/kolom'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D175: পাঠকের কলম
                 ->merge(\App\Models\ReaderPrompt::where('status', 'published')->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->published_at, 'image' => null]))
                 ->merge(collect(array_keys(ArchiveController::yearCounts()))->map(fn ($y) => ['loc' => Url::to("/archive/{$y}"), 'lastmod' => null, 'image' => null])),

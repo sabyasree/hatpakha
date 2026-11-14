@@ -19,6 +19,8 @@ final class Badges
         'reader' => ['পড়ুয়া', 'হাতপাখায় লেখা পড়লে', 'টি লেখা পড়েছেন', [10, 50, 200]],
         'streak' => ['রোজকার খেলোয়াড়', 'টানা দিন খেলা খেললে', 'দিন টানা খেলেছেন', [7, 30, 100]],
         'player' => ['শব্দ-শিকারি', 'খেলায় পয়েন্ট জমালে', 'পয়েন্ট জমিয়েছেন', [500, 5000, 25000]],
+        // D201: tiers ask for harder levels, see crossTier()
+        'cross' => ['শব্দজব্দ', 'শব্দজব্দ মেলালে (রুপো: মাঝারি বা কঠিন, সোনা: কঠিন)', 'টি ছক মিলিয়েছেন', [10, 25, 50]],
         'kolom' => ['পাঠকের কলম', 'পাঠকের কলমে লেখা বাছাই হলে', 'টি লেখা বাছাই হয়েছে', [1, 5, 15]],
         'writer' => ['লেখক', 'হাতপাখায় লেখা প্রকাশিত হলে', 'টি লেখা প্রকাশিত', [1, 10, 50]],
         'voice' => ['আলাপী', 'লেখায় মতামত দিলে', 'টি মতামত দিয়েছেন', [5, 25, 100]],
@@ -35,6 +37,7 @@ final class Badges
             'reader' => DB::table('reading_history')->where('user_id', $u->id)->where('progress', '>=', 60)->count(),
             'streak' => GameScores::streak($u)['best'],
             'player' => (int) DB::table('game_scores')->where('user_id', $u->id)->sum('points'),
+            'cross' => self::crossTier($u)[1],
             'kolom' => DB::table('reader_entries')->join('reader_prompts', 'reader_prompts.id', '=', 'reader_entries.reader_prompt_id')
                 ->where('reader_entries.user_id', $u->id)->where('reader_entries.status', 'picked')->where('reader_prompts.status', 'published')->count(),
             'writer' => $authorIds->isEmpty() ? 0 : DB::table('author_post')->join('posts', 'posts.id', '=', 'author_post.post_id')
@@ -46,6 +49,22 @@ final class Badges
     }
 
     /**
+     * D201: the শব্দজব্দ medal. ব্রোঞ্জ: 10 puzzles solved at any level; রুপো: 25 at মাঝারি or কঠিন; সোনা: 50 at কঠিন.
+     * @return array{0: int, 1: int} the tier, and the count that matters for the next one
+     */
+    public static function crossTier(User $u): array
+    {
+        $by = DB::table('game_scores')->where('user_id', $u->id)->whereIn('game', ['cross1', 'cross', 'cross3'])->where('points', '>', 0)
+            ->groupBy('game')->selectRaw('game, count(*) as n')->pluck('n', 'game');
+        $hard = (int) ($by['cross3'] ?? 0);
+        $mid = $hard + (int) ($by['cross'] ?? 0);
+        $any = $mid + (int) ($by['cross1'] ?? 0);
+        $tier = $any >= 10 ? ($mid >= 25 ? ($hard >= 50 ? 3 : 2) : 1) : 0;
+
+        return [$tier, [$any, $mid, $hard, $hard][$tier]];
+    }
+
+    /**
      * @return list<array{key: string, name: string, how: string, unit: string, count: int, tier: int, tierName: ?string, next: ?int, nextName: ?string, percent: int}>
      */
     public static function for(User $u): array
@@ -54,11 +73,11 @@ final class Badges
         $out = [];
         foreach (self::ALL as $key => [$name, $how, $unit, $steps]) {
             $n = $counts[$key];
-            $tier = count(array_filter($steps, fn ($s) => $n >= $s));
+            $tier = $key === 'cross' ? self::crossTier($u)[0] : count(array_filter($steps, fn ($s) => $n >= $s));
             $next = $steps[$tier] ?? null;
-            $from = $tier ? $steps[$tier - 1] : 0;
+            $from = $tier && $key !== 'cross' ? $steps[$tier - 1] : 0;   // শব্দজব্দ counts a different set for each tier
             $out[] = ['key' => $key, 'name' => $name, 'how' => $how, 'unit' => $unit, 'count' => $n, 'tier' => $tier, 'tierName' => self::TIERS[$tier] ?? null,
-                'next' => $next, 'nextName' => self::TIERS[$tier + 1] ?? null, 'percent' => $next ? (int) min(100, round(100 * ($n - $from) / max(1, $next - $from))) : 100];
+                'next' => $next, 'nextName' => self::TIERS[$tier + 1] ?? null, 'percent' => $next ? (int) min(100, round(100 * max(0, $n - $from) / max(1, $next - $from))) : 100];
         }
 
         return $out;
@@ -84,6 +103,8 @@ final class Badges
         'streak' => '<rect x="2.5" y="5" width="19" height="17" rx="2.5" fill="{ink}"/><rect x="6.6" y="1.5" width="2.8" height="6" rx="1.4" fill="{ink}" stroke="{hub}" stroke-width="1"/><rect x="14.6" y="1.5" width="2.8" height="6" rx="1.4" fill="{ink}" stroke="{hub}" stroke-width="1"/><path d="M7 14.5l3.4 3.4L17 11" fill="none" stroke="{hub}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
         // a letter tile with ক and a star on its corner
         'player' => '<rect x="2" y="5.5" width="17" height="17" rx="3.5" fill="{ink}"/><text x="10.5" y="18.6" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="12.5" text-anchor="middle" fill="{hub}">ক</text><path d="{star}" fill="{ink}" stroke="{hub}" stroke-width="1.2" stroke-linejoin="round" transform="translate(19 5.5)"/>',
+        // a little crossword: an L of squares, one filled with a tick
+        'cross' => '<rect x="2" y="2" width="9" height="9" rx="2" fill="{ink}"/><rect x="13" y="2" width="9" height="9" rx="2" fill="none" stroke="{ink}" stroke-width="2.4"/><rect x="2" y="13" width="9" height="9" rx="2" fill="none" stroke="{ink}" stroke-width="2.4"/><rect x="13" y="13" width="9" height="9" rx="2" fill="{ink}"/><path d="M4.4 6.6l1.8 1.8 3-3.4" fill="none" stroke="{hub}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
         // a sealed envelope with a star: your entry was picked
         'kolom' => '<rect x="1.5" y="5" width="21" height="15.5" rx="2.5" fill="{ink}"/><path d="M3 7l9 5.6L21 7" fill="none" stroke="{hub}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="{star}" fill="{hub}" transform="translate(12 16) scale(.78)"/>',
         // a fountain-pen nib
@@ -97,7 +118,7 @@ final class Badges
     ];
 
     /** How large the name sits on the banner, so the long ones fit on one line. [বাংলা, English] */
-    private const NAME_SIZE = ['friend' => [15, 15], 'reader' => [15, 15], 'writer' => [15, 15], 'voice' => [15, 9.5], 'reviewer' => [14, 14], 'player' => [12.5, 12], 'kolom' => [11.5, 10.5], 'streak' => [10, 12]];
+    private const NAME_SIZE = ['friend' => [15, 15], 'reader' => [15, 15], 'writer' => [15, 15], 'voice' => [15, 9.5], 'reviewer' => [14, 14], 'player' => [12.5, 12], 'kolom' => [11.5, 10.5], 'streak' => [10, 12], 'cross' => [15, 12.5]];
 
     /** A five-point star round (0,0). */
     private static function star(float $r): string

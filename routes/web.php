@@ -32,6 +32,7 @@ Route::get('/bondhu/{code}', fn (string $code) => redirect(url('/').'/?utm_sourc
 Route::get('/khela', [\App\Http\Controllers\GameController::class, 'word'])->name('game');
 Route::get('/khela/dhadha', [\App\Http\Controllers\GameController::class, 'riddle'])->name('game.riddle');
 Route::get('/khela/shobdojobdo', [\App\Http\Controllers\GameController::class, 'crossword'])->name('game.cross');
+Route::get('/khela/shobdojobdo/{level}', [\App\Http\Controllers\GameController::class, 'crossword'])->whereIn('level', ['sohoj', 'kothin'])->name('game.cross.level');   // D201
 Route::get('/khela/board', [\App\Http\Controllers\GameController::class, 'board'])->name('game.board');
 Route::post('/khela/report', [\App\Http\Controllers\GameController::class, 'report'])->middleware('throttle:10,1')->name('game.report');   // D179
 Route::post('/khela/score', [\App\Http\Controllers\GameController::class, 'score'])->middleware(['auth', 'throttle:20,1'])->name('game.score');

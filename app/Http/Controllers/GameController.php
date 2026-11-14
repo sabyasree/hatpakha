@@ -11,11 +11,6 @@ use Illuminate\Http\Request;
 /** D174, D177: the daily games (শব্দ-খেলা, ধাঁধা, শব্দজব্দ), the scores of signed-in players and the leaderboard. */
 class GameController extends Controller
 {
-    public function __construct()
-    {
-        request()->attributes->set('hp.compact-footer', true);   // a game page ends with one quiet line, like the account
-    }
-
     public function word()
     {
         return view('game', ['game' => WordGame::day(), 'kind' => 'word', 'seo' => new Seo(
@@ -34,12 +29,20 @@ class GameController extends Controller
         )]);
     }
 
-    public function crossword()
+    /** D201: three levels a day. মাঝারি keeps the old address; সহজ and কঠিন sit under it. */
+    public function crossword(?string $level = null)
     {
-        return view('crossword', ['game' => WordGame::crossword(), 'seo' => new Seo(
-            title: 'শব্দজব্দ: রোজ একটা ছোট বাংলা শব্দছক',
-            description: 'হাতপাখার রোজকার ছোট শব্দজব্দ। সূত্র দেখে ছক ভরুন; কি-বোর্ড লাগে না, অক্ষরে টিপলেই হয়।',
-            canonical: Url::to('/khela/shobdojobdo'),
+        $key = ['' => 'medium', 'sohoj' => 'easy', 'kothin' => 'hard'][(string) $level] ?? abort(404);
+        [$name] = WordGame::LEVELS[$key];
+
+        return view('crossword', ['game' => WordGame::crossword(null, $key), 'level' => $key, 'seo' => new Seo(
+            title: $key === 'medium' ? 'শব্দজব্দ: রোজ একটা ছোট বাংলা শব্দছক' : 'শব্দজব্দ ('.$name.'): রোজকার বাংলা শব্দছক',
+            description: [
+                'easy' => 'হাতপাখার রোজকার সহজ শব্দজব্দ: ছোট ছক, চেনা ছোট শব্দ। কি-বোর্ড লাগে না, অক্ষরে টিপলেই হয়।',
+                'medium' => 'হাতপাখার রোজকার ছোট শব্দজব্দ। সূত্র দেখে ছক ভরুন; কি-বোর্ড লাগে না, অক্ষরে টিপলেই হয়।',
+                'hard' => 'হাতপাখার রোজকার কঠিন শব্দজব্দ: বড় ছক, বইয়ের পাতার শব্দ। সূত্র দেখে ছক ভরুন।',
+            ][$key],
+            canonical: WordGame::crosswordUrl($key),
         )]);
     }
 
@@ -71,7 +74,7 @@ class GameController extends Controller
     /** D179: a player says a word, clue or riddle is wrong. No account needed. */
     public function report(Request $request)
     {
-        $data = $request->validate(['game' => ['required', 'in:word,riddle,cross'], 'word' => ['required', 'string', 'max:60'],
+        $data = $request->validate(['game' => ['required', 'in:word,riddle,cross,cross1,cross3'], 'word' => ['required', 'string', 'max:60'],
             'reason' => ['required', 'in:'.implode(',', array_keys(\App\Support\WordReports::REASONS))], 'note' => ['nullable', 'string', 'max:300']]);
         $ok = \App\Support\WordReports::store($request, $data['game'] === 'riddle' ? 'riddle' : 'word', $data['word'], $data['reason'], $data['note'] ?? null);
 
