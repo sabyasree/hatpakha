@@ -139,4 +139,31 @@ class MessyPiecesTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => Role::Editor]));
         $this->assertFalse(\App\Filament\Resources\SiteErrors\SiteErrorResource::canAccess(), 'Admins only');
     }
+
+    /** D197 (owner: "no option to see the likes or visits for the pieces as an admin"). */
+    public function test_the_desk_shows_what_readers_did_with_each_piece(): void
+    {
+        $busy = $this->makePost(['slug' => 'busy', 'title' => 'অনেকে পড়েছেন']);
+        $quiet = $this->makePost(['slug' => 'quiet', 'title' => 'কম পড়া']);
+        $this->makePost(['slug' => 'draft-x', 'title' => 'খসড়া', 'status' => 'draft', 'published_at' => null]);
+        $busy->forceFill(['likes_count' => 7])->saveQuietly();
+        \Illuminate\Support\Facades\DB::table('post_views')->insert([
+            ['post_id' => $busy->id, 'day' => now()->toDateString(), 'views' => 40, 'search' => 10, 'social' => 5, 'internal' => 0],
+            ['post_id' => $busy->id, 'day' => now()->subDays(90)->toDateString(), 'views' => 100, 'search' => 0, 'social' => 0, 'internal' => 0],
+            ['post_id' => $quiet->id, 'day' => now()->toDateString(), 'views' => 3, 'search' => 0, 'social' => 0, 'internal' => 0],
+        ]);
+        $reader = User::factory()->create();
+        \Illuminate\Support\Facades\DB::table('saved_posts')->insert(['user_id' => $reader->id, 'post_id' => $busy->id, 'created_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('reading_history')->insert(['user_id' => $reader->id, 'post_id' => $busy->id, 'progress' => 100, 'read_at' => now()]);
+
+        $row = \App\Filament\Resources\PieceStats\PieceStatResource::getEloquentQuery()->find($busy->id);
+        $this->assertSame([40, 140, 7, 1, 1, 10, 5], [(int) $row->views_30, (int) $row->views_all, (int) $row->likes_count, (int) $row->saves_n, (int) $row->finished_n, (int) $row->from_search, (int) $row->from_social]);
+
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\PieceStats\Pages\ListPieceStats::class)
+            ->assertSee('৪৩ বার খোলা হয়েছে')->assertCanSeeTableRecords([$busy, $quiet], inOrder: true)->assertDontSee('খসড়া')
+            ->sortTable('views_30', 'asc')->assertCanSeeTableRecords([$quiet, $busy], inOrder: true)
+            ->sortTable('likes_count', 'desc')->assertCanSeeTableRecords([$busy, $quiet], inOrder: true);
+    }
 }

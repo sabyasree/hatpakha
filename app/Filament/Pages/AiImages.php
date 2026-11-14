@@ -50,6 +50,30 @@ class AiImages extends Page
         return Post::whereNotNull('proposed_image_path')->whereIn('status', ['published', 'scheduled', 'pending']);
     }
 
+    /** D195: the look of new pictures (admins). Pictures already made stay as they are; "আবার আঁকুন" redraws one in the new look. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('style')
+                ->label(fn () => __('ছবির ধরন').': '.__(\App\Ai\Illustrator::STYLES[\App\Ai\Illustrator::style()][0]))
+                ->icon('heroicon-o-paint-brush')->color('gray')
+                ->visible(fn () => \App\Filament\Support\Deleting::isAdmin())
+                ->modalHeading(__('নতুন ছবি কেমন দেখতে হবে'))
+                ->modalDescription(__('এখন থেকে যে ছবি আঁকা হবে তা এই ধরনে হবে। আগের ছবি যেমন আছে থাকবে; কোনো লেখার ছবি নতুন ধরনে চাইলে তার “আবার আঁকুন” টিপুন।'))
+                ->schema([
+                    \Filament\Forms\Components\Radio::make('style')->label(__('ধরন'))->required()->default(fn () => \App\Ai\Illustrator::style())
+                        ->options(collect(\App\Ai\Illustrator::STYLES)->map(fn ($v) => __($v[0]))->all())
+                        ->descriptions(collect(\App\Ai\Illustrator::STYLES)->map(fn ($v) => __($v[1]))->all()),
+                ])
+                ->modalSubmitActionLabel(__('রাখুন'))
+                ->action(function (array $data) {
+                    \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, isset(\App\Ai\Illustrator::STYLES[$data['style']]) ? $data['style'] : 'ink');
+                    \App\Models\AuditLog::record('covers.style', null, ['style' => $data['style'], 'by' => auth()->id()]);
+                    \Filament\Notifications\Notification::make()->title(__('রাখা হয়েছে'))->success()->send();
+                }),
+        ];
+    }
+
     public function posts()
     {
         return self::waiting()->with('authors')->orderByDesc('updated_at')->limit(48)->get();
