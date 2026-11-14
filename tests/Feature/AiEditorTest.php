@@ -365,4 +365,36 @@ class AiEditorTest extends TestCase
         $this->assertSame('clear', $post->fresh()->plagiarism['verdict']);
         \App\Ai\Claude::$fake = null;
     }
+
+    /** D195 (owner: "should look handmade, not AI"): new covers are asked for as a print or an ink drawing of one object. */
+    public function test_new_covers_are_asked_for_in_a_handmade_style_the_owner_can_choose(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => 'k', 'ai.openai.image_model' => 'img-model', 'ai.openai.image_price_usd' => 0.04]);
+        $asked = [];
+        \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$asked) { $asked[] = $purpose; return ['scene' => 'An oil lamp on a windowsill']; };
+        $img = imagecreatetruecolor(1536, 1024);
+        ob_start(); imagepng($img); $png = ob_get_clean();
+        \Illuminate\Support\Facades\Http::fake(['*/images/generations' => \Illuminate\Support\Facades\Http::response(['data' => [['b64_json' => base64_encode($png)]]])]);
+
+        $this->assertSame('paint', \App\Ai\Illustrator::style(), 'Nothing changes until the owner chooses');
+        $this->assertSame(\App\Ai\Illustrator::STYLE, \App\Ai\Illustrator::prompt());
+        \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, 'print');
+        try {
+            $this->assertNull(\App\Ai\Illustrator::make($this->makePost(['slug' => 'prodip', 'title' => 'প্রদীপ'])));
+        } finally {
+            \App\Ai\Claude::$fake = null;
+        }
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r['prompt'], 'linocut') && str_contains($r['prompt'], 'NO gradients') && str_contains($r['prompt'], 'ONE subject only')
+            && str_contains($r['prompt'], 'Absolutely no text') && ! str_contains($r['prompt'], 'gouache'));
+
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\AiImages::class)->assertSee('ছাপচিত্র (লিনোকাট)')->callAction('style', ['style' => 'ink']);
+        $this->assertSame('ink', \App\Ai\Illustrator::style());
+        $this->assertStringContainsString('pen-and-ink', \App\Ai\Illustrator::prompt());
+        \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, 'paint');
+        $this->assertSame(\App\Ai\Illustrator::STYLE, \App\Ai\Illustrator::prompt(), 'The earlier look is still there to choose');
+        \App\Ai\Claude::$fake = null;
+    }
 }

@@ -255,7 +255,7 @@
     "দেখুন ও সিদ্ধান্ত": "Review and decide",
     "দেখে নিন": "Take a look",
     "দৈর্ঘ্য": "Length",
-    "ধরন": "Type",
+    "ধরন": "Style",
     "ধরন (শুধু অ্যাডমিন)": "Type (admins only)",
     "নতুন অ্যাকাউন্ট": "New account",
     "নতুন অ্যাকাউন্টে পাসওয়ার্ড বানানোর লিংক এই ঠিকানায় যাবে।": "A link to set a password will be sent to this address for new accounts.",
@@ -2668,5 +2668,14 @@
     "প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।": "The first episode is waiting on the Pieces page. Approving it starts the serial; declining it means the serial does not start. The writer writes this serial's episodes; the AI does not.",
     "এখনও যাচাই হয়নি: ওয়েবে খোঁজা যায়নি।": "Not checked yet: the web search did not work.",
     "“এআই দিয়ে পড়ান” টিপে আবার চেষ্টা করা যায়।": "Press “Read with AI” to try again.",
-    "নিজে থেকে আবার চেষ্টা হবে।": "It will be tried again by itself."
+    "নিজে থেকে আবার চেষ্টা হবে।": "It will be tried again by itself.",
+    "ছবির ধরন": "Picture style",
+    "নতুন ছবি কেমন দেখতে হবে": "How new pictures should look",
+    "এখন থেকে যে ছবি আঁকা হবে তা এই ধরনে হবে। আগের ছবি যেমন আছে থাকবে; কোনো লেখার ছবি নতুন ধরনে চাইলে তার “আবার আঁকুন” টিপুন।": "Pictures drawn from now on will be in this style. Earlier pictures stay as they are; to have one piece's picture in the new style, press its “Draw again”.",
+    "ছাপচিত্র (লিনোকাট)": "Print (linocut)",
+    "দু-তিনটি চ্যাপ্টা রঙে হাতে কাটা ছাপের মতো: একটিই জিনিস, বাকিটা কাগজ। পুরনো বাংলা বইয়ের অলংকরণের ধাঁচ।": "Like a hand-cut print in two or three flat colours: one object, the rest paper. In the manner of old Bengali book illustration.",
+    "কালি-কলমের আঁকা": "Pen-and-ink drawing",
+    "কালো কালির রেখা, সঙ্গে একটিমাত্র হালকা রঙের ছোপ। খাতার পাতায় আঁকা স্কেচের মতো, অনেকটা সাদা জায়গা।": "Black ink line with a single light wash of one colour. Like a sketchbook drawing, with much white space.",
+    "জলরঙের ছবি (আগের ধরন)": "Watercolour picture (the earlier style)",
+    "পুরো একটি দৃশ্য, অনেক রঙে আঁকা। এতদিন এভাবেই হত।": "A whole scene painted in many colours. How it was done until now."
 }
