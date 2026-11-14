@@ -376,8 +376,9 @@ class AiEditorTest extends TestCase
         ob_start(); imagepng($img); $png = ob_get_clean();
         \Illuminate\Support\Facades\Http::fake(['*/images/generations' => \Illuminate\Support\Facades\Http::response(['data' => [['b64_json' => base64_encode($png)]]])]);
 
-        $this->assertSame('paint', \App\Ai\Illustrator::style(), 'Nothing changes until the owner chooses');
-        $this->assertSame(\App\Ai\Illustrator::STYLE, \App\Ai\Illustrator::prompt());
+        $this->assertSame('ink', \App\Ai\Illustrator::style(), 'The pen-and-ink sketch the owner chose from real samples');
+        $this->assertStringContainsString('The HAND must show', \App\Ai\Illustrator::prompt());
+        $this->assertStringContainsString('Faint pencil under-drawing', \App\Ai\Illustrator::prompt());
         \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, 'print');
         try {
             $this->assertNull(\App\Ai\Illustrator::make($this->makePost(['slug' => 'prodip', 'title' => 'প্রদীপ'])));
@@ -390,9 +391,9 @@ class AiEditorTest extends TestCase
         $owner = User::factory()->create(['role' => Role::Admin]);
         $this->actingAs($owner);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
-        \Livewire\Livewire::test(\App\Filament\Pages\AiImages::class)->assertSee('ছাপচিত্র (লিনোকাট)')->callAction('style', ['style' => 'ink']);
-        $this->assertSame('ink', \App\Ai\Illustrator::style());
-        $this->assertStringContainsString('pen-and-ink', \App\Ai\Illustrator::prompt());
+        \Livewire\Livewire::test(\App\Filament\Pages\AiImages::class)->assertSee('ছাপচিত্র (লিনোকাট)')->callAction('style', ['style' => 'print']);
+        $this->assertSame('print', \App\Ai\Illustrator::style());
+        $this->assertStringContainsString('linocut', \App\Ai\Illustrator::prompt());
         \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, 'paint');
         $this->assertSame(\App\Ai\Illustrator::STYLE, \App\Ai\Illustrator::prompt(), 'The earlier look is still there to choose');
         \App\Ai\Claude::$fake = null;

@@ -67,7 +67,7 @@ class AiImages extends Page
                 ])
                 ->modalSubmitActionLabel(__('রাখুন'))
                 ->action(function (array $data) {
-                    \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, isset(\App\Ai\Illustrator::STYLES[$data['style']]) ? $data['style'] : 'paint');
+                    \App\Models\Setting::put(\App\Ai\Illustrator::STYLE_SETTING, isset(\App\Ai\Illustrator::STYLES[$data['style']]) ? $data['style'] : 'ink');
                     \App\Models\AuditLog::record('covers.style', null, ['style' => $data['style'], 'by' => auth()->id()]);
                     \Filament\Notifications\Notification::make()->title(__('রাখা হয়েছে'))->success()->send();
                 }),

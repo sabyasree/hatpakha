@@ -40,24 +40,29 @@ final class Illustrator
             .'ONE subject only, centred or slightly off-centre, with wide empty paper round it; landscape composition. '
             .'Flat colour only: NO gradients, NO shading or soft light, NO glow, NO photographic detail, NO 3D, NO glossy digital painting, NO cinematic lighting, NO detailed faces (a figure, if any, is small and faceless). ',
             'Choose ONE simple object or motif that carries the piece (a lamp, a boat, a window, a tree, a bird, a pair of hands, a letter), not a full scene: it will be cut as a two-colour linocut.'],
-        'ink' => ['কালি-কলমের আঁকা', 'কালো কালির রেখা, সঙ্গে একটিমাত্র হালকা রঙের ছোপ। খাতার পাতায় আঁকা স্কেচের মতো, অনেকটা সাদা জায়গা।',
-            'A small pen-and-ink drawing from an illustrator\'s sketchbook, as in the margins of an old Bengali magazine (in the spirit of Satyajit Ray\'s and Nandalal Bose\'s line drawings). '
-            .'Black dip-pen and brush ink line on cream paper, lines of uneven weight, a few hatching strokes, small blots and imperfections; plus ONE single loose wash of one colour (brick red OR sky blue OR peach), not filling the shapes exactly. '
-            .'ONE subject only, drawn simply, most of the sheet left empty; landscape composition. '
-            .'NO full-colour painting, NO gradients, NO soft light or glow, NO photographic detail, NO 3D, NO digital polish, NO detailed faces (a figure, if any, is a few lines, seen from behind or far away). ',
-            'Choose ONE simple object, gesture or corner of a place that carries the piece, not a full scene: it will be a small pen-and-ink sketch with one wash of colour.'],
+        // Owner, 2026-11-14, after trying it: "boat, bicycle look good, like a human artist made them. Make the prompt
+        // more human drawings." So: a small scene is welcome, and the hand must show (wobble, pencil, bleed, unfinished).
+        'ink' => ['কালি-কলমের আঁকা', 'কালো কালির রেখা, সঙ্গে একটিমাত্র হালকা রঙের ছোপ। শিল্পীর খাতার পাতায় হাতে আঁকা স্কেচের মতো, অনেকটা সাদা জায়গা।',
+            'A quick pen-and-ink sketch made by hand on location in an artist\'s sketchbook, the kind printed in the margins of old Bengali little magazines (in the spirit of Satyajit Ray\'s and Nandalal Bose\'s line drawings). '
+            .'Drawn fast with a dip pen and a worn brush in black India ink on cream sketchbook paper. The HAND must show: lines wobble and vary in pressure, some are broken or left unfinished, some are redrawn beside a first try, '
+            .'hatching is loose, uneven and sparse, perspective is slightly off, nothing is perfectly straight, symmetrical or evenly spaced. Faint pencil under-drawing still shows in a few places; one or two small ink blots or a dry-brush drag. '
+            .'Then ONE single loose watercolour wash of one colour (brick red OR sky blue OR peach) brushed on by hand: it bleeds a little past the lines, pools darker at one edge, leaves gaps, and covers only part of the picture. '
+            .'One main subject with only a little of its surroundings suggested in a few strokes; distant things are a line or two, not detailed. Most of the sheet is left as empty paper; landscape composition. '
+            .'Suggest, do not render: fewer lines rather than more, no tiny mechanical detail (no perfectly counted spokes, bricks, leaves or planks). '
+            .'NO full-colour painting, NO gradients, NO soft light or glow, NO photographic or engraved precision, NO 3D, NO digital polish, NO vector-clean lines, NO detailed faces (a figure, if any, is a few lines, seen from behind or far away). ',
+            'Choose one main subject in its place, simply (a boat at a river bank, a bicycle against a wall, a lamp on a sill, a figure seen from behind on a road): it will be a quick hand-drawn pen-and-ink sketch with one wash of colour, so name only what a few lines can show.'],
         'paint' => ['জলরঙের ছবি (আগের ধরন)', 'পুরো একটি দৃশ্য, অনেক রঙে আঁকা। এতদিন এভাবেই হত।', '', ''],
     ];
 
     /**
-     * The style in use: the owner's choice in /desk → ছবি. Until the owner chooses, the earlier look: nothing changes
-     * by itself (owner: "can you show one example before implementing").
+     * The style in use: the owner's choice in /desk → ছবি; otherwise the pen-and-ink sketch, which the owner chose
+     * after seeing real samples (2026-11-14: "boat, bicycle look good, like a human artist made them").
      */
     public static function style(): string
     {
-        $s = (string) \App\Models\Setting::get(self::STYLE_SETTING, 'paint');
+        $s = (string) \App\Models\Setting::get(self::STYLE_SETTING, 'ink');
 
-        return isset(self::STYLES[$s]) ? $s : 'paint';
+        return isset(self::STYLES[$s]) ? $s : 'ink';
     }
 
     /** The painter's instructions for the style in use. */
