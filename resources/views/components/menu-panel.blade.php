@@ -14,6 +14,9 @@
     @endforeach
 </nav>
 <div class="mt-3 flex flex-wrap gap-2 border-t-2 border-rule pt-3">
+    {{-- Owner, 2026-11-14: the games and পাঠকের কলম were missing from the computer and tablet menus --}}
+    <a href="{{ \App\Support\Url::to('/khela') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-peach-light px-4 font-bold hover:bg-peach">খেলা</a>
+    <a href="{{ \App\Support\Url::to('/kolom') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-sky-tint px-4 font-bold hover:bg-sky-light">পাঠকের কলম</a>
     @if (\App\Models\Collection::live())
         <a href="{{ \App\Support\Url::to('/sonkolon') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">সংকলন</a>
     @endif

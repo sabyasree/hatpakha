@@ -133,4 +133,20 @@ class AccountRedesignTest extends TestCase
         $this->post('/account/newsletter/', ['newsletter' => 0]);
         $this->get('/account/settings/')->assertSee('>বন্ধ<', false);
     }
+
+    /** Owner, 2026-11-14: "পাঠকের কলম and games are not present in the computer screen menu, and also the আরও mobile menu". */
+    public function test_games_and_readers_corner_are_in_every_menu_for_guests_and_members(): void
+    {
+        foreach ([null, User::factory()->create(['role' => Role::Reader])] as $who) {
+            $who ? $this->actingAs($who) : null;
+            $html = $this->get('/')->assertOk()->getContent();
+            $sheet = substr($html, strpos($html, 'id="more-sheet"'));
+            $top = substr($sheet, 0, strpos($sheet, 'সার্চ'));
+            $this->assertStringContainsString('/khela/', $top, 'Games sit at the top of the phone menu');
+            $this->assertStringContainsString('/kolom/', $top, 'পাঠকের কলম sits at the top of the phone menu');
+            $bar = substr($html, strpos($html, 'aria-label="প্রধান বিভাগ"'), 9000);
+            $this->assertStringContainsString('/khela/', $bar, 'Games are in the computer menu');
+            $this->assertStringContainsString('/kolom/', $bar, 'পাঠকের কলম is in the computer menu');
+        }
+    }
 }

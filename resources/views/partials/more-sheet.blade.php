@@ -39,6 +39,14 @@
             <button type="button" data-more-close class="flex h-11 items-center gap-1 rounded-full border-2 border-navy bg-white px-4 font-bold">{{ __('✕ বন্ধ') }}</button>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
+            {{-- Owner, 2026-11-14 ("পাঠকের কলম and games are not in the menu"): the two things to do every day come first,
+                 above the account, for everyone. --}}
+            <div class="grid grid-cols-2 gap-2 px-3 pt-3">
+                <a href="{{ Url::to('/khela') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-peach-light px-3 py-2 font-bold hover:bg-peach">
+                    <span class="text-lg leading-tight">{{ __('খেলা') }}</span><span class="text-sm font-medium text-ink2">{{ __('রোজের ধাঁধা ও শব্দের খেলা') }}</span></a>
+                <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
+                    <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>
+            </div>
             @if ($me)
                 <div class="flex items-center gap-3 px-4 py-3">
                     @if ($acct['avatar'])<img src="{{ $acct['avatar'] }}" alt="" class="h-12 w-12 flex-none rounded-full border-2 border-navy object-cover">
@@ -76,8 +84,6 @@
             @endif
             <div class="mt-2">
                 <a href="{{ Url::to('/search') }}" class="{{ $row }}">{!! $icon($I['search']) !!}<span class="flex-1">{{ __('সার্চ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
-                <a href="{{ Url::to('/kolom') }}" class="{{ $row }}">{!! $icon($I['pen']) !!}<span class="flex-1">{{ __('পাঠকের কলম') }}<span class="block text-sm font-medium text-ink2">{{ __('এ সপ্তাহের বিষয়ে এক মিনিটে লিখুন') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
-                <a href="{{ Url::to('/khela') }}" class="{{ $row }}"><span class="flex h-6 w-6 flex-none items-center justify-center rounded-md border-2 border-current font-serif text-sm" aria-hidden="true">শ</span><span class="flex-1">{{ __('খেলা') }}<span class="block text-sm font-medium text-ink2">{{ __('শব্দ-খেলা, ধাঁধা, শব্দজব্দ, লিডারবোর্ড') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
                 <a href="{{ Url::to('/archive') }}" class="{{ $row }}">{!! $icon($I['archive']) !!}<span class="flex-1">{{ __('পুরনো লেখা') }}<span class="block text-sm font-medium text-ink2">{{ __(':year থেকে, বছর ধরে (আর্কাইভ)', ['year' => \App\Support\Bn::num(2012)]) }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
                 @if ($issue)<a href="{{ Url::to('/sonkha') }}" class="{{ $row }}">{!! $icon($I['issue']) !!}<span class="flex-1">{{ __('সব সংখ্যা') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>@endif
                 <a href="{{ Url::to('/contact-us') }}" class="{{ $row }}">{!! $icon($I['help']) !!}<span class="flex-1">{{ __('সাহায্য ও যোগাযোগ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
