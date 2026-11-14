@@ -144,8 +144,12 @@ final class Claude
      *
      * @return array{0: ?array, 1: ?string}
      */
+    /** What the last search() call's searches did: how many came back with results, and the error codes of those that did not. */
+    public static array $lastSearch = ['ok' => 0, 'errors' => []];
+
     public static function search(string $purpose, string $system, string $user, int $maxUses = 4, ?int $postId = null): array
     {
+        self::$lastSearch = ['ok' => 0, 'errors' => []];
         if ($why = self::blocked() ?? Team::blockedFor($purpose)) {
             return [null, $why];
         }
@@ -170,6 +174,14 @@ final class Claude
                 $searches = (int) ($u->serverToolUse?->webSearchRequests ?? 0);
                 $usage = ['in' => $u->inputTokens, 'out' => $u->outputTokens, 'cache_read' => (int) $u->cacheReadInputTokens, 'cache_write' => (int) $u->cacheCreationInputTokens];
                 self::log('anthropic', $model, $purpose, $postId, $usage, ReviewService::cost($model, $usage) + $searches * 0.01);
+                // Count the searches that really returned something (a search can fail on the provider's side).
+                foreach ((array) json_decode((string) json_encode($message->content), true) as $block) {
+                    if (($block['type'] ?? '') === 'web_search_tool_result') {
+                        $c = $block['content'] ?? null;
+                        $code = is_array($c) ? ($c['error_code'] ?? $c['errorCode'] ?? null) : null;
+                        $code !== null ? self::$lastSearch['errors'][] = (string) $code : self::$lastSearch['ok']++;
+                    }
+                }
                 if ($message->stopReason !== 'pause_turn') {
                     break;
                 }

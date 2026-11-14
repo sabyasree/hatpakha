@@ -315,4 +315,54 @@ class AiEditorTest extends TestCase
         \App\Ai\EditorPackage::applySafeEdits($post->fresh(), [1]);
         $this->assertSame([['original' => 'করিনা', 'replacement' => 'করি না'], ['original' => 'আকাশ ।', 'replacement' => 'আকাশ।']], $post->fresh()->review_fixes);
     }
+
+    /** Owner, 2026-11-14: "I already added the corrections; on approve the same corrections show again". */
+    public function test_corrections_already_in_the_piece_are_not_offered_again_anywhere(): void
+    {
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $writer = User::factory()->create();
+        $post = $this->makePost(['slug' => 'draft-sync', 'title' => 'বৃষ্টি', 'status' => 'pending', 'published_at' => null, 'body_html' => '<p>আমি করিনা ভয়, মেঘলা আকাশ ।</p>']);
+        $post->forceFill(['submitted_by' => $writer->id])->save();
+        $this->packageFor($post, [['original' => 'করিনা', 'replacement' => 'করি না', 'kind' => 'spelling'], ['original' => 'আকাশ ।', 'replacement' => 'আকাশ।', 'kind' => 'spacing'],
+            ['original' => 'মেঘলা আকাশ', 'replacement' => 'কালো আকাশ', 'kind' => 'spelling']]);
+        $this->assertSame([0, 1, 2], \App\Ai\EditorPackage::openIndexes($post->fresh()));
+        \App\Ai\EditorPackage::applyNow($post->fresh(), [0]);
+        $post->refresh();
+        $this->assertSame([1, 2], \App\Ai\EditorPackage::openIndexes($post), 'The one already in is gone from the list');
+        $this->assertSame([1], \App\Ai\EditorPackage::openSafe($post));
+
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $page = \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id]);
+        $page->mountAction('approve')->assertSchemaStateSet(['edits' => [1]], 'mountedActionSchema0');
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])
+            ->mountAction('requestChanges')->assertSchemaStateSet(['edits' => [1]], 'mountedActionSchema0');
+
+        // A correction typed in by hand counts as done too.
+        $post->forceFill(['body_html' => '<p>আমি করি না ভয়, মেঘলা আকাশ।</p>'])->save();
+        $this->assertSame([2], \App\Ai\EditorPackage::openIndexes($post->fresh()));
+    }
+
+    /** Owner, 2026-11-14: a check whose web searches did not work said "possible match". It is "not checked yet". */
+    public function test_a_plagiarism_check_that_could_not_search_is_not_a_verdict(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $post = $this->makePost(['slug' => 'draft-pl', 'title' => 'বৃষ্টি', 'status' => 'pending', 'published_at' => null,
+            'body_html' => '<p>আকাশ ভরা মেঘ আর ভিজে যাওয়া মাঠের কথা আজ খুব মনে পড়ে।</p><p>তোমার কথা মনে পড়ে সারা দুপুর, জানালার ধারে বসে থাকি।</p>']);
+        \App\Ai\Claude::$fake = fn () => null;   // the search gave nothing back
+        foreach ([1, 2] as $try) {
+            $this->assertNotNull(\App\Ai\PlagiarismCheck::run($post->fresh()));
+            $this->assertSame($try, $post->fresh()->plagiarism['tries']);
+            $this->assertNull($post->fresh()->plagiarism_at, 'Tried again later by itself');
+            $this->assertArrayNotHasKey('verdict', $post->fresh()->plagiarism);
+        }
+        $this->assertStringContainsString('এখনও যাচাই হয়নি', \App\Ai\PlagiarismCheck::summary($post->fresh()));
+        \App\Ai\PlagiarismCheck::run($post->fresh());
+        $this->assertNotNull($post->fresh()->plagiarism_at, 'After three tries it stops trying by itself');
+
+        \App\Ai\Claude::$fake = fn () => ['verdict' => 'clear', 'matches' => [], 'note' => 'কোথাও পাওয়া যায়নি'];
+        $this->assertNull(\App\Ai\PlagiarismCheck::run($post->fresh()));
+        $this->assertSame('clear', $post->fresh()->plagiarism['verdict']);
+        \App\Ai\Claude::$fake = null;
+    }
 }

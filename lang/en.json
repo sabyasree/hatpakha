@@ -2665,5 +2665,8 @@
     "কোনো সংশোধন বসানো যায়নি; লেখায় শব্দগুলো আর নেই": "No correction could be applied; the words are no longer in the piece",
     "লেখকের প্রস্তাব": "The writer's proposal",
     "আনুমানিক পর্ব": "Expected episodes",
-    "প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।": "The first episode is waiting on the Pieces page. Approving it starts the serial; declining it means the serial does not start. The writer writes this serial's episodes; the AI does not."
+    "প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।": "The first episode is waiting on the Pieces page. Approving it starts the serial; declining it means the serial does not start. The writer writes this serial's episodes; the AI does not.",
+    "এখনও যাচাই হয়নি: ওয়েবে খোঁজা যায়নি।": "Not checked yet: the web search did not work.",
+    "“এআই দিয়ে পড়ান” টিপে আবার চেষ্টা করা যায়।": "Press “Read with AI” to try again.",
+    "নিজে থেকে আবার চেষ্টা হবে।": "It will be tried again by itself."
 }

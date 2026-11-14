@@ -168,24 +168,43 @@ final class EditorPackage
      */
     public static function waitingFixes(Post $post): array
     {
-        // Offered only if it can really be put in: tried here exactly the way it will be applied (owner, 2026-11-14:
-        // "I click apply… then it shows the same details again").
-        $options = self::editOptions($post);
-        $edits = self::edits($post);
-        $out = [];
-        foreach (self::safeIndexes($post) as $i) {
-            if (CopyEdit::apply((string) $post->body_html, [$edits[$i]])['applied'] !== []) {
-                $out[$i] = $options[$i];
-            }
-        }
+        return array_intersect_key(self::openOptions($post), array_flip(self::safeIndexes($post)));
+    }
 
-        return $out;
+    /** @var array<string, list<int>> which corrections can still go in, per text (one request) */
+    private static array $open = [];
+
+    /**
+     * The corrections that are still to do: those whose words are still in the piece, tried exactly the way they are
+     * applied. One already put in (by "সংশোধন বসান", or by hand) is no longer offered anywhere: not in "মনোনীত", not in
+     * "বদল চাই" (owner, 2026-11-14: "I already added the corrections; on approve the same corrections show again").
+     *
+     * @return list<int> indexes into edits()
+     */
+    public static function openIndexes(Post $post): array
+    {
+        $edits = self::edits($post);
+        $key = $post->id.':'.md5((string) $post->body_html).':'.count($edits);
+
+        return self::$open[$key] ??= array_values(array_filter(array_keys($edits), fn ($i) => CopyEdit::apply((string) $post->body_html, [$edits[$i]])['applied'] !== []));
+    }
+
+    /** @return array<int, string> index => "ভুল → ঠিক · কী ধরনের", only those still to do */
+    public static function openOptions(Post $post): array
+    {
+        return array_intersect_key(self::editOptions($post), array_flip(self::openIndexes($post)));
+    }
+
+    /** The small fixes still to do (ticked by default in the dialogs). @return list<int> */
+    public static function openSafe(Post $post): array
+    {
+        return array_values(array_intersect(self::safeIndexes($post), self::openIndexes($post)));
     }
 
     /** The changes of the writer's words the AI suggested: shown, never applied without the writer. @return list<string> */
     public static function wordChanges(Post $post): array
     {
-        return array_values(array_diff_key(self::editOptions($post), array_flip(self::safeIndexes($post))));
+        return array_values(array_diff_key(self::openOptions($post), array_flip(self::safeIndexes($post))));
     }
 
     /**
