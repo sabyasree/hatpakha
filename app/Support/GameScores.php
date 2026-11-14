@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class GameScores
 {
-    public const GAMES = ['word' => 'শব্দ-খেলা', 'riddle' => 'ধাঁধা', 'cross' => 'শব্দজব্দ'];
+    public const GAMES = ['word' => 'শব্দ-খেলা', 'riddle' => 'ধাঁধা', 'cross' => 'শব্দজব্দ', 'cross1' => 'শব্দজব্দ (সহজ)', 'cross3' => 'শব্দজব্দ (কঠিন)'];
 
     /** Points from what the browser reports; the shape is checked, the answer itself is the player's honour. */
     public static function points(string $game, array $r): ?int
@@ -31,10 +31,12 @@ final class GameScores
 
             return ['g' => 100, 'y' => 50, 'r' => 0][$x] ?? null;
         }
-        if ($game === 'cross') {
-            $hints = (int) ($r['hints'] ?? -1);
+        foreach (WordGame::LEVELS as [, , $key, , , , $full, $cost]) {   // D201: each level of শব্দজব্দ has its own points
+            if ($game === $key) {
+                $hints = (int) ($r['hints'] ?? -1);
 
-            return $hints < 0 || $hints > 60 ? null : (($r['solved'] ?? false) ? max(10, 100 - 10 * $hints) : 0);
+                return $hints < 0 || $hints > 120 ? null : (($r['solved'] ?? false) ? max(10, $full - $cost * $hints) : 0);
+            }
         }
 
         return null;
@@ -49,7 +51,7 @@ final class GameScores
         }
 
         return (bool) DB::table('game_scores')->insertOrIgnore([
-            'user_id' => $user->id, 'game' => $game, 'day' => $day, 'points' => max(0, min(100, $points)),
+            'user_id' => $user->id, 'game' => $game, 'day' => $day, 'points' => max(0, min(150, $points)),
             'seconds' => max(1, min(86400, $seconds)), 'created_at' => now(),
         ]);
     }

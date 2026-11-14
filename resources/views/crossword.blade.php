@@ -3,7 +3,11 @@
 @php
     use App\Support\Bn;
     use App\Support\Url;
-    $payload = ['no' => $game['no'], 'date' => $game['date'], 'size' => $game['size'], 'url' => Url::to('/khela/shobdojobdo'), 'bank' => $game['bank'],
+    use App\Support\WordGame;
+    $level = $level ?? 'medium';
+    [$levelName, , $levelKey, , , , $full, $cost] = WordGame::LEVELS[$level];
+    $payload = ['no' => $game['no'], 'date' => $game['date'], 'size' => $game['size'], 'url' => WordGame::crosswordUrl($level), 'bank' => $game['bank'],
+        'level' => $level, 'levelName' => $levelName, 'key' => $levelKey, 'full' => $full, 'cost' => $cost,
         'words' => array_map(fn ($w) => ['s' => base64_encode(json_encode($w['letters'], JSON_UNESCAPED_UNICODE)), 'n' => count($w['letters']), 'clue' => $w['clue'], 'row' => $w['row'], 'col' => $w['col'], 'down' => $w['down']], $game['words'])];
 @endphp
 <x-layouts.app :seo="$seo">
@@ -16,10 +20,20 @@
             </div>
             <p class="text-right text-sm font-bold text-ink2">ছক নং {{ Bn::num((string) $game['no']) }}</p>
         </div>
-        <p class="mt-2 text-ink2">একটা ঘরে টিপুন, তারপর নিচের অক্ষরে টিপুন। সূত্র মিলিয়ে সব ঘর ভরুন।</p>
+        {{-- D201: three levels a day, all open --}}
+        <nav class="mt-3 flex gap-2" aria-label="ধাপ">
+            @foreach (WordGame::LEVELS as $k => [$n, , , , , , $pts])
+                <a href="{{ WordGame::crosswordUrl($k) }}" @if ($k === $level) aria-current="page" @endif
+                   class="flex min-h-11 flex-1 flex-col items-center justify-center rounded-2xl border-2 border-navy px-2 py-1 text-center font-bold leading-tight {{ $k === $level ? 'bg-navy text-white' : 'bg-white' }}">
+                    <span>{{ $n }}</span><span class="text-xs font-semibold">{{ Bn::num((string) $pts) }} পয়েন্ট</span>
+                </a>
+            @endforeach
+        </nav>
+        <p class="mt-3 text-ink2">একটা ঘরে টিপুন, তারপর নিচের অক্ষরে টিপুন। সূত্র মিলিয়ে সব ঘর ভরুন।
+            @if ($level === 'easy') ছোট ছক, চেনা ছোট শব্দ। @elseif ($level === 'hard') বড় ছক, বইয়ের পাতার শব্দ; নিচে কয়েকটা বাড়তি অক্ষরও আছে। @endif</p>
 
         <div data-jobdo-board class="mt-5">
-            <div class="mx-auto grid max-w-[420px] gap-1" style="grid-template-columns: repeat({{ $game['size'] }}, minmax(0, 1fr))" data-jobdo-grid role="group" aria-label="শব্দছক"></div>
+            <div class="mx-auto grid {{ $level === 'hard' ? 'max-w-[520px] gap-0.5' : 'max-w-[420px] gap-1' }}" style="grid-template-columns: repeat({{ $game['size'] }}, minmax(0, 1fr))" data-jobdo-grid role="group" aria-label="শব্দছক"></div>
             <p class="mt-4 min-h-14 rounded-2xl border-2 border-navy bg-white p-3 font-serif text-lg font-bold leading-snug" aria-live="polite" data-jobdo-clue></p>
             <p class="mt-2 min-h-6 text-center font-bold" role="status" aria-live="polite" data-jobdo-msg></p>
             <div class="mt-2 flex flex-wrap justify-center gap-1.5" data-jobdo-bank aria-label="অক্ষর"></div>
@@ -54,11 +68,12 @@
             <ul class="mt-2 list-disc space-y-1 ps-6 text-ink2">
                 <li>ছকের ঘরে বা নিচের সূত্রে টিপলে শব্দটা বাছা হয়। একই ঘরে আবার টিপলে দিক বদলায় (পাশাপাশি ↔ উপর-নিচ)।</li>
                 <li>এক ঘরে একটা অক্ষর: “প্র”, “ন্ত”, “কা” প্রতিটাই একটা অক্ষর।</li>
-                <li>“মিলিয়ে দেখুন” টিপলে ভুল ঘরগুলো লাল হয়। “এই ঘরটা দেখান” একটা অক্ষর বসিয়ে দেয় (১০ পয়েন্ট কমে)।</li>
+                <li>“মিলিয়ে দেখুন” টিপলে ভুল ঘরগুলো লাল হয়। “এই ঘরটা দেখান” একটা অক্ষর বসিয়ে দেয় ({{ Bn::num((string) $cost) }} পয়েন্ট কমে)।</li>
+                <li>রোজ তিনটে ছক: সহজ (৬০ পয়েন্ট), মাঝারি (১০০), কঠিন (১৫০)। তিনটেই খেলা যায়।</li>
             </ul>
         </details>
         <script type="application/json" data-jobdo-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     </section>
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-jobdo.js') }}?v=2" defer></script>
+    <script src="{{ asset('js/hp-jobdo.js') }}?v=3" defer></script>
 </x-layouts.app>

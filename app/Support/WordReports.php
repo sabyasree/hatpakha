@@ -26,7 +26,7 @@ final class WordReports
     {
         $out = [];
         foreach ([now('Asia/Kolkata'), now('Asia/Kolkata')->subDay()] as $day) {
-            $sets = $game === 'riddle' ? [WordGame::riddle($day)['words']] : [WordGame::day($day)['words'], WordGame::crossword($day)['words']];
+            $sets = $game === 'riddle' ? [WordGame::riddle($day)['words']] : [WordGame::day($day)['words'], WordGame::crossword($day)['words'], WordGame::crossword($day, 'easy')['words'], WordGame::crossword($day, 'hard')['words']];
             foreach ($sets as $set) {
                 foreach ($set as $w) {
                     $out[$w['answer']] = true;

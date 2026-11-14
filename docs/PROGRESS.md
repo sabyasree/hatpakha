@@ -294,6 +294,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D172: serial writers' instructions rewritten for hooks and curiosity; "পরের পর্বে" teaser line under the newest episode
 - [x] D173: readers select a line → "এই লাইন শেয়ার করুন" → quote card (canvas; share, download, WhatsApp)
 - [x] D174: শব্দ-খেলা at /khela/ (daily word jumble, streak, share)
+- [x] D201: শব্দজব্দ in three levels (সহজ, মাঝারি, কঠিন), each with its own points, and a "শব্দজব্দ" medal
 - [x] D175: পাঠকের কলম at /kolom/ (weekly theme; agents open, invite, screen and propose; owner publishes)
 - [ ] Later (owner): আমার পাড়া (reader memories of places), readers' vote for বর্ষসেরা; a second game (ধাঁধা or শব্দজব্দ) once শব্দ-খেলা has a few weeks of numbers
 - [x] D171: writer's note when sending back ("আবার পাঠান"); desk sees +/− words, the note and the changes; "বদলের ইতিহাস" on every piece
