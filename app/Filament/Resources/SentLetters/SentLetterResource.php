@@ -72,7 +72,7 @@ class SentLetterResource extends Resource
                 Action::make('read')->label(__('পড়ুন'))->icon('heroicon-o-envelope-open')->color('gray')
                     ->modalHeading(fn (SentLetter $record) => $record->subject)
                     ->modalDescription(fn (SentLetter $record) => __('পাঠানো হয়েছে: ').$record->to_email.' · '.$record->sent_at?->copy()->setTimezone('Asia/Kolkata')->format('d M Y, h:i A'))
-                    ->modalContent(fn (SentLetter $record) => view('filament.partials.mail-preview', ['html' => $record->html]))
+                    ->modalContent(fn (SentLetter $record) => \App\Filament\Support\Safe::view('filament.partials.mail-preview', ['html' => $record->html]))
                     ->modalWidth('3xl')->modalSubmitAction(false)->modalCancelActionLabel(__('চিঠি বন্ধ করুন')),
             ])
             ->recordAction('read');

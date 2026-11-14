@@ -34,6 +34,8 @@ final class Brief
                 ->filter(fn ($d) => in_array($d->dayOfWeek, \App\Support\Schedule::DAYS, true))
                 ->filter(fn ($d) => ! Post::whereIn('status', ['scheduled', 'published'])->whereBetween('published_at', [$d->copy()->utc(), $d->copy()->endOfDay()->utc()])->exists())
                 ->count(),
+            'errors_new' => \App\Support\SiteErrors::lastDay()['new'],   // D191
+            'errors_times' => \App\Support\SiteErrors::lastDay()['times'],
             'owner_actions' => AuditLog::where('created_at', '>=', $since)->whereNotNull('user_id')->count(),
         ];
     }

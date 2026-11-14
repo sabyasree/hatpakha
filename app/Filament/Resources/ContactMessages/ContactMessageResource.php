@@ -78,7 +78,7 @@ class ContactMessageResource extends Resource
             ->recordActions([
                 Action::make('read')->label(__('পড়ুন'))->icon('heroicon-o-envelope-open')
                     ->modalHeading(fn (ContactMessage $record) => __($record->topicLabel()))
-                    ->modalContent(fn (ContactMessage $record) => view('filament.partials.contact-message', ['m' => $record]))
+                    ->modalContent(fn (ContactMessage $record) => \App\Filament\Support\Safe::view('filament.partials.contact-message', ['m' => $record]))
                     ->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ')),
                 Action::make('openPiece')->label(__('লেখাটি খুলুন'))->icon('heroicon-o-pencil-square')->color('gray')
                     ->visible(fn (ContactMessage $record) => (bool) $record->post())

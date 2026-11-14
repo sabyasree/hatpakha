@@ -107,7 +107,7 @@ class PieceReviewResource extends Resource
                             $record->forceFill(['desk_read_at' => now()])->save();   // opened = read (menu badge)
                         }
                     })
-                    ->modalContent(fn (PieceReview $record) => view('filament.piece-review', ['review' => $record, 'ai' => $record->post?->latestAiReview]))
+                    ->modalContent(fn (PieceReview $record) => \App\Filament\Support\Safe::view('filament.piece-review', ['review' => $record, 'ai' => $record->post?->latestAiReview]))
                     ->modalWidth('5xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন'))
                     ->extraModalFooterActions(fn (PieceReview $record) => array_filter([
                         $record->post && \App\Ai\Rewriter::canRewrite($record->post)

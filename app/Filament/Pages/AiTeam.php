@@ -396,7 +396,7 @@ class AiTeam extends Page
         return \Filament\Actions\Action::make('activity')->label(__('কী করেছে'))->icon('heroicon-o-queue-list')->size('sm')->color('gray')
             ->modalHeading(fn (array $arguments) => __(Team::AGENTS[$arguments['agent'] ?? '']['0'] ?? ''))
             ->slideOver()->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ'))
-            ->modalContent(fn (array $arguments) => view('filament.ai-agent-activity', ['agent' => $arguments['agent'], 'jobs' => $this->recent((string) $arguments['agent']),
+            ->modalContent(fn (array $arguments) => \App\Filament\Support\Safe::view('filament.ai-agent-activity', ['agent' => $arguments['agent'], 'jobs' => $this->recent((string) $arguments['agent']),
                 'where' => self::whereToSee((string) $arguments['agent'])]));
     }
 

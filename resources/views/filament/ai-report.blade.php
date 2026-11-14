@@ -5,7 +5,8 @@
 --}}
 @php
     use App\Support\Bn;
-    $r = $review?->report;
+    // An old or cut-short report may lack fields: fill them in, so the dialog always opens (D191).
+    $r = $review?->report ? rescue(fn () => \App\Ai\ReviewSchema::normalise((array) $review->report), (array) $review->report, false) : null;
     $blind = $blind ?? false;
     $sectionName = fn ($slug) => \App\Models\Section::where('slug', $slug)->value('name_bn') ?? $slug;
     $box = 'border:1px solid rgba(127,127,127,.25);border-radius:.75rem;padding:.75rem 1rem;margin-top:.75rem';
