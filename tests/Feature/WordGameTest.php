@@ -65,4 +65,12 @@ class WordGameTest extends TestCase
         $this->get('/')->assertSee('আজকের শব্দ-খেলা')->assertSee('/khela/', false);
         $this->get('/sitemap-sections.xml')->assertSee('/khela/', false);
     }
+
+    /** Owner, 2026-11-14: "in the খেলা page there is no footer". Game pages end with the site's full footer like any page. */
+    public function test_game_pages_have_the_sites_full_footer(): void
+    {
+        foreach (['/khela/', '/khela/dhadha/', '/khela/shobdojobdo/', '/khela/board/'] as $url) {
+            $this->get($url)->assertOk()->assertSee('<footer class="mt-16 bg-navy', false)->assertSee('aria-label="ফুটার"', false);
+        }
+    }
 }

@@ -11,11 +11,6 @@ use Illuminate\Http\Request;
 /** D174, D177: the daily games (শব্দ-খেলা, ধাঁধা, শব্দজব্দ), the scores of signed-in players and the leaderboard. */
 class GameController extends Controller
 {
-    public function __construct()
-    {
-        request()->attributes->set('hp.compact-footer', true);   // a game page ends with one quiet line, like the account
-    }
-
     public function word()
     {
         return view('game', ['game' => WordGame::day(), 'kind' => 'word', 'seo' => new Seo(
