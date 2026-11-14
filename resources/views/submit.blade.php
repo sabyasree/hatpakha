@@ -85,6 +85,20 @@
                     <p data-error="section" hidden class="mt-2 text-sm font-bold text-red" role="alert">কোন ধরনের লেখা, একটি বেছে নিন।</p>
                 </fieldset>
 
+                @if (\App\Support\WriterInvites::open())
+                    {{-- Owner (2026-11-14): pieces for the ফিরে আসা সংখ্যা and ordinary pieces come by the same form; the writer says which. --}}
+                    @php
+                        $returnIssue = \App\Models\Issue::where('slug', \App\Support\WriterInvites::ISSUE_SLUG)->first();
+                        $forIssue = (bool) old('for_issue', $returnIssue && (int) $post->issue_id === $returnIssue->id);
+                    @endphp
+                    <label class="mb-5 flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-navy bg-peach-light p-4">
+                        <input type="hidden" name="for_issue" value="0">
+                        <input type="checkbox" name="for_issue" value="1" @checked($forIssue) class="mt-1 h-6 w-6 shrink-0 accent-red">
+                        <span><span class="block font-bold">এই লেখাটি “ফিরে আসা সংখ্যা”-র জন্য</span>
+                            <span class="block text-sm text-ink2">বিষয়: ফিরে আসা (কোনো জায়গায়, কোনো মানুষের কাছে, কোনো অভ্যাসে, বা লেখায় ফেরা)। পাঠানোর শেষ দিন {{ \App\Support\Bn::date(\Illuminate\Support\Carbon::parse(\App\Support\WriterInvites::LAST_DATE, 'Asia/Kolkata')) }}। টিক না দিলে লেখাটি সাধারণ লেখা হিসেবে যাবে।</span></span>
+                    </label>
+                @endif
+
                 @php $contests = \App\Models\Contest::openNow()->orderBy('ends_at')->get(); @endphp
                 @if ($contests->isNotEmpty() || $post->contest_id)
                     {{-- Writing contests (D53): optional; entries go through this same form. --}}

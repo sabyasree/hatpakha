@@ -59,6 +59,9 @@ final class WriterInvites
         return Setting::get(self::AUTO) !== '0';
     }
 
+    /** From this day the writer says on the form whether a piece is for the issue; before it, an invited writer's first piece was marked. */
+    public const CHOICE_FROM = '2026-11-15';
+
     public static function open(): bool
     {
         return now(self::TZ)->lte(Carbon::parse(self::LAST_DATE, self::TZ)->endOfDay());
@@ -270,7 +273,7 @@ final class WriterInvites
                 ->whereBetween('submitted_at', [$inv->sent_at, $until])->oldest('submitted_at')->first();
             if ($piece) {
                 $inv->forceFill(['piece_id' => $piece->id, 'answer' => $inv->answer ?? 'yes', 'answered_at' => $inv->answered_at ?? now()])->save();
-                if (! $piece->issue_id) {
+                if (! $piece->issue_id && $piece->submitted_at->lt(Carbon::parse(self::CHOICE_FROM, self::TZ))) {
                     $piece->forceFill(['issue_id' => self::issue()->id])->saveQuietly();
                 }
                 $n++;

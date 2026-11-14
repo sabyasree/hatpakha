@@ -63,16 +63,23 @@ final class Kolom
         return require database_path('content/reader-prompts.php');
     }
 
+    /** The theme that opens next Monday. @return array{0: string, 1: string, 2: string} [kind, title, ask] */
+    public static function nextTheme(): array
+    {
+        $themes = self::themes();
+
+        return $themes[ReaderPrompt::count() % count($themes)];
+    }
+
     /** Monday morning: last week's theme stops taking entries, the next one opens, and readers are invited. */
     public static function openWeek(): ?ReaderPrompt
     {
         ReaderPrompt::where('status', 'open')->get()->each(fn (ReaderPrompt $p) => $p->update(['status' => 'closed', 'closes_at' => $p->closes_at ?? now()]));
-        $themes = self::themes();
         $n = ReaderPrompt::count();
-        [$kind, $title, $ask] = $themes[$n % count($themes)];
+        [$kind, $title, $ask] = self::nextTheme();
         $prompt = ReaderPrompt::create([
             'slug' => 'w'.($n + 1).'-'.Str::lower(Str::random(4)), 'kind' => $kind, 'title' => $title, 'ask' => $ask,
-            'max_chars' => self::LIMITS[$kind], 'status' => 'open', 'opens_at' => now(), 'closes_at' => now()->addDays(6)->setTimezone('Asia/Kolkata')->setTime(18, 0)->utc(),
+            'max_chars' => self::LIMITS[$kind], 'status' => 'open', 'opens_at' => now(), 'closes_at' => now()->addDays(5)->setTimezone('Asia/Kolkata')->setTime(18, 0)->utc(),   // Saturday 6pm, when pickWeek() really closes it
         ]);
         self::share(self::announce($prompt));
         AuditLog::record('kolom.opened', null, ['prompt' => $prompt->id]);

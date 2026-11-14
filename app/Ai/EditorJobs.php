@@ -215,8 +215,15 @@ final class EditorJobs
         if (\App\Support\WordGame::number() >= 1) {
             $items[] = ['title' => 'আজকের ধাঁধা', 'author' => 'রোজ একটি নতুন ধাঁধা আর শব্দের খেলা', 'url' => \App\Support\Url::to('/khela/dhadha'), 'line' => \App\Support\WordGame::riddle()['words'][0]['clue']];
         }
-        if ($k = \App\Models\ReaderPrompt::where('status', 'open')->latest('id')->first()) {
-            $items[] = ['title' => 'পাঠকের কলম: '.$k->title, 'author' => 'এ সপ্তাহে আপনিও লিখুন', 'url' => $k->url(), 'line' => $k->ask];
+        // Owner (2026-11-14): the letter goes out at the weekend, when the open theme has a day left or is already
+        // closed. So it carries the theme that opens on Monday, which gives the reader the whole week. Only a letter
+        // sent early in the week (two days or more still to go) points at the open theme.
+        $k = \App\Models\ReaderPrompt::where('status', 'open')->latest('id')->first();
+        if ($k && $k->closes_at && $k->closes_at->gt(now()->addDays(2))) {
+            $items[] = ['title' => 'পাঠকের কলম: '.$k->title, 'author' => 'শনিবার সন্ধ্যা ৬টা পর্যন্ত লিখতে পারেন', 'url' => $k->url(), 'line' => $k->ask];
+        } elseif (\App\Support\Kolom::auto() && \App\Models\ReaderPrompt::exists()) {
+            [, $title, $ask] = \App\Support\Kolom::nextTheme();
+            $items[] = ['title' => 'পাঠকের কলম: সোমবার থেকে নতুন বিষয় "'.$title.'"', 'author' => 'সোমবার সকাল থেকে শনিবার সন্ধ্যা পর্যন্ত আপনিও লিখুন', 'url' => \App\Support\Url::to('/kolom'), 'line' => $ask];
         }
         $episode = Post::published()->with('serial')->whereNotNull('serial_id')->where('published_at', '>=', now()->subDays(10))->latest('published_at')->first();
         if ($episode && $episode->serial) {

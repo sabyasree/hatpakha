@@ -189,6 +189,7 @@ class SubmissionController extends Controller
             'cover' => ['nullable', 'file', 'max:8192', 'mimetypes:image/jpeg,image/png,image/webp'],
             'remove_cover' => ['nullable', 'boolean'],
             'contest_id' => ['nullable', 'integer'],
+            'for_issue' => ['nullable', 'boolean'],   // owner, 2026-11-14: the writer says if it is for the ফিরে আসা সংখ্যা
             'writer_note' => ['nullable', 'string', 'max:2000'],   // D171: a note to the editor when sending it back
             // D193: this piece is an episode of the writer's own serial ("new" proposes one)
             'serial' => ['nullable', 'string', 'max:12'],
@@ -237,6 +238,14 @@ class SubmissionController extends Controller
         }
         if (! $post->contest_id || \App\Models\Contest::openNow()->whereKey($post->contest_id)->exists()) {
             $post->forceFill(['contest_id' => $contestId ?: null])->save();
+        }
+        if (\App\Support\WriterInvites::open()) {   // the writer's own word; the desk can still change it
+            $issueId = \App\Support\WriterInvites::issue()->id;
+            if ($request->boolean('for_issue') && ! $post->issue_id) {
+                $post->forceFill(['issue_id' => $issueId])->saveQuietly();
+            } elseif (! $request->boolean('for_issue') && (int) $post->issue_id === $issueId) {
+                $post->forceFill(['issue_id' => null])->saveQuietly();
+            }
         }
         $this->serial($request, $post, $data);
         if ($request->hasFile('cover')) {
