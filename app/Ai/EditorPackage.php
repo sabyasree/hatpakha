@@ -168,12 +168,13 @@ final class EditorPackage
      */
     public static function waitingFixes(Post $post): array
     {
-        $text = html_entity_decode(strip_tags(preg_replace('~<br\s*/?>~i', "\n", (string) $post->body_html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Offered only if it can really be put in: tried here exactly the way it will be applied (owner, 2026-11-14:
+        // "I click apply… then it shows the same details again").
         $options = self::editOptions($post);
+        $edits = self::edits($post);
         $out = [];
         foreach (self::safeIndexes($post) as $i) {
-            $original = (string) (self::edits($post)[$i]['original'] ?? '');
-            if ($original !== '' && (str_contains($text, $original) || str_contains((string) $post->body_html, $original))) {
+            if (CopyEdit::apply((string) $post->body_html, [$edits[$i]])['applied'] !== []) {
                 $out[$i] = $options[$i];
             }
         }
