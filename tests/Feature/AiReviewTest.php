@@ -30,6 +30,35 @@ class AiReviewTest extends TestCase
         'suggestions' => ['এক', 'দুই', 'তিন', 'চার'], 'edits' => [], 'decision' => 'publish', 'note_to_writer' => 'অভিনন্দন!', 'excerpt' => 'বর্ষার দিনের কবিতা', 'suggested_section' => 'poetry', 'tags' => ['বৃষ্টি'],
         'seo_title' => 'বৃষ্টির দিন', 'seo_description' => 'বর্ষার কবিতা', 'policy_flags' => ['hate', 'not-a-flag'], 'fits_magazine' => true, 'fit_reason' => 'ভালো'];
 
+    /** D204 (owner: "yes, add AI suggestion for the theme fit"). */
+    public function test_while_the_return_issue_is_open_the_report_also_says_whether_the_piece_fits_its_theme(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-20 10:00', 'Asia/Kolkata'));
+        $post = $this->piece();
+        $schema = \App\Ai\ReviewSchema::schema(['poetry']);
+        $this->assertContains('theme_fit', $schema['required']);
+        $this->assertSame(['yes', 'partly', 'no'], $schema['properties']['theme_fit']['enum']);
+        $this->assertStringContainsString('did not mark this piece for that issue', \App\Ai\Prompt::user($post));
+        $post->forceFill(['issue_id' => \App\Support\WriterInvites::issue()->id])->saveQuietly();
+        $this->assertStringContainsString('sent this piece for that issue', \App\Ai\Prompt::user($post->fresh()));
+        $this->assertStringContainsString('must not change quality_score', \App\Ai\Prompt::user($post));
+
+        $this->assertSame('no', \App\Ai\ReviewSchema::normalise(self::REPORT + ['theme_fit' => 'maybe'])['theme_fit']);
+        $review = AiReview::create(['post_id' => $post->id, 'provider' => 'anthropic', 'model' => 'm', 'status' => 'done', 'score' => 8,
+            'report' => self::REPORT + ['theme_fit' => 'partly', 'theme_reason' => 'শেষ স্তবকে গ্রামে ফেরার কথা আছে।']]);
+        $html = view('filament.ai-report', ['review' => $review])->render();
+        $this->assertStringContainsString('কিছুটা মেলে', $html);
+        $this->assertStringContainsString('শেষ স্তবকে গ্রামে ফেরার কথা আছে।', $html);
+        $this->assertStringContainsString('লেখাটি এই সংখ্যার জন্য চিহ্নিত', $html);
+
+        // After the last date: the report is as it always was.
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-12-08 10:00', 'Asia/Kolkata'));
+        $this->assertNotContains('theme_fit', \App\Ai\ReviewSchema::schema(['poetry'])['required']);
+        $this->assertStringNotContainsString('ফিরে আসা', \App\Ai\Prompt::user($post));
+        $old = AiReview::create(['post_id' => $post->id, 'provider' => 'anthropic', 'model' => 'm', 'status' => 'done', 'score' => 8, 'report' => self::REPORT]);
+        $this->assertStringNotContainsString('ফিরে আসা সংখ্যার বিষয়ের সঙ্গে', view('filament.ai-report', ['review' => $old])->render());
+    }
+
     private function piece(): Post
     {
         return $this->makePost(['slug' => 'p'.mt_rand(), 'title' => 'বৃষ্টির দিন', 'status' => 'pending', 'published_at' => null,

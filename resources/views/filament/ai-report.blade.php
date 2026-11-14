@@ -28,6 +28,14 @@
             @if (! empty($r['genre']))<span style="opacity:.75">{{ $r['genre'] }}</span>@endif
         </div>
 
+        @if (! empty($r['theme_fit']))
+            {{-- D204: a suggestion only; the editor sets the issue on the piece --}}
+            <p style="margin:.6rem 0 0"><strong>{{ __('ফিরে আসা সংখ্যার বিষয়ের সঙ্গে:') }}</strong>
+                <x-filament::badge :color="['yes' => 'success', 'partly' => 'warning', 'no' => 'gray'][$r['theme_fit']] ?? 'gray'" style="display:inline-flex">{{ ['yes' => __('মেলে'), 'partly' => __('কিছুটা মেলে'), 'no' => __('মেলে না')][$r['theme_fit']] ?? $r['theme_fit'] }}</x-filament::badge>
+                @if (! empty($r['theme_reason'])) <span style="opacity:.8">{{ $r['theme_reason'] }}</span>@endif
+                <span style="opacity:.7">· {{ $review->post?->issue?->slug === \App\Support\WriterInvites::ISSUE_SLUG ? __('লেখাটি এই সংখ্যার জন্য চিহ্নিত') : __('লেখাটি এই সংখ্যার জন্য চিহ্নিত নয়') }}</span></p>
+        @endif
+
         @if (! empty($r['decision']))
             @php($d = ['publish' => [__('প্রস্তাব: প্রকাশ করা যায়'), 'success'], 'changes' => [__('প্রস্তাব: লেখককে বদল চাওয়া'), 'warning'], 'decline' => [__('প্রস্তাব: এবার নয়'), 'gray']][$r['decision']] ?? null)
             @if ($d)<div style="margin-top:.6rem"><x-filament::badge :color="$d[1]">{{ $d[0] }}</x-filament::badge></div>@endif
