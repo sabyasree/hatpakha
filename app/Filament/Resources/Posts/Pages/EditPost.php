@@ -27,9 +27,16 @@ class EditPost extends EditRecord
         // The same decision buttons as the queue, so an editor can read and decide in one place.
         // After a decision, go back to the queue for the next piece.
         $review = array_map(
-            fn (Action $action) => in_array($action->getName(), ['approve', 'requestChanges', 'reject'], true)
-                ? $action->after(fn () => $this->redirect(PostResource::getUrl('index')))
-                : $action,
+            fn (Action $action) => match (true) {
+                in_array($action->getName(), ['approve', 'requestChanges', 'reject'], true) => $action->after(fn () => $this->redirect(PostResource::getUrl('index'))),
+                // Owner, 2026-11-14 ("I applied, then saved, and the corrections were gone"): the open form still held the
+                // old text, so "save" wrote it back over the corrected one. The form now takes the corrected text at once.
+                $action->getName() === 'applyFixes' => $action->after(function () {
+                    $this->record->refresh();
+                    $this->refreshFormData(['body_html']);
+                }),
+                default => $action,
+            },
             PostsTable::reviewActions(),
         );
 

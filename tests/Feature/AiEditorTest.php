@@ -299,9 +299,11 @@ class AiEditorTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])
             ->mountAction('applyFixes')->assertSchemaStateSet(['edits' => [0, 1]], 'mountedActionSchema0')
-            ->setActionData(['edits' => [0]])->callMountedAction()->assertHasNoFormErrors();
+            ->setActionData(['edits' => [0]])->callMountedAction()->assertHasNoFormErrors()
+            ->call('save')->assertHasNoFormErrors();   // owner: "I applied, then saved": the save must keep the correction
         $post->refresh();
         $this->assertStringContainsString('করি না', $post->body_html);
+        $this->assertStringNotContainsString('করিনা', $post->body_html, 'Saving the open form does not bring the old text back');
         $this->assertStringContainsString('আকাশ ।', $post->body_html, 'The unticked fix stays out');
         $this->assertStringContainsString('মেঘলা আকাশ', $post->body_html, 'Never a word change');
         $this->assertSame('pending', $post->status, 'The piece stays where it is');
