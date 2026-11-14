@@ -1085,7 +1085,7 @@
     "যাঁদের সম্মান দেওয়া যায়": "Writers you could honour",
     "পুরো আর্কাইভ থেকে, শুধু সংখ্যা দিয়ে: প্রকাশিত লেখা, পাঠকের ভালো লাগা ও মতামত, পড়া, আর এআই সম্পাদকের নম্বর। শেষ সিদ্ধান্ত আপনার।": "From the whole archive, by the numbers only: published pieces, readers' likes and comments, reads, and the AI editor's scores. The decision is yours.",
     "যেমন": "e.g.",
-    "মতামত": "comments",
+    "মতামত": "Comments",
     "বার পড়া": "reads",
     "লেখা দেখুন": "See their writing",
     "এখনও যথেষ্ট তথ্য নেই।": "Not enough data yet.",
@@ -2677,5 +2677,17 @@
     "কালি-কলমের আঁকা": "Pen-and-ink drawing",
     "কালো কালির রেখা, সঙ্গে একটিমাত্র হালকা রঙের ছোপ। খাতার পাতায় আঁকা স্কেচের মতো, অনেকটা সাদা জায়গা।": "Black ink line with a single light wash of one colour. Like a sketchbook drawing, with much white space.",
     "জলরঙের ছবি (আগের ধরন)": "Watercolour picture (the earlier style)",
-    "পুরো একটি দৃশ্য, অনেক রঙে আঁকা। এতদিন এভাবেই হত।": "A whole scene painted in many colours. How it was done until now."
+    "পুরো একটি দৃশ্য, অনেক রঙে আঁকা। এতদিন এভাবেই হত।": "A whole scene painted in many colours. How it was done until now.",
+    "লেখার হিসাব": "Piece numbers",
+    "গত ৩০ দিনে সব লেখা মিলিয়ে :now বার খোলা হয়েছে (তার আগের ৩০ দিনে :before বার)। যে কোনো কলামের নামে টিপলে সেই অনুযায়ী সাজানো হবে।": "In the last 30 days all pieces together were opened :now times (:before in the 30 days before). Press any column's name to sort by it.",
+    "এখনও কোনো প্রকাশিত লেখা নেই": "No published pieces yet",
+    "৩০ দিনে খোলা": "Opened, 30 days",
+    "মোট খোলা": "Opened, all time",
+    "লাইক": "Likes",
+    "সেভ": "Saves",
+    "শেষ পর্যন্ত পড়েছেন": "Read to the end",
+    "গুগল থেকে": "From Google",
+    "সোশ্যাল থেকে": "From social",
+    "গত ৩০ দিনে প্রকাশিত": "Published in the last 30 days",
+    "ডেস্কে খুলুন": "Open in the desk"
 }
