@@ -32,11 +32,66 @@ final class EditorPackage
         $all = array_merge((array) ($post->proof['edits'] ?? []), (array) (self::report($post)['edits'] ?? []));
         $seen = [];
 
+        // D210: a fix the owner took back is never offered or put in again.
+        $seen = array_fill_keys(self::$takenBack[$post->id] ??= \App\Models\PostVersion::where('post_id', $post->id)->where('kind', 'reverted')->get()
+            ->map(fn ($v) => ($v->changes[0]['original'] ?? '').'→'.($v->changes[0]['replacement'] ?? ''))->all(), true);
+
         return array_values(array_filter($all, function ($e) use (&$seen) {
             $k = ($e['original'] ?? '').'→'.($e['replacement'] ?? '');
 
             return isset($seen[$k]) ? false : ($seen[$k] = true);
         }));
+    }
+
+    /** @var array<int, list<string>> "ভুল→ঠিক" keys of fixes taken back, per piece (one request) */
+    private static array $takenBack = [];
+
+    /**
+     * D210 (owner: "what the AI is changing is not in the change history of the piece. Also need a revert option for
+     * a specific change"): take one fix back. The corrected words are found in the piece as it stands now and put back
+     * as the writer wrote them; the fix is remembered as taken back, so it is not offered or put in again.
+     */
+    public static function revertFix(Post $post, \App\Models\PostVersion $version, int $index): bool
+    {
+        $pair = $version->post_id === $post->id && $version->kind === 'ai_fix' ? ($version->changes[$index] ?? null) : null;
+        if (! $pair || ! empty($pair['reverted'])) {
+            return false;
+        }
+        $result = CopyEdit::apply((string) $post->body_html, [['original' => $pair['replacement'], 'replacement' => $pair['original'], 'kind' => 'typo']]);
+        if (! $result['applied']) {
+            return false;   // the words were changed again since; nothing to put back
+        }
+        self::history($post, fn () => $post->forceFill([
+            'body_html' => $result['html'],
+            'review_fixes' => array_values(array_filter((array) $post->review_fixes, fn ($e) => ($e['original'] ?? '') !== $pair['original'] || ($e['replacement'] ?? '') !== $pair['replacement'])) ?: null,
+        ])->save(), 'reverted', [['original' => $pair['original'], 'replacement' => $pair['replacement'], 'of' => $version->id]]);
+        $changes = $version->changes;
+        $changes[$index]['reverted'] = true;
+        $version->forceFill(['changes' => $changes])->save();
+        unset(self::$takenBack[$post->id]);
+        self::$open = [];
+        AuditLog::record('post.fix_reverted', $post, ['original' => $pair['original'], 'replacement' => $pair['replacement']]);
+
+        return true;
+    }
+
+    /** Run a change to the words and write it into the piece's history (with the text from before, the first time). */
+    private static function history(Post $post, \Closure $change, string $kind, array $changes): void
+    {
+        [$oldTitle, $oldBody] = [(string) $post->title, (string) $post->body_html];
+        Post::$ownHistory = true;
+        try {
+            $change();
+        } finally {
+            Post::$ownHistory = false;
+        }
+        rescue(function () use ($post, $oldTitle, $oldBody, $kind, $changes) {
+            if (! \App\Models\PostVersion::where('post_id', $post->id)->exists()) {
+                \App\Models\PostVersion::create(['post_id' => $post->id, 'kind' => 'before', 'title' => $oldTitle, 'body_html' => $oldBody,
+                    'user_id' => $post->submitted_by, 'created_at' => $post->submitted_at ?? $post->created_at ?? now()]);
+            }
+            \App\Models\PostVersion::snap($post, $kind, null, auth()->id())->forceFill(['changes' => $changes])->save();
+        }, null, true);
     }
 
     /** Checkbox labels for the approve dialog, e.g. "করিনা → করি না · বানান". */
@@ -140,7 +195,9 @@ final class EditorPackage
         $edits = array_values($edits);
         $result = CopyEdit::apply((string) $post->body_html, $edits);
         if ($result['applied']) {
-            $post->forceFill(['body_html' => $result['html']])->save();   // sanitised + tidied on save
+            // sanitised + tidied on save; each fix is kept in the piece's history, so one can be taken back (D210)
+            self::history($post, fn () => $post->forceFill(['body_html' => $result['html']])->save(), 'ai_fix',
+                array_values(array_map(fn ($e) => ['original' => (string) $e['original'], 'replacement' => (string) $e['replacement'], 'kind' => (string) ($e['kind'] ?? '')], array_intersect_key($edits, array_flip($result['applied'])))));
         }
         AuditLog::record('post.copyedits_applied', $post, ['applied' => count($result['applied']), 'not_found' => count($result['missing'])]);
 
@@ -186,7 +243,18 @@ final class EditorPackage
         $edits = self::edits($post);
         $key = $post->id.':'.md5((string) $post->body_html).':'.count($edits);
 
-        return self::$open[$key] ??= array_values(array_filter(array_keys($edits), fn ($i) => CopyEdit::apply((string) $post->body_html, [$edits[$i]])['applied'] !== []));
+        $text = html_entity_decode(strip_tags((string) $post->body_html));
+
+        return self::$open[$key] ??= array_values(array_filter(array_keys($edits), function ($i) use ($edits, $post, $text) {
+            [$from, $to] = [(string) $edits[$i]['original'], (string) $edits[$i]['replacement']];
+            // A fix that only adds to the words ("জুড়ে" → "জুড়ে।") still "finds" them after it went in. It is done when
+            // every place the old words stand is already the corrected one (D210: it was being put in again and again).
+            if ($from !== '' && str_contains($to, $from) && mb_substr_count($text, $to) > 0 && mb_substr_count($text, $to) >= mb_substr_count($text, $from)) {
+                return false;
+            }
+
+            return CopyEdit::apply((string) $post->body_html, [$edits[$i]])['applied'] !== [];
+        }));
     }
 
     /** @return array<int, string> index => "ভুল → ঠিক · কী ধরনের", only those still to do */

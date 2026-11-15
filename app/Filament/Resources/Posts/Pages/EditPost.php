@@ -19,6 +19,17 @@ class EditPost extends EditRecord
         return $this->record->title;
     }
 
+    /** D210: take one small fix back, from the piece's history. */
+    public function revertFix(int $version, int $index): void
+    {
+        abort_unless(auth()->user()?->hasRole(\App\Enums\Role::Editor), 403);
+        $v = \App\Models\PostVersion::where('post_id', $this->record->id)->findOrFail($version);
+        $ok = \App\Ai\EditorPackage::revertFix($this->record, $v, $index);
+        $this->refreshFormData(['body_html']);
+        $ok ? \Filament\Notifications\Notification::make()->title(__('সংশোধনটি ফেরানো হয়েছে; এটি আর নিজে থেকে বসবে না'))->success()->send()
+            : \Filament\Notifications\Notification::make()->title(__('ফেরানো গেল না: ওই শব্দগুলো লেখায় আর আগের মতো নেই'))->warning()->send();
+    }
+
     protected function getHeaderActions(): array
     {
         // Deleting content needs the owner (CLAUDE.md §3): only admins see these; editors unpublish instead.
@@ -57,7 +68,7 @@ class EditPost extends EditRecord
             // D171 (owner): every round with the writer, and what changed each time
             Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
                 ->modalHeading(fn (Post $record) => __('বদলের ইতিহাস').': '.$record->title)
-                ->modalContent(fn (Post $record) => \App\Filament\Support\Safe::view('filament.post-history', ['post' => $record]))
+                ->modalContent(fn (Post $record) => \App\Filament\Support\Safe::view('filament.post-history', ['post' => $record, 'canRevert' => true]))
                 ->modalWidth('4xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন')),
             Action::make('pieceReviews')->color('gray')->icon('heroicon-o-chat-bubble-bottom-center-text')
                 ->label(fn (Post $record) => __('যাচাইকারীর মতামত').' ('.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', 'done')->count()).'/'.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->count()).')')

@@ -14,6 +14,22 @@
     @if ($versions->isEmpty())
         <p>{{ __('এখনও কোনো বদল রাখা নেই। এখন থেকে ডেস্কে লেখা বা শিরোনাম বদলে সেভ করলে, লেখক আবার পাঠালে বা আপনি বদল চাইলে, প্রতিবার এখানে থাকবে। (বদল রাখা শুরু হয়েছে ১৩ নভেম্বর ২০২৬ থেকে; তার আগের বদল জানা নেই।)') }}</p>
     @endif
+    @php
+        // D210: what the AI team did to this piece besides the words (those are in the steps below)
+        $did = ['handover.cover' => __('এআই-এর আঁকা ছবি প্রচ্ছদে বসানো হয়েছে (ফেরাতে: প্রচ্ছদের অংশে "আগের ছবিতে ফিরুন" বা "ছবি সরান")'),
+            'handover.publish_planned' => __('নিজে থেকে মনোনীত হওয়ার সময় বসানো হয়েছে'), 'handover.published' => __('নিজে থেকে মনোনীত হয়েছে, প্রকাশের তারিখ বসেছে'),
+            'handover.publish_stopped' => __('আপনি নিজে থেকে প্রকাশ থামিয়েছেন'), 'handover.monthly' => __('যন্ত্রকণ্ঠের পাঠ অনুমোদিত হয়েছে'),
+            'seo.applied' => __('এসইও তথ্য বসানো হয়েছে (ফেরাতে: উপরের "এসইও-র শেষ বদল ফেরান")')];
+        $others = \App\Models\AuditLog::whereIn('action', array_keys($did))->where('subject_type', $post->getMorphClass())->where('subject_id', $post->id)->latest('id')->limit(15)->get();
+    @endphp
+    @if ($others->isNotEmpty())
+        <div style="{{ $box }}">
+            <p style="font-weight:700;margin:0 0 .3rem">{{ __('এআই দল এই লেখায় আর যা করেছে') }}</p>
+            @foreach ($others as $l)
+                <div style="font-size:.92rem;padding:.15rem 0"><span style="opacity:.7">{{ Bn::num($l->created_at->copy()->setTimezone('Asia/Kolkata')->format('d/m, H:i')) }}</span> · {{ $did[$l->action] }}</div>
+            @endforeach
+        </div>
+    @endif
     @foreach ($versions->reverse()->values() as $i => $v)
         @php
             $prev = $versions->where('id', '<', $v->id)->last();
@@ -32,6 +48,23 @@
                 </div>
             @elseif ($v->kind === 'resubmitted')
                 <p style="margin:.5rem 0 0;opacity:.7">{{ __('লেখক কোনো কথা লেখেননি।') }}</p>
+            @endif
+            @if (in_array($v->kind, ['ai_fix', 'reverted'], true))
+                {{-- D210: who put the fixes in, each one by itself, with a way back --}}
+                <p style="margin:.4rem 0 0;opacity:.75">{{ __('করেছেন:') }} {{ $v->user?->name ?? __('এআই দল, নিজে থেকে') }}</p>
+                <ul style="margin:.4rem 0 0;padding:0;list-style:none">
+                    @foreach ((array) $v->changes as $ci => $c)
+                        <li style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between;padding:.3rem 0;border-top:1px solid rgba(127,127,127,.18)">
+                            <span>@if ($v->kind === 'reverted')<span style="color:#CB1B32">{{ $c['replacement'] ?? '' }}</span> → <strong>{{ $c['original'] ?? '' }}</strong>
+                                @else<span style="color:#CB1B32;text-decoration:line-through">{{ $c['original'] ?? '' }}</span> → <strong>{{ $c['replacement'] ?? '' }}</strong>@endif
+                                @if (! empty($c['kind']))<span style="opacity:.65"> · {{ __(\App\Ai\CopyEdit::LABELS[$c['kind']] ?? $c['kind']) }}</span>@endif</span>
+                            @if ($v->kind === 'ai_fix')
+                                @if (! empty($c['reverted']))<span style="opacity:.65">{{ __('ফেরানো হয়েছে') }}</span>
+                                @elseif ($canRevert ?? false)<x-filament::button size="xs" color="gray" wire:click="revertFix({{ $v->id }}, {{ $ci }})" wire:loading.attr="disabled">{{ __('এটি ফেরান') }}</x-filament::button>@endif
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
             @endif
             @if ($v->kind === 'desk_edit' && $v->user)
                 <p style="margin:.4rem 0 0;opacity:.75">{{ __('বদল করেছেন:') }} {{ $v->user->name }}</p>

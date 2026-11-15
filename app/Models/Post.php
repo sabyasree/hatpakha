@@ -16,6 +16,9 @@ class Post extends Model
 {
     use SoftDeletes;
 
+    /** True while a change writes its own entry in the piece's history (D210), so the desk-edit entry is not added twice. */
+    public static bool $ownHistory = false;
+
     public const STATUSES = ['draft', 'pending', 'changes', 'confirm', 'scheduled', 'published', 'rejected', 'archived'];
 
     protected $guarded = ['id'];
@@ -79,7 +82,7 @@ class Post extends Model
         // D171 (owner: "I made changes and saved; no change history"): an editor's change to the words in /desk is kept,
         // with the text from just before the first one. Writers' own rounds are kept when they send (SubmissionController).
         static::updated(function (self $post) {
-            if (! $post->wasChanged(['title', 'body_html']) || ! auth()->user()?->hasRole(\App\Enums\Role::Editor)) {
+            if (self::$ownHistory || ! $post->wasChanged(['title', 'body_html']) || ! auth()->user()?->hasRole(\App\Enums\Role::Editor)) {
                 return;
             }
             $oldTitle = (string) $post->getOriginal('title');
