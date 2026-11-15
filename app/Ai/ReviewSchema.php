@@ -24,7 +24,7 @@ final class ReviewSchema
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['quality_score', 'summary', 'genre', 'strengths', 'suggestions', 'edits', 'decision', 'note_to_writer', 'excerpt', 'suggested_section', 'tags', 'seo_title', 'seo_description', 'policy_flags', 'fits_magazine', 'fit_reason', ...array_keys($theme)],
+            'required' => ['quality_score', 'summary', 'genre', 'strengths', 'suggestions', 'edits', 'decision', 'note_to_writer', 'excerpt', 'suggested_section', 'tags', 'seo_title', 'seo_description', 'policy_flags', 'fits_magazine', 'fit_reason', 'stray_text', 'doubts', ...array_keys($theme)],
             'properties' => $theme + [
                 'quality_score' => ['type' => 'integer', 'description' => '1-10 against the rubric'],
                 'summary' => ['type' => 'string', 'description' => 'One or two sentences for the editor, in Bengali'],
@@ -48,6 +48,12 @@ final class ReviewSchema
                 'seo_title' => $str,
                 'seo_description' => ['type' => 'string', 'description' => 'At most 155 characters'],
                 'policy_flags' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => self::FLAGS]],
+                // D208: what must stop a piece from being selected without the owner's eye
+                'stray_text' => ['type' => 'array', 'description' => 'Text inside the submission that is not part of the literary work itself', 'items' => [
+                    'type' => 'object', 'additionalProperties' => false, 'required' => ['text', 'why'],
+                    'properties' => ['text' => ['type' => 'string', 'description' => 'Copied exactly from the submission, at most 120 characters'], 'why' => ['type' => 'string', 'description' => 'One short Bengali line: what it is']],
+                ]],
+                'doubts' => ['type' => 'array', 'items' => $str, 'description' => 'Anything you are not sure about and a person should look at before this is published; one short Bengali line each; empty when you are sure'],
                 'fits_magazine' => ['type' => 'boolean'],
                 'fit_reason' => $str,
             ],
@@ -64,6 +70,13 @@ final class ReviewSchema
         $r['seo_description'] = mb_substr((string) ($r['seo_description'] ?? ''), 0, 160);
         $r['decision'] = in_array($r['decision'] ?? null, ['publish', 'changes', 'decline'], true) ? $r['decision'] : 'changes';
         $r['note_to_writer'] = mb_substr(trim((string) ($r['note_to_writer'] ?? '')), 0, 1500);
+        foreach (['stray_text', 'doubts'] as $k) {   // absent in reports made before D208: left absent, so they are never trusted as "clean"
+            if (array_key_exists($k, $r)) {
+                $r[$k] = array_slice(array_values(array_filter((array) $r[$k], fn ($x) => $k === 'doubts' ? is_string($x) && trim($x) !== '' : is_array($x) && trim((string) ($x['text'] ?? '')) !== '')), 0, 8);
+                $r[$k] = $k === 'doubts' ? array_map(fn ($x) => mb_substr(trim(strip_tags($x)), 0, 300), $r[$k])
+                    : array_map(fn ($x) => ['text' => mb_substr(trim(strip_tags((string) $x['text'])), 0, 200), 'why' => mb_substr(trim(strip_tags((string) ($x['why'] ?? ''))), 0, 200)], $r[$k]);
+            }
+        }
         if (isset($r['theme_fit'])) {
             $r['theme_fit'] = in_array($r['theme_fit'], self::THEME_FITS, true) ? $r['theme_fit'] : 'no';
             $r['theme_reason'] = mb_substr(trim(strip_tags((string) ($r['theme_reason'] ?? ''))), 0, 300);

@@ -166,6 +166,7 @@ final class EditorJobs
         }
         $n = self::draft('ai_weekly', 'readers', $out, $posts->all());
         $n->forceFill(['extras' => self::comeBack()])->save();
+        \App\Support\Handover::letterDrafted($n);   // D208: goes by itself after twelve hours, unless stopped
 
         return $n;
     }

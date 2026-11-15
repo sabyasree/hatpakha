@@ -38,6 +38,7 @@ class Post extends Model
             'reviewed_at' => 'datetime',
             'originality_confirmed_at' => 'datetime',
             'pending_edits' => 'array',
+            'auto_publish_at' => 'datetime', 'auto_stopped' => 'boolean',   // D208
             'review_fixes' => 'array',
             'ai_drafted_at' => 'datetime',
             'glossary' => 'array',

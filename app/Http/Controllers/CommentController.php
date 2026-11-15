@@ -56,7 +56,10 @@ class CommentController extends Controller
         ]);
         if ($status === 'pending') {
             // The AI editor pre-screens it after the reader's page has been sent (advice only).
-            dispatch(fn () => \App\Ai\CommentScreen::run($comment))->afterResponse();
+            dispatch(function () use ($comment) {
+                \App\Ai\CommentScreen::run($comment);
+                \App\Support\Handover::comment($comment->fresh());   // D208: a clearly fine comment appears at once
+            })->afterResponse();
         }
 
         return redirect($back)->with('comment_status', $status === 'approved'

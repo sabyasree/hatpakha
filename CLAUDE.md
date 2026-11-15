@@ -21,7 +21,7 @@ If two of these conflict, follow the higher one and **tell the owner about the c
 - **Never break an old URL.** Old WordPress URLs (`/{slug}/`, `/category/…/`, `/author/…/`, `?p=ID`, `/amp/`) must keep working or 301. Changing a public URL needs a redirect and a test.
 - **Trailing slash on every public URL.** Use `App\Support\Url::to()` or the model `url()` methods, never bare `url()` for public links.
 - **All rich text goes through `App\Support\HtmlSanitizer`** (the Post model does this on save). Only `*_html` fields may be printed with `{!! !!}`.
-- **The AI editor prepares, the owner approves (D42).** The AI does the desk work: reports, copy-edits, a recommended decision with a drafted note to the writer, metadata, cover illustrations, comment pre-screening, the monthly issue proposal and theme, and a draft editorial. **Nothing reaches readers or writers until a person clicks** (publish, send, approve). No auto-approve unless the owner explicitly enables it.
+- **The AI editor prepares, the owner approves (D42).** The AI does the desk work: reports, copy-edits, a recommended decision with a drafted note to the writer, metadata, cover illustrations, comment pre-screening, the monthly issue proposal and theme, and a draft editorial. **Nothing reaches readers or writers until a person clicks** (publish, send, approve). No auto-approve unless the owner explicitly enables it. The owner has enabled six jobs (D208, `App\Support\Handover`, switches in /desk → নিজে থেকে চলা কাজ): small fixes, covers, clearly fine comments, the readers' letter, small monthly items, and selecting strong pieces after a day. Do not widen these, and never make declining, asking for changes, the editorial, serials or plagiarism warnings automatic, without the owner asking.
 - **The AI never rewrites a writer's work.** Copy-edits only (spelling, punctuation, spacing, typos), applied by the server as short exact find → replace (`App\Ai\CopyEdit`); anything bigger counts as a word change, is unticked by default and needs the writer's OK. The AI may draft the monthly editorial, which is published under the owner's name only after they edit and approve it.
 - **Secrets never enter git:** `.env`, keys, DB dumps, user data, the WordPress uploads folder. Real values live in GitHub Environments. `.env.example` has placeholders only.
 - **No colours outside the logo palette** in the UI (`docs/DESIGN.md`). White text only on red or navy.
@@ -67,6 +67,7 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - `app/Seo`: `Seo` (head meta) and `JsonLd` (the only place structured data is built)
 - `app/Http/Middleware`: `SecurityHeaders` (CSP with nonce), `EnforceTrailingSlash`
 - `app/Console/Commands/ImportWordPress.php`: idempotent WordPress import
+- `app/Support/Handover.php`: the jobs the owner handed to the AI team (D208), each behind a switch; `hold()` says why a piece is not selected by itself
 - `app/Ai`: provider-neutral AI review (`Reviewer`, `ReviewService` with cost guards); docs/AI.md
 - `app/Filament`: admin panel resources
 - `resources/views`: Blade pages; `components/` (layout, seo, fan motif, title card, ad slot)

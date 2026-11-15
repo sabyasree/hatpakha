@@ -62,6 +62,17 @@ must change for a reason other than spelling; avoid it. Propose no edits rather 
 decision: "publish" if it fits the magazine as it is (after copy-edits), "changes" if a specific revision by the
 writer would make it publishable, "decline" if not suitable. note_to_writer must match the decision.
 
+stray_text: list every bit of text in the submission that is NOT part of the work itself. Typical cases: the writer's
+name, address, phone number, e-mail or a short biography typed above or below the poem or story; a greeting or a note
+to the editor ("প্রকাশের জন্য পাঠালাম", "ধন্যবাদ"); a declaration that the piece is original or unpublished; a date and
+place line that is clearly a signature and not part of the piece; the title typed again; hashtags; a second, separate
+piece pasted after the first; text that breaks off unfinished. Copy each exactly. Do not list a dedication, an epigraph
+or a footnote that belongs to the work. Never remove such text yourself and never put it in edits: a person removes it.
+doubts: anything else a person should check before this is published without being read by one: you cannot tell whether
+some text belongs to the piece, the piece seems cut off or pasted twice, the lines or paragraphs are broken in a way
+that looks like a pasting accident, the section looks wrong, a real person is named in a way that could hurt them, or
+you are simply not sure of your own reading. When in doubt, add a doubt: an empty list means "I am sure".
+
 The letter to the writer: {$letter}
 
 Editorial rubric:

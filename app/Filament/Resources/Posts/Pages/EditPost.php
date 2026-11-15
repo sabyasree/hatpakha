@@ -45,6 +45,14 @@ class EditPost extends EditRecord
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
             ...$review,
+            // D208: a strong piece is selected by itself after a day; this keeps it for the owner
+            Action::make('stopAuto')->label(fn (Post $record) => __('নিজে থেকে প্রকাশ থামান').' ('.\App\Support\Bn::num($record->auto_publish_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')).')')
+                ->icon('heroicon-o-hand-raised')->color('danger')->outlined()
+                ->visible(fn (Post $record) => $record->status === 'pending' && $record->auto_publish_at !== null)
+                ->action(function (Post $record) {
+                    \App\Support\Handover::stop($record);
+                    \Filament\Notifications\Notification::make()->title(__('এই লেখা নিজে থেকে প্রকাশ হবে না; আপনি দেখে ঠিক করবেন'))->success()->send();
+                }),
             \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
             // D171 (owner): every round with the writer, and what changed each time
             Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
