@@ -218,6 +218,60 @@ class HandoverTest extends TestCase
         $this->assertSame(['done', 'open'], [$fresh->fresh()->status, $stale->fresh()->status], 'An old forgotten proposal is not acted on');
     }
 
+    /** Owner: "Make sure the team will do a proper job always. Any confusion, raise a flag." */
+    public function test_trouble_is_flagged_for_the_owner_and_the_flag_goes_when_the_trouble_does(): void
+    {
+        $alerts = fn () => \App\Models\EditorTask::where('type', 'alert')->where('status', 'open')->pluck('title', 'key')->all();
+        // A piece no AI has read after six hours.
+        $unread = $this->piece([], ['title' => 'কেউ পড়েনি']);
+        $unread->latestAiReview->delete();
+        // A piece kept for the owner that has waited three days.
+        $kept = $this->piece(['doubts' => ['শেষটা কাটা']], ['title' => 'অপেক্ষায়']);
+        Handover::run();
+        $this->assertSame([], $alerts(), 'Too early to worry');
+
+        Carbon::setTestNow(now()->addDays(4));
+        Handover::run();
+        $a = $alerts();
+        $this->assertArrayHasKey('handover.unread', $a);
+        $this->assertArrayHasKey('handover.waiting', $a);
+        $waiting = \App\Models\EditorTask::where('key', 'handover.waiting')->first();
+        $this->assertStringContainsString('অপেক্ষায়: ', $waiting->payload['errors'][0]);
+        $this->assertStringContainsString('শেষটা কাটা', $waiting->payload['errors'][0]);
+        $this->assertNotNull(\App\Models\Setting::get('handover.ran_at'));
+
+        // The owner deals with both: the flags go by themselves.
+        \App\Support\Review::reject($kept->fresh(), $this->owner, 'না');
+        \App\Support\Review::reject($unread->fresh(), $this->owner, 'না');
+        Handover::run();
+        $this->assertSame([], $alerts());
+
+        // A job that breaks says so, and the other jobs still run.
+        $c = Comment::create(['post_id' => $this->makePost(['slug' => 'c9'])->id, 'author_name' => 'ক', 'body' => 'ভালো', 'status' => 'pending']);
+        $c->forceFill(['ai_verdict' => 'ok'])->saveQuietly();
+        Comment::saving(fn () => throw new \RuntimeException('disk full'));
+        $done = Handover::run();
+        $this->assertArrayHasKey('handover.job.comments', $alerts());
+        $this->assertSame(['disk full'], \App\Models\EditorTask::where('key', 'handover.job.comments')->first()->payload['errors']);
+        $this->assertArrayHasKey('publish', $done);
+        Comment::flushEventListeners();
+        Handover::run();
+        $this->assertSame([], $alerts());
+    }
+
+    public function test_never_more_than_three_pieces_are_selected_by_themselves_in_a_day(): void
+    {
+        foreach (range(1, 5) as $i) {
+            $this->piece([], ['title' => 'লেখা '.$i]);
+        }
+        Handover::publish();
+        Carbon::setTestNow(now()->addHours(25));
+        $this->assertSame(3, Handover::publish());
+        $this->assertSame(0, Handover::publish(), 'The rest wait for tomorrow');
+        Carbon::setTestNow(now()->addDay());
+        $this->assertSame(2, Handover::publish());
+    }
+
     public function test_a_piece_sent_again_starts_from_nothing(): void
     {
         $post = $this->piece();

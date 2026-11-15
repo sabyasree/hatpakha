@@ -44,6 +44,13 @@ final class Handover
 
     public const MIN_SCORE = 8;
 
+    /** Never more than this many pieces selected by themselves in one day, whatever the reports say. */
+    public const PUBLISH_PER_DAY = 3;
+
+    public const UNREAD_HOURS = 6;
+
+    public const WAITING_DAYS = 3;
+
     public static function on(string $job): bool
     {
         return isset(self::JOBS[$job]) && Setting::get('handover.'.$job) !== '0';
@@ -67,11 +74,62 @@ final class Handover
     public static function run(): array
     {
         $done = [];
-        foreach (array_keys(self::JOBS) as $job) {
-            $done[$job] = self::on($job) ? (int) rescue(fn () => self::{$job}(), 0, true) : 0;
+        foreach (self::JOBS as $job => [$name]) {
+            $done[$job] = 0;
+            if (! self::on($job)) {
+                self::flag('job.'.$job, null);
+
+                continue;
+            }
+            try {
+                $done[$job] = (int) self::{$job}();
+                self::flag('job.'.$job, null);
+            } catch (\Throwable $e) {   // a job that broke is said out loud, never left silent
+                report($e);
+                self::flag('job.'.$job, __('নিজে থেকে চলা কাজ থেমে আছে: ').__($name), [mb_substr($e->getMessage(), 0, 300)]);
+            }
         }
+        rescue(fn () => self::watch(), null, true);
+        Setting::put('handover.ran_at', now()->toIso8601String());
 
         return $done;
+    }
+
+    /**
+     * Owner (2026-11-15): "Make sure the team will do a proper job always. Any confusion, raise a flag." A flag is a
+     * warning in /desk → আজকের কাজ and on the AI team page; it goes away by itself when the trouble does.
+     */
+    public static function flag(string $key, ?string $title, array $lines = []): void
+    {
+        $open = EditorTask::where('type', 'alert')->where('key', 'handover.'.$key)->where('status', 'open');
+        if ($title === null) {
+            $open->get()->each->close('dismissed');
+
+            return;
+        }
+        $task = EditorTask::firstOrCreate(['type' => 'alert', 'key' => 'handover.'.$key, 'status' => 'open'], ['title' => $title, 'payload' => ['errors' => $lines]]);
+        if (! $task->wasRecentlyCreated && ($task->title !== $title || ($task->payload['errors'] ?? []) !== $lines)) {
+            $task->forceFill(['title' => $title, 'payload' => ['errors' => $lines]])->save();
+        }
+    }
+
+    /** What nobody would otherwise notice: a piece no AI has read, a piece kept for the owner that keeps waiting. */
+    public static function watch(): void
+    {
+        $sent = Post::where('status', 'pending')->whereNotNull('submitted_at')->with('latestAiReview')->oldest('submitted_at')->limit(80)->get();
+        $unread = $sent->filter(fn (Post $p) => $p->submitted_at->lt(now()->subHours(self::UNREAD_HOURS)) && ! EditorPackage::report($p));
+        self::flag('unread', $unread->isEmpty() ? null : __('এআই এই লেখাগুলো এখনও পড়েনি; খুলে "এআই দিয়ে পড়ান" টিপুন বা নিজে পড়ুন'), $unread->take(8)->pluck('title')->all());
+
+        $waiting = self::on('publish') ? $sent->filter(fn (Post $p) => ! $p->auto_publish_at && $p->submitted_at->lt(now()->subDays(self::WAITING_DAYS)) && EditorPackage::report($p)) : collect();
+        self::flag('waiting', $waiting->isEmpty() ? null : __('এই লেখাগুলো আপনার সিদ্ধান্তের অপেক্ষায় আছে; "নিজে থেকে চলা কাজ" পাতায় কারণ দেখুন'),
+            $waiting->take(8)->map(fn (Post $p) => $p->title.': '.(self::hold($p) ?? ''))->values()->all());
+    }
+
+    /** How many of the pieces sent through the form need the owner now (for the desk menu). */
+    public static function needsOwner(): int
+    {
+        return (int) cache()->remember('handover.needs', 600, fn () => Post::where('status', 'pending')->whereNotNull('submitted_at')->whereNull('auto_publish_at')
+            ->with('latestAiReview')->limit(80)->get()->filter(fn (Post $p) => EditorPackage::report($p) && self::hold($p) !== null)->count());
     }
 
     private static function note(string $what, $subject = null, array $meta = []): void
@@ -280,6 +338,9 @@ final class Handover
             }
             if ($post->auto_publish_at->isFuture()) {
                 continue;
+            }
+            if (AuditLog::where('action', 'handover.published')->where('created_at', '>=', now('Asia/Kolkata')->startOfDay()->utc())->count() >= self::PUBLISH_PER_DAY) {
+                break;   // the rest go tomorrow
             }
             $r = EditorPackage::report($post);
             $at = Schedule::nextSlot();

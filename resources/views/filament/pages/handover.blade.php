@@ -11,6 +11,15 @@
 <x-filament-panels::page>
     <p style="max-width:52rem">{{ __('এই কাজগুলো এআই দল নিজে থেকে করে। প্রতিটি আলাদা করে বন্ধ করা যায়। লেখা বাতিল করা, লেখককে বদল করতে বলা, সম্পাদকীয়, ধারাবাহিক আর নকলের সতর্কতা আগের মতোই আপনার হাতে।') }}</p>
 
+    <p style="font-size:.9rem;opacity:.8">{{ __('শেষ কাজ হয়েছে:') }} {{ $ranAt ? $when($ranAt) : __('এখনও হয়নি') }}
+        @if ($ranAt && $ranAt->lt(now()->subMinutes(45)))<strong style="color:#CB1B32"> · {{ __('অনেকক্ষণ চলেনি; সাইটের নির্ধারিত কাজ (cron) চলছে কি না দেখুন।') }}</strong>@endif</p>
+    @foreach ($flags as $f)
+        <div style="border:2px solid #CB1B32;border-radius:1rem;padding:.75rem 1rem">
+            <strong style="color:#CB1B32">{{ $f->title }}</strong>
+            @foreach ((array) ($f->payload['errors'] ?? []) as $e)<div style="font-size:.92rem">{{ $e }}</div>@endforeach
+        </div>
+    @endforeach
+
     <div style="display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr))">
         @foreach ($jobs as $key => $j)
             <div style="{{ $box }}">

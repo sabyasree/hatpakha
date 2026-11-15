@@ -1,4 +1,9 @@
 {
+    "নিজে থেকে চলা কাজ থেমে আছে: ": "A job that runs by itself has stopped: ",
+    "এআই এই লেখাগুলো এখনও পড়েনি; খুলে \"এআই দিয়ে পড়ান\" টিপুন বা নিজে পড়ুন": "The AI has not read these pieces yet; open one and press \"Read with AI\", or read it yourself",
+    "এই লেখাগুলো আপনার সিদ্ধান্তের অপেক্ষায় আছে; \"নিজে থেকে চলা কাজ\" পাতায় কারণ দেখুন": "These pieces are waiting for your decision; see the reason on the \"Jobs that run by themselves\" page",
+    "শেষ কাজ হয়েছে:": "Last ran:",
+    "অনেকক্ষণ চলেনি; সাইটের নির্ধারিত কাজ (cron) চলছে কি না দেখুন।": "It has not run for a long time; check that the site's scheduled jobs (cron) are running.",
     "নিজে থেকে চলা কাজ": "Jobs that run by themselves",
     "চালু হলো": "Switched on",
     "বন্ধ হলো": "Switched off",
