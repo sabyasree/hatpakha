@@ -740,10 +740,27 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
     });
 })();
 
-// D193: the "new serial" fields on the submission form show only when that choice is picked.
-document.querySelectorAll('[data-serial-choice]').forEach((sel) => {
-    const box = sel.closest('details')?.querySelector('[data-serial-new]');
-    const paint = () => { if (box) box.hidden = sel.value !== 'new'; };
-    sel.addEventListener('change', paint);
+// D193, D206: the serial question on the submission form. The new-serial steps show only for that choice; choosing the
+// ধারাবাহিক section brings the question into view, so nobody sends an episode as an ordinary piece.
+document.querySelectorAll('[data-serial-box]').forEach((box) => {
+    const choices = [...box.querySelectorAll('[data-serial-choice]')];
+    const fresh = box.querySelector('[data-serial-new]');
+    const next = box.querySelector('[data-serial-next]');
+    const title = box.closest('form')?.querySelector('input[name="title"]');
+    const value = () => (choices.find((c) => c.checked) || {}).value || '';
+    const paint = () => {
+        const v = value();
+        if (fresh) fresh.hidden = v !== 'new';
+        if (next) next.hidden = v === '' || v === 'new';
+        if (title) title.placeholder = v === '' ? 'শিরোনাম' : 'এই পর্বের নাম';
+    };
+    choices.forEach((c) => c.addEventListener('change', paint));
     paint();
+    const sectionId = box.dataset.serialSection;
+    box.closest('form')?.querySelectorAll('input[name="section_id"]').forEach((r) => r.addEventListener('change', () => {
+        if (r.checked && r.value === sectionId && value() === '') {
+            box.classList.add('border-red');
+            box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }));
 });

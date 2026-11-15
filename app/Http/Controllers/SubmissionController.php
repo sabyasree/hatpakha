@@ -226,8 +226,8 @@ class SubmissionController extends Controller
             'serial_plan' => ['required_if:serial,new', 'nullable', 'string', 'min:80', 'max:3000'],
             'serial_count' => ['required_if:serial,new', 'nullable', 'integer', 'min:2', 'max:60'],
         ], [
-            'serial_title.required_if' => 'ধারাবাহিকের নাম দিন।',
-            'serial_plan.required_if' => 'পুরো গল্পটা কোন দিকে যাবে, কয়েক লাইনে লিখুন।',
+            'serial_title.required_if' => '১ নম্বরে পুরো ধারাবাহিকের নাম লিখুন।',
+            'serial_plan.required_if' => '২ নম্বরে পুরো গল্পটা কী নিয়ে, কোন দিকে যাবে, তিন-চার লাইনে লিখুন।',
             'serial_plan.min' => 'গল্পের পরিকল্পনা আর একটু খুলে লিখুন (অন্তত দু-তিন লাইন)।',
             'serial_count.required_if' => 'আনুমানিক কত পর্ব হবে, লিখুন।',
             'serial_count.min' => 'ধারাবাহিকে অন্তত দুটি পর্ব লাগে।',
@@ -254,6 +254,15 @@ class SubmissionController extends Controller
 
         if (mb_strlen(trim(html_entity_decode(strip_tags(self::bodyHtml($request, $data['body']))))) < 30) {
             throw ValidationException::withMessages(['body' => 'লেখাটি খুব ছোট।']);
+        }
+        // D206: the ধারাবাহিক section sent as "a single piece" is the commonest slip; ask instead of guessing.
+        if ($submitting && blank($data['serial'] ?? null) && ! $post->serial_id && self::sections()->firstWhere('id', (int) $data['section_id'])?->slug === 'dharabahik') {
+            $own = \App\Models\Serial::where('user_id', $request->user()->id)->whereIn('status', ['proposed', 'active', 'paused'])->pluck('status');
+            throw ValidationException::withMessages(['serial' => match (true) {
+                $own->contains(fn ($st) => $st !== 'proposed') => 'আপনি “ধারাবাহিক” বিভাগ বেছেছেন। “এটি কি ধারাবাহিকের পর্ব?” প্রশ্নে বেছে নিন: আপনার কোন ধারাবাহিকের পরের পর্ব, না নতুন ধারাবাহিকের প্রথম পর্ব।',
+                $own->isNotEmpty() => 'আপনার ধারাবাহিকের প্রথম পর্ব এখনও সম্পাদকের কাছে আছে। সেটি প্রকাশ হলে পরের পর্ব পাঠাতে পারবেন। ততদিন “খসড়া রাখুন” টিপে এই লেখাটি রেখে দিন।',
+                default => 'আপনি “ধারাবাহিক” বিভাগ বেছেছেন। “এটি কি ধারাবাহিকের পর্ব?” প্রশ্নে “হ্যাঁ, নতুন ধারাবাহিক শুরু করছি” বেছে তিনটি কথা জানান। একটাই লেখা হলে বিভাগ বদলে গল্প, কবিতা বা অন্য কিছু বেছে নিন।',
+            }]);
         }
         $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
         // Contest entry (D53): only an open contest; one entry per writer per contest; never changed after judging starts.
@@ -300,7 +309,11 @@ class SubmissionController extends Controller
         // AI report for the editor (advice only), written after the writer's page has been sent.
         \App\Jobs\ReviewSubmission::dispatch($post->id)->afterResponse();
 
-        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
+        $serial = $post->fresh()->serial;
+        $what = $serial && $serial->user_id === $request->user()->id
+            ? ($serial->status === 'proposed' ? 'নতুন ধারাবাহিক “'.$serial->title.'”-এর প্রথম পর্ব ' : 'ধারাবাহিক “'.$serial->title.'”-এর পর্ব '.\App\Support\Bn::num((string) $post->fresh()->episode_no).' ') : '';
+
+        return redirect(Url::to('/account'))->with('status', $what.'"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
     }
 
     private function fill(Request $request, Post $post, string $title, string $body, ?int $sectionId): void
