@@ -79,9 +79,38 @@ class SubmissionController extends Controller
     public function update(Request $request, Post $post)
     {
         $this->authorizeOwn($request, $post);
-        abort_unless(in_array($post->status, ['draft', 'changes'], true), 403, 'জমা দেওয়া লেখা আর বদলানো যায় না।');
+        abort_unless(in_array($post->status, ['draft', 'changes'], true), 403, 'লেখাটি সম্পাদকের কাছে আছে। বদলাতে চাইলে আগে "ফিরিয়ে এনে বদলান" টিপুন।');
 
         return $this->save($request, $post);
+    }
+
+    /** D205: until a piece is published the writer can take it back, change it and send it again. */
+    public const TAKE_BACK = ['pending', 'changes', 'confirm', 'scheduled'];
+
+    public function withdraw(Request $request, Post $post)
+    {
+        $this->authorizeOwn($request, $post);
+        abort_unless(in_array($post->status, self::TAKE_BACK, true), 403, 'প্রকাশিত লেখা এখান থেকে বদলানো যায় না।');
+        $was = $post->status;
+        // What the desk had seen is kept in the history; the editor's planned date and waiting word changes no longer apply.
+        \App\Models\PostVersion::snap($post, 'withdrawn', null, $request->user()->id);
+        $post->forceFill(['status' => 'draft', 'published_at' => null, 'pending_edits' => null])->save();
+        \App\Models\EditorTask::where('status', 'open')->where('subject_type', $post->getMorphClass())->where('subject_id', $post->id)->get()->each->close('dismissed');
+        \App\Models\PieceReview::where('post_id', $post->id)->where('status', 'assigned')->update(['status' => 'withdrawn']);
+        AuditLog::record('submission.withdrawn', $post, ['was' => $was]);
+
+        return redirect(Url::to('/submit/'.$post->id))->with('status', 'লেখাটি ফিরিয়ে আনা হয়েছে। এখন এটি শুধু আপনার কাছে, খসড়া হিসেবে। যা বদলানোর বদলে নিচের "জমা দিন" টিপলে তবেই আবার সম্পাদকের কাছে যাবে।');
+    }
+
+    /** D205: a draft the writer no longer wants. Kept out of sight, not destroyed (the desk can bring it back). */
+    public function destroy(Request $request, Post $post)
+    {
+        $this->authorizeOwn($request, $post);
+        abort_unless($post->status === 'draft', 403);
+        AuditLog::record('submission.draft_deleted', $post);
+        $post->delete();
+
+        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" খসড়াটি মুছে ফেলা হয়েছে।');
     }
 
     /** The writer's answer to the editor's word changes (D42): accept → published as planned; object → back to the editor. */
@@ -271,7 +300,7 @@ class SubmissionController extends Controller
         // AI report for the editor (advice only), written after the writer's page has been sent.
         \App\Jobs\ReviewSubmission::dispatch($post->id)->afterResponse();
 
-        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। ধন্যবাদ!')->with('submitted', $post->title);
+        return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
     }
 
     private function fill(Request $request, Post $post, string $title, string $body, ?int $sectionId): void

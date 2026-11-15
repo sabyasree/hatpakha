@@ -1,4 +1,4 @@
-{{-- D94: writers can't change a submitted or published piece; they ask the editor. --}}
+{{-- D94, D205: a published piece cannot be changed by the writer; they ask the editor here (or by e-mail). Before publication they take it back themselves. --}}
 <details class="{{ $class ?? '' }}" @if (session('change_post') === $p->id) open @endif>
     <summary class="flex min-h-11 cursor-pointer list-none items-center rounded-xl px-3 font-bold hover:bg-peach-light [&::-webkit-details-marker]:hidden">{{ __('বদল চাই') }}</summary>
     <form method="POST" action="{{ \App\Support\Url::to('/account/change/'.$p->id) }}" class="px-3 pb-2">@csrf

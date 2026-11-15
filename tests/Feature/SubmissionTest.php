@@ -49,6 +49,52 @@ class SubmissionTest extends TestCase
         $this->get('/submit/')->assertOk()->assertDontSee('ফিরে আসা সংখ্যা');
     }
 
+    /** D205 (owner): change, add or withdraw until published; a writer e-mailed "sent half by mistake, sending the whole again". */
+    public function test_a_sent_piece_can_be_taken_back_changed_and_sent_again_until_it_is_published(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->actingAs($this->writer)->post('/submit/', $this->poem())->assertSessionHas('status', fn ($m) => str_contains($m, 'নতুন করে পাঠাবেন না'));
+        $post = Post::where('submitted_by', $this->writer->id)->firstOrFail();
+        $task = \App\Models\EditorTask::propose('rewrite', 'কাজ', [], $post);
+
+        // Everywhere the writer looks, the way to change it is in sight.
+        $this->get('/account/')->assertOk()->assertSee('বদলান বা তুলে নিন');
+        $this->get('/account/writings/')->assertOk()->assertSee('বদলান');
+        $this->get('/submit/')->assertOk()->assertSee('আগে পাঠানো লেখাটিই বদলাতে')->assertSee('/submit/'.$post->id.'/', false);
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('ফিরিয়ে এনে বদলান')->assertDontSee('এখন আর বদলানো যায় না');
+        $this->post('/submit/'.$post->id.'/', $this->poem(['title' => 'না']))->assertForbidden();
+
+        $this->post('/submit/'.$post->id.'/withdraw/')->assertRedirect(url('/submit/'.$post->id).'/');
+        $this->assertSame('draft', $post->fresh()->status);
+        $this->assertSame('dismissed', $task->fresh()->status);
+        $this->assertSame('withdrawn', \App\Models\PostVersion::where('post_id', $post->id)->latest('id')->value('kind'));
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('জমা দিন')->assertSee('এই খসড়াটি আর চাই না');
+        $this->post('/submit/'.$post->id.'/', $this->poem(['body' => "আকাশ ভরা মেঘ\nভিজে গেছে মাঠ\n\nতোমার কথা মনে পড়ে\nসারা দুপুর\n\nবাকি অর্ধেকটা এই যে"]));
+        $this->assertSame('pending', $post->fresh()->status);
+        $this->assertStringContainsString('বাকি অর্ধেকটা', $post->fresh()->body_html);
+        $this->assertSame(1, Post::where('submitted_by', $this->writer->id)->count(), 'Still one piece, not two');
+
+        // Selected with a date: can still be taken back; the date goes.
+        $post->forceFill(['status' => 'scheduled', 'published_at' => now()->addDays(3)])->saveQuietly();
+        $this->get('/submit/'.$post->id.'/')->assertSee('প্রকাশের তারিখ বাতিল হবে');
+        $this->post('/submit/'.$post->id.'/withdraw/');
+        $this->assertSame(['draft', null], [$post->fresh()->status, $post->fresh()->published_at]);
+
+        // Published: not from here; ask the editor.
+        $post->forceFill(['status' => 'published', 'published_at' => now()->subHour()])->saveQuietly();
+        $this->post('/submit/'.$post->id.'/withdraw/')->assertForbidden();
+        $this->post('/submit/'.$post->id.'/delete/')->assertForbidden();
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertSee('প্রকাশিত লেখা এখান থেকে বদলানো বা তুলে নেওয়া যায় না')->assertSee('editor@hatpakha.com')->assertDontSee('ফিরিয়ে এনে বদলান');
+
+        // A draft the writer no longer wants; and nobody else's piece.
+        $draft = Post::find($this->actingAs($this->writer)->post('/submit/', $this->poem(['action' => 'draft', 'title' => 'খসড়া']))->getSession()->all() ? Post::where('title', 'খসড়া')->value('id') : 0);
+        $other = User::factory()->create();
+        $this->actingAs($other)->post('/submit/'.$draft->id.'/delete/')->assertNotFound();
+        $this->actingAs($other)->post('/submit/'.$draft->id.'/withdraw/')->assertNotFound();
+        $this->actingAs($this->writer)->post('/submit/'.$draft->id.'/delete/')->assertRedirect(url('/account').'/');
+        $this->assertSoftDeleted('posts', ['id' => $draft->id]);
+    }
+
     public function test_guests_are_sent_to_login_first(): void
     {
         $this->get('/submit/')->assertRedirect(url('/login'));

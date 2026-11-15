@@ -1,4 +1,12 @@
 {
+    "কিছু বদলাতে, যোগ করতে বা লেখাটি তুলে নিতে চান?": "Want to change something, add to it, or take the piece back?",
+    "\"ফিরিয়ে এনে বদলান\" টিপুন। লেখাটি সম্পাদকের কাছ থেকে আপনার কাছে খসড়া হয়ে ফিরবে।": "Press \"Take back and change\". The piece comes back from the editor to you as a draft.",
+    "যা বদলানোর বদলান, তারপর \"জমা দিন\" টিপুন। না পাঠাতে চাইলে খসড়াটি রেখে দিন বা মুছে ফেলুন।": "Change what you need, then press \"Submit\". If you do not want to send it, keep the draft or delete it.",
+    "লেখাটি প্রকাশের জন্য বাছাই হয়ে আছে। ফিরিয়ে আনলে প্রকাশের তারিখ বাতিল হবে, সম্পাদক আবার পড়বেন।": "This piece is selected for publication. Taking it back cancels the date, and the editor will read it again.",
+    "ফিরিয়ে এনে বদলান": "Take back and change",
+    "একই লেখা নতুন করে আবার পাঠাবেন না; তাতে দুটো লেখা জমা পড়ে।": "Do not send the same piece again as a new one; that makes two submissions.",
+    "বদলান বা তুলে নিন": "Change or take back",
+    "লেখক ফিরিয়ে নিলেন": "Writer took it back",
     "ফিরে আসা সংখ্যার বিষয়ের সঙ্গে:": "Fit with the ফিরে আসা issue's theme:",
     "মেলে": "fits",
     "কিছুটা মেলে": "partly fits",
