@@ -98,6 +98,14 @@ class EditNewsletter extends EditRecord
                     NewsletterSender::test($record->fresh(), auth()->user(), $data['to']);
                     Notification::make()->title(NewsletterSender::realMail() ? __('পাঠানো হয়েছে').': '.$data['to'] : __('এই সার্ভারে আসল ই-মেল নেই; লগে লেখা হয়েছে'))->success()->send();
                 })->visible(fn (Newsletter $record) => $record->editable()),
+            Action::make('stopAuto')->label(fn (Newsletter $record) => __('নিজে থেকে পাঠানো থামান').' ('.Bn::num($record->auto_send_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')).')')
+                ->icon('heroicon-o-hand-raised')->color('danger')->outlined()
+                ->visible(fn (Newsletter $record) => $record->editable() && $record->auto_send_at !== null)
+                ->action(function (Newsletter $record) {
+                    $record->forceFill(['auto_send_at' => null])->saveQuietly();
+                    \App\Models\AuditLog::record('handover.letter_stopped', null, ['newsletter' => $record->id]);
+                    Notification::make()->title(__('চিঠিটি নিজে থেকে যাবে না; খসড়া হিসেবে থাকল'))->success()->send();
+                }),
             Action::make('send')->label(__('পাঠান'))->icon('heroicon-o-paper-airplane')->color('success')
                 ->visible(fn (Newsletter $record) => $record->editable())
                 ->requiresConfirmation()

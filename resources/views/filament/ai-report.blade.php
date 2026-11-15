@@ -28,6 +28,27 @@
             @if (! empty($r['genre']))<span style="opacity:.75">{{ $r['genre'] }}</span>@endif
         </div>
 
+        {{-- D208: text that is not part of the work, and the AI's own doubts: these keep a piece from going by itself --}}
+        @if (! empty($r['stray_text']) || ! empty($r['doubts']))
+            <div style="margin-top:.75rem;border:2px solid #CB1B32;border-radius:.75rem;padding:.75rem 1rem">
+                <p style="font-weight:700;margin:0 0 .35rem;color:#CB1B32">{{ __('প্রকাশের আগে আপনি দেখে নিন') }}</p>
+                @foreach ((array) ($r['stray_text'] ?? []) as $x)
+                    <p style="margin:.2rem 0"><strong>{{ __('লেখার অংশ নয় বলে মনে হচ্ছে:') }}</strong> “{{ $x['text'] ?? '' }}” @if (! empty($x['why']))<span style="opacity:.8">({{ $x['why'] }})</span>@endif</p>
+                @endforeach
+                @foreach ((array) ($r['doubts'] ?? []) as $d)
+                    <p style="margin:.2rem 0"><strong>{{ __('এআই নিশ্চিত নয়:') }}</strong> {{ $d }}</p>
+                @endforeach
+                <p style="margin:.35rem 0 0;opacity:.8;font-size:.9rem">{{ __('এআই নিজে কিছু সরায়নি। সরাতে হলে লেখাটি সম্পাদনা করে সরান, তারপর মনোনীত করুন।') }}</p>
+            </div>
+        @endif
+        @if ($review->post && $review->post->status === 'pending' && \App\Support\Handover::on('publish'))
+            @php $autoWhy = rescue(fn () => \App\Support\Handover::hold($review->post), null, false); @endphp
+            <p style="margin:.6rem 0 0;font-size:.92rem"><strong>{{ __('নিজে থেকে প্রকাশ:') }}</strong>
+                @if ($review->post->auto_publish_at) {{ __('হবে') }}, {{ Bn::num($review->post->auto_publish_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')) }} {{ __('-এর পরে, আপনি না থামালে।') }}
+                @elseif ($autoWhy) {{ __('হবে না।') }} {{ $autoWhy }}
+                @else {{ __('শর্ত মিলেছে; একটু পরে সময় বসবে।') }} @endif</p>
+        @endif
+
         @if (! empty($r['theme_fit']))
             {{-- D204: a suggestion only; the editor sets the issue on the piece --}}
             <p style="margin:.6rem 0 0"><strong>{{ __('ফিরে আসা সংখ্যার বিষয়ের সঙ্গে:') }}</strong>

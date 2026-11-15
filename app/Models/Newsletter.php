@@ -18,7 +18,17 @@ class Newsletter extends Model
 
     protected function casts(): array
     {
-        return ['items' => 'array', 'extras' => 'array', 'queued_at' => 'datetime', 'sent_at' => 'datetime'];
+        return ['items' => 'array', 'extras' => 'array', 'queued_at' => 'datetime', 'sent_at' => 'datetime', 'auto_send_at' => 'datetime'];
+    }
+
+    /** D208: a letter the owner is still changing does not leave under their hands; the twelve hours start again. */
+    protected static function booted(): void
+    {
+        static::updating(function (self $n) {
+            if ($n->auto_send_at && ! $n->isDirty('auto_send_at') && auth()->check() && $n->isDirty(['subject', 'intro', 'closing', 'items', 'preheader'])) {
+                $n->auto_send_at = now()->addHours(\App\Support\Handover::LETTER_HOURS);
+            }
+        });
     }
 
     public function deliveries(): HasMany { return $this->hasMany(NewsletterDelivery::class); }

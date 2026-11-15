@@ -95,6 +95,7 @@ class SubmissionController extends Controller
         // What the desk had seen is kept in the history; the editor's planned date and waiting word changes no longer apply.
         \App\Models\PostVersion::snap($post, 'withdrawn', null, $request->user()->id);
         $post->forceFill(['status' => 'draft', 'published_at' => null, 'pending_edits' => null])->save();
+        \App\Support\Handover::reset($post);
         \App\Models\EditorTask::where('status', 'open')->where('subject_type', $post->getMorphClass())->where('subject_id', $post->id)->get()->each->close('dismissed');
         \App\Models\PieceReview::where('post_id', $post->id)->where('status', 'assigned')->update(['status' => 'withdrawn']);
         AuditLog::record('submission.withdrawn', $post, ['was' => $was]);
@@ -299,6 +300,7 @@ class SubmissionController extends Controller
         RateLimiter::hit('submit:'.$request->user()->id, 86400);
         $wasChanges = $post->status === 'changes';
         $post->forceFill(['status' => 'pending', 'submitted_at' => now(), 'originality_confirmed_at' => now()])->save();
+        \App\Support\Handover::reset($post);
         // D171: a copy of what was sent, with the writer's note on a second round, so the desk sees what changed
         \App\Models\PostVersion::snap($post, $wasChanges ? 'resubmitted' : 'submitted', $wasChanges ? ($data['writer_note'] ?? null) : null, $request->user()->id);
         if ($request->user()->role === Role::Reader) {

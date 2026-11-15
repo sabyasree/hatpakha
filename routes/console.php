@@ -100,3 +100,7 @@ Schedule::call(function () {
     \App\Support\CommentReplies::fetch();
     \App\Support\CommentReplies::answer();
 })->name('comment replies')->everyThirtyMinutes()->withoutOverlapping(20);
+
+// D208 (owner: "do all these"): the jobs handed to the AI team (small fixes, covers, clear comments, the readers'
+// letter, small monthly items, strong pieces). Each has its own switch in /desk → নিজে থেকে চলা কাজ.
+Schedule::call(fn () => \App\Support\Handover::run())->name('handed-over jobs')->everyTenMinutes()->withoutOverlapping(20);
