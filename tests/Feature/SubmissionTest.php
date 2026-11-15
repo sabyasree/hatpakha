@@ -315,12 +315,21 @@ class SubmissionTest extends TestCase
     public function test_a_writer_proposes_a_serial_and_later_sends_its_next_episode(): void
     {
         \Illuminate\Support\Facades\RateLimiter::clear('submit:'.$this->writer->id);
-        $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('ধারাবাহিক লিখতে চান?')->assertSee('নতুন ধারাবাহিকের প্রথম পর্ব');
+        $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('এটি কি ধারাবাহিকের পর্ব?')->assertSee('না, এটি একটাই লেখা')->assertSee('হ্যাঁ, নতুন ধারাবাহিক শুরু করছি')->assertSee('এরপর কী হবে');
+        // D206: the ধারাবাহিক section sent as a single piece is asked about, and no half-made draft is left behind.
+        $serialSection = Section::firstOrCreate(['slug' => 'dharabahik'], ['name_bn' => 'ধারাবাহিক', 'name_en' => 'Serials', 'format' => 'prose', 'sort' => 25]);
+        $this->post('/submit/', $this->poem(['section_id' => $serialSection->id]))->assertSessionHasErrors(['serial' => 'আপনি “ধারাবাহিক” বিভাগ বেছেছেন। “এটি কি ধারাবাহিকের পর্ব?” প্রশ্নে “হ্যাঁ, নতুন ধারাবাহিক শুরু করছি” বেছে তিনটি কথা জানান। একটাই লেখা হলে বিভাগ বদলে গল্প, কবিতা বা অন্য কিছু বেছে নিন।']);
+        $this->assertSame(0, Post::where('submitted_by', $this->writer->id)->count());
+        $this->post('/submit/', $this->poem(['section_id' => $serialSection->id, 'action' => 'draft']))->assertSessionHasNoErrors();
+        Post::where('submitted_by', $this->writer->id)->forceDelete();
         // The plan is needed with a new serial.
         $this->post('/submit/', $this->poem(['serial' => 'new', 'serial_title' => 'নদীর ওপারে']))->assertSessionHasErrors(['serial_plan', 'serial_count']);
 
         $plan = 'এক স্কুলমাস্টার তিরিশ বছর পরে নিজের গ্রামে ফেরেন। পুরনো বন্ধু, পুরনো ঝগড়া, আর একটা না-বলা কথা। শেষে তিনি থেকে যাবেন কি না, সেটাই গল্প।';
-        $this->post('/submit/', $this->poem(['title' => 'প্রথম পর্ব: ফেরা', 'serial' => 'new', 'serial_title' => 'নদীর ওপারে', 'serial_plan' => $plan, 'serial_count' => 8]))->assertRedirect();
+        $this->post('/submit/', $this->poem(['title' => 'প্রথম পর্ব: ফেরা', 'serial' => 'new', 'serial_title' => 'নদীর ওপারে', 'serial_plan' => $plan, 'serial_count' => 8]))->assertRedirect()
+            ->assertSessionHas('status', fn ($m) => str_starts_with($m, 'নতুন ধারাবাহিক “নদীর ওপারে”-এর প্রথম পর্ব'));
+        $this->get('/submit/')->assertSee('প্রথম পর্ব সম্পাদকের কাছে আছে')->assertDontSee('হ্যাঁ, নতুন ধারাবাহিক শুরু করছি');
+        $this->post('/submit/', $this->poem(['section_id' => $serialSection->id, 'title' => 'দ্বিতীয়']))->assertSessionHasErrors('serial');
         $serial = \App\Models\Serial::where('user_id', $this->writer->id)->firstOrFail();
         $first = Post::where('serial_id', $serial->id)->firstOrFail();
         $this->assertSame(['proposed', 'নদীর ওপারে', 8, 1, 'pending'], [$serial->status, $serial->title, $serial->planned_count, $first->episode_no, $first->status]);
@@ -337,7 +346,7 @@ class SubmissionTest extends TestCase
         $this->get($serial->url())->assertOk()->assertSee('নদীর ওপারে');
 
         // The next piece is picked as the serial's next episode.
-        $this->get('/submit/')->assertSee('“নদীর ওপারে”-এর পরের পর্ব (পর্ব ২)');
+        $this->get('/submit/')->assertSee('হ্যাঁ, আমার ধারাবাহিক “নদীর ওপারে”-এর পরের পর্ব (পর্ব ২)')->assertSee('এই পর্বের নাম');
         $this->post('/submit/', $this->poem(['title' => 'দ্বিতীয় পর্ব', 'serial' => (string) $serial->id]))->assertRedirect();
         $second = Post::where('serial_id', $serial->id)->where('episode_no', 2)->firstOrFail();
         $this->assertSame('pending', $second->status);
