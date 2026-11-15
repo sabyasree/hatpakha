@@ -272,6 +272,48 @@ class HandoverTest extends TestCase
         $this->assertSame(2, Handover::publish());
     }
 
+    /** D210 (owner: "what the AI is changing is not in the change history of the piece. Also need a revert option for a specific change"). */
+    public function test_every_fix_the_team_puts_in_is_in_the_history_and_one_can_be_taken_back_for_good(): void
+    {
+        $post = $this->piece(['edits' => [['original' => 'করিনা', 'replacement' => 'করি না', 'kind' => 'spelling'], ['original' => 'দুপুর জুড়ে', 'replacement' => 'দুপুর জুড়ে।', 'kind' => 'punctuation']]]);
+        $this->assertSame(1, Handover::fixes());
+        $kinds = fn () => \App\Models\PostVersion::where('post_id', $post->id)->orderBy('id')->pluck('kind')->all();
+        $this->assertSame(['before', 'ai_fix'], $kinds(), 'The text from before is kept the first time');
+        $v = \App\Models\PostVersion::where('post_id', $post->id)->where('kind', 'ai_fix')->firstOrFail();
+        $this->assertNull($v->user_id, 'Nobody clicked: the AI team did it');
+        $this->assertSame(['করিনা', 'দুপুর জুড়ে'], array_column($v->changes, 'original'));
+        $this->assertStringContainsString('করিনা', \App\Models\PostVersion::where('post_id', $post->id)->where('kind', 'before')->value('body_html'));
+
+        $html = view('filament.post-history', ['post' => $post->fresh(), 'canRevert' => true])->render();
+        $this->assertStringContainsString('এআই দল, নিজে থেকে', $html);
+        $this->assertStringContainsString('করি না', $html);
+        $this->assertStringContainsString('revertFix('.$v->id.', 0)', $html);
+
+        // The owner takes one back from the piece's page.
+        $this->actingAs($this->owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\EditPost::class, ['record' => $post->id])->call('revertFix', $v->id, 0);
+        $body = $post->fresh()->body_html;
+        $this->assertStringContainsString('করিনা', $body);
+        $this->assertStringNotContainsString('করি না', $body);
+        $this->assertStringContainsString('দুপুর জুড়ে।', $body, 'The other fix stays');
+        $this->assertSame(['before', 'ai_fix', 'reverted'], $kinds());
+        $this->assertTrue($v->fresh()->changes[0]['reverted']);
+        $this->assertSame($this->owner->id, \App\Models\PostVersion::where('post_id', $post->id)->where('kind', 'reverted')->value('user_id'));
+
+        // Never put in again, and never offered again in the dialogs.
+        auth()->logout();
+        $this->assertSame(0, Handover::fixes());
+        $this->assertStringContainsString('করিনা', $post->fresh()->body_html);
+        $this->assertSame([], \App\Ai\EditorPackage::openOptions($post->fresh()));
+        $this->assertFalse(\App\Ai\EditorPackage::revertFix($post->fresh(), $v->fresh(), 0), 'Once');
+
+        // What else the team did to the piece is listed too.
+        $post->forceFill(['proposed_image_path' => 'media/covers/a.webp', 'proposed_image_width' => 1200, 'proposed_image_height' => 800])->saveQuietly();
+        Handover::covers();
+        $this->assertStringContainsString('এআই-এর আঁকা ছবি প্রচ্ছদে বসানো হয়েছে', view('filament.post-history', ['post' => $post->fresh()])->render());
+    }
+
     public function test_a_piece_sent_again_starts_from_nothing(): void
     {
         $post = $this->piece();

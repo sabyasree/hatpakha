@@ -13,11 +13,12 @@ class PostVersion extends Model
     protected $guarded = ['id'];
 
     public const KINDS = ['submitted' => 'লেখক পাঠালেন', 'sent_back' => 'সম্পাদক বদল চাইলেন', 'resubmitted' => 'লেখক আবার পাঠালেন', 'withdrawn' => 'লেখক ফিরিয়ে নিলেন',
-        'desk_edit' => 'ডেস্কে বদল করা হল', 'before' => 'ডেস্কে বদলের আগের লেখা'];
+        'desk_edit' => 'ডেস্কে বদল করা হল', 'before' => 'বদলের আগের লেখা',
+        'ai_fix' => 'ছোট সংশোধন বসানো হল', 'reverted' => 'একটি সংশোধন ফেরানো হল'];   // D210
 
     protected function casts(): array
     {
-        return ['created_at' => 'datetime'];
+        return ['created_at' => 'datetime', 'changes' => 'array'];
     }
 
     public function post(): BelongsTo { return $this->belongsTo(Post::class); }
