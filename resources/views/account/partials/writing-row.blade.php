@@ -24,6 +24,9 @@
     </a>
     @if ($editable)
         <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full {{ $p->status === 'draft' ? 'border-2 border-navy' : 'bg-red text-white' }} px-4 text-sm font-bold">{{ __(['changes' => 'ঠিক করুন', 'confirm' => 'সম্মতি দিন', 'draft' => 'লিখতে থাকুন'][$p->status]) }}</a>
+    @elseif ($p->status === 'pending')
+        {{-- D205: a sent piece can be taken back and changed until it is published --}}
+        <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex h-11 flex-none items-center rounded-full border-2 border-navy px-4 text-sm font-bold">{{ __('বদলান') }}</a>
     @elseif (in_array($p->status, ['published', 'scheduled'], true))
         {{-- ⋯ menu: everything extra for this piece, out of the list's way --}}
         <details class="relative flex-none" data-row-menu>
@@ -46,8 +49,10 @@
                             <button class="flex min-h-11 w-full items-center rounded-xl px-3 text-left font-bold hover:bg-peach-light">{{ __('সার্টিফিকেট চাই') }}</button></form>
                     @endif
                 @endif
-                @if (in_array($p->status, ['pending', 'scheduled', 'confirm', 'published'], true))
+                @if ($p->status === 'published')
                     @include('account.partials.change-request', ['p' => $p])
+                @else
+                    <a href="{{ Url::to('/submit/'.$p->id) }}" class="flex min-h-11 items-center rounded-xl px-3 font-bold hover:bg-peach-light">{{ __('বদলান বা তুলে নিন') }}</a>
                 @endif
                 {{-- D67: the writer's own reading --}}
                 <div class="mt-1 border-t border-rule px-3 pt-2 text-sm">

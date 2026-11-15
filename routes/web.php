@@ -218,6 +218,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/submit/preview', [\App\Http\Controllers\SubmissionController::class, 'preview'])->middleware('throttle:60,1');
     Route::get('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'edit'])->whereNumber('post');
     Route::post('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'update'])->whereNumber('post');
+    Route::post('/submit/{post}/withdraw', [\App\Http\Controllers\SubmissionController::class, 'withdraw'])->whereNumber('post')->middleware('throttle:20,1');   // D205
+    Route::post('/submit/{post}/delete', [\App\Http\Controllers\SubmissionController::class, 'destroy'])->whereNumber('post')->middleware('throttle:20,1');   // D205
     Route::post('/submit/{post}/confirm', [\App\Http\Controllers\SubmissionController::class, 'confirm'])->whereNumber('post');
     Route::post('/submit/{post}/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->whereNumber('post')->middleware('throttle:60,1');
 });

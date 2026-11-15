@@ -64,6 +64,7 @@
                         @endforeach
                     </ol>
                     <p class="mt-2 text-sm text-ink2">{{ $p->status === 'scheduled' ? __('প্রকাশের দিন ঠিক হয়েছে: :date', ['date' => Bn::date($p->published_at)]) : __('সিদ্ধান্ত হলে ই-মেলে জানাব।') }}</p>
+                    <a href="{{ Url::to('/submit/'.$p->id) }}" class="mt-2 inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 text-sm font-bold">{{ __('বদলান বা তুলে নিন') }}</a>
                 </div>
             @endforeach
         @endif

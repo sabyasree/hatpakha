@@ -50,9 +50,12 @@
         @endif
         @if (! $editable)
             <div class="mt-6 rounded-xl border-2 border-navy p-5">
-                <p class="font-bold">লেখাটি জমা পড়েছে; এখন আর বদলানো যায় না।</p>
-                <p class="mt-1 text-ink2">অবস্থা: {{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</p>
-                @if (in_array($post->status, ['pending', 'scheduled', 'confirm', 'published'], true))
+                <p class="text-ink2">অবস্থা: <strong class="text-ink">{{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</strong></p>
+                @if (in_array($post->status, \App\Http\Controllers\SubmissionController::TAKE_BACK, true))
+                    @include('account.partials.take-back', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light p-4'])
+                @elseif ($post->status === 'published')
+                    <p class="mt-2 font-bold">প্রকাশিত লেখা এখান থেকে বদলানো বা তুলে নেওয়া যায় না।</p>
+                    <p class="mt-1 text-ink2">কিছু বদলাতে চাইলে নিচে লিখে সম্পাদককে পাঠান, বা <a class="font-bold underline" href="mailto:editor@hatpakha.com">editor@hatpakha.com</a>-এ ই-মেইল করুন।</p>
                     @include('account.partials.change-request', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light'])
                 @endif
             </div>
@@ -64,6 +67,21 @@
                  without JavaScript every part still works as a plain form. --}}
             @if ($shared ?? false)
                 <p class="mt-4 rounded-2xl bg-sky-tint p-4 font-bold text-sky-night" role="status">শেয়ার করা লেখাটি নিচে বসানো আছে। শিরোনাম আর বিভাগ ঠিক করে, একবার পড়ে নিয়ে পাঠান।</p>
+            @endif
+            @if (! $post->exists)
+                @php $withEditor = \App\Models\Post::where('submitted_by', auth()->id())->where('status', 'pending')->latest('submitted_at')->limit(3)->get(['id', 'title']); @endphp
+                @if ($withEditor->isNotEmpty())
+                    {{-- D205: a writer who sent half a piece by mistake wrote to say "sending the whole again" --}}
+                    <div class="mt-4 rounded-2xl border-2 border-navy bg-peach-light p-4">
+                        <p class="font-bold">আগে পাঠানো লেখাটিই বদলাতে বা পুরোটা আবার দিতে চান?</p>
+                        <p class="mt-1 text-sm text-ink2">তাহলে এখানে নতুন করে লিখবেন না। নিচের লেখাটিতে টিপে “ফিরিয়ে এনে বদলান” বেছে নিন।</p>
+                        <ul class="mt-2 space-y-1">
+                            @foreach ($withEditor as $w)
+                                <li><a href="{{ \App\Support\Url::to('/submit/'.$w->id) }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">“{{ $w->title }}” বদলান</a></li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             @endif
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
                 action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
@@ -283,6 +301,15 @@
                     </div>
                 </div>
             </form>
+            @if ($post->exists && $post->status === 'draft')
+                <details class="mt-8 pb-24 sm:pb-0">
+                    <summary class="inline-flex min-h-11 cursor-pointer items-center text-sm font-bold text-ink2 underline">এই খসড়াটি আর চাই না</summary>
+                    <form method="POST" action="{{ \App\Support\Url::to('/submit/'.$post->id.'/delete') }}" class="mt-2 rounded-xl border-2 border-red bg-peach-light p-4">@csrf
+                        <p class="font-semibold">খসড়াটি আপনার তালিকা থেকে সরে যাবে। সম্পাদকের কাছে কিছু যাবে না।</p>
+                        <button class="mt-2 h-11 rounded-full border-2 border-red px-5 font-bold text-red-dark">হ্যাঁ, খসড়াটি মুছে ফেলুন</button>
+                    </form>
+                </details>
+            @endif
 
             <dialog id="preview" class="m-auto max-h-[90vh] w-[min(760px,94vw)] overflow-auto rounded-2xl bg-paper p-6 text-navy backdrop:bg-navy/60">
                 <div class="flex items-start justify-between gap-4">
