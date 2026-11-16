@@ -92,6 +92,63 @@ final class MarketingPlan
             ]);
         }
 
+        $made += rescue(fn () => self::series($day, $date, $at), 0, true);
+
+        return $made;
+    }
+
+    /**
+     * D215 (owner: "the marketing team needs to promote this series properly"): the detective series gets its own
+     * posts, made from the case itself with no AI call and nothing invented. Wednesday: "who did it?" with the people of
+     * the case, asking for guesses. Friday: tomorrow's episode, with the line the last episode left behind. The day
+     * after a case ends: how the readers' guesses went. (Each new episode already gets its own post like any piece.)
+     */
+    private static function series(Carbon $day, string $date, \Closure $at): int
+    {
+        $made = 0;
+        $tags = '#হাতপাখা #পাকড়াশীরপ্রুফ #গোয়েন্দাগল্প #বাংলাগল্প #ধারাবাহিক';
+        foreach (\App\Models\Serial::where('writer', 'serial_detective')->whereIn('status', ['active', 'finished'])->whereNotNull('slug')->get() as $case) {
+            $url = $case->url();
+            $short = trim(\Illuminate\Support\Str::after($case->title, \App\Ai\Casebook::SERIES.':')) ?: $case->title;
+            if ($case->status === 'active' && $day->dayOfWeekIso === 3 && CaseGuesses::open($case)) {
+                $names = CaseGuesses::suspects($case);
+                $made += self::make($date.':case-who-'.$case->id, [
+                    'kind' => 'serial', 'format' => 'card', 'title' => 'কে করেছে? '.$short.' ('.Bn::date($day).')', 'slot_at' => $at(17, 5),
+                    'design' => ['slides' => [['t' => 'board', 'chip' => \App\Ai\Casebook::SERIES, 'title' => 'কে করেছে?', 'rows' => array_map(fn ($n) => [$n, ''], array_slice($names, 0, 5)), 'note' => 'শেষ পর্বের আগে অনুমান পাঠান: hatpakha.com']]],
+                    'texts' => [
+                        'facebook' => "\"{$short}\": কে করেছে বলে মনে হয়?\n\n".implode("\n", array_map(fn ($n) => '• '.$n, $names))."\n\nকমেন্টে নাম লিখুন, আর সাইটে অনুমান পাঠিয়ে রাখুন। শেষ পর্বের পরে জানাব কারা ঠিক ধরেছিলেন। এখনও পড়া না হলে প্রথম পর্ব থেকে:\n\n".$url,
+                        'instagram' => "\"{$short}\": কে করেছে বলে মনে হয়? কমেন্টে নাম লিখুন।\n\nশেষ পর্বের আগে অনুমান পাঠান: hatpakha.com (লিংক বায়োতে)\n\n".$tags,
+                        'whatsapp' => '', 'link' => $url,
+                    ],
+                ]);
+            }
+            $last = $case->liveEpisodes()->get()->last();
+            if ($case->status === 'active' && $day->copy()->addDay()->dayOfWeek === (int) $case->day && $last && filled($last->episode_teaser) && ! CaseGuesses::solved($case)) {
+                $made += self::make($date.':case-next-'.$case->id, [
+                    'kind' => 'serial', 'format' => 'card', 'title' => 'কাল নতুন পর্ব: '.$short.' ('.Bn::date($day).')', 'slot_at' => $at(20, 15),
+                    'design' => ['slides' => [['t' => 'line', 'chip' => 'কাল নতুন পর্ব', 'quote' => (string) $last->episode_teaser, 'by' => \App\Ai\Casebook::SERIES.': '.$short]]],
+                    'texts' => [
+                        'facebook' => "কাল সকালে \"{$short}\"-এর নতুন পর্ব।\n\n".$last->episode_teaser."\n\nআগের পর্বগুলো পড়া না থাকলে আজই পড়ে নিন:\n\n".$url,
+                        'instagram' => "কাল সকালে \"{$short}\"-এর নতুন পর্ব।\n\n".$last->episode_teaser."\n\nআগের পর্ব: hatpakha.com (লিংক বায়োতে)\n\n".$tags,
+                        'whatsapp' => '', 'link' => $url,
+                    ],
+                ]);
+            }
+            $r = CaseGuesses::result($case);
+            if ($r && $r['total'] >= 3 && $last && $last->published_at->copy()->timezone(self::TZ)->addDay()->isSameDay($day)) {
+                $line = Bn::num((string) $r['total']).' জন অনুমান পাঠিয়েছিলেন। ঠিক ধরেছিলেন '.Bn::num((string) $r['right']).' জন।';
+                $made += self::make($date.':case-result-'.$case->id, [
+                    'kind' => 'serial', 'format' => 'card', 'title' => 'পাঠকদের অনুমান: '.$short.' ('.Bn::date($day).')', 'slot_at' => $at(17, 5),
+                    'design' => ['slides' => [['t' => 'board', 'chip' => \App\Ai\Casebook::SERIES, 'title' => 'কারা ঠিক ধরেছিলেন', 'rows' => array_map(fn ($n) => [$n, ''], array_slice($r['names'], 0, 5)), 'note' => $line]]],
+                    'texts' => [
+                        'facebook' => "\"{$short}\" শেষ হল। ".$line.($r['names'] ? "\n\nঠিক ধরেছিলেন: ".implode(', ', array_slice($r['names'], 0, 20)).'। অভিনন্দন!' : '')."\n\nপুরো কেস এক জায়গায়:\n\n".$url,
+                        'instagram' => "\"{$short}\" শেষ হল। ".$line."\n\nপুরো কেস: hatpakha.com (লিংক বায়োতে)\n\n".$tags,
+                        'whatsapp' => '', 'link' => $url,
+                    ],
+                ]);
+            }
+        }
+
         return $made;
     }
 

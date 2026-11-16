@@ -79,6 +79,97 @@ class SerialsTest extends TestCase
         $this->get($ep1->fresh()->url())->assertDontSee('ত্রিশ বছর আগে পুড়ে গেছে');
     }
 
+    /** D212 (owner: "a series like Sherlock Holmes… a very good detective story, without copying… the proofreader one… earlier Kolkata"). */
+    public function test_a_detective_case_is_planned_with_its_solution_and_fair_clues_before_any_episode_is_written(): void
+    {
+        $brief = SerialWriter::WRITERS['serial_detective'][1];
+        foreach (['শশধর পাকড়াশী', 'বিশু', 'late 1970s', 'Fair play', 'never use or echo Sherlock Holmes', 'Feluda', 'Byomkesh', 'language, writing or print'] as $must) {
+            $this->assertStringContainsString($must, $brief);
+        }
+        $plan = fn (array $over = []) => array_merge(['title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা', 'logline' => 'একটা বইয়ের ষোলো পাতা ছাপার আগেই উধাও।', 'setting' => 'কলেজ স্ট্রিট, শীতকাল',
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর']],
+            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা '.$i], range(1, 5)),
+            'solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'প্রকাশকের ভাই', 'method' => 'রাতে ফর্মা সরানো', 'motive' => 'দেনা', 'proof' => 'চিঠির বানান'],
+            'clues' => [['clue' => 'চিঠিতে "ষ্টেশন" বানান', 'episode' => 1, 'written' => true, 'means' => 'পুরনো ছাপার লোক'], ['clue' => 'ভেজা ছাতা', 'episode' => 2, 'written' => false, 'means' => 'রাতে বেরিয়েছিল'],
+                ['clue' => 'ক্ষয়ে যাওয়া "য়"', 'episode' => 4, 'written' => true, 'means' => 'কোন প্রেসের টাইপ']],
+            'cover_prompt' => 'an old letterpress at night'], $over);
+        $ep = ['title' => 'উধাও', 'paragraphs' => ['বিকেলে প্রেসে ঢুকেই বুঝলাম কিছু একটা হয়েছে।', 'পাকড়াশীমশাই চশমা কপালে তুলে প্রুফের দিকে তাকিয়ে।'], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => 'a proofs table', 'teaser' => 'চিঠির একটা বানান মিলছে না।'];
+        $give = $plan();
+        Claude::$fake = function ($purpose, $user, $schema) use (&$give, $ep) {
+            $this->seen[] = [$purpose, $user, $schema];
+
+            return in_array('cover_prompt', $schema['required'] ?? [], true) ? $give : ['episode' => $ep];
+        };
+
+        // An unfair puzzle is never written: a clue that arrives in the last episode, or no solution, or no written clue.
+        foreach ([['clues' => [['clue' => 'ক', 'episode' => 5, 'written' => true, 'means' => 'খ'], ['clue' => 'গ', 'episode' => 1, 'written' => false, 'means' => 'ঘ'], ['clue' => 'ঙ', 'episode' => 2, 'written' => false, 'means' => 'চ']]],
+            ['solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'ক', 'method' => '', 'motive' => 'গ', 'proof' => 'ঘ']],
+            ['solution' => ['culprit_name' => 'হরিহরবাবু', 'culprit' => 'ক', 'method' => 'খ', 'motive' => 'গ', 'proof' => 'ঘ']],   // not one of the case's people
+            ['clues' => array_map(fn ($c) => ['written' => false] + $c, $plan()['clues'])]] as $bad) {
+            $give = $plan($bad);
+            [$none, $why] = SerialWriter::start('serial_detective');
+            $this->assertNull($none);
+            $this->assertStringContainsString('কেসের পরিকল্পনা নেওয়া হয়নি', (string) $why);
+        }
+        $this->assertSame(0, Serial::count());
+
+        $give = $plan();
+        [$case] = SerialWriter::start('serial_detective', 'একটা বই ছাপার আগে হারিয়ে যায়');
+        $this->assertSame(['পাকড়াশীর প্রুফ: হারানো ফর্মা', 'গোয়েন্দা', 'proposed'], [$case->title, $case->genre, $case->status], 'The series name once, then the case');
+        $this->assertSame('প্রকাশকের ভাই', $case->bible['solution']['culprit']);
+        $this->assertCount(3, $case->bible['clues']);
+        $planAsk = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true));
+        $this->assertContains('solution', $planAsk[2]['required']);
+        $first = $case->episodes()->first();
+        $this->assertSame('draft', $first->status, 'Nothing is published by the AI');
+        $this->assertStringStartsWith('পাকড়াশীর প্রুফ: হারানো ফর্মা (পর্ব ১)', $first->title);
+        $epAsk = end($this->seen)[1];
+        $this->assertStringContainsString('<solution_keep_secret_until_the_last_episode>', $epAsk);
+        $this->assertStringContainsString('চিঠিতে &quot;ষ্টেশন&quot; বানান', $epAsk);
+        $this->assertStringContainsString('plant every clue assigned to episode 1', $epAsk);
+
+        // D213 (owner: "yes, I want reader guess"): readers name one of the case's people until the last episode is out.
+        $case->activate();
+        $first->forceFill(['status' => 'published', 'published_at' => now()->subDay(), 'slug' => 'pp-1'])->saveQuietly();
+        $case->refresh();
+        $this->assertSame(['নীলিমা সেন', 'অবনী দত্ত', 'সুধাময় কর'], \App\Support\CaseGuesses::suspects($case));
+        $this->get($case->url())->assertOk()->assertSee('কে করেছে বলে মনে হয়?')->assertSee('অনুমান পাঠাতে লগ ইন করুন')->assertDontSee('প্রকাশকের ভাই');
+        $right = \App\Models\User::factory()->create(['name' => 'Mita Sen']);
+        $shy = \App\Models\User::factory()->create(['name' => 'Rina Basu']);
+        $wrong = \App\Models\User::factory()->create(['name' => 'Amal Roy']);
+        $url = '/dharabahik/'.$case->id.'/guess/';
+        $this->post($url, ['suspect' => 'অবনী দত্ত'])->assertRedirect(url('/login'));
+        $this->actingAs($wrong)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '1']);
+        $this->actingAs($wrong)->post($url, ['suspect' => 'নীলিমা সেন', 'why' => 'ভেজা ছাতা', 'show_name' => '1'])->assertSessionHas('guess_status');
+        $this->actingAs($wrong)->post($url, ['suspect' => 'শশধর পাকড়াশী'])->assertSessionHas('guess_status', 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
+        $this->actingAs($right)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '1']);
+        $this->actingAs($shy)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '0']);
+        $this->assertSame(3, \Illuminate\Support\Facades\DB::table('case_guesses')->count(), 'One guess a reader; a second replaces the first');
+        $this->assertSame(['অবনী দত্ত' => 2, 'নীলিমা সেন' => 1], \App\Support\CaseGuesses::tally($case));
+        $this->actingAs($wrong)->get($case->url())->assertSee('আপনার এখনকার অনুমান: নীলিমা সেন')->assertDontSee('Mita Sen');
+        $this->assertNull(\App\Support\CaseGuesses::result($case), 'Nothing leaks before the end');
+        // The last episode comes out: guessing closes and the result shows.
+        $last = $this->makePost(['slug' => 'pp-5', 'title' => 'শেষ', 'status' => 'published', 'published_at' => now()]);
+        $last->forceFill(['serial_id' => $case->id, 'episode_no' => 5])->saveQuietly();
+        $this->assertFalse(\App\Support\CaseGuesses::open($case->fresh()));
+        $this->actingAs($right)->post($url, ['suspect' => 'নীলিমা সেন'])->assertSessionHas('guess_status', 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
+        $this->assertSame(['total' => 3, 'right' => 2, 'names' => ['Mita Sen']], \App\Support\CaseGuesses::result($case->fresh()));
+        $this->actingAs($wrong)->get($case->url())->assertSee('৩ জন অনুমান পাঠিয়েছিলেন। ঠিক ধরেছিলেন ২ জন।')->assertSee('Mita Sen')->assertDontSee('Rina Basu')->assertSee('আপনার অনুমান ছিল: নীলিমা সেন');
+        auth()->logout();
+        // An ordinary serial has no guessing.
+        $this->assertSame([], \App\Support\CaseGuesses::suspects(Serial::create(['title' => 'অন্য', 'writer' => 'serial_ghost', 'status' => 'active', 'slug' => 'onyo', 'bible' => ['characters' => [['name' => 'ক', 'role' => 'খ']]]])));
+
+        // The solution is for the editor's eyes only.
+        $this->get('/dharabahik/')->assertOk()->assertDontSee('প্রকাশকের ভাই');
+        // The next case is told what came before, so no trick is repeated.
+        $give = $plan(['title' => 'লাল কালির দাগ']);
+        [$second] = SerialWriter::start('serial_detective');
+        $this->assertSame('পাকড়াশীর প্রুফ: লাল কালির দাগ', $second->title);
+        $ask2 = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true))[1];
+        $this->assertStringContainsString('earlier_cases_do_not_repeat', $ask2);
+        $this->assertStringContainsString('হারানো ফর্মা', $ask2);
+    }
+
     public function test_publishing_the_first_episode_starts_the_serial_and_readers_can_follow_it(): void
     {
         [$serial] = SerialWriter::start('serial_mystery');

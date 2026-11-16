@@ -499,4 +499,61 @@ class MarketingPlanTest extends TestCase
             ->call('reviewNow')->assertSee('নতুন সদস্য')->assertDontSee('প্রথম হিসাব আসবে এই রবিবার রাতে')
             ->call('checkFacebook')->assertSee('✓ ফেসবুকে পোস্ট, ছবি ও রিল দেওয়া')->assertSee('✗ ধাঁধার উত্তর আমাদের পোস্টের নিচে কমেন্ট করা')->assertSee('চাবির মেয়াদ শেষ হয় না');
     }
+
+    /** D215 (owner: "the marketing team needs to promote this series properly"; "check how people are reacting… and based on that change the serials"). */
+    public function test_the_detective_series_gets_its_own_posts_and_the_writer_is_told_how_readers_reacted(): void
+    {
+        $case = \App\Models\Serial::create(['title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা', 'logline' => 'ষোলো পাতা উধাও।', 'writer' => 'serial_detective', 'genre' => 'গোয়েন্দা', 'status' => 'active', 'slug' => 'harano-forma', 'day' => 6,
+            'bible' => ['characters' => [['name' => 'নীলিমা সেন', 'role' => 'ক'], ['name' => 'অবনী দত্ত', 'role' => 'খ'], ['name' => 'সুধাময় কর', 'role' => 'গ']],
+                'episodes' => array_fill(0, 5, ['title' => 'ক', 'beat' => 'খ']), 'solution' => ['culprit_name' => 'অবনী দত্ত']]]);
+        $episode = function (int $no, string $when, ?string $teaser = null) use ($case) {
+            $p = $this->makePost(['slug' => 'pp-'.$no, 'title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা (পর্ব '.$no.'): নাম', 'status' => 'published', 'published_at' => Carbon::parse($when, 'Asia/Kolkata')]);
+            $p->forceFill(['serial_id' => $case->id, 'episode_no' => $no, 'episode_teaser' => $teaser])->saveQuietly();
+
+            return $p;
+        };
+        $e1 = $episode(1, '2026-11-14 09:00', 'ট্রাঙ্কের তালাটা ভেতর থেকে বন্ধ।');
+        Carbon::setTestNow(Carbon::parse('2026-11-17 22:00', 'Asia/Kolkata'));
+
+        // Wednesday: who did it? Friday: tomorrow's episode. Made from the case itself, nothing invented.
+        MarketingPlan::plan(Carbon::parse('2026-11-18', 'Asia/Kolkata'));
+        $who = SocialPost::where('plan_key', '2026-11-18:case-who-'.$case->id)->firstOrFail();
+        $this->assertSame(['নীলিমা সেন', 'অবনী দত্ত', 'সুধাময় কর'], array_column($who->design['slides'][0]['rows'], 0));
+        $this->assertStringContainsString('কে করেছে বলে মনে হয়?', $who->texts['facebook']);
+        $this->assertStringContainsString('/dharabahik/harano-forma/', $who->texts['facebook']);
+        MarketingPlan::plan(Carbon::parse('2026-11-20', 'Asia/Kolkata'));
+        $next = SocialPost::where('plan_key', '2026-11-20:case-next-'.$case->id)->firstOrFail();
+        $this->assertSame('ট্রাঙ্কের তালাটা ভেতর থেকে বন্ধ।', $next->design['slides'][0]['quote']);
+        $this->assertSame('20:15', $next->slot_at->timezone('Asia/Kolkata')->format('H:i'));
+        MarketingPlan::plan(Carbon::parse('2026-11-19', 'Asia/Kolkata'));
+        $this->assertSame(2, SocialPost::where('kind', 'serial')->count(), 'Nothing on other days');
+
+        // What readers did reaches the writer, with plain conclusions.
+        \Illuminate\Support\Facades\DB::table('post_views')->insert(['post_id' => $e1->id, 'day' => '2026-11-14', 'views' => 200]);
+        $e1->forceFill(['likes_count' => 12])->saveQuietly();
+        $e2 = $episode(2, '2026-11-17 09:00');
+        \Illuminate\Support\Facades\DB::table('post_views')->insert(['post_id' => $e2->id, 'day' => '2026-11-17', 'views' => 60]);
+        foreach (range(1, 12) as $i) {
+            \Illuminate\Support\Facades\DB::table('case_guesses')->insert(['serial_id' => $case->id, 'user_id' => User::factory()->create()->id, 'suspect' => $i <= 9 ? 'অবনী দত্ত' : 'নীলিমা সেন', 'show_name' => true, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $signals = \App\Support\SerialSignals::forEpisode($case->fresh());
+        $this->assertStringContainsString('episode 1: opened 200, read to the end 0, likes 12', $signals);
+        $this->assertStringContainsString('Far fewer readers opened episode 2', $signals);
+        $this->assertStringContainsString('already suspect the real culprit', $signals);
+        $this->assertStringContainsString('Never change the plan', $signals);
+        $this->assertStringContainsString('first episode opened 200', \App\Support\SerialSignals::forPlan('serial_detective'));
+        $this->assertSame('', \App\Support\SerialSignals::forPlan('serial_ghost'));
+
+        // The case ends: the next day, how the guesses went.
+        $episode(5, '2026-11-21 09:00');
+        Carbon::setTestNow(Carbon::parse('2026-11-21 22:00', 'Asia/Kolkata'));
+        MarketingPlan::plan(Carbon::parse('2026-11-22', 'Asia/Kolkata'));
+        $result = SocialPost::where('plan_key', '2026-11-22:case-result-'.$case->id)->firstOrFail();
+        $this->assertStringContainsString('১২ জন অনুমান পাঠিয়েছিলেন। ঠিক ধরেছিলেন ৯ জন।', $result->texts['facebook']);
+    }
+
+    public function test_the_desk_shows_how_many_people_are_on_the_site_now(): void
+    {
+        $this->assertSame([null, 'not set up'], \App\Support\GoogleData::realtime(), 'Without Analytics nothing is shown, and nothing breaks');
+    }
 }

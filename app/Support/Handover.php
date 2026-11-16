@@ -10,6 +10,8 @@ use App\Models\Newsletter;
 use App\Models\Post;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Review;
+use App\Support\Transliterate;
 
 /**
  * D208 (owner, 2026-11-15, shown the list of an admin's jobs: "Do all these… do all this safe handover change").
@@ -36,6 +38,8 @@ final class Handover
         'letter' => ['পাঠকদের চিঠি', 'খসড়া তৈরির ১২ ঘণ্টা পরে চিঠি নিজে থেকে যায়, আপনি না থামালে।'],
         'monthly' => ['মাসের ছোট কাজ', 'মাসের লেখক, সংকলন, পুরনো লেখার এসইও আর যন্ত্রকণ্ঠের পাঠ নিজে থেকে হয়।'],
         'publish' => ['ভালো লেখা প্রকাশ', 'এআই যে লেখা নিশ্চিন্তে প্রকাশ করতে বলে, তা ২৪ ঘণ্টা পরে নিজে থেকে মনোনীত হয়, আপনি না থামালে।'],
+        // D214: the detective series only
+        'cases' => ['গোয়েন্দা সিরিজ', 'একটি কেস শেষ হওয়ার আগে পরের কেসের পরিকল্পনা তৈরি হয়; আপনি সমাধান পড়ে শুরু করলে প্রতিটি পর্ব যাচাই হয়ে নিজে থেকে প্রকাশ হয়।'],
     ];
 
     public const LETTER_HOURS = 12;
@@ -351,6 +355,121 @@ final class Handover
         }
 
         return $n;
+    }
+
+    /**
+     * D214 (owner, offered the two: "do both automatic"): the detective series (D212) runs itself.
+     *   - A case whose last planned episode is out is marked finished.
+     *   - One episode before a case ends, the next case is planned (once a day at most if it fails). It waits as a
+     *     proposal: the owner reads its solution and starts it. Nothing of a case goes out before that.
+     *   - In a started case, each drafted episode waits PUBLISH_HOURS, is checked against the case's plan by a second
+     *     reader, and is then given its day (the serial's weekday, 9am Kolkata, a week after the one before). An
+     *     episode with a problem, or one that could not be checked, waits for the owner with the reason in a flag.
+     */
+    public static function cases(): int
+    {
+        $owner = self::owner();
+        $n = 0;
+        $series = fn () => \App\Models\Serial::where('writer', 'serial_detective')->whereNull('user_id');
+        foreach ($series()->where('status', 'active')->get() as $case) {
+            $planned = $case->plannedEpisodes();
+            $out = (int) $case->liveEpisodes()->max('episode_no');
+            if ($out >= $planned) {
+                $case->forceFill(['status' => 'finished'])->save();
+                self::note('case_finished', null, ['serial' => $case->id]);
+
+                continue;
+            }
+            foreach ($case->episodes()->where('status', 'draft')->whereNotNull('ai_drafted_at')->where('auto_stopped', false)->get() as $ep) {
+                if (! $ep->auto_publish_at) {
+                    $ep->forceFill(['auto_publish_at' => $ep->created_at->copy()->addHours(self::PUBLISH_HOURS)])->saveQuietly();
+                }
+                if ($ep->auto_publish_at->isFuture() || ! $owner) {
+                    continue;
+                }
+                $problems = self::episodeProblems($case, $ep);
+                if ($problems !== []) {
+                    self::flag('episode.'.$ep->id, __('গোয়েন্দা সিরিজের এই পর্বটি নিজে থেকে প্রকাশ হয়নি; পড়ে ঠিক করুন, তারপর নিজে প্রকাশ করুন: ').$ep->title, $problems ?? [__('পর্বটি যাচাই করা যায়নি; একটু পরে আবার চেষ্টা হবে।')]);
+
+                    continue;
+                }
+                self::flag('episode.'.$ep->id, null);
+                $at = self::episodeDay($case);
+                if ($ep->proposed_image_path && ! $ep->featured_image_path) {
+                    CoverImage::acceptProposed($ep);
+                }
+                $ep->forceFill(['slug' => str_starts_with((string) $ep->slug, 'desk-') ? Review::uniqueSlug(Transliterate::slug($ep->title) ?: 'lekha-'.$ep->id, $ep->id) : $ep->slug,
+                    'status' => $at->isFuture() ? 'scheduled' : 'published', 'published_at' => $at, 'reviewed_by' => $owner->id, 'reviewed_at' => now(), 'auto_publish_at' => null])->save();
+                EditorTask::where('type', 'serial_episode')->where('status', 'open')->where('subject_id', $ep->id)->get()->each->close();
+                self::note('episode', $ep, ['at' => $at->toIso8601String()]);
+                $n++;
+            }
+            // The next case is planned while the last episode of this one is still to come, so there is no empty week.
+            if ($out >= $planned - 1 && ! $series()->where('status', 'proposed')->exists()) {
+                $n += (int) self::planNextCase();
+            }
+        }
+        if (! $series()->whereIn('status', ['active', 'proposed'])->exists() && $series()->where('status', 'finished')->exists()) {
+            $n += (int) self::planNextCase();
+        }
+        // An episode the owner has dealt with by hand no longer needs its flag.
+        foreach (EditorTask::where('type', 'alert')->where('status', 'open')->where('key', 'like', 'handover.episode.%')->get() as $flag) {
+            if (Post::whereKey((int) substr($flag->key, strlen('handover.episode.')))->where('status', 'draft')->doesntExist()) {
+                $flag->close('dismissed');
+            }
+        }
+        $waiting = $series()->where('status', 'proposed')->where('created_at', '<', now()->subDays(2))->pluck('title')->all();
+        self::flag('case_waiting', $waiting ? __('নতুন কেস আপনার অপেক্ষায়: ডেস্ক → ধারাবাহিক-এ খুলে সমাধান পড়ুন, তারপর প্রথম পর্ব প্রকাশ করুন') : null, $waiting);
+
+        return $n;
+    }
+
+    private static function planNextCase(): bool
+    {
+        $today = now('Asia/Kolkata')->toDateString();
+        if (Setting::get('handover.case_tried') === $today) {
+            return false;   // one try a day: a plan is a long, costly piece of writing
+        }
+        Setting::put('handover.case_tried', $today);
+        [$case, $why] = \App\Ai\SerialWriter::start('serial_detective');
+        self::flag('case_plan', $case ? null : __('পরের কেসের পরিকল্পনা তৈরি হয়নি; কাল আবার চেষ্টা হবে'), $case ? [] : [(string) $why]);
+        if ($case) {
+            self::note('case_planned', null, ['serial' => $case->id]);
+        }
+
+        return (bool) $case;
+    }
+
+    /** Checked once for the text as it stands; again only if the episode was changed. @return ?list<string> */
+    private static function episodeProblems(\App\Models\Serial $case, Post $ep): ?array
+    {
+        $log = AuditLog::where('action', 'handover.episode_checked')->where('subject_type', $ep->getMorphClass())->where('subject_id', $ep->id)->latest('id')->first();
+        if ($log && ($log->meta['hash'] ?? '') === md5((string) $ep->body_html)) {
+            return (array) ($log->meta['problems'] ?? []);
+        }
+        $problems = rescue(fn () => \App\Ai\Casebook::check($case, $ep), null, true);
+        if ($problems !== null) {
+            self::note('episode_checked', $ep, ['hash' => md5((string) $ep->body_html), 'problems' => $problems]);
+        }
+
+        return $problems;
+    }
+
+    /** The serial's weekday at 9am Kolkata: the next one, and never less than a week after the episode before. */
+    private static function episodeDay(\App\Models\Serial $case): \Illuminate\Support\Carbon
+    {
+        $tz = 'Asia/Kolkata';
+        $from = now($tz)->addHour();
+        $before = $case->episodes()->whereIn('status', ['published', 'scheduled'])->max('published_at');
+        if ($before) {
+            $from = $from->max(\Illuminate\Support\Carbon::parse($before)->timezone($tz)->addDays(6)->startOfDay());
+        }
+        $day = $from->copy()->setTime(9, 0);
+        while ($day->dayOfWeek !== (int) $case->day || $day->lt($from)) {
+            $day->addDay()->setTime(9, 0);
+        }
+
+        return $day->utc();
     }
 
     /** The owner: "not this one by itself". */

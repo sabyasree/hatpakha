@@ -314,6 +314,98 @@ class HandoverTest extends TestCase
         $this->assertStringContainsString('এআই-এর আঁকা ছবি প্রচ্ছদে বসানো হয়েছে', view('filament.post-history', ['post' => $post->fresh()])->render());
     }
 
+    /** D214 (owner, offered the two: "do both automatic"): the detective series runs itself once the owner has started a case. */
+    public function test_the_detective_series_plans_its_next_case_and_publishes_checked_episodes_by_itself(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => null]);
+        \App\Models\Author::firstOrCreate(['slug' => 'hatpakha-desk'], ['display_name' => 'হাতপাখা ডেস্ক', 'is_desk' => true]);
+        \App\Models\Section::firstOrCreate(['slug' => 'dharabahik'], ['name_bn' => 'ধারাবাহিক', 'format' => 'prose']);
+        $problems = [];
+        $plan = ['title' => 'হারানো ফর্মা', 'logline' => 'ষোলো পাতা উধাও।', 'setting' => 'কলেজ স্ট্রিট',
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর']],
+            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা'], range(1, 5)),
+            'solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'ভাই', 'method' => 'রাতে', 'motive' => 'দেনা', 'proof' => 'বানান'],
+            'clues' => [['clue' => 'বানান', 'episode' => 1, 'written' => true, 'means' => 'ক'], ['clue' => 'ছাতা', 'episode' => 2, 'written' => false, 'means' => 'খ'], ['clue' => 'টাইপ', 'episode' => 4, 'written' => true, 'means' => 'গ']],
+            'cover_prompt' => 'a press'];
+        $n = 0;
+        \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$problems, &$plan, &$n) {
+            if ($purpose === 'case_check') {
+                return ['problems' => $problems];
+            }
+
+            return in_array('cover_prompt', $schema['required'] ?? [], true) ? ['title' => $plan['title'].(++$n > 1 ? ' '.$n : '')] + $plan
+                : ['episode' => ['title' => 'উধাও', 'paragraphs' => [str_repeat('বিকেলে প্রেসে ঢুকেই বুঝলাম কিছু একটা হয়েছে। ', 60)], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => '', 'teaser' => 'একটা বানান মিলছে না।']];
+        };
+        try {
+            [$case] = \App\Ai\SerialWriter::start('serial_detective');
+            $ep1 = $case->episodes()->first();
+
+            // Not started by the owner: nothing of it goes out, however long it waits.
+            Carbon::setTestNow(now()->addDays(3));
+            $this->assertSame(0, Handover::cases());
+            $this->assertSame('draft', $ep1->fresh()->status);
+            $this->assertTrue(\App\Models\EditorTask::where('key', 'handover.case_waiting')->where('status', 'open')->exists(), 'The owner is reminded that a case waits to be read');
+
+            // The owner reads the solution and publishes episode one: the case is running.
+            $ep1->forceFill(['status' => 'published', 'published_at' => now(), 'slug' => 'pp-1'])->save();
+            $this->assertSame('active', $case->fresh()->status);
+            \App\Ai\SerialWriter::keepAhead();
+            $ep2 = $case->episodes()->where('episode_no', 2)->firstOrFail();
+            $this->assertSame(0, Handover::cases(), 'A day in the desk first');
+            $this->assertNotNull($ep2->fresh()->auto_publish_at);
+
+            // The second reader finds a problem: it waits, with the reason in a flag.
+            Carbon::setTestNow(now()->addHours(25));
+            $problems = ['অপরাধীর নাম এই পর্বেই বলে দেওয়া হয়েছে'];
+            $this->assertSame(0, Handover::cases());
+            $flag = \App\Models\EditorTask::where('key', 'handover.episode.'.$ep2->id)->where('status', 'open')->firstOrFail();
+            $this->assertSame($problems, $flag->payload['errors']);
+            $this->assertSame('draft', $ep2->fresh()->status);
+
+            // The owner fixes the text: it is checked afresh and given its Saturday.
+            $problems = [];
+            $ep2->forceFill(['body_html' => '<p>'.str_repeat('পাকড়াশীমশাই চশমা কপালে তুললেন। ', 80).'</p>'])->save();
+            $this->assertSame(1, Handover::cases());
+            $ep2->refresh();
+            $this->assertSame('scheduled', $ep2->status);
+            $when = $ep2->published_at->copy()->timezone('Asia/Kolkata');
+            $this->assertSame([Carbon::SATURDAY, '09:00'], [$when->dayOfWeek, $when->format('H:i')]);
+            $this->assertTrue($when->gte($ep1->fresh()->published_at->copy()->addDays(5)), 'Never two episodes in one week');
+            $this->assertStringStartsNotWith('desk-', $ep2->slug);
+            $this->assertFalse(\App\Models\EditorTask::where('key', 'handover.episode.'.$ep2->id)->where('status', 'open')->exists());
+
+            // The owner can stop one episode.
+            Carbon::setTestNow($ep2->published_at->copy()->addHour());
+            \App\Ai\SerialWriter::keepAhead();
+            $ep3 = $case->episodes()->where('episode_no', 3)->firstOrFail();
+            Handover::cases();
+            Handover::stop($ep3->fresh());
+            Carbon::setTestNow(now()->addDays(2));
+            $this->assertSame(0, Handover::cases());
+            $this->assertSame('draft', $ep3->fresh()->status);
+
+            // One episode before the end the next case is planned, once; when the last is out the case is finished.
+            foreach ([3, 4] as $no) {
+                $case->episodes()->where('episode_no', $no)->first()?->forceFill(['status' => 'published', 'published_at' => now(), 'auto_stopped' => true])->save()
+                    ?? tap($this->makePost(['slug' => 'pp-'.$no, 'status' => 'published', 'published_at' => now()]))->forceFill(['serial_id' => $case->id, 'episode_no' => $no])->saveQuietly();
+            }
+            Handover::cases();
+            $next = \App\Models\Serial::where('writer', 'serial_detective')->where('status', 'proposed')->get();
+            $this->assertCount(1, $next);
+            Handover::cases();
+            $this->assertSame(1, \App\Models\Serial::where('status', 'proposed')->count(), 'Not a second plan');
+            tap($this->makePost(['slug' => 'pp-5', 'status' => 'published', 'published_at' => now()]))->forceFill(['serial_id' => $case->id, 'episode_no' => 5])->saveQuietly();
+            Handover::cases();
+            $this->assertSame('finished', $case->fresh()->status);
+            $this->assertSame('draft', $next->first()->episodes()->first()->status, 'The new case still waits for the owner');
+
+            Handover::set('cases', false);
+            $this->assertSame(0, Handover::run()['cases']);
+        } finally {
+            \App\Ai\Claude::$fake = null;
+        }
+    }
+
     public function test_a_piece_sent_again_starts_from_nothing(): void
     {
         $post = $this->piece();

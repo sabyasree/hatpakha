@@ -113,6 +113,7 @@
                     <a href="{{ $post->serial->url() }}" class="inline-flex min-h-11 items-center underline">সব পর্ব</a>
                 </div>
             </nav>
+            @include('case-guess', ['serial' => $post->serial])
         @else
         <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
         @endif

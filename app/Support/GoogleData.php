@@ -103,6 +103,39 @@ final class GoogleData
         return [$rows, null];
     }
 
+    /**
+     * D215 (owner: "I want to see in desk how many people are online"): people on the site in the last half hour, from
+     * Google Analytics' realtime report, with the pages they are on. Asked at most once a minute.
+     *
+     * @return array{0: ?array{now: int, pages: list<array{title: string, n: int}>}, 1: ?string}
+     */
+    public static function realtime(): array
+    {
+        $property = preg_replace('/\D/', '', (string) config('services.google.ga_property'));
+        if (! $property || ! self::configured()) {
+            return [null, 'not set up'];
+        }
+
+        return cache()->remember('ga.realtime', 60, function () use ($property) {
+            [$token, $err] = self::token();
+            if (! $token) {
+                return [null, (string) $err];
+            }
+            $ask = fn (array $body) => rescue(fn () => Http::withToken($token)->timeout(15)->post("https://analyticsdata.googleapis.com/v1beta/properties/{$property}:runRealtimeReport", $body), null, false);
+            $total = $ask(['metrics' => [['name' => 'activeUsers']]]);
+            if (! $total || ! $total->successful()) {
+                return [null, 'Analytics: '.mb_substr((string) ($total?->json('error.message') ?? $total?->status() ?? 'no connection'), 0, 160)];
+            }
+            $pages = $ask(['dimensions' => [['name' => 'unifiedScreenName']], 'metrics' => [['name' => 'activeUsers']], 'limit' => 5, 'orderBys' => [['metric' => ['metricName' => 'activeUsers'], 'desc' => true]]]);
+            $list = [];
+            foreach ((array) $pages?->json('rows') as $r) {
+                $list[] = ['title' => mb_substr((string) ($r['dimensionValues'][0]['value'] ?? ''), 0, 90), 'n' => (int) ($r['metricValues'][0]['value'] ?? 0)];
+            }
+
+            return [['now' => (int) ($total->json('rows.0.metricValues.0.value') ?? 0), 'pages' => $list], null];
+        });
+    }
+
     /** Search Console: top rows for one dimension (query or page). @return array{0: list<array>, 1: ?string} */
     public static function search(string $dimension, int $limit = 25, int $days = 28): array
     {

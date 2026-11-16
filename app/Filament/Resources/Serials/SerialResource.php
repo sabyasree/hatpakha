@@ -119,7 +119,16 @@ class SerialResource extends Resource
 
         return $cover.'<p><b>'.e(__('পটভূমি')).':</b> '.e((string) ($b['setting'] ?? '')).'</p>'
             .'<p style="margin-top:.6rem"><b>'.e(__('চরিত্র')).'</b></p><ul style="padding-left:1.2rem;list-style:disc">'.$chars.'</ul>'
-            .'<p style="margin-top:.6rem"><b>'.e(__('পর্বের পরিকল্পনা')).'</b></p><ol style="padding-left:1.2rem">'.$eps.'</ol>';
+            .'<p style="margin-top:.6rem"><b>'.e(__('পর্বের পরিকল্পনা')).'</b></p><ol style="padding-left:1.2rem">'.$eps.'</ol>'
+            // D212: a detective case shows its solution and clues to the editor only, to check the puzzle is fair
+            .(! empty($b['solution']) ? '<div style="margin-top:.8rem;border:2px solid #CB1B32;border-radius:.75rem;padding:.75rem 1rem"><p><b>'.e(__('সমাধান (শুধু আপনার জন্য; পাঠক দেখবেন না)')).'</b></p>'
+                .'<p><b>'.e(__('কে')).':</b> '.e(trim((string) ($b['solution']['culprit_name'] ?? '').' — '.(string) ($b['solution']['culprit'] ?? ''), ' —')).'</p><p><b>'.e(__('কীভাবে')).':</b> '.e((string) ($b['solution']['method'] ?? '')).'</p>'
+                .'<p><b>'.e(__('কেন')).':</b> '.e((string) ($b['solution']['motive'] ?? '')).'</p><p><b>'.e(__('প্রমাণ')).':</b> '.e((string) ($b['solution']['proof'] ?? '')).'</p>'
+                .'<p style="margin-top:.5rem"><b>'.e(__('সূত্র, আর কোন পর্বে পাঠক তা দেখবেন')).'</b></p><ul style="padding-left:1.2rem;list-style:disc">'
+                .collect((array) ($b['clues'] ?? []))->map(fn ($c) => '<li>'.e(__('পর্ব').' '.\App\Support\Bn::num((string) ($c['episode'] ?? ''))).': '.e((string) ($c['clue'] ?? '')).' <span style="opacity:.75">('.e((string) ($c['means'] ?? '')).')</span></li>')->implode('')
+                .'</ul>'.(($tally = \App\Support\CaseGuesses::tally($s)) ? '<p style="margin-top:.5rem"><b>'.e(__('পাঠকদের অনুমান এ পর্যন্ত')).':</b> '
+                    .e(collect($tally)->map(fn ($n, $who) => $who.' '.\App\Support\Bn::num((string) $n))->implode(' · ')).'</p>' : '')
+                .'<p style="margin-top:.5rem;opacity:.8">'.e(__('প্রথম পর্ব প্রকাশের আগে একবার পড়ে দেখুন: সমাধানে ফাঁক আছে কি না, আর সব সূত্র শেষ পর্বের আগে আসছে কি না।')).'</p></div>' : '');
     }
 
     private static function episodesHtml(?Serial $s): string

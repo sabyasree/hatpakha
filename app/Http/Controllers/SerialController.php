@@ -46,6 +46,17 @@ class SerialController extends Controller
         return view('serial', compact('serial', 'episodes', 'seo', 'following'));
     }
 
+    /** D213: a signed-in reader's guess at who did it, in a detective case. */
+    public function guess(Request $request, Serial $serial)
+    {
+        abort_unless($serial->isPublic(), 404);
+        $data = $request->validate(['suspect' => ['required', 'string', 'max:200'], 'why' => ['nullable', 'string', 'max:600'], 'show_name' => ['nullable', 'boolean']],
+            ['suspect.required' => 'একজনকে বেছে নিন।']);
+        $ok = \App\Support\CaseGuesses::store($serial, $request->user(), $data['suspect'], $data['why'] ?? null, (bool) ($data['show_name'] ?? false));
+
+        return redirect(url()->previous().'#onuman')->with('guess_status', $ok ? 'আপনার অনুমান রাখা হল। শেষ পর্বের পরে মিলিয়ে দেখবেন।' : 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
+    }
+
     /** Signed-in readers follow a serial: one e-mail when a new episode comes out (they asked). Toggle. */
     public function follow(Request $request, Serial $serial)
     {
