@@ -523,7 +523,7 @@ class MarketingPlanTest extends TestCase
         $this->assertStringContainsString('/dharabahik/harano-forma/', $who->texts['facebook']);
         MarketingPlan::plan(Carbon::parse('2026-11-20', 'Asia/Kolkata'));
         $next = SocialPost::where('plan_key', '2026-11-20:case-next-'.$case->id)->firstOrFail();
-        $this->assertSame('ট্রাঙ্কের তালাটা ভেতর থেকে বন্ধ।', $next->design['slides'][0]['quote']);
+        $this->assertSame(['reel', 'ট্রাঙ্কের তালাটা ভেতর থেকে বন্ধ।'], [$next->format, $next->design['reel']['quote']], 'A reel, since reels are seen most');
         $this->assertSame('20:15', $next->slot_at->timezone('Asia/Kolkata')->format('H:i'));
         MarketingPlan::plan(Carbon::parse('2026-11-19', 'Asia/Kolkata'));
         $this->assertSame(2, SocialPost::where('kind', 'serial')->count(), 'Nothing on other days');
@@ -555,5 +555,22 @@ class MarketingPlanTest extends TestCase
     public function test_the_desk_shows_how_many_people_are_on_the_site_now(): void
     {
         $this->assertSame([null, 'not set up'], \App\Support\GoogleData::realtime(), 'Without Analytics nothing is shown, and nothing breaks');
+    }
+
+    /** D221 (owner: "reels have more views than posts. Can we make more reels than posts"). */
+    public function test_every_day_has_a_second_reel_in_the_evening_of_the_other_kind(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-22 22:00', 'Asia/Kolkata'));
+        MarketingPlan::plan(Carbon::parse('2026-11-23', 'Asia/Kolkata'));   // a Monday: the midday reel is yesterday's riddle
+        $this->assertSame('riddle', SocialPost::where('plan_key', '2026-11-23:reel')->firstOrFail()->design['reel']['t']);
+        $this->assertNull(SocialPost::where('plan_key', '2026-11-23:reel2')->first(), 'No line to quote yet: no second reel is invented');
+
+        $piece = $this->makePost(['slug' => 'megh', 'title' => 'মেঘ', 'body_html' => '<p>মেঘ এসে দাঁড়াল জানলার ধারে।</p>']);
+        SocialPost::forceCreate(['title' => 'মেঘ', 'kind' => 'piece', 'format' => 'link', 'status' => 'ready', 'subject_type' => $piece->getMorphClass(), 'subject_id' => $piece->id,
+            'texts' => ['facebook' => 'ক', 'quote' => 'মেঘ এসে দাঁড়াল জানলার ধারে।']]);
+        MarketingPlan::plan(Carbon::parse('2026-11-25', 'Asia/Kolkata'));   // Wednesday: midday riddle, evening a line from a piece
+        $second = SocialPost::where('plan_key', '2026-11-25:reel2')->firstOrFail();
+        $this->assertSame(['reel', 'line', '19:10'], [$second->format, $second->design['reel']['t'], $second->slot_at->timezone('Asia/Kolkata')->format('H:i')]);
+        $this->assertGreaterThanOrEqual(2, SocialPost::where('plan_key', 'like', '2026-11-25:%')->where('format', 'reel')->count());
     }
 }

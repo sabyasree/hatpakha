@@ -25,9 +25,9 @@ use Illuminate\Support\Carbon;
  */
 final class MarketingPlan
 {
-    public const FB_CAP = 4;      // a day, whatever is planned
+    public const FB_CAP = 5;      // a day, whatever is planned
 
-    public const IG_CAP = 3;
+    public const IG_CAP = 4;
 
     public const WAIT_HOURS = 3;
 
@@ -65,17 +65,13 @@ final class MarketingPlan
         if ($line) {
             $made += $line;
         } elseif ($old) {
-            $url = Url::to('/khela/dhadha');
-            $made += self::make($date.':reel', [
-                'kind' => 'riddle', 'format' => 'reel', 'title' => 'রিল: ধাঁধা ('.Bn::date($day).')', 'slot_at' => $at(13, 30),
-                'design' => ['reel' => ['t' => 'riddle', 'chip' => 'ধাঁধা', 'clue' => $old['clue'], 'letters' => WordGame::letters($old['answer'])]],
-                'texts' => [
-                    'facebook' => "পাঁচ সেকেন্ডে পারবেন?\n\nগতকালের ধাঁধা, উত্তর রিলের শেষে। আজকের নতুন ধাঁধা এখানে:\n\n".$url,
-                    'instagram' => "পাঁচ সেকেন্ডে পারবেন? উত্তর রিলের শেষে।\n\nরোজ একটি নতুন ধাঁধা: hatpakha.com/khela (লিংক বায়োতে)\n\n#হাতপাখা #ধাঁধা #বাংলাধাঁধা #বাংলা #বাংলাসাহিত্য",
-                    'whatsapp' => '', 'link' => $url,
-                ],
-            ]);
+            $made += self::riddleReel($date.':reel', $at(13, 30), $day, $old);
         }
+
+        // D221 (owner: "reels have more views than posts. Can we make more reels than posts"): a second reel in the
+        // evening, when most readers are about; the other kind from the midday one, so the day has both.
+        $second = $line ? ($old ? self::riddleReel($date.':reel2', $at(19, 10), $day, $old) : 0) : self::lineReel($date.':reel2', $at(19, 10));
+        $made += $second ?: ($line ? self::lineReel($date.':reel2', $at(19, 10)) : 0);
 
         // Friday, late afternoon: the week's top three in the games (only people who show their name on the leaderboard; D184).
         if ($day->dayOfWeekIso === 5 && count($rows = GameScores::board('week', null, 3)['rows']) === 3) {
@@ -125,8 +121,8 @@ final class MarketingPlan
             $last = $case->liveEpisodes()->get()->last();
             if ($case->status === 'active' && $day->copy()->addDay()->dayOfWeek === (int) $case->day && $last && filled($last->episode_teaser) && ! CaseGuesses::solved($case)) {
                 $made += self::make($date.':case-next-'.$case->id, [
-                    'kind' => 'serial', 'format' => 'card', 'title' => 'কাল নতুন পর্ব: '.$short.' ('.Bn::date($day).')', 'slot_at' => $at(20, 15),
-                    'design' => ['slides' => [['t' => 'line', 'chip' => 'কাল নতুন পর্ব', 'quote' => (string) $last->episode_teaser, 'by' => \App\Ai\Casebook::SERIES.': '.$short]]],
+                    'kind' => 'serial', 'format' => 'reel', 'title' => 'রিল: কাল নতুন পর্ব, '.$short.' ('.Bn::date($day).')', 'slot_at' => $at(20, 15),
+                    'design' => ['reel' => ['t' => 'line', 'chip' => 'কাল নতুন পর্ব', 'quote' => (string) $last->episode_teaser, 'by' => \App\Ai\Casebook::SERIES.': '.$short]],
                     'texts' => [
                         'facebook' => "কাল সকালে \"{$short}\"-এর নতুন পর্ব।\n\n".$last->episode_teaser."\n\nআগের পর্বগুলো পড়া না থাকলে আজই পড়ে নিন:\n\n".$url,
                         'instagram' => "কাল সকালে \"{$short}\"-এর নতুন পর্ব।\n\n".$last->episode_teaser."\n\nআগের পর্ব: hatpakha.com (লিংক বায়োতে)\n\n".$tags,
@@ -150,6 +146,21 @@ final class MarketingPlan
         }
 
         return $made;
+    }
+
+    /** Yesterday's riddle as a reel: five seconds to think, the answer at the end. */
+    private static function riddleReel(string $key, Carbon $slot, Carbon $day, array $old): int
+    {
+        $url = Url::to('/khela/dhadha');
+        return self::make($key, [
+            'kind' => 'riddle', 'format' => 'reel', 'title' => 'রিল: ধাঁধা ('.Bn::date($day).')', 'slot_at' => $slot,
+            'design' => ['reel' => ['t' => 'riddle', 'chip' => 'ধাঁধা', 'clue' => $old['clue'], 'letters' => WordGame::letters($old['answer'])]],
+            'texts' => [
+                'facebook' => "পাঁচ সেকেন্ডে পারবেন?\n\nগতকালের ধাঁধা, উত্তর রিলের শেষে। আজকের নতুন ধাঁধা এখানে:\n\n".$url,
+                'instagram' => "পাঁচ সেকেন্ডে পারবেন? উত্তর রিলের শেষে।\n\nরোজ একটি নতুন ধাঁধা: hatpakha.com/khela (লিংক বায়োতে)\n\n#হাতপাখা #ধাঁধা #বাংলাধাঁধা #বাংলা #বাংলাসাহিত্য",
+                'whatsapp' => '', 'link' => $url,
+            ],
+        ]);
     }
 
     /** A question card: the clue, empty boxes for the letters, the answer as our comment the next morning. */
