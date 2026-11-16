@@ -23,6 +23,14 @@ html, body { background: var(--paper); }
 .grain { position: absolute; inset: 0; background-image: radial-gradient(rgba(19,33,44,.05) 1.2px, transparent 1.3px); background-size: 14px 14px; }
 .fan { position: absolute; right: -150px; top: -30px; width: 620px; transform: rotate(-14deg); opacity: .95; }
 .reel .fan { width: 720px; right: -180px; top: 20px; }
+/* D222: a still life in the corner (owner: "these images are so nice and catchy… posts should follow this kind"): things laid on a writing table, drawn in the logo colours, never a photograph and never a person. */
+.art { position: absolute; right: 0; top: 0; width: 600px; height: 400px; overflow: visible; }
+.reel .art { width: 760px; height: 507px; top: 60px; }
+.peek { position: absolute; left: 0; bottom: 250px; width: 96px; height: 300px; overflow: visible; }
+.reel .peek { bottom: 470px; width: 122px; height: 380px; }
+.dark .art, .dark .peek { opacity: .92; }
+.swash { position: absolute; left: 70px; top: 162px; width: 300px; height: 22px; }
+.reel .swash { top: 282px; width: 350px; }
 .chip { position: absolute; left: 80px; top: 88px; padding: 14px 30px 10px; border-radius: 999px; background: var(--red); color: #fff; font-size: 38px; font-weight: 600; transform: rotate(-2deg); }
 .reel .chip { top: 190px; font-size: 44px; }
 .body { position: absolute; left: 80px; right: 80px; top: 300px; bottom: 230px; display: flex; flex-direction: column; justify-content: center; gap: 36px; }
@@ -72,6 +80,47 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 const clamp = (x) => Math.max(0, Math.min(1, x));
 const ease = (x) => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
 
+/* The still lifes. Each is drawn in a 600×400 box whose top-right corner is the card's corner; the text never reaches it. */
+const NS = 'http://www.w3.org/2000/svg';
+const LEAF = (x, y, r, c = '#12304A', v = '#7CCBEE') => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0 0C24-20 56-20 80 0C56 20 24 20 0 0Z" fill="${c}"/><path d="M5 0H75" stroke="${v}" stroke-width="2.4" stroke-linecap="round"/></g>`;
+const SPRIG = (d, pts, c) => `<path d="${d}" fill="none" stroke="#12304A" stroke-width="6" stroke-linecap="round"/>` + pts.map(([x, y, r], i) => LEAF(x, y, r, i % 2 ? '#1A86C2' : (c || '#12304A'), i % 2 ? '#DDF1FA' : '#7CCBEE')).join('');
+const FLOWER = (x, y, k = 1, petal = '#F08D90', heart = '#CB1B32') => `<g transform="translate(${x} ${y}) scale(${k})"><g fill="${petal}">${[0, 72, 144, 216, 288].map((a) => `<ellipse rx="24" ry="46" cy="-42" transform="rotate(${a})"/>`).join('')}</g><circle r="22" fill="${heart}"/><circle r="9" fill="#EFC08D"/></g>`;
+const CUP = (x, y, k = 1) => `<g transform="translate(${x} ${y}) scale(${k})"><circle r="150" fill="#fff" stroke="#E8DCCB" stroke-width="4"/><circle r="112" fill="#FBEBD8"/><circle r="96" fill="#B5603F"/><path d="M-40-10c20-34 60-34 80 0c-10 40-70 40-80 0Z" fill="#FBEBD8" opacity=".85"/><path d="M-150 0c-46-8-62 20-40 44" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round"/><path d="M-150 0c-46-8-62 20-40 44" fill="none" stroke="#E8DCCB" stroke-width="3" stroke-linecap="round"/></g>`;
+const PEN = (x, y, r, k = 1) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${k})"><rect x="-13" y="0" width="26" height="250" rx="13" fill="#13212C"/><rect x="-13" y="150" width="26" height="14" fill="#EFC08D"/><path d="M-13 250L0 310L13 250Z" fill="#EFC08D"/><path d="M0 268V306" stroke="#13212C" stroke-width="2.5"/><rect x="13" y="20" width="7" height="92" rx="3.5" fill="#EFC08D"/></g>`;
+const BOOKPAGES = (x, y, r, k = 1) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${k})"><rect width="400" height="290" rx="10" fill="#fff" stroke="#E8DCCB" stroke-width="3"/><path d="M200 0V290" stroke="#E8DCCB" stroke-width="4"/><g stroke="#7CCBEE" stroke-width="3" stroke-linecap="round"><path d="M224 46h150M224 82h126M224 118h146M224 154h98M224 190h140M224 226h112M40 46h130M40 82h140M40 118h96"/></g><path d="M40 168c20-18 34 16 54 0s34 16 54 0" fill="none" stroke="#CB1B32" stroke-width="4" stroke-linecap="round"/></g>`;
+const BOOKS = (x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r})"><rect width="330" height="62" rx="8" fill="#CB1B32"/><rect x="18" y="12" width="250" height="8" rx="4" fill="#F08D90"/><rect x="24" y="-58" width="300" height="58" rx="8" fill="#12304A"/><rect x="44" y="-44" width="150" height="8" rx="4" fill="#7CCBEE"/><rect x="-10" y="-112" width="290" height="54" rx="8" fill="#EFC08D"/><rect x="12" y="-98" width="120" height="8" rx="4" fill="#B5603F"/></g>`;
+const SPARK = (x, y, k = 1, c = '#EFC08D') => `<path transform="translate(${x} ${y}) scale(${k})" d="M0-26v16M0 10v16M-26 0h16M10 0h16" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
+const SCENES = [
+    // a sprig and a flower, and the fan of the logo
+    () => SPRIG('M620 40C520 60 430 130 380 250', [[572, 44, 150], [540, 78, 60], [500, 84, 162], [470, 124, 70], [440, 140, 172], [414, 186, 84], [396, 214, 190]]) + FLOWER(520, 150, 1.15) + SPARK(330, 90, 1) + SPARK(250, 40, .6, '#F08D90'),
+    // an open notebook and a pen
+    () => BOOKPAGES(300, -70, 12, 1) + PEN(330, 60, -52, .95) + FLOWER(250, 80, .7) + SPARK(200, 250, .8),
+    // a cup of tea seen from above, a sprig beside it
+    () => CUP(520, 120, 1.05) + SPRIG('M300 -10C330 60 330 130 300 220', [[306, 20, 20], [322, 58, 150], [326, 98, 30], [322, 140, 160], [312, 182, 36]]) + SPARK(240, 80, .8, '#F08D90'),
+    // a stack of books with a flower laid on it
+    () => BOOKS(300, 170, -8) + FLOWER(440, 30, .95, '#EFC08D', '#CB1B32') + SPRIG('M640 250C580 250 520 280 480 330', [[600, 252, 170], [570, 270, 80], [536, 280, 184], [506, 312, 96]]) + SPARK(250, 60, .9),
+    // pen, flowers and a little tea
+    () => CUP(600, 40, .8) + PEN(430, 30, -38, .9) + FLOWER(330, 210, .85) + FLOWER(420, 290, .55, '#EFC08D', '#B0162B') + SPARK(250, 110, .8, '#F08D90'),
+    // a notebook corner and a long sprig
+    () => SPRIG('M640 300C540 260 440 180 380 60', [[606, 290, 200], [574, 262, 110], [536, 250, 214], [504, 214, 124], [470, 196, 226], [444, 152, 136], [414, 124, 240], [396, 86, 150]]) + BOOKPAGES(420, -150, -14, .9) + FLOWER(350, 60, .8),
+];
+const hash = (t) => { let h = 7; for (const ch of String(t)) h = (h * 31 + ch.codePointAt(0)) >>> 0; return h; };
+function art(seed) {
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 600 400'); svg.setAttribute('class', 'art');
+    svg.innerHTML = '<defs><filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="8" dy="12" stdDeviation="11" flood-color="#13212C" flood-opacity=".2"/></filter></defs><g filter="url(#sh)">' + SCENES[hash(seed) % SCENES.length]() + '</g>';
+    return svg;
+}
+function peek(seed) {   // a few leaves coming in from the left edge, below the text's margin
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 96 300'); svg.setAttribute('class', 'peek');
+    svg.innerHTML = hash(seed + 'p') % 2 ? SPRIG('M-30 280C10 220 30 140 20 20', [[-6, 250, -50], [12, 206, -110], [18, 160, -40], [26, 112, -100], [22, 66, -34]].map(([x, y, r]) => [x - 40, y, r])) : FLOWER(4, 150, .9) + LEAF(-34, 236, -30);
+    return svg;
+}
+function swash() {      // a brush stroke under the label, as if drawn by hand
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 300 22'); svg.setAttribute('class', 'swash'); svg.setAttribute('preserveAspectRatio', 'none');
+    svg.innerHTML = '<path d="M4 14C70 2 140 20 206 8S286 6 296 12" fill="none" stroke="#EFC08D" stroke-width="6" stroke-linecap="round"/>';
+    return svg;
+}
+
 function fan() {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', '0 0 200 100'); svg.setAttribute('class', 'fan');
@@ -92,8 +141,9 @@ function fit(node, box, max, min) {
 
 function frame(stage, s, reel) {
     stage.className = (reel ? 'reel ' : '') + (s.dark ? 'dark' : ''); stage.replaceChildren();
-    stage.append(el('div', 'grain'), fan());
-    if (s.chip) stage.append(el('div', 'chip', s.chip));
+    const seed = (s.chip || '') + (s.quote || s.clue || s.title || s.text || '');
+    stage.append(el('div', 'grain'), hash(seed) % SCENES.length === 0 ? fan() : el('span'), art(seed), peek(seed));
+    if (s.chip) stage.append(el('div', 'chip', s.chip), swash());
     const body = el('div', 'body'); stage.append(body);
     const foot = el('div', 'foot'); foot.append(el('div', 'brand', 'হাতপাখা'), el('div', 'site', s.site || 'hatpakha.com')); stage.append(foot);
     return body;
