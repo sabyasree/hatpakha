@@ -45,6 +45,14 @@ final class Casebook
         if ($episodes < self::EPISODES[0] || $episodes > self::EPISODES[1] + 1) {
             return 'একটি কেস পাঁচ-ছয় পর্বের হতে হবে।';
         }
+        // D213: readers guess by name, so the culprit must be one of the case's own people, named exactly
+        $names = array_map(fn ($c) => trim((string) ($c['name'] ?? '')), (array) ($plan['characters'] ?? []));
+        if (blank($s['culprit_name'] ?? null) || ! in_array(trim((string) $s['culprit_name']), $names, true)) {
+            return 'অপরাধী এই কেসের চরিত্রদের একজন হতে হবে, নাম হুবহু মিলিয়ে।';
+        }
+        if (count(array_unique(array_filter($names))) < 3) {
+            return 'কেসে অন্তত তিনজন চরিত্র থাকতে হবে, যাতে পাঠক অনুমান করতে পারেন।';
+        }
         foreach (['culprit', 'method', 'motive', 'proof'] as $k) {
             if (blank($s[$k] ?? null)) {
                 return 'পরিকল্পনায় সমাধান পুরো লেখা নেই (কে, কীভাবে, কেন, প্রমাণ)।';

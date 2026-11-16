@@ -65,7 +65,7 @@ final class SerialWriter
             .($case
                 ? 'Plan this whole case (do not write any episode yet). FIRST decide the solution: who did it, exactly how, why, and the proof that convicts them; then the clues, each one a concrete thing the reader is shown, with the episode it appears in (never the last) and whether it comes from language, writing or print (at least one must, and the turning clue must). '
                     .'Then: a title for the case alone that makes people curious (short, Bengali; never the series name, never the detective\'s name), a logline of one or two lines that sells the puzzle without giving it away, '
-                    .'the setting of this case, the people of this case only (2-5: the client, the suspects, the victim; each: who they are, what they want and what they hide; do not list the fixed people of the sheet), '
+                    .'the setting of this case, the people of this case only (3-5: the client, the suspects, the victim; the culprit must be one of them, and readers will be asked to name one of these people, so give each a full name and make at least three of them believable suspects; each: who they are, what they want and what they hide; do not list the fixed people of the sheet), '
                     .'and '.Casebook::EPISODES[0].' or '.Casebook::EPISODES[1].' episodes, each a title and one or two lines of what happens, which clue is planted, which question it answers, which bigger question it opens, and the image or line it ends on. The false trail collapses in the episode before the last; the last explains everything in order. '
                     .'In setting, also give the case\'s solution in one honest paragraph for the editor. '
                 : 'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
@@ -73,8 +73,8 @@ final class SerialWriter
             .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
             '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>'.($earlier !== '' ? "\n<earlier_cases_do_not_repeat>\n".e($earlier)."\n</earlier_cases_do_not_repeat>" : ''),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt', ...($case ? ['solution', 'clues'] : [])], 'properties' => ($case ? [
-                'solution' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['culprit', 'method', 'motive', 'proof'], 'properties' => [
-                    'culprit' => ['type' => 'string'], 'method' => ['type' => 'string'], 'motive' => ['type' => 'string'], 'proof' => ['type' => 'string', 'description' => 'What convicts them, and which clues it rests on']]],
+                'solution' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['culprit_name', 'culprit', 'method', 'motive', 'proof'], 'properties' => [
+                    'culprit_name' => ['type' => 'string', 'description' => 'Exactly the name of one of the characters you list, copied letter for letter'], 'culprit' => ['type' => 'string', 'description' => 'Who they are, in a line'], 'method' => ['type' => 'string'], 'motive' => ['type' => 'string'], 'proof' => ['type' => 'string', 'description' => 'What convicts them, and which clues it rests on']]],
                 'clues' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['clue', 'episode', 'written', 'means'], 'properties' => [
                     'clue' => ['type' => 'string', 'description' => 'What the reader is shown'], 'episode' => ['type' => 'integer'],
                     'written' => ['type' => 'boolean', 'description' => 'True when it comes from language, writing or print'], 'means' => ['type' => 'string', 'description' => 'What it proves, revealed only at the end']]]],
@@ -129,6 +129,7 @@ final class SerialWriter
             ."\n<plan>".e(collect($plan)->map(fn ($e, $i) => 'পর্ব '.($i + 1).' '.($e['title'] ?? '').': '.($e['beat'] ?? ''))->implode("\n")).'</plan>'
             // D212: the writer of a case always has the solution and the clues in front of it, so no episode can cheat
             .(! empty($serial->bible['solution']) ? "\n<solution_keep_secret_until_the_last_episode>".e(collect((array) $serial->bible['solution'])->map(fn ($v, $k) => $k.': '.$v)->implode("\n")).'</solution_keep_secret_until_the_last_episode>'
+                ."\nReaders are guessing who did it until the last episode: keep every listed person a live possibility until then, and in the last episode name the culprit by the exact name in culprit_name."
                 ."\n<clues>".e(collect((array) ($serial->bible['clues'] ?? []))->map(fn ($c) => 'পর্ব '.($c['episode'] ?? '?').': '.($c['clue'] ?? '').' (means, hidden until the end: '.($c['means'] ?? '').')')->implode("\n")).'</clues>'
                 ."\nIn this episode plant every clue assigned to episode {$n}, in a scene, plainly but without pointing at it; never reveal the culprit or what a clue means before the final episode; never contradict the solution." : '')
             ."\n<so_far>".e($story).'</so_far>'

@@ -87,9 +87,9 @@ class SerialsTest extends TestCase
             $this->assertStringContainsString($must, $brief);
         }
         $plan = fn (array $over = []) => array_merge(['title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা', 'logline' => 'একটা বইয়ের ষোলো পাতা ছাপার আগেই উধাও।', 'setting' => 'কলেজ স্ট্রিট, শীতকাল',
-            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা']],
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর']],
             'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা '.$i], range(1, 5)),
-            'solution' => ['culprit' => 'প্রকাশকের ভাই', 'method' => 'রাতে ফর্মা সরানো', 'motive' => 'দেনা', 'proof' => 'চিঠির বানান'],
+            'solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'প্রকাশকের ভাই', 'method' => 'রাতে ফর্মা সরানো', 'motive' => 'দেনা', 'proof' => 'চিঠির বানান'],
             'clues' => [['clue' => 'চিঠিতে "ষ্টেশন" বানান', 'episode' => 1, 'written' => true, 'means' => 'পুরনো ছাপার লোক'], ['clue' => 'ভেজা ছাতা', 'episode' => 2, 'written' => false, 'means' => 'রাতে বেরিয়েছিল'],
                 ['clue' => 'ক্ষয়ে যাওয়া "য়"', 'episode' => 4, 'written' => true, 'means' => 'কোন প্রেসের টাইপ']],
             'cover_prompt' => 'an old letterpress at night'], $over);
@@ -103,7 +103,8 @@ class SerialsTest extends TestCase
 
         // An unfair puzzle is never written: a clue that arrives in the last episode, or no solution, or no written clue.
         foreach ([['clues' => [['clue' => 'ক', 'episode' => 5, 'written' => true, 'means' => 'খ'], ['clue' => 'গ', 'episode' => 1, 'written' => false, 'means' => 'ঘ'], ['clue' => 'ঙ', 'episode' => 2, 'written' => false, 'means' => 'চ']]],
-            ['solution' => ['culprit' => 'ক', 'method' => '', 'motive' => 'গ', 'proof' => 'ঘ']],
+            ['solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'ক', 'method' => '', 'motive' => 'গ', 'proof' => 'ঘ']],
+            ['solution' => ['culprit_name' => 'হরিহরবাবু', 'culprit' => 'ক', 'method' => 'খ', 'motive' => 'গ', 'proof' => 'ঘ']],   // not one of the case's people
             ['clues' => array_map(fn ($c) => ['written' => false] + $c, $plan()['clues'])]] as $bad) {
             $give = $plan($bad);
             [$none, $why] = SerialWriter::start('serial_detective');
@@ -126,6 +127,37 @@ class SerialsTest extends TestCase
         $this->assertStringContainsString('<solution_keep_secret_until_the_last_episode>', $epAsk);
         $this->assertStringContainsString('চিঠিতে &quot;ষ্টেশন&quot; বানান', $epAsk);
         $this->assertStringContainsString('plant every clue assigned to episode 1', $epAsk);
+
+        // D213 (owner: "yes, I want reader guess"): readers name one of the case's people until the last episode is out.
+        $case->activate();
+        $first->forceFill(['status' => 'published', 'published_at' => now()->subDay(), 'slug' => 'pp-1'])->saveQuietly();
+        $case->refresh();
+        $this->assertSame(['নীলিমা সেন', 'অবনী দত্ত', 'সুধাময় কর'], \App\Support\CaseGuesses::suspects($case));
+        $this->get($case->url())->assertOk()->assertSee('কে করেছে বলে মনে হয়?')->assertSee('অনুমান পাঠাতে লগ ইন করুন')->assertDontSee('প্রকাশকের ভাই');
+        $right = \App\Models\User::factory()->create(['name' => 'Mita Sen']);
+        $shy = \App\Models\User::factory()->create(['name' => 'Rina Basu']);
+        $wrong = \App\Models\User::factory()->create(['name' => 'Amal Roy']);
+        $url = '/dharabahik/'.$case->id.'/guess/';
+        $this->post($url, ['suspect' => 'অবনী দত্ত'])->assertRedirect(url('/login'));
+        $this->actingAs($wrong)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '1']);
+        $this->actingAs($wrong)->post($url, ['suspect' => 'নীলিমা সেন', 'why' => 'ভেজা ছাতা', 'show_name' => '1'])->assertSessionHas('guess_status');
+        $this->actingAs($wrong)->post($url, ['suspect' => 'শশধর পাকড়াশী'])->assertSessionHas('guess_status', 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
+        $this->actingAs($right)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '1']);
+        $this->actingAs($shy)->post($url, ['suspect' => 'অবনী দত্ত', 'show_name' => '0']);
+        $this->assertSame(3, \Illuminate\Support\Facades\DB::table('case_guesses')->count(), 'One guess a reader; a second replaces the first');
+        $this->assertSame(['অবনী দত্ত' => 2, 'নীলিমা সেন' => 1], \App\Support\CaseGuesses::tally($case));
+        $this->actingAs($wrong)->get($case->url())->assertSee('আপনার এখনকার অনুমান: নীলিমা সেন')->assertDontSee('Mita Sen');
+        $this->assertNull(\App\Support\CaseGuesses::result($case), 'Nothing leaks before the end');
+        // The last episode comes out: guessing closes and the result shows.
+        $last = $this->makePost(['slug' => 'pp-5', 'title' => 'শেষ', 'status' => 'published', 'published_at' => now()]);
+        $last->forceFill(['serial_id' => $case->id, 'episode_no' => 5])->saveQuietly();
+        $this->assertFalse(\App\Support\CaseGuesses::open($case->fresh()));
+        $this->actingAs($right)->post($url, ['suspect' => 'নীলিমা সেন'])->assertSessionHas('guess_status', 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
+        $this->assertSame(['total' => 3, 'right' => 2, 'names' => ['Mita Sen']], \App\Support\CaseGuesses::result($case->fresh()));
+        $this->actingAs($wrong)->get($case->url())->assertSee('৩ জন অনুমান পাঠিয়েছিলেন। ঠিক ধরেছিলেন ২ জন।')->assertSee('Mita Sen')->assertDontSee('Rina Basu')->assertSee('আপনার অনুমান ছিল: নীলিমা সেন');
+        auth()->logout();
+        // An ordinary serial has no guessing.
+        $this->assertSame([], \App\Support\CaseGuesses::suspects(Serial::create(['title' => 'অন্য', 'writer' => 'serial_ghost', 'status' => 'active', 'slug' => 'onyo', 'bible' => ['characters' => [['name' => 'ক', 'role' => 'খ']]]])));
 
         // The solution is for the editor's eyes only.
         $this->get('/dharabahik/')->assertOk()->assertDontSee('প্রকাশকের ভাই');

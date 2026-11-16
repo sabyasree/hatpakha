@@ -105,6 +105,7 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 Route::get('/dharabahik', [\App\Http\Controllers\SerialController::class, 'index']);
 Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');
+Route::post('/dharabahik/{serial}/guess', [\App\Http\Controllers\SerialController::class, 'guess'])->whereNumber('serial')->middleware(['auth', 'throttle:20,1']);   // D213
 Route::get('/sonkolon', [\App\Http\Controllers\CollectionController::class, 'index']);
 Route::get('/sonkolon/{slug}', [\App\Http\Controllers\CollectionController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::get('/sonkolon/{slug}/boi', [\App\Http\Controllers\CollectionController::class, 'book'])->name('collection.book');   // বর্ষসেরা as a magazine (2026-11-12)

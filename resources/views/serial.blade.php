@@ -47,6 +47,7 @@
                 @endif
                 <p class="mt-3 font-bold text-ink2">পরের পর্ব আসবে {{ $serial->dayName() }}।</p>
             @endif
+            @include('case-guess', ['serial' => $serial])
             <x-ad-slot spot="list" :height="250" />
         @endif
     </article>
