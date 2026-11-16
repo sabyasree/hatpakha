@@ -64,6 +64,22 @@ class EditorJobsTest extends TestCase
         Livewire::test(\App\Filament\Pages\Dashboard::class)->callAction('approvePick', ['note' => 'এ সপ্তাহে না পড়লেই নয়'], arguments: ['task' => $task->id]);
         $this->assertSame($pick->id, json_decode(Setting::get('home.pick'), true)['post_id']);
         $this->get('/')->assertSee('এ সপ্তাহে না পড়লেই নয়')->assertSee('বাছাই করা কবিতা');
+
+        // Owner (2026-11-16): "if I drop it there is no place to see, and select another one."
+        $other = $this->makePost(['slug' => 'onyo-pochhondo', 'title' => 'আমার নিজের পছন্দ']);
+        $task2 = EditorJobs::picks(true);
+        $page = Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('প্রথম পাতায় সম্পাদকের পছন্দ')->assertSee('বাছাই করা কবিতা');
+        // In the AI's proposal itself another piece can be chosen.
+        $page->callAction('approvePick', ['post_id' => $other->id, 'note' => 'এটাই পড়ুন'], arguments: ['task' => $task2->id]);
+        $this->assertSame($other->id, json_decode(Setting::get('home.pick'), true)['post_id']);
+        // With no proposal waiting, the pick is still shown and can be changed or removed.
+        $this->assertSame(0, \App\Models\EditorTask::open('pick')->count());
+        $page = Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('আমার নিজের পছন্দ');
+        $page->callAction('changePick', ['post_id' => $pick->id, 'note' => 'ফিরে এল']);
+        $this->assertSame(['post_id' => $pick->id, 'note' => 'ফিরে এল'], json_decode(Setting::get('home.pick'), true));
+        $page->call('removePick');
+        $this->assertSame('', (string) Setting::get('home.pick'));
+        Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('এখন কোনো লেখা বসানো নেই।')->assertSee('একটি লেখা বেছে নিন');
     }
 
     public function test_monthly_report_and_site_health(): void

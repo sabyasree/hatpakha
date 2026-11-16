@@ -115,6 +115,22 @@
                 @endif
             </x-filament::section>
 
+            @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
+                {{-- Owner (2026-11-16): the editor's pick is always in sight and can be changed, whatever the AI proposed --}}
+                @php($nowPick = $this->currentPick())
+                <x-filament::section icon="heroicon-o-star" compact>
+                    <x-slot name="heading">{{ __('প্রথম পাতায় সম্পাদকের পছন্দ') }}</x-slot>
+                    <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between">
+                        <span>@if ($nowPick['post'])<a href="{{ $nowPick['post']->url() }}" target="_blank" rel="noopener" style="font-weight:700;text-decoration:underline">{{ $nowPick['post']->title }}</a>
+                            <span style="opacity:.75"> — {{ $nowPick['post']->authors->first()?->publicName() }}</span>
+                            @if ($nowPick['note'])<div style="opacity:.8">{{ $nowPick['note'] }}</div>@endif
+                            @else<span style="opacity:.75">{{ __('এখন কোনো লেখা বসানো নেই।') }}</span>@endif</span>
+                        <span style="display:flex;gap:.4rem">{{ $this->changePickAction }}
+                            @if ($nowPick['post'])<x-filament::button size="sm" color="gray" outlined wire:click="removePick" wire:confirm="{{ __('প্রথম পাতা থেকে সম্পাদকের পছন্দ সরাবেন?') }}">{{ __('সরান') }}</x-filament::button>@endif</span>
+                    </div>
+                </x-filament::section>
+            @endif
+
             @if ($t['tasks']->isNotEmpty())
                 {{-- The AI editor's other jobs (D48): nothing is sent or shown until you click. --}}
                 <x-filament::section id="tasks" icon="heroicon-o-briefcase" collapsible persist-collapsed collapse-id="hp-today-2">

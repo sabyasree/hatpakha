@@ -267,15 +267,69 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** Any published piece, found by typing part of its title. */
+    private static function pickSelect(): \Filament\Forms\Components\Select
+    {
+        return \Filament\Forms\Components\Select::make('post_id')->label(__('সম্পাদকের পছন্দের লেখা'))->required()->searchable()
+            ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.str_replace(['%', '_'], '', $search).'%')->latest('published_at')->limit(30)->get()
+                ->mapWithKeys(fn (Post $p) => [$p->id => $p->title.' — '.($p->authors->first()?->publicName() ?? '')])->all())
+            ->getOptionLabelUsing(fn ($value) => ($p = Post::find($value)) ? $p->title.' — '.($p->authors->first()?->publicName() ?? '') : null)
+            ->options(fn () => Post::published()->with('authors')->latest('published_at')->limit(30)->get()
+                ->mapWithKeys(fn (Post $p) => [$p->id => $p->title.' — '.($p->authors->first()?->publicName() ?? '')])->all());
+    }
+
+    /** What is on the home page now as the editor's pick. @return array{post: ?Post, note: ?string} */
+    public function currentPick(): array
+    {
+        $pick = json_decode((string) \App\Models\Setting::get('home.pick'), true) ?: [];
+
+        return ['post' => isset($pick['post_id']) ? Post::find($pick['post_id']) : null, 'note' => $pick['note'] ?? null];
+    }
+
+    /**
+     * Owner (2026-11-16: "editor's pick: the AI is selecting, but if I drop it there is no place to see, and select
+     * another one"): the pick can be seen and changed at any time, with or without a proposal from the AI.
+     */
+    public function changePickAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('changePick')->label(fn () => $this->currentPick()['post'] ? __('বদলান') : __('একটি লেখা বেছে নিন'))->icon('heroicon-o-star')->size('sm')->color('gray')
+            ->modalHeading(__('প্রথম পাতায় সম্পাদকের পছন্দ'))
+            ->fillForm(fn () => ['post_id' => $this->currentPick()['post']?->id, 'note' => $this->currentPick()['note']])
+            ->schema([
+                self::pickSelect()->helperText(__('প্রকাশিত যে-কোনো লেখা। নাম লিখে খুঁজুন।')),
+                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160)->helperText(__('এক লাইনে: কেন পড়বেন। ফাঁকা রাখলেও চলে।')),
+            ])
+            ->modalSubmitActionLabel(__('প্রথম পাতায় বসান'))
+            ->action(function (array $data) {
+                abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+                $post = Post::published()->findOrFail((int) $data['post_id']);
+                \App\Models\Setting::put('home.pick', json_encode(['post_id' => $post->id, 'note' => filled($data['note'] ?? null) ? strip_tags((string) $data['note']) : null], JSON_UNESCAPED_UNICODE));
+                \App\Models\AuditLog::record('home.pick_set', $post, ['by_hand' => true]);
+                \App\Models\EditorTask::open('pick')->get()->each->close('dismissed');   // the AI's waiting proposal is answered
+                Cache::forget('home:v2:'.now()->toDateString());
+                Notification::make()->title(__('প্রথম পাতায় বসানো হয়েছে'))->success()->send();
+            });
+    }
+
+    public function removePick(): void
+    {
+        abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+        \App\Models\Setting::put('home.pick', '');
+        \App\Models\AuditLog::record('home.pick_removed');
+        Cache::forget('home:v2:'.now()->toDateString());
+        Notification::make()->title(__('প্রথম পাতা থেকে সরানো হয়েছে'))->success()->send();
+    }
+
     /** Weekly picks: edit the note, then they go on the home page. */
     public function approvePickAction(): \Filament\Actions\Action
     {
         return \Filament\Actions\Action::make('approvePick')->label(__('অনুমোদন'))->icon('heroicon-o-check')->size('sm')
             ->modalHeading(__('সম্পাদকের পছন্দ ও এই দিনে'))
-            ->fillForm(fn (array $arguments) => ['note' => $this->task($arguments)->payload['note'] ?? ''])
+            ->fillForm(fn (array $arguments) => ['post_id' => $this->task($arguments)->payload['pick_id'] ?? null, 'note' => $this->task($arguments)->payload['note'] ?? ''])
             ->schema(fn (array $arguments) => [
-                \Filament\Forms\Components\Placeholder::make('pick')->label(__('এই সপ্তাহের পছন্দ'))->content($this->task($arguments)->title),
-                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160),
+                self::pickSelect()->helperText(__('এআই এটি বেছেছে। অন্য লেখা চাইলে এখানে নাম লিখে খুঁজে বেছে নিন।')),
+                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160)
+                    ->helperText(__('অন্য লেখা বাছলে এই লাইনটিও সেই লেখার মতো করে বদলে দিন।')),
                 \Filament\Forms\Components\Placeholder::make('otd')->label(__('এই দিনে (সাত দিন)'))->content(fn () => collect($this->task($arguments)->payload['on_this_day'] ?? [])
                     ->map(fn ($id, $date) => \App\Support\Bn::num($date).': '.(Post::find($id)?->title ?? '—'))->implode(' · ') ?: '—'),
             ])
@@ -283,7 +337,9 @@ class Dashboard extends BaseDashboard
             ->action(function (array $data, array $arguments) {
                 abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
                 $task = $this->task($arguments);
-                \App\Models\Setting::put('home.pick', json_encode(['post_id' => $task->payload['pick_id'], 'note' => $data['note'] ?? null], JSON_UNESCAPED_UNICODE));
+                $id = Post::published()->whereKey((int) ($data['post_id'] ?? 0))->value('id') ?? $task->payload['pick_id'];
+                \App\Models\Setting::put('home.pick', json_encode(['post_id' => $id, 'note' => $data['note'] ?? null], JSON_UNESCAPED_UNICODE));
+                \App\Models\AuditLog::record('home.pick_set', Post::find($id), ['ai_pick' => $task->payload['pick_id'], 'changed' => (int) $id !== (int) $task->payload['pick_id']]);
                 \App\Models\Setting::put('home.on_this_day', json_encode($task->payload['on_this_day'] ?? []));
                 Cache::forget('home:v2:'.now()->toDateString());
                 $task->close();
