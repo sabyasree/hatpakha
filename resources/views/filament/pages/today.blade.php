@@ -49,6 +49,16 @@
         <a class="hp-stat" href="#approvals"><span class="hp-muted">{{ __('আপনার অনুমোদনের অপেক্ষায়') }}</span><b>{{ Bn::num($approvals) }}</b></a>
         <a class="hp-stat" href="#comments"><span class="hp-muted">{{ __('মন্তব্য') }}</span><b>{{ Bn::num($t['commentsTotal']) }}</b></a>
         <a class="hp-stat" href="{{ $posts::getUrl('index', ['tab' => 'published']) }}"><span class="hp-muted">{{ __('এই সপ্তাহে প্রকাশিত') }}</span><b>{{ Bn::num($t['publishedWeek']) }}</b></a>
+        @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
+            {{-- D215: who is on the site now (Google Analytics realtime, the last half hour) --}}
+            @php($online = rescue(fn () => \App\Support\GoogleData::realtime(), [null, null], false))
+            @if ($online[0])
+                <div class="hp-stat" wire:poll.60s title="{{ collect($online[0]['pages'])->map(fn ($x) => $x['title'].' ('.$x['n'].')')->implode(' · ') }}">
+                    <span class="hp-muted">{{ __('এখন সাইটে (শেষ আধ ঘণ্টায়)') }}</span><b>{{ Bn::num((string) $online[0]['now']) }} <span style="font-size:1rem;font-weight:600">{{ __('জন') }}</span></b>
+                    @if ($online[0]['pages'])<span class="hp-muted" style="display:block;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $online[0]['pages'][0]['title'] }}</span>@endif
+                </div>
+            @endif
+        @endif
         <div class="hp-stat"><span class="hp-muted">{{ __('এআই সম্পাদক') }}</span><b style="font-size:1.25rem;margin-top:.45rem"><x-filament::badge :color="$aiState[1]" size="lg">{{ $aiState[0] }}</x-filament::badge></b></div>
     </div>
 
