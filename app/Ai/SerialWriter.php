@@ -31,6 +31,9 @@ final class SerialWriter
         'serial_detective' => [Casebook::GENRE, Casebook::BRIEF."\n\n".Casebook::THREAD],
     ];
 
+    /** How many times a detective case's plan is asked for before giving up (each time with the reason it was refused). */
+    public const PLAN_TRIES = 3;
+
     /** How a serial episode is written: literature first, and an ending that brings readers back. */
     private const CRAFT = 'You write for Hatpakha (হাতপাখা), a Bengali literary web magazine, a weekly serial (ধারাবাহিক) that readers follow episode by episode. '
         .Prompt::LITERARY.' '
@@ -63,7 +66,7 @@ final class SerialWriter
         $steps = $case ? Serial::where('writer', $writer)->whereIn('status', ['active', 'finished', 'paused'])->oldest('id')->get()
             ->map(fn (Serial $s) => trim((string) ($s->bible['thread']['step'] ?? '')))->filter()->values()->map(fn ($t, $i) => 'case '.($i + 1).': '.$t)->implode("\n") : '';
         $earlier = $case ? Serial::where('writer', $writer)->where('status', '!=', 'dropped')->oldest('id')->get()->map(fn (Serial $s) => '- '.$s->title.': '.$s->logline.' ['.(string) ($s->bible['solution']['method'] ?? '').']')->implode("\n") : '';
-        [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
+        $plan = fn (string $note = '') => Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
             .($case
                 ? 'Plan this whole case (do not write any episode yet). FIRST decide the solution: who did it, exactly how, why, and the proof that convicts them; then the clues, each one a concrete thing the reader is shown, with the episode it appears in (never the last) and whether it comes from language, writing or print (at least one must, and the turning clue must). '
                     .'Then: a title for the case alone that makes people curious (short, Bengali; never the series name, never the detective\'s name), a logline of one or two lines that sells the puzzle without giving it away, '
@@ -76,7 +79,8 @@ final class SerialWriter
             .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
             '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>'.($earlier !== '' ? "\n<earlier_cases_do_not_repeat>\n".e($earlier)."\n</earlier_cases_do_not_repeat>" : '')
                 .($case ? "\n<long_thread_steps_so_far>\n".e($steps !== '' ? $steps : 'None yet: this case takes the first step (the reader, with বিশু, first learns that the galley and the old matter exist).')."\n</long_thread_steps_so_far>" : '')
-                .\App\Support\SerialSignals::forPlan($writer),   // D215: how readers took this writer's earlier serials
+                .\App\Support\SerialSignals::forPlan($writer)   // D215: how readers took this writer's earlier serials
+                .$note,
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt', ...($case ? ['solution', 'clues', 'thread'] : [])], 'properties' => ($case ? [
                 'thread' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode', 'step'], 'properties' => [
                     'episode' => ['type' => 'integer', 'description' => 'A middle episode: never the first, never the last'], 'step' => ['type' => 'string', 'description' => 'The one small step, in two or three lines']]],
@@ -93,6 +97,14 @@ final class SerialWriter
                     'title' => ['type' => 'string'], 'beat' => ['type' => 'string']]]],
                 'cover_prompt' => ['type' => 'string'],
             ]], (string) config('ai.anthropic.writer_model'), $case ? 40000 : 32000);   // thinking counts toward the limit (always on); a case plan carries its solution and clues too
+        [$d, $err] = $plan();
+        // D220: a refused plan is sent back with the reason, twice at most, before giving up (a refused first plan left
+        // the owner with no case at all: "merged, but not able to see the new one").
+        for ($try = 1; $case && is_array($d) && ! empty($d['episodes']) && ($why = Casebook::unfair($d)) && $try < self::PLAN_TRIES; $try++) {
+            [$d, $err] = $plan("\n<previous_plan_refused>The plan you gave was refused by the editor's checks for this reason (in Bengali): ".e($why)
+                .' Give the whole plan again with exactly that put right, and check the other rules too: '.Casebook::EPISODES[0].' to '.Casebook::EPISODES[1].' episodes each with three or four lines; at least '.Casebook::CLUES
+                .' clues, each in an episode before the last and none of four episodes in a row without one; at least one clue with written = true; at least four people; culprit_name copied exactly from one of their names; the thread step in a middle episode.</previous_plan_refused>');
+        }
         if (! is_array($d) || empty($d['episodes'])) {
             return [null, $err ?: 'পরিকল্পনা তৈরি হয়নি।'];
         }

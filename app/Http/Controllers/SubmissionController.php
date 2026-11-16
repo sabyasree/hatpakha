@@ -90,7 +90,7 @@ class SubmissionController extends Controller
     public function withdraw(Request $request, Post $post)
     {
         $this->authorizeOwn($request, $post);
-        abort_unless(in_array($post->status, self::TAKE_BACK, true), 403, 'প্রকাশিত লেখা এখান থেকে বদলানো যায় না।');
+        abort_unless(in_array($post->status, self::TAKE_BACK, true) && ! $post->isLive(), 403, 'প্রকাশিত লেখা এখান থেকে বদলানো যায় না।');   // a piece whose day has come is out, whatever its status word says
         $was = $post->status;
         // What the desk had seen is kept in the history; the editor's planned date and waiting word changes no longer apply.
         \App\Models\PostVersion::snap($post, 'withdrawn', null, $request->user()->id);
