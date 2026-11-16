@@ -59,7 +59,7 @@ class EditPost extends EditRecord
             // D208: a strong piece is selected by itself after a day; this keeps it for the owner
             Action::make('stopAuto')->label(fn (Post $record) => __('নিজে থেকে প্রকাশ থামান').' ('.\App\Support\Bn::num($record->auto_publish_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')).')')
                 ->icon('heroicon-o-hand-raised')->color('danger')->outlined()
-                ->visible(fn (Post $record) => $record->status === 'pending' && $record->auto_publish_at !== null)
+                ->visible(fn (Post $record) => in_array($record->status, ['pending', 'draft'], true) && $record->auto_publish_at !== null)
                 ->action(function (Post $record) {
                     \App\Support\Handover::stop($record);
                     \Filament\Notifications\Notification::make()->title(__('এই লেখা নিজে থেকে প্রকাশ হবে না; আপনি দেখে ঠিক করবেন'))->success()->send();

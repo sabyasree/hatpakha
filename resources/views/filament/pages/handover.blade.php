@@ -6,6 +6,7 @@
     $box = 'border:1px solid rgba(127,127,127,.25);border-radius:1rem;padding:1rem 1.1rem';
     $did = ['handover.fixes' => __('ছোট সংশোধন বসানো হলো'), 'handover.cover' => __('প্রচ্ছদের ছবি বসানো হলো'), 'handover.comment' => __('মন্তব্য প্রকাশ হলো'),
         'handover.letter' => __('পাঠকদের চিঠি পাঠানো শুরু হলো'), 'handover.monthly' => __('মাসের ছোট কাজ হলো'), 'handover.published' => __('লেখা মনোনীত হলো'),
+        'handover.episode' => __('গোয়েন্দা সিরিজের পর্ব প্রকাশের দিন পেল'), 'handover.case_planned' => __('পরের কেসের পরিকল্পনা তৈরি হলো'), 'handover.case_finished' => __('একটি কেস শেষ হলো'),
         'handover.publish_stopped' => __('আপনি একটি লেখা থামালেন'), 'handover.letter_stopped' => __('আপনি চিঠি থামালেন'), 'handover.switch' => __('সুইচ বদলানো হলো')];
 @endphp
 <x-filament-panels::page>

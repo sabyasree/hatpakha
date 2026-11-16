@@ -75,13 +75,13 @@ class HandoverPage extends Page
 
         return [
             'jobs' => collect(Handover::JOBS)->map(fn ($j, $k) => ['name' => $j[0], 'what' => $j[1], 'on' => Handover::on($k)])->all(),
-            'going' => $pending->filter(fn (Post $p) => $p->auto_publish_at)->sortBy('auto_publish_at')->values(),
+            'going' => $pending->filter(fn (Post $p) => $p->auto_publish_at)->concat(Post::where('status', 'draft')->whereNotNull('auto_publish_at')->whereNotNull('serial_id')->with('authors')->get())->sortBy('auto_publish_at')->values(),
             'held' => Handover::on('publish') ? $pending->reject(fn (Post $p) => $p->auto_publish_at)
                 ->map(fn (Post $p) => ['post' => $p, 'why' => rescue(fn () => Handover::hold($p), __('দেখা যায়নি'), false)])->filter(fn ($r) => $r['why'] !== null)->values() : collect(),
             'ranAt' => rescue(fn () => ($t = \App\Models\Setting::get('handover.ran_at')) ? \Illuminate\Support\Carbon::parse($t) : null, null, false),
             'flags' => \App\Models\EditorTask::where('type', 'alert')->where('status', 'open')->where('key', 'like', 'handover.%')->get(),
             'letters' => Newsletter::where('status', 'draft')->whereNotNull('auto_send_at')->orderBy('auto_send_at')->get(),
-            'log' => AuditLog::where('action', 'like', 'handover.%')->where('action', '!=', 'handover.publish_planned')->latest('id')->limit(40)->get(),
+            'log' => AuditLog::where('action', 'like', 'handover.%')->whereNotIn('action', ['handover.publish_planned', 'handover.episode_checked'])->latest('id')->limit(40)->get(),
         ];
     }
 }

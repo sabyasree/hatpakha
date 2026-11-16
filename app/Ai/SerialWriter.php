@@ -151,7 +151,9 @@ final class SerialWriter
         $done = 0;
         // Only the desk's own serials: a writer's serial is written by the writer alone (D193).
         foreach (Serial::where('status', 'active')->whereNull('user_id')->get() as $s) {
-            if (! $s->episodes()->whereIn('status', ['draft', 'pending', 'scheduled'])->exists()) {
+            // "Unpublished" means not yet out: an episode given a date keeps the word "scheduled" after its day has come
+            // (D214: the next episode was never written once one had been given a future date).
+            if (! $s->episodes()->where(fn ($q) => $q->whereIn('status', ['draft', 'pending'])->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '>', now())))->exists()) {
                 [$p] = self::next($s);
                 $done += $p ? 1 : 0;
             }
