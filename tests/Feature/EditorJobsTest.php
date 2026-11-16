@@ -75,6 +75,10 @@ class EditorJobsTest extends TestCase
         // With no proposal waiting, the pick is still shown and can be changed or removed.
         $this->assertSame(0, \App\Models\EditorTask::open('pick')->count());
         $page = Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('আমার নিজের পছন্দ');
+        // Choosing a piece fills the note with that piece's own teaser; a typed note still wins.
+        $other->forceFill(['excerpt' => 'ছাদের ঘরে একটা পুরনো ট্রাঙ্ক, আর তার ভেতরে চিঠি।'])->saveQuietly();
+        $this->assertSame('ছাদের ঘরে একটা পুরনো ট্রাঙ্ক, আর তার ভেতরে চিঠি।', \App\Filament\Pages\Dashboard::pickNote($other->id));
+        $page->mountAction('changePick')->fillForm(['post_id' => $other->id])->assertSchemaStateSet(['note' => 'ছাদের ঘরে একটা পুরনো ট্রাঙ্ক, আর তার ভেতরে চিঠি।'])->unmountAction();
         $page->callAction('changePick', ['post_id' => $pick->id, 'note' => 'ফিরে এল']);
         $this->assertSame(['post_id' => $pick->id, 'note' => 'ফিরে এল'], json_decode(Setting::get('home.pick'), true));
         $page->call('removePick');

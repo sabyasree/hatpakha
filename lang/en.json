@@ -1,4 +1,6 @@
 {
+    "অন্য লেখা বাছলে সেই লেখার ছোট পরিচয় এখানে নিজে থেকে বসে। চাইলে বদলে নিন।": "When you pick another piece, its short teaser is filled in here by itself. Change it if you like.",
+    "লেখা বাছলে তার ছোট পরিচয় এখানে নিজে থেকে বসে। চাইলে বদলে নিন; ফাঁকা রাখলেও চলে।": "When you pick a piece, its short teaser is filled in here by itself. Change it if you like; it may be left empty.",
     "এআই এটি বেছেছে। অন্য লেখা চাইলে এখানে নাম লিখে খুঁজে বেছে নিন।": "The AI chose this one. For another piece, type its name here and pick it.",
     "অন্য লেখা বাছলে এই লাইনটিও সেই লেখার মতো করে বদলে দিন।": "If you pick another piece, change this line to suit it.",
     "সম্পাদকের পছন্দের লেখা": "The editor's pick",

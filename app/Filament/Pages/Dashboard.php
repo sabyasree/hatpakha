@@ -271,11 +271,25 @@ class Dashboard extends BaseDashboard
     private static function pickSelect(): \Filament\Forms\Components\Select
     {
         return \Filament\Forms\Components\Select::make('post_id')->label(__('সম্পাদকের পছন্দের লেখা'))->required()->searchable()
+            // Owner (2026-11-16): "when I change the post, the short note for the home page is not changing."
+            ->live()->afterStateUpdated(fn ($state, $set) => $set('note', self::pickNote((int) $state)))
             ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.str_replace(['%', '_'], '', $search).'%')->latest('published_at')->limit(30)->get()
                 ->mapWithKeys(fn (Post $p) => [$p->id => $p->title.' — '.($p->authors->first()?->publicName() ?? '')])->all())
             ->getOptionLabelUsing(fn ($value) => ($p = Post::find($value)) ? $p->title.' — '.($p->authors->first()?->publicName() ?? '') : null)
             ->options(fn () => Post::published()->with('authors')->latest('published_at')->limit(30)->get()
                 ->mapWithKeys(fn (Post $p) => [$p->id => $p->title.' — '.($p->authors->first()?->publicName() ?? '')])->all());
+    }
+
+    /**
+     * The one-line note for a piece chosen by hand: the teaser already written for that piece (the AI editor writes one
+     * with every report), so it appears at once and costs nothing. The owner can still change it.
+     */
+    public static function pickNote(int $postId): string
+    {
+        $p = Post::with('latestAiReview')->find($postId);
+        $line = trim(strip_tags((string) ($p?->excerpt ?: ($p?->latestAiReview?->report['excerpt'] ?? ''))));
+
+        return mb_strlen($line) > 160 ? rtrim(mb_substr($line, 0, 157)).'…' : $line;
     }
 
     /** What is on the home page now as the editor's pick. @return array{post: ?Post, note: ?string} */
@@ -297,7 +311,7 @@ class Dashboard extends BaseDashboard
             ->fillForm(fn () => ['post_id' => $this->currentPick()['post']?->id, 'note' => $this->currentPick()['note']])
             ->schema([
                 self::pickSelect()->helperText(__('প্রকাশিত যে-কোনো লেখা। নাম লিখে খুঁজুন।')),
-                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160)->helperText(__('এক লাইনে: কেন পড়বেন। ফাঁকা রাখলেও চলে।')),
+                \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160)->helperText(__('লেখা বাছলে তার ছোট পরিচয় এখানে নিজে থেকে বসে। চাইলে বদলে নিন; ফাঁকা রাখলেও চলে।')),
             ])
             ->modalSubmitActionLabel(__('প্রথম পাতায় বসান'))
             ->action(function (array $data) {
@@ -329,7 +343,7 @@ class Dashboard extends BaseDashboard
             ->schema(fn (array $arguments) => [
                 self::pickSelect()->helperText(__('এআই এটি বেছেছে। অন্য লেখা চাইলে এখানে নাম লিখে খুঁজে বেছে নিন।')),
                 \Filament\Forms\Components\TextInput::make('note')->label(__('প্রথম পাতার ছোট লেখা'))->maxLength(160)
-                    ->helperText(__('অন্য লেখা বাছলে এই লাইনটিও সেই লেখার মতো করে বদলে দিন।')),
+                    ->helperText(__('অন্য লেখা বাছলে সেই লেখার ছোট পরিচয় এখানে নিজে থেকে বসে। চাইলে বদলে নিন।')),
                 \Filament\Forms\Components\Placeholder::make('otd')->label(__('এই দিনে (সাত দিন)'))->content(fn () => collect($this->task($arguments)->payload['on_this_day'] ?? [])
                     ->map(fn ($id, $date) => \App\Support\Bn::num($date).': '.(Post::find($id)?->title ?? '—'))->implode(' · ') ?: '—'),
             ])
