@@ -337,7 +337,12 @@ class HandoverTest extends TestCase
                 : ['episode' => ['title' => 'উধাও', 'paragraphs' => [str_repeat('বিকেলে প্রেসে ঢুকেই বুঝলাম কিছু একটা হয়েছে। ', 60)], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => '', 'teaser' => 'একটা বানান মিলছে না।']];
         };
         try {
-            [$case] = \App\Ai\SerialWriter::start('serial_detective');
+            // The series begins by itself: with no case at all, the first one is planned.
+            $this->assertSame(1, Handover::cases());
+            $case = \App\Models\Serial::where('writer', 'serial_detective')->firstOrFail();
+            $this->assertSame('proposed', $case->status);
+            $this->assertTrue(\App\Models\EditorTask::where('key', 'handover.case_waiting')->where('status', 'open')->exists(), 'The owner is told at once that a case waits to be read');
+            $this->assertSame(0, Handover::cases(), 'Not a second one');
             $ep1 = $case->episodes()->first();
 
             // Not started by the owner: nothing of it goes out, however long it waits.
@@ -346,9 +351,14 @@ class HandoverTest extends TestCase
             $this->assertSame('draft', $ep1->fresh()->status);
             $this->assertTrue(\App\Models\EditorTask::where('key', 'handover.case_waiting')->where('status', 'open')->exists(), 'The owner is reminded that a case waits to be read');
 
-            // The owner reads the solution and publishes episode one: the case is running.
-            $ep1->forceFill(['status' => 'published', 'published_at' => now(), 'slug' => 'pp-1'])->save();
-            $this->assertSame('active', $case->fresh()->status);
+            // The owner reads the solution and presses one button: episode one gets its Saturday and the case is running.
+            $at = Handover::startCase($case->fresh(), $this->owner);
+            $this->assertSame([Carbon::SATURDAY, '09:00'], [$at->copy()->timezone('Asia/Kolkata')->dayOfWeek, $at->copy()->timezone('Asia/Kolkata')->format('H:i')]);
+            $this->assertSame(['scheduled', 'active'], [$ep1->fresh()->status, $case->fresh()->status]);
+            $this->assertNull(Handover::startCase($case->fresh(), $this->owner), 'Once');
+            Handover::cases();
+            $this->assertFalse(\App\Models\EditorTask::where('key', 'handover.case_waiting')->where('status', 'open')->exists());
+            Carbon::setTestNow($at->copy()->addHour());
             \App\Ai\SerialWriter::keepAhead();
             $ep2 = $case->episodes()->where('episode_no', 2)->firstOrFail();
             $this->assertSame(0, Handover::cases(), 'A day in the desk first');
