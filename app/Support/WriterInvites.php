@@ -81,6 +81,8 @@ final class WriterInvites
             ->where('published_count', '>=', 1)
             ->whereHas('user', fn ($u) => $u->whereNotNull('email')->where('mail_opt_out', false)->whereNull('spam_reason'))
             ->whereNotIn('id', WriterInvite::select('author_id'))
+            // One letter a person, however many writer profiles they have (owner, 2026-11-16: "many e-mails to the same user").
+            ->whereNotIn('user_id', WriterInvite::whereNotNull('user_id')->select('user_id'))
             ->withMax(['posts as last_published' => fn ($q) => $q->where('status', 'published')], 'published_at')
             ->orderByRaw('quality_score is null, quality_score desc')->orderByDesc('last_published');
     }
@@ -101,7 +103,12 @@ final class WriterInvites
             return 0;
         }
         $n = 0;
-        foreach (self::eligible()->with('user')->limit($max)->get() as $author) {
+        $people = [];
+        foreach (self::eligible()->with('user')->limit($max * 3)->get() as $author) {
+            if (isset($people[$author->user_id]) || $n >= $max) {
+                continue;   // a second profile of someone written to a moment ago
+            }
+            $people[$author->user_id] = true;
             $letter = self::write($author);
             if (! $letter) {
                 break;   // the AI is resting or over budget: try again later, same writers
@@ -225,6 +232,11 @@ final class WriterInvites
 
                 continue;
             }
+            if (WriterInvite::where('user_id', $inv->user_id)->where('status', 'sent')->exists()) {
+                $inv->forceFill(['status' => 'held'])->save();   // this person already has their letter
+
+                continue;
+            }
             $ok = rescue(function () use ($inv, $user) {
                 $user->notify(new WriterInviteLetter($inv));
 
@@ -251,7 +263,10 @@ final class WriterInvites
         foreach (WriterInvite::with('user')->where('status', 'sent')->whereNull('answer')->whereNull('piece_id')->whereNull('reminded_at')
             ->where('sent_at', '<=', now()->subDays(self::REMIND_AFTER_DAYS))->limit(self::PER_HOUR)->get() as $inv) {
             $inv->forceFill(['reminded_at' => now()])->save();
-            if ($inv->user && ! $inv->user->mail_opt_out) {
+            // One reminder a person: none if any letter of theirs was answered, brought a piece, or was already reminded.
+            $already = WriterInvite::where('user_id', $inv->user_id)->where('id', '!=', $inv->id)
+                ->where(fn ($q) => $q->whereNotNull('reminded_at')->orWhereNotNull('answer')->orWhereNotNull('piece_id'))->exists();
+            if ($inv->user && ! $inv->user->mail_opt_out && ! $already) {
                 $n += (int) rescue(function () use ($inv) {
                     $inv->user->notify(new WriterInviteLetter($inv, reminder: true));
 

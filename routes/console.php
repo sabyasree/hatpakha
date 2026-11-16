@@ -104,3 +104,6 @@ Schedule::call(function () {
 // D208 (owner: "do all these"): the jobs handed to the AI team (small fixes, covers, clear comments, the readers'
 // letter, small monthly items, strong pieces). Each has its own switch in /desk → নিজে থেকে চলা কাজ.
 Schedule::call(fn () => \App\Support\Handover::run())->name('handed-over jobs')->everyTenMinutes()->withoutOverlapping(20);
+
+// D217 (owner: "yes, add daily comment email for writers"): one e-mail a day to a writer whose pieces got new comments.
+Schedule::call(fn () => \App\Support\CommentNews::send())->name('comments told to writers')->dailyAt('18:40')->timezone('Asia/Kolkata');

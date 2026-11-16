@@ -409,7 +409,9 @@ final class Handover
                 $n += (int) self::planNextCase();
             }
         }
-        if (! $series()->whereIn('status', ['active', 'proposed'])->exists() && $series()->where('status', 'finished')->exists()) {
+        // No case running or waiting: plan one. This also begins the series the first time (owner, 2026-11-16: "don't
+        // know how to start, and when the detective series will start").
+        if (! $series()->whereIn('status', ['active', 'proposed', 'paused'])->exists()) {
             $n += (int) self::planNextCase();
         }
         // An episode the owner has dealt with by hand no longer needs its flag.
@@ -418,14 +420,17 @@ final class Handover
                 $flag->close('dismissed');
             }
         }
-        $waiting = $series()->where('status', 'proposed')->where('created_at', '<', now()->subDays(2))->pluck('title')->all();
-        self::flag('case_waiting', $waiting ? __('নতুন কেস আপনার অপেক্ষায়: ডেস্ক → ধারাবাহিক-এ খুলে সমাধান পড়ুন, তারপর প্রথম পর্ব প্রকাশ করুন') : null, $waiting);
+        $waiting = $series()->where('status', 'proposed')->whereHas('episodes')->pluck('title')->all();
+        self::flag('case_waiting', $waiting ? __('গোয়েন্দা সিরিজের নতুন কেস তৈরি: ডেস্ক → ধারাবাহিক-এ খুলে লাল বাক্সে সমাধান পড়ুন, তারপর "সমাধান পড়েছি, কেস শুরু করুন" টিপুন') : null, $waiting);
 
         return $n;
     }
 
     private static function planNextCase(): bool
     {
+        if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || \App\Ai\AiSwitch::paused()) {
+            return false;   // the AI is off or resting: nothing to try, nothing to warn about
+        }
         $today = now('Asia/Kolkata')->toDateString();
         if (Setting::get('handover.case_tried') === $today) {
             return false;   // one try a day: a plan is a long, costly piece of writing
@@ -456,6 +461,28 @@ final class Handover
     }
 
     /** The serial's weekday at 9am Kolkata: the next one, and never less than a week after the episode before. */
+    /**
+     * The owner has read the solution: the case starts. Its first episode gets the serial's next day at 9am Kolkata
+     * (with its picture), and from then on the episodes go by themselves.
+     */
+    public static function startCase(\App\Models\Serial $case, User $by): ?\Illuminate\Support\Carbon
+    {
+        $first = $case->episodes()->where('status', 'draft')->orderBy('episode_no')->first();
+        if ($case->status !== 'proposed' || ! $first) {
+            return null;
+        }
+        $at = self::episodeDay($case);
+        if ($first->proposed_image_path && ! $first->featured_image_path) {
+            CoverImage::acceptProposed($first);
+        }
+        $first->forceFill(['slug' => str_starts_with((string) $first->slug, 'desk-') ? Review::uniqueSlug(Transliterate::slug($first->title) ?: 'lekha-'.$first->id, $first->id) : $first->slug,
+            'status' => 'scheduled', 'published_at' => $at, 'reviewed_by' => $by->id, 'reviewed_at' => now(), 'auto_publish_at' => null])->save();   // the Post model starts the serial
+        EditorTask::where('type', 'serial_episode')->where('status', 'open')->where('subject_id', $first->id)->get()->each->close();
+        AuditLog::record('handover.case_started', $first, ['serial' => $case->id, 'at' => $at->toIso8601String(), 'by' => $by->id]);
+
+        return $at;
+    }
+
     private static function episodeDay(\App\Models\Serial $case): \Illuminate\Support\Carbon
     {
         $tz = 'Asia/Kolkata';

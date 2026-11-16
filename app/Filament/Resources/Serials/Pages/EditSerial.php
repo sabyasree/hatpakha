@@ -22,6 +22,17 @@ class EditSerial extends EditRecord
                     SerialResource::start($this->record);
                     Notification::make()->title(__('ধারাবাহিক চালু হয়েছে'))->success()->send();
                 }),
+            // D214: one button for a detective case: the owner has read the solution, the rest runs itself
+            Action::make('startCase')->label(__('সমাধান পড়েছি, কেস শুরু করুন'))->icon('heroicon-o-play')->color('success')
+                ->visible(fn () => $this->record->writer === 'serial_detective' && $this->record->status === 'proposed' && $this->record->episodes()->where('status', 'draft')->exists())
+                ->requiresConfirmation()->modalHeading(__('কেস শুরু করবেন?'))
+                ->modalDescription(__('প্রথম পর্ব পরের শনিবার সকাল ৯টায় (ভারতীয় সময়) প্রকাশ হবে। তারপর প্রতি সপ্তাহে একটি করে পর্ব যাচাই হয়ে নিজে থেকে প্রকাশ হবে। যেকোনো পর্ব আপনি থামাতে পারবেন।'))
+                ->action(function () {
+                    $at = \App\Support\Handover::startCase($this->record, auth()->user());
+                    $at ? Notification::make()->title(__('কেস শুরু হল। প্রথম পর্ব প্রকাশ হবে: ').\App\Support\Bn::num($at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')))->success()->send()
+                        : Notification::make()->title(__('শুরু করা গেল না: প্রথম পর্বের খসড়া নেই'))->warning()->send();
+                    $this->redirect(SerialResource::getUrl('edit', ['record' => $this->record]));
+                }),
             Action::make('next')->label(__('পরের পর্ব লেখান'))->icon('heroicon-o-pencil-square')->color('gray')
                 ->visible(fn () => in_array($this->record->status, ['proposed', 'active'], true) && $this->record->writer)
                 ->action(function () {
