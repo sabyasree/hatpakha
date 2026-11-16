@@ -15,11 +15,14 @@ final class Casebook
 
     public const GENRE = 'গোয়েন্দা';
 
-    /** One case: this many weekly episodes (owner, 2026-11-16: "minimum 15; more is good"). */
-    public const EPISODES = [15, 18];
+    /**
+     * One case: this many weekly episodes. Owner, 2026-11-16: first "minimum 15", then, shown the trade-offs, "will go
+     * for 8 to 10 for now; if readers show interest, then will move to more". To lengthen later, change these two numbers.
+     */
+    public const EPISODES = [8, 10];
 
-    /** A long case needs this many clues, and never this many episodes in a row without one. */
-    public const CLUES = 7;
+    /** A case needs this many clues, and never this many episodes in a row without one. */
+    public const CLUES = 5;
 
     public const GAP = 4;
 
@@ -39,7 +42,7 @@ final class Casebook
         ."\n2. The reader should be able to say, at the end, \"it was there and I missed it\". Give at least two people a real reason to be suspected and one honest false trail that the clues themselves later disprove."
         ."\n3. The crimes are human-sized and of their time and place: a forged will, a vanished manuscript, blackmail, a theft made to look like something else, a death that may not be an accident. No gore, no serial killers, no cruelty shown for its own sake, nothing about real people, real crimes, real families or real presses."
         ."\n4. Each case is new: a different kind of crime, a different corner of the city or a district, a different kind of written clue, a different sort of culprit. Never repeat the trick of an earlier case."
-        ."\n5. A case runs for fifteen weekly episodes or more, so it is a short novel, and EVERY episode must earn its week. No episode may only talk over what is already known. In each one, three things happen: something is found out (a clue, a lie caught, a fact that changes the picture); the suspicion moves (toward someone, or off someone, for a reason shown); and it ends on a hook the next episode must answer. Build it in movements: episodes 1-3 the puzzle and the people; by episode 4 or 5 a second event that makes the first one worse or stranger (another letter, a second theft, a death); around the middle a reversal that proves what everyone believed was wrong; in the last third the danger comes close to বিশু or the old man and a second, separate false solution is believed and then broken; the last two episodes are the trap and the explanation. Run two or three smaller mysteries beside the main one (who sent the letter, where the money went, what a witness is hiding) and solve one of them every three or four episodes, so the reader is rewarded all along; each of those answers must also be a step toward the main solution. Vary the episodes: a chase by bicycle, a quiet evening over a proof, a visit to a district town, a scene in the thana, a night of load-shedding. Give the suspects lives the reader cares about, so that suspecting them hurts."
+        ."\n5. A case runs for eight to ten weekly episodes, and EVERY episode must earn its week. No episode may only talk over what is already known. In each one, three things happen: something is found out (a clue, a lie caught, a fact that changes the picture); the suspicion moves (toward someone, or off someone, for a reason shown); and it ends on a hook the next episode must answer. Build it in movements: the first two episodes set the puzzle and the people; by episode 3 or 4 a second event makes the first one worse or stranger (another letter, a second theft, a death); around the middle a reversal proves what everyone believed was wrong; after it the danger comes close to বিশু or the old man and a false solution is believed and then broken; the last two episodes are the trap and the explanation. Run one or two smaller mysteries beside the main one (who sent the letter, where the money went, what a witness is hiding) and solve one of them along the way, so the reader is rewarded before the end; each of those answers must also be a step toward the main solution. Vary the episodes: a chase by bicycle, a quiet evening over a proof, a visit to a district town, a scene in the thana, a night of load-shedding. Give the suspects lives the reader cares about, so that suspecting them hurts."
         ."\n6. The pleasure is the two of them: the old man's patience and the boy's impatience, the small comedy of the press, tea, and Kolkata of that time. Let the city be a character. The last episode explains everything in order, at the proofs table, and ends on a quiet human note, not on the arrest.";
 
     /**
@@ -80,14 +83,24 @@ final class Casebook
         return array_slice($problems, 0, 8);
     }
 
+    /**
+     * D219 (owner: "8 to 10, plus the thread running across cases"): one old, unsolved matter of the detective's own that
+     * moves forward by one small step in every case, so a reader who finishes a case has a reason to begin the next.
+     * The truth is fixed here so the steps never contradict each other; it is not resolved until the owner says so.
+     */
+    public const THREAD = 'THE LONG THREAD (runs across all cases; never solved inside a case):'
+        ."\nIn 1952, when পাকড়াশীমশাই was a young proofreader at another press, নবপত্র প্রেস (long since closed), he passed the final proofs of the first book of poems by his closest friend, the poet রমাপতি ভৌমিক. When the book came out, one poem in it was not রমাপতি's: it was a poem by an older, well-known poet. রমাপতি was called a thief in print, lost his job at a school, left Kolkata within the month and was never heard of again. পাকড়াশীমশাই has believed for twenty-five years that the mistake may have been his. He keeps the galley proof of that forme folded in a dictionary: on it, one correction is in a hand that is not his and not রমাপতি's. He has never found whose. He does not speak of it; বিশু learns of it only in pieces."
+        ."\nThe truth, known to you and to nobody in the story yet: the forme was changed on purpose, after the final proof, on the night before printing, by someone at নবপত্র প্রেস who wanted রমাপতি ruined; the mistake was never পাকড়াশীমশাই's; and রমাপতি is alive, in a district town, writing under another name. Do not reveal who did it or where রমাপতি is: the editor will say when the thread may end."
+        ."\nIn every case exactly ONE short scene, in one middle episode, moves this thread by one small, concrete step that comes naturally out of the case's own events: an old compositor who remembers that night, a worn letter of type that matches the galley, a book in a district library with a familiar turn of phrase, a name in an old ledger. It never helps or hinders the solving of the case, never takes more than a scene, and always leaves a new small question. Never repeat a step already taken, never contradict one, never undo one.";
+
     /** What a plan must hold before any episode is written; null when it is fair. */
     public static function unfair(array $plan): ?string
     {
         $episodes = count((array) ($plan['episodes'] ?? []));
         $s = (array) ($plan['solution'] ?? []);
         $clues = array_values((array) ($plan['clues'] ?? []));
-        if ($episodes < self::EPISODES[0] || $episodes > self::EPISODES[1] + 4) {
-            return 'একটি কেসে অন্তত পনেরোটি পর্ব থাকতে হবে।';
+        if ($episodes < self::EPISODES[0] || $episodes > self::EPISODES[1] + 2) {
+            return 'একটি কেস আট থেকে দশ পর্বের হতে হবে।';
         }
         foreach ((array) $plan['episodes'] as $e) {
             if (mb_strlen(trim((string) ($e['beat'] ?? ''))) < 40) {
@@ -108,7 +121,7 @@ final class Casebook
             }
         }
         if (count($clues) < self::CLUES) {
-            return 'পনেরো পর্বের কেসে অন্তত সাতটি সূত্র থাকতে হবে।';
+            return 'একটি কেসে অন্তত পাঁচটি সূত্র থাকতে হবে।';
         }
         foreach ($clues as $c) {
             $at = (int) ($c['episode'] ?? 0);
@@ -124,7 +137,11 @@ final class Casebook
             }
         }
         if (count($names) < 4) {
-            return 'পনেরো পর্বের কেসে অন্তত চারজন চরিত্র থাকতে হবে।';
+            return 'একটি কেসে অন্তত চারজন চরিত্র থাকতে হবে।';
+        }
+        $thread = (array) ($plan['thread'] ?? []);
+        if (mb_strlen(trim((string) ($thread['step'] ?? ''))) < 20 || (int) ($thread['episode'] ?? 0) < 2 || (int) ($thread['episode'] ?? 0) >= $episodes) {
+            return 'পরিকল্পনায় পুরনো রহস্যের এক ধাপ (কোন পর্বে, কী জানা যাবে) লেখা থাকতে হবে, প্রথম ও শেষ পর্ব বাদে।';
         }
         if (! collect($clues)->contains(fn ($c) => (bool) ($c['written'] ?? false))) {
             return 'অন্তত একটি সূত্র ভাষা, লেখা বা ছাপা থেকে আসতে হবে।';
