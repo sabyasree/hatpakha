@@ -79,6 +79,65 @@ class SerialsTest extends TestCase
         $this->get($ep1->fresh()->url())->assertDontSee('ত্রিশ বছর আগে পুড়ে গেছে');
     }
 
+    /** D212 (owner: "a series like Sherlock Holmes… a very good detective story, without copying… the proofreader one… earlier Kolkata"). */
+    public function test_a_detective_case_is_planned_with_its_solution_and_fair_clues_before_any_episode_is_written(): void
+    {
+        $brief = SerialWriter::WRITERS['serial_detective'][1];
+        foreach (['শশধর পাকড়াশী', 'বিশু', 'late 1970s', 'Fair play', 'never use or echo Sherlock Holmes', 'Feluda', 'Byomkesh', 'language, writing or print'] as $must) {
+            $this->assertStringContainsString($must, $brief);
+        }
+        $plan = fn (array $over = []) => array_merge(['title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা', 'logline' => 'একটা বইয়ের ষোলো পাতা ছাপার আগেই উধাও।', 'setting' => 'কলেজ স্ট্রিট, শীতকাল',
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা']],
+            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা '.$i], range(1, 5)),
+            'solution' => ['culprit' => 'প্রকাশকের ভাই', 'method' => 'রাতে ফর্মা সরানো', 'motive' => 'দেনা', 'proof' => 'চিঠির বানান'],
+            'clues' => [['clue' => 'চিঠিতে "ষ্টেশন" বানান', 'episode' => 1, 'written' => true, 'means' => 'পুরনো ছাপার লোক'], ['clue' => 'ভেজা ছাতা', 'episode' => 2, 'written' => false, 'means' => 'রাতে বেরিয়েছিল'],
+                ['clue' => 'ক্ষয়ে যাওয়া "য়"', 'episode' => 4, 'written' => true, 'means' => 'কোন প্রেসের টাইপ']],
+            'cover_prompt' => 'an old letterpress at night'], $over);
+        $ep = ['title' => 'উধাও', 'paragraphs' => ['বিকেলে প্রেসে ঢুকেই বুঝলাম কিছু একটা হয়েছে।', 'পাকড়াশীমশাই চশমা কপালে তুলে প্রুফের দিকে তাকিয়ে।'], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => 'a proofs table', 'teaser' => 'চিঠির একটা বানান মিলছে না।'];
+        $give = $plan();
+        Claude::$fake = function ($purpose, $user, $schema) use (&$give, $ep) {
+            $this->seen[] = [$purpose, $user, $schema];
+
+            return in_array('cover_prompt', $schema['required'] ?? [], true) ? $give : ['episode' => $ep];
+        };
+
+        // An unfair puzzle is never written: a clue that arrives in the last episode, or no solution, or no written clue.
+        foreach ([['clues' => [['clue' => 'ক', 'episode' => 5, 'written' => true, 'means' => 'খ'], ['clue' => 'গ', 'episode' => 1, 'written' => false, 'means' => 'ঘ'], ['clue' => 'ঙ', 'episode' => 2, 'written' => false, 'means' => 'চ']]],
+            ['solution' => ['culprit' => 'ক', 'method' => '', 'motive' => 'গ', 'proof' => 'ঘ']],
+            ['clues' => array_map(fn ($c) => ['written' => false] + $c, $plan()['clues'])]] as $bad) {
+            $give = $plan($bad);
+            [$none, $why] = SerialWriter::start('serial_detective');
+            $this->assertNull($none);
+            $this->assertStringContainsString('কেসের পরিকল্পনা নেওয়া হয়নি', (string) $why);
+        }
+        $this->assertSame(0, Serial::count());
+
+        $give = $plan();
+        [$case] = SerialWriter::start('serial_detective', 'একটা বই ছাপার আগে হারিয়ে যায়');
+        $this->assertSame(['পাকড়াশীর প্রুফ: হারানো ফর্মা', 'গোয়েন্দা', 'proposed'], [$case->title, $case->genre, $case->status], 'The series name once, then the case');
+        $this->assertSame('প্রকাশকের ভাই', $case->bible['solution']['culprit']);
+        $this->assertCount(3, $case->bible['clues']);
+        $planAsk = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true));
+        $this->assertContains('solution', $planAsk[2]['required']);
+        $first = $case->episodes()->first();
+        $this->assertSame('draft', $first->status, 'Nothing is published by the AI');
+        $this->assertStringStartsWith('পাকড়াশীর প্রুফ: হারানো ফর্মা (পর্ব ১)', $first->title);
+        $epAsk = end($this->seen)[1];
+        $this->assertStringContainsString('<solution_keep_secret_until_the_last_episode>', $epAsk);
+        $this->assertStringContainsString('চিঠিতে &quot;ষ্টেশন&quot; বানান', $epAsk);
+        $this->assertStringContainsString('plant every clue assigned to episode 1', $epAsk);
+
+        // The solution is for the editor's eyes only.
+        $this->get('/dharabahik/')->assertOk()->assertDontSee('প্রকাশকের ভাই');
+        // The next case is told what came before, so no trick is repeated.
+        $give = $plan(['title' => 'লাল কালির দাগ']);
+        [$second] = SerialWriter::start('serial_detective');
+        $this->assertSame('পাকড়াশীর প্রুফ: লাল কালির দাগ', $second->title);
+        $ask2 = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true))[1];
+        $this->assertStringContainsString('earlier_cases_do_not_repeat', $ask2);
+        $this->assertStringContainsString('হারানো ফর্মা', $ask2);
+    }
+
     public function test_publishing_the_first_episode_starts_the_serial_and_readers_can_follow_it(): void
     {
         [$serial] = SerialWriter::start('serial_mystery');

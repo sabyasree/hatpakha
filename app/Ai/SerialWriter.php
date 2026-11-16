@@ -27,6 +27,8 @@ final class SerialWriter
             .'Dread that builds slowly through small wrong details; atmosphere and the unexplained over gore; never gratuitous violence. Ordinary people, believable lives.'],
         'serial_family' => ['সম্পর্ক', 'A family and relationship story (সম্পর্কের গল্প) across generations: for example a North Kolkata joint-family house about to be sold, '
             .'a box of old letters, two siblings who have not spoken in years. Each episode reveals one secret or turns one relationship; warmth, humour and ache together.'],
+        // D212: Hatpakha's own detective series; every case is written from the fixed sheet in Casebook.
+        'serial_detective' => [Casebook::GENRE, Casebook::BRIEF],
     ];
 
     /** How a serial episode is written: literature first, and an ending that brings readers back. */
@@ -57,12 +59,26 @@ final class SerialWriter
             return [null, 'লেখক পাওয়া যায়নি।'];
         }
         [$genre, $brief] = self::WRITERS[$writer];
+        $case = $writer === 'serial_detective';
+        $earlier = $case ? Serial::where('writer', $writer)->oldest('id')->get()->map(fn (Serial $s) => '- '.$s->title.': '.$s->logline.' ['.(string) ($s->bible['solution']['method'] ?? '').']')->implode("\n") : '';
         [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
-            .'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
-            .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens, which question it answers, which bigger question it opens, and the image or line it ends on. Put the strongest turn near the middle of the serial and a false ending two episodes before the last. '
+            .($case
+                ? 'Plan this whole case (do not write any episode yet). FIRST decide the solution: who did it, exactly how, why, and the proof that convicts them; then the clues, each one a concrete thing the reader is shown, with the episode it appears in (never the last) and whether it comes from language, writing or print (at least one must, and the turning clue must). '
+                    .'Then: a title for the case alone that makes people curious (short, Bengali; never the series name, never the detective\'s name), a logline of one or two lines that sells the puzzle without giving it away, '
+                    .'the setting of this case, the people of this case only (2-5: the client, the suspects, the victim; each: who they are, what they want and what they hide; do not list the fixed people of the sheet), '
+                    .'and '.Casebook::EPISODES[0].' or '.Casebook::EPISODES[1].' episodes, each a title and one or two lines of what happens, which clue is planted, which question it answers, which bigger question it opens, and the image or line it ends on. The false trail collapses in the episode before the last; the last explains everything in order. '
+                    .'In setting, also give the case\'s solution in one honest paragraph for the editor. '
+                : 'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
+                    .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens, which question it answers, which bigger question it opens, and the image or line it ends on. Put the strongest turn near the middle of the serial and a false ending two episodes before the last. ')
             .'Also a cover_prompt in English: one striking scene for the serial\'s poster.',
-            '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>',
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt'], 'properties' => [
+            '<idea>'.e(mb_substr(trim($idea), 0, 600) ?: 'Choose a fresh, original idea.').'</idea>'.($earlier !== '' ? "\n<earlier_cases_do_not_repeat>\n".e($earlier)."\n</earlier_cases_do_not_repeat>" : ''),
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'logline', 'setting', 'characters', 'episodes', 'cover_prompt', ...($case ? ['solution', 'clues'] : [])], 'properties' => ($case ? [
+                'solution' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['culprit', 'method', 'motive', 'proof'], 'properties' => [
+                    'culprit' => ['type' => 'string'], 'method' => ['type' => 'string'], 'motive' => ['type' => 'string'], 'proof' => ['type' => 'string', 'description' => 'What convicts them, and which clues it rests on']]],
+                'clues' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['clue', 'episode', 'written', 'means'], 'properties' => [
+                    'clue' => ['type' => 'string', 'description' => 'What the reader is shown'], 'episode' => ['type' => 'integer'],
+                    'written' => ['type' => 'boolean', 'description' => 'True when it comes from language, writing or print'], 'means' => ['type' => 'string', 'description' => 'What it proves, revealed only at the end']]]],
+            ] : []) + [
                 'title' => ['type' => 'string'], 'logline' => ['type' => 'string'], 'setting' => ['type' => 'string'],
                 'characters' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['name', 'role'], 'properties' => [
                     'name' => ['type' => 'string'], 'role' => ['type' => 'string']]]],
@@ -73,10 +89,15 @@ final class SerialWriter
         if (! is_array($d) || empty($d['episodes'])) {
             return [null, $err ?: 'পরিকল্পনা তৈরি হয়নি।'];
         }
+        if ($case && ($why = Casebook::unfair($d))) {
+            return [null, 'কেসের পরিকল্পনা নেওয়া হয়নি: '.$why.' আবার চেষ্টা করুন।'];   // an unfair puzzle is never written
+        }
+        $own = trim(preg_replace('/^\s*'.preg_quote(Casebook::SERIES, '/').'\s*[:：—-]\s*/u', '', (string) $d['title']));
         $serial = Serial::create([
-            'title' => mb_substr(trim((string) $d['title']), 0, 200), 'logline' => mb_substr(trim((string) $d['logline']), 0, 400),
+            'title' => mb_substr($case ? Casebook::SERIES.': '.$own : trim((string) $d['title']), 0, 200), 'logline' => mb_substr(trim((string) $d['logline']), 0, 400),
             'genre' => $genre, 'writer' => $writer, 'status' => 'proposed', 'day' => 6,
-            'bible' => ['setting' => (string) $d['setting'], 'characters' => array_values((array) $d['characters']), 'episodes' => array_values((array) $d['episodes'])],
+            'bible' => ['setting' => (string) $d['setting'], 'characters' => array_values((array) $d['characters']), 'episodes' => array_values((array) $d['episodes'])]
+                + ($case ? ['solution' => (array) $d['solution'], 'clues' => array_values((array) $d['clues'])] : []),
         ]);
         self::cover($serial, (string) $d['cover_prompt']);
         EditorTask::propose('serial', __('নতুন ধারাবাহিকের প্রস্তাব: ').$serial->title, [], $serial);
@@ -106,6 +127,10 @@ final class SerialWriter
             '<serial><title>'.e($serial->title).'</title><setting>'.e((string) ($serial->bible['setting'] ?? '')).'</setting>'
             ."\n<characters>".e(collect((array) ($serial->bible['characters'] ?? []))->map(fn ($c) => ($c['name'] ?? '').': '.($c['role'] ?? ''))->implode("\n")).'</characters>'
             ."\n<plan>".e(collect($plan)->map(fn ($e, $i) => 'পর্ব '.($i + 1).' '.($e['title'] ?? '').': '.($e['beat'] ?? ''))->implode("\n")).'</plan>'
+            // D212: the writer of a case always has the solution and the clues in front of it, so no episode can cheat
+            .(! empty($serial->bible['solution']) ? "\n<solution_keep_secret_until_the_last_episode>".e(collect((array) $serial->bible['solution'])->map(fn ($v, $k) => $k.': '.$v)->implode("\n")).'</solution_keep_secret_until_the_last_episode>'
+                ."\n<clues>".e(collect((array) ($serial->bible['clues'] ?? []))->map(fn ($c) => 'পর্ব '.($c['episode'] ?? '?').': '.($c['clue'] ?? '').' (means, hidden until the end: '.($c['means'] ?? '').')')->implode("\n")).'</clues>'
+                ."\nIn this episode plant every clue assigned to episode {$n}, in a scene, plainly but without pointing at it; never reveal the culprit or what a clue means before the final episode; never contradict the solution." : '')
             ."\n<so_far>".e($story).'</so_far>'
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
             ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))

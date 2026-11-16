@@ -151,7 +151,7 @@ class AiTeam extends Page
     }
 
     /** Agents whose work is long writing (2–10 minutes). */
-    private const LONG = ['copywriter', 'serial_mystery', 'serial_ghost', 'serial_family', 'strategist', 'analyst', 'archivist', 'editor'];
+    private const LONG = ['copywriter', 'serial_mystery', 'serial_ghost', 'serial_family', 'serial_detective', 'strategist', 'analyst', 'archivist', 'editor'];
 
     /**
      * Owner + UX review (2026-11-11): the four steps of a job, each with its state and a short line.
