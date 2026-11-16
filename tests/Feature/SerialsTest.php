@@ -87,11 +87,12 @@ class SerialsTest extends TestCase
             $this->assertStringContainsString($must, $brief);
         }
         $plan = fn (array $over = []) => array_merge(['title' => 'পাকড়াশীর প্রুফ: হারানো ফর্মা', 'logline' => 'একটা বইয়ের ষোলো পাতা ছাপার আগেই উধাও।', 'setting' => 'কলেজ স্ট্রিট, শীতকাল',
-            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর']],
-            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা '.$i], range(1, 5)),
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর'], ['name' => 'হেমন্ত পাল', 'role' => 'কম্পোজিটর']],
+            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'এই পর্বে একটা নতুন কথা জানা যায়, সন্দেহ সরে, আর শেষে একটা প্রশ্ন থাকে '.$i], range(1, 9)),
             'solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'প্রকাশকের ভাই', 'method' => 'রাতে ফর্মা সরানো', 'motive' => 'দেনা', 'proof' => 'চিঠির বানান'],
-            'clues' => [['clue' => 'চিঠিতে "ষ্টেশন" বানান', 'episode' => 1, 'written' => true, 'means' => 'পুরনো ছাপার লোক'], ['clue' => 'ভেজা ছাতা', 'episode' => 2, 'written' => false, 'means' => 'রাতে বেরিয়েছিল'],
-                ['clue' => 'ক্ষয়ে যাওয়া "য়"', 'episode' => 4, 'written' => true, 'means' => 'কোন প্রেসের টাইপ']],
+            'clues' => array_merge([['clue' => 'চিঠিতে "ষ্টেশন" বানান', 'episode' => 1, 'written' => true, 'means' => 'পুরনো ছাপার লোক'], ['clue' => 'ভেজা ছাতা', 'episode' => 2, 'written' => false, 'means' => 'রাতে বেরিয়েছিল'],
+                ['clue' => 'ক্ষয়ে যাওয়া "য়"', 'episode' => 4, 'written' => true, 'means' => 'কোন প্রেসের টাইপ']], array_map(fn ($e) => ['clue' => 'সূত্র '.$e, 'episode' => $e, 'written' => false, 'means' => 'অর্থ'], [6, 8])),
+            'thread' => ['episode' => 5, 'step' => 'এক বুড়ো কম্পোজিটর জানায়, সেই রাতে ছাপাখানায় আলো জ্বলছিল; কে ছিল, মনে নেই।'],
             'cover_prompt' => 'an old letterpress at night'], $over);
         $ep = ['title' => 'উধাও', 'paragraphs' => ['বিকেলে প্রেসে ঢুকেই বুঝলাম কিছু একটা হয়েছে।', 'পাকড়াশীমশাই চশমা কপালে তুলে প্রুফের দিকে তাকিয়ে।'], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => 'a proofs table', 'teaser' => 'চিঠির একটা বানান মিলছে না।'];
         $give = $plan();
@@ -102,8 +103,11 @@ class SerialsTest extends TestCase
         };
 
         // An unfair puzzle is never written: a clue that arrives in the last episode, or no solution, or no written clue.
-        foreach ([['clues' => [['clue' => 'ক', 'episode' => 5, 'written' => true, 'means' => 'খ'], ['clue' => 'গ', 'episode' => 1, 'written' => false, 'means' => 'ঘ'], ['clue' => 'ঙ', 'episode' => 2, 'written' => false, 'means' => 'চ']]],
+        foreach ([['clues' => array_merge($plan()['clues'], [['clue' => 'শেষ পর্বে আসা সূত্র', 'episode' => 9, 'written' => true, 'means' => 'খ']])],
+            ['episodes' => array_slice($plan()['episodes'], 0, 6)],   // never fewer than eight
+            ['clues' => array_values(array_filter($plan()['clues'], fn ($c) => ! in_array($c['episode'], [6, 8], true)))],   // too few clues, and a long stretch with nothing to work with
             ['solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'ক', 'method' => '', 'motive' => 'গ', 'proof' => 'ঘ']],
+            ['thread' => ['episode' => 9, 'step' => 'শেষ পর্বে পুরনো রহস্যের কথা']],   // never in the last episode
             ['solution' => ['culprit_name' => 'হরিহরবাবু', 'culprit' => 'ক', 'method' => 'খ', 'motive' => 'গ', 'proof' => 'ঘ']],   // not one of the case's people
             ['clues' => array_map(fn ($c) => ['written' => false] + $c, $plan()['clues'])]] as $bad) {
             $give = $plan($bad);
@@ -117,7 +121,8 @@ class SerialsTest extends TestCase
         [$case] = SerialWriter::start('serial_detective', 'একটা বই ছাপার আগে হারিয়ে যায়');
         $this->assertSame(['পাকড়াশীর প্রুফ: হারানো ফর্মা', 'গোয়েন্দা', 'proposed'], [$case->title, $case->genre, $case->status], 'The series name once, then the case');
         $this->assertSame('প্রকাশকের ভাই', $case->bible['solution']['culprit']);
-        $this->assertCount(3, $case->bible['clues']);
+        $this->assertCount(5, $case->bible['clues']);
+        $this->assertSame(9, $case->plannedEpisodes());
         $planAsk = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true));
         $this->assertContains('solution', $planAsk[2]['required']);
         $first = $case->episodes()->first();
@@ -132,7 +137,7 @@ class SerialsTest extends TestCase
         $case->activate();
         $first->forceFill(['status' => 'published', 'published_at' => now()->subDay(), 'slug' => 'pp-1'])->saveQuietly();
         $case->refresh();
-        $this->assertSame(['নীলিমা সেন', 'অবনী দত্ত', 'সুধাময় কর'], \App\Support\CaseGuesses::suspects($case));
+        $this->assertSame(['নীলিমা সেন', 'অবনী দত্ত', 'সুধাময় কর', 'হেমন্ত পাল'], \App\Support\CaseGuesses::suspects($case));
         $this->get($case->url())->assertOk()->assertSee('কে করেছে বলে মনে হয়?')->assertSee('অনুমান পাঠাতে লগ ইন করুন')->assertDontSee('প্রকাশকের ভাই');
         $right = \App\Models\User::factory()->create(['name' => 'Mita Sen']);
         $shy = \App\Models\User::factory()->create(['name' => 'Rina Basu']);
@@ -149,8 +154,8 @@ class SerialsTest extends TestCase
         $this->actingAs($wrong)->get($case->url())->assertSee('আপনার এখনকার অনুমান: নীলিমা সেন')->assertDontSee('Mita Sen');
         $this->assertNull(\App\Support\CaseGuesses::result($case), 'Nothing leaks before the end');
         // The last episode comes out: guessing closes and the result shows.
-        $last = $this->makePost(['slug' => 'pp-5', 'title' => 'শেষ', 'status' => 'published', 'published_at' => now()]);
-        $last->forceFill(['serial_id' => $case->id, 'episode_no' => 5])->saveQuietly();
+        $last = $this->makePost(['slug' => 'pp-9', 'title' => 'শেষ', 'status' => 'published', 'published_at' => now()]);
+        $last->forceFill(['serial_id' => $case->id, 'episode_no' => 9])->saveQuietly();
         $this->assertFalse(\App\Support\CaseGuesses::open($case->fresh()));
         $this->actingAs($right)->post($url, ['suspect' => 'নীলিমা সেন'])->assertSessionHas('guess_status', 'এই কেসের অনুমান নেওয়া এখন বন্ধ।');
         $this->assertSame(['total' => 3, 'right' => 2, 'names' => ['Mita Sen']], \App\Support\CaseGuesses::result($case->fresh()));
@@ -158,6 +163,13 @@ class SerialsTest extends TestCase
         auth()->logout();
         // An ordinary serial has no guessing.
         $this->assertSame([], \App\Support\CaseGuesses::suspects(Serial::create(['title' => 'অন্য', 'writer' => 'serial_ghost', 'status' => 'active', 'slug' => 'onyo', 'bible' => ['characters' => [['name' => 'ক', 'role' => 'খ']]]])));
+
+        // D219: the thread across cases. The fixed truth is in the writer's brief; this case's one step is planned and placed.
+        $this->assertStringContainsString('রমাপতি ভৌমিক', $brief);
+        $this->assertStringContainsString('Do not reveal who did it', $brief);
+        $this->assertSame(5, $case->bible['thread']['episode']);
+        $this->assertStringContainsString('None yet: this case takes the first step', $planAsk[1]);
+        $this->assertStringContainsString('The long thread is not touched in this episode.', $epAsk);
 
         // The solution is for the editor's eyes only.
         $this->get('/dharabahik/')->assertOk()->assertDontSee('প্রকাশকের ভাই');
@@ -167,6 +179,7 @@ class SerialsTest extends TestCase
         $this->assertSame('পাকড়াশীর প্রুফ: লাল কালির দাগ', $second->title);
         $ask2 = collect($this->seen)->last(fn ($x) => in_array('cover_prompt', $x[2]['required'] ?? [], true))[1];
         $this->assertStringContainsString('earlier_cases_do_not_repeat', $ask2);
+        $this->assertStringContainsString('case 1: এক বুড়ো কম্পোজিটর জানায়', $ask2, 'The next case goes one step further');
         $this->assertStringContainsString('হারানো ফর্মা', $ask2);
     }
 
