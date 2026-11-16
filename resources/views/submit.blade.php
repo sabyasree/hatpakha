@@ -53,9 +53,9 @@
         @if (! $editable)
             <div class="mt-6 rounded-xl border-2 border-navy p-5">
                 <p class="text-ink2">অবস্থা: <strong class="text-ink">{{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</strong></p>
-                @if (in_array($post->status, \App\Http\Controllers\SubmissionController::TAKE_BACK, true))
+                @if (in_array($post->status, \App\Http\Controllers\SubmissionController::TAKE_BACK, true) && ! $post->isLive())
                     @include('account.partials.take-back', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light p-4'])
-                @elseif ($post->status === 'published')
+                @elseif ($post->status === 'published' || $post->isLive())
                     <p class="mt-2 font-bold">প্রকাশিত লেখা এখান থেকে বদলানো বা তুলে নেওয়া যায় না।</p>
                     <p class="mt-1 text-ink2">কিছু বদলাতে চাইলে নিচে লিখে সম্পাদককে পাঠান, বা <a class="font-bold underline" href="mailto:editor@hatpakha.com">editor@hatpakha.com</a>-এ ই-মেইল করুন।</p>
                     @include('account.partials.change-request', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light'])

@@ -117,8 +117,23 @@ class SerialsTest extends TestCase
         }
         $this->assertSame(0, Serial::count());
 
-        $give = $plan();
+        // D220: a refused plan is sent back with the reason; a corrected one is taken (the owner was left with no case).
+        $asked = count($this->seen);
+        $give = $plan(['episodes' => array_slice($plan()['episodes'], 0, 6)]);
+        $fixing = Claude::$fake;
+        Claude::$fake = function ($purpose, $user, $schema) use (&$give, $plan, $fixing) {
+            $out = $fixing($purpose, $user, $schema);
+            if (str_contains($user, '<previous_plan_refused>')) {
+                $give = $plan();
+                $out = in_array('cover_prompt', $schema['required'] ?? [], true) ? $give : $out;
+            }
+
+            return $out;
+        };
         [$case] = SerialWriter::start('serial_detective', 'একটা বই ছাপার আগে হারিয়ে যায়');
+        $this->assertNotNull($case, 'The second plan is taken');
+        $this->assertStringContainsString('আট থেকে দশ পর্বের', collect($this->seen)->slice($asked)->first(fn ($x) => str_contains($x[1], '<previous_plan_refused>'))[1]);
+        Claude::$fake = $fixing;
         $this->assertSame(['পাকড়াশীর প্রুফ: হারানো ফর্মা', 'গোয়েন্দা', 'proposed'], [$case->title, $case->genre, $case->status], 'The series name once, then the case');
         $this->assertSame('প্রকাশকের ভাই', $case->bible['solution']['culprit']);
         $this->assertCount(5, $case->bible['clues']);

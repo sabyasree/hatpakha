@@ -78,8 +78,14 @@ class CertificateTest extends TestCase
         $old = $this->makePost(['status' => 'published', 'slug' => 'old', 'title' => 'পুরনো লেখা', 'published_at' => now()->subYears(3)], $author);
         $new = $this->makePost(['status' => 'published', 'slug' => 'new', 'title' => 'নতুন লেখা', 'published_at' => now()->addMinute()], $author);
         $this->travel(2)->minutes();
+        // Owner (2026-11-16): not the moment it goes out, and never before; two days after it is published.
+        $this->assertSame(0, Certificate::autoIssue(), 'Just out: not yet');
+        $soon = $this->makePost(['status' => 'scheduled', 'slug' => 'soon', 'title' => 'কাল বেরোবে', 'published_at' => now()->addDays(5)], $author);
+        $this->travel(2)->days();
+        $this->travel(5)->minutes();
 
         $this->assertSame(1, Certificate::autoIssue(), 'Only the piece published after the switch');
+        $this->assertFalse(Certificate::where('post_id', $soon->id)->exists(), 'A piece with a date but not yet out gets none');
         $this->assertSame($new->id, Certificate::sole()->post_id);
 
         $this->actingAs($writer)->get('/account/writings/')->assertOk()->assertSee('সার্টিফিকেট চাই');

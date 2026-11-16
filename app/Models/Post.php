@@ -202,6 +202,16 @@ class Post extends Model
         return static::whereKey($this->id)->certifiable()->exists();
     }
 
+    /**
+     * D220: a piece given a future date kept the word "scheduled" after its day had come, so the desk and the writer's
+     * account went on calling a piece that was out "selected, date fixed". Its status now becomes "published" when the
+     * time comes. Returns how many changed.
+     */
+    public static function goLive(): int
+    {
+        return self::where('status', 'scheduled')->whereNotNull('published_at')->where('published_at', '<=', now())->update(['status' => 'published']);
+    }
+
     public function scopePublished(Builder $q): Builder
     {
         return $q->whereIn('status', ['published', 'scheduled'])->where('published_at', '<=', now());

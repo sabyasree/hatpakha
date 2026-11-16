@@ -92,6 +92,9 @@ class Certificate extends Model
         ];
     }
 
+    /** An automatic certificate comes this many days after the piece is out. */
+    public const AUTO_AFTER_DAYS = 2;
+
     /** Automatic certificates (D73): every piece published since the switch was set, once, writers told. */
     public static function autoIssue(int $limit = 20): int
     {
@@ -100,7 +103,8 @@ class Certificate extends Model
         }
         $have = self::where('kind', 'publication')->select('post_id');
         $n = 0;
-        foreach (Post::published()->certifiable()->where('published_at', '>=', \Illuminate\Support\Carbon::parse($since))->whereNotIn('id', $have)->oldest('published_at')->limit($limit)->get() as $post) {
+        // Owner (2026-11-16): "they will get the certificate once it is published, maybe after 2-3 days of publish".
+        foreach (Post::published()->certifiable()->where('published_at', '>=', \Illuminate\Support\Carbon::parse($since))->where('published_at', '<=', now()->subDays(self::AUTO_AFTER_DAYS))->whereNotIn('id', $have)->oldest('published_at')->limit($limit)->get() as $post) {
             $n += count(self::issueFor($post));
         }
 

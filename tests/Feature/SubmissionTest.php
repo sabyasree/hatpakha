@@ -80,6 +80,13 @@ class SubmissionTest extends TestCase
         $this->post('/submit/'.$post->id.'/withdraw/');
         $this->assertSame(['draft', null], [$post->fresh()->status, $post->fresh()->published_at]);
 
+        // A piece whose day has come is out, even while its status word still says "scheduled" (D220); the word then catches up.
+        $post->refresh()->forceFill(['status' => 'scheduled', 'published_at' => now()->subMinute()])->saveQuietly();
+        $this->post('/submit/'.$post->id.'/withdraw/')->assertForbidden();
+        $this->get('/submit/'.$post->id.'/')->assertOk()->assertDontSee('ফিরিয়ে এনে বদলান');
+        $this->assertSame(1, Post::goLive());
+        $this->assertSame('published', $post->fresh()->status);
+
         // Published: not from here; ask the editor.
         $post->forceFill(['status' => 'published', 'published_at' => now()->subHour()])->saveQuietly();
         $this->post('/submit/'.$post->id.'/withdraw/')->assertForbidden();
