@@ -43,7 +43,7 @@ class SerialResource extends Resource
 
     protected static ?int $navigationSort = 19;
 
-    public const STATUS = ['proposed' => 'প্রস্তাব', 'active' => 'চলছে', 'paused' => 'থামানো', 'finished' => 'শেষ'];
+    public const STATUS = ['proposed' => 'প্রস্তাব', 'active' => 'চলছে', 'paused' => 'থামানো', 'finished' => 'শেষ', 'dropped' => 'বাদ দেওয়া'];
 
     public static function canAccess(): bool
     {

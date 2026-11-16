@@ -60,13 +60,13 @@ final class SerialWriter
         }
         [$genre, $brief] = self::WRITERS[$writer];
         $case = $writer === 'serial_detective';
-        $earlier = $case ? Serial::where('writer', $writer)->oldest('id')->get()->map(fn (Serial $s) => '- '.$s->title.': '.$s->logline.' ['.(string) ($s->bible['solution']['method'] ?? '').']')->implode("\n") : '';
+        $earlier = $case ? Serial::where('writer', $writer)->where('status', '!=', 'dropped')->oldest('id')->get()->map(fn (Serial $s) => '- '.$s->title.': '.$s->logline.' ['.(string) ($s->bible['solution']['method'] ?? '').']')->implode("\n") : '';
         [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik').' '.$brief.' '
             .($case
                 ? 'Plan this whole case (do not write any episode yet). FIRST decide the solution: who did it, exactly how, why, and the proof that convicts them; then the clues, each one a concrete thing the reader is shown, with the episode it appears in (never the last) and whether it comes from language, writing or print (at least one must, and the turning clue must). '
                     .'Then: a title for the case alone that makes people curious (short, Bengali; never the series name, never the detective\'s name), a logline of one or two lines that sells the puzzle without giving it away, '
-                    .'the setting of this case, the people of this case only (3-5: the client, the suspects, the victim; the culprit must be one of them, and readers will be asked to name one of these people, so give each a full name and make at least three of them believable suspects; each: who they are, what they want and what they hide; do not list the fixed people of the sheet), '
-                    .'and '.Casebook::EPISODES[0].' or '.Casebook::EPISODES[1].' episodes, each a title and one or two lines of what happens, which clue is planted, which question it answers, which bigger question it opens, and the image or line it ends on. The false trail collapses in the episode before the last; the last explains everything in order. '
+                    .'the setting of this case, the people of this case only (4-7: the client, the suspects, the victim; the culprit must be one of them, and readers will be asked to name one of these people, so give each a full name and make at least three of them believable suspects; each: who they are, what they want and what they hide; do not list the fixed people of the sheet), '
+                    .'and '.Casebook::EPISODES[0].' to '.Casebook::EPISODES[1].' episodes (never fewer than '.Casebook::EPISODES[0].'), each a title and three or four lines: what happens, what is found out, how the suspicion moves, which clue is planted, which smaller mystery is answered, and the image or line it ends on. At least '.Casebook::CLUES.' clues, spread so that no four episodes in a row are without one. No episode may be filler. The last explains everything in order. '
                     .'In setting, also give the case\'s solution in one honest paragraph for the editor. '
                 : 'Plan the whole serial (do not write any episode yet): a title that makes people curious (short, Bengali, not a label), a logline of one or two lines that sells the story without giving it away, '
                     .'the setting, 3-6 characters (each: who they are, what they want and what they hide), and 10-12 episodes, each a title and one or two lines of what happens, which question it answers, which bigger question it opens, and the image or line it ends on. Put the strongest turn near the middle of the serial and a false ending two episodes before the last. ')
@@ -86,7 +86,7 @@ final class SerialWriter
                 'episodes' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'beat'], 'properties' => [
                     'title' => ['type' => 'string'], 'beat' => ['type' => 'string']]]],
                 'cover_prompt' => ['type' => 'string'],
-            ]], (string) config('ai.anthropic.writer_model'), 32000);   // thinking counts toward the limit (always on)
+            ]], (string) config('ai.anthropic.writer_model'), $case ? 48000 : 32000);   // thinking counts toward the limit (always on); a fifteen-episode case is a long plan
         if (! is_array($d) || empty($d['episodes'])) {
             return [null, $err ?: 'পরিকল্পনা তৈরি হয়নি।'];
         }
@@ -132,7 +132,8 @@ final class SerialWriter
             .(! empty($serial->bible['solution']) ? "\n<solution_keep_secret_until_the_last_episode>".e(collect((array) $serial->bible['solution'])->map(fn ($v, $k) => $k.': '.$v)->implode("\n")).'</solution_keep_secret_until_the_last_episode>'
                 ."\nReaders are guessing who did it until the last episode: keep every listed person a live possibility until then, and in the last episode name the culprit by the exact name in culprit_name."
                 ."\n<clues>".e(collect((array) ($serial->bible['clues'] ?? []))->map(fn ($c) => 'পর্ব '.($c['episode'] ?? '?').': '.($c['clue'] ?? '').' (means, hidden until the end: '.($c['means'] ?? '').')')->implode("\n")).'</clues>'
-                ."\nIn this episode plant every clue assigned to episode {$n}, in a scene, plainly but without pointing at it; never reveal the culprit or what a clue means before the final episode; never contradict the solution." : '')
+                ."\nIn this episode plant every clue assigned to episode {$n}, in a scene, plainly but without pointing at it; never reveal the culprit or what a clue means before the final episode; never contradict the solution."
+                ."\nThis is episode {$n} of ".count($plan).": it must not be filler. Something is found out, the suspicion moves, and it ends on a hook the next episode has to answer. A reader who has followed for weeks should feel this week was worth it." : '')
             ."\n<so_far>".e($story).'</so_far>'
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
             .\App\Support\SerialSignals::forEpisode($serial)   // D215: what readers did with the episodes so far

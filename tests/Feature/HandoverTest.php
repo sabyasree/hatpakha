@@ -323,9 +323,10 @@ class HandoverTest extends TestCase
         $problems = [];
         $plan = ['title' => 'হারানো ফর্মা', 'logline' => 'ষোলো পাতা উধাও।', 'setting' => 'কলেজ স্ট্রিট',
             'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর']],
-            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'ঘটনা'], range(1, 5)),
+            'episodes' => array_map(fn ($i) => ['title' => 'পর্ব-'.$i, 'beat' => 'এই পর্বে একটা নতুন কথা জানা যায়, সন্দেহ সরে, আর শেষে একটা প্রশ্ন থাকে'], range(1, 15)),
             'solution' => ['culprit_name' => 'অবনী দত্ত', 'culprit' => 'ভাই', 'method' => 'রাতে', 'motive' => 'দেনা', 'proof' => 'বানান'],
-            'clues' => [['clue' => 'বানান', 'episode' => 1, 'written' => true, 'means' => 'ক'], ['clue' => 'ছাতা', 'episode' => 2, 'written' => false, 'means' => 'খ'], ['clue' => 'টাইপ', 'episode' => 4, 'written' => true, 'means' => 'গ']],
+            'clues' => array_map(fn ($e) => ['clue' => 'সূত্র '.$e, 'episode' => $e, 'written' => $e === 1, 'means' => 'অর্থ'], [1, 2, 4, 6, 9, 12, 14]),
+            'characters' => [['name' => 'নীলিমা সেন', 'role' => 'লেখিকা'], ['name' => 'অবনী দত্ত', 'role' => 'প্রকাশকের ভাই'], ['name' => 'সুধাময় কর', 'role' => 'বাঁধাইকর'], ['name' => 'হেমন্ত পাল', 'role' => 'কম্পোজিটর']],
             'cover_prompt' => 'a press'];
         $n = 0;
         \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$problems, &$plan, &$n) {
@@ -395,7 +396,7 @@ class HandoverTest extends TestCase
             $this->assertSame('draft', $ep3->fresh()->status);
 
             // One episode before the end the next case is planned, once; when the last is out the case is finished.
-            foreach ([3, 4] as $no) {
+            foreach (range(3, 14) as $no) {
                 $case->episodes()->where('episode_no', $no)->first()?->forceFill(['status' => 'published', 'published_at' => now(), 'auto_stopped' => true])->save()
                     ?? tap($this->makePost(['slug' => 'pp-'.$no, 'status' => 'published', 'published_at' => now()]))->forceFill(['serial_id' => $case->id, 'episode_no' => $no])->saveQuietly();
             }
@@ -404,7 +405,7 @@ class HandoverTest extends TestCase
             $this->assertCount(1, $next);
             Handover::cases();
             $this->assertSame(1, \App\Models\Serial::where('status', 'proposed')->count(), 'Not a second plan');
-            tap($this->makePost(['slug' => 'pp-5', 'status' => 'published', 'published_at' => now()]))->forceFill(['serial_id' => $case->id, 'episode_no' => 5])->saveQuietly();
+            tap($this->makePost(['slug' => 'pp-15', 'status' => 'published', 'published_at' => now()]))->forceFill(['serial_id' => $case->id, 'episode_no' => 15])->saveQuietly();
             Handover::cases();
             $this->assertSame('finished', $case->fresh()->status);
             $this->assertSame('draft', $next->first()->episodes()->first()->status, 'The new case still waits for the owner');
