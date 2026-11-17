@@ -56,7 +56,7 @@ class EditNewsletter extends EditRecord
     /** Items are stored with title/url; the form keeps only id + line. */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['items'] = collect((array) ($data['items'] ?? []))->map(fn ($it) => ['id' => $it['id'] ?? null, 'line' => $it['line'] ?? '', 'title' => $it['title'] ?? null])->all();
+        $data['items'] = collect((array) ($data['items'] ?? []))->map(fn ($it) => ['id' => $it['id'] ?? null, 'line' => $it['line'] ?? '', 'quote' => $it['quote'] ?? '', 'title' => $it['title'] ?? null])->all();
 
         return $data;
     }

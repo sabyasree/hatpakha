@@ -37,12 +37,18 @@ Rules:
 TXT;
 
     /** @return array{subject:string, preheader:string, paragraphs:list<string>, closing:string, cta_label:string, cta_target:string, lines:array<int,string>}|null */
-    public static function write(string $brief, string $facts, array $pieces = []): ?array
+    public static function write(string $brief, string $facts, array $pieces = [], bool $quotes = false): ?array
     {
         $list = collect($pieces)->map(fn (Post $p) => 'id '.$p->id.' | "'.$p->title.'" — '.($p->authors->first()?->publicName() ?? '').' | '.$p->section?->name_bn
             .' | '.mb_substr(trim((string) ($p->share_text ?: $p->excerpt ?: strip_tags((string) $p->body_html))), 0, 220))->implode("\n");
+        // D225: the leading piece is shown with one line from the writing itself. The copywriter picks it from the
+        // text given here; the site then checks it stands in the piece word for word, or drops it.
+        $texts = $quotes ? collect($pieces)->reject(fn (Post $p) => $p->serial_id)->take(3)->map(fn (Post $p) => '<text id="'.$p->id.'">'."\n".e(\App\Support\LetterDesign::excerpt($p))."\n</text>")->implode("\n") : '';
+        if ($texts !== '') {
+            $brief .= ' For each piece whose text is given in <piece_texts>, also give "quote": ONE sentence or line copied from that text character for character (never changed, shortened or joined), the one that would make a reader want the rest; no spoilers. Leave "quote" empty for the others.';
+        }
         [$d] = Claude::json('copy', self::VOICE."\n\nThis letter: ".$brief,
-            "<facts>\n".e($facts)."\n</facts>".($list ? "\n<pieces>\n".e($list)."\n</pieces>" : ''),
+            "<facts>\n".e($facts)."\n</facts>".($list ? "\n<pieces>\n".e($list)."\n</pieces>" : '').($texts !== '' ? "\n<piece_texts>\n".$texts."\n</piece_texts>" : ''),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['subject', 'preheader', 'paragraphs', 'closing', 'cta_label', 'cta_target', 'pieces'], 'properties' => [
                 'subject' => ['type' => 'string'], 'preheader' => ['type' => 'string'],
                 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Greeting line first, then 2-4 short paragraphs'],
@@ -50,7 +56,8 @@ TXT;
                 'cta_label' => ['type' => 'string', 'description' => 'Button text, 2-4 Bengali words'],
                 'cta_target' => ['type' => 'string', 'enum' => array_keys(self::TARGETS)],
                 'pieces' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['id', 'line'],
-                    'properties' => ['id' => ['type' => 'integer'], 'line' => ['type' => 'string', 'description' => 'One inviting line, no spoilers']]]],
+                    'properties' => ['id' => ['type' => 'integer'], 'line' => ['type' => 'string', 'description' => 'One inviting line, no spoilers'],
+                        'quote' => ['type' => 'string', 'description' => 'Only when asked: one line copied exactly from the piece text; else empty']]]],
             ]], null, 4000);
         if (! $d) {
             return null;
@@ -65,6 +72,7 @@ TXT;
             'cta_label' => $clean((string) ($d['cta_label'] ?? ''), 40) ?: 'হাতপাখা খুলুন',
             'cta_target' => array_key_exists($d['cta_target'] ?? '', self::TARGETS) ? $d['cta_target'] : 'home',
             'lines' => collect((array) ($d['pieces'] ?? []))->mapWithKeys(fn ($x) => [(int) ($x['id'] ?? 0) => $clean((string) ($x['line'] ?? ''), 240)])->all(),
+            'quotes' => collect((array) ($d['pieces'] ?? []))->mapWithKeys(fn ($x) => [(int) ($x['id'] ?? 0) => trim(strip_tags((string) ($x['quote'] ?? '')))])->filter()->all(),
         ];
     }
 
@@ -89,8 +97,9 @@ TXT;
     public static function fill(Newsletter $n, array $out, array $pieces): void
     {
         $byId = collect($pieces)->keyBy('id');
+        $kept = collect((array) $n->items)->pluck('quote', 'id')->all();   // a rewrite keeps the line already chosen
         $items = collect($out['lines'])->filter(fn ($line, $id) => $byId->has($id))
-            ->map(fn ($line, $id) => ['id' => $id, 'title' => $byId[$id]->title, 'author' => $byId[$id]->authors->first()?->publicName() ?? '', 'url' => $byId[$id]->url(), 'line' => $line])->values()->all();
+            ->map(fn ($line, $id) => \App\Support\LetterDesign::item($byId[$id], (string) $line, (string) ($out['quotes'][$id] ?? $kept[$id] ?? '')))->values()->all();
         $n->fill([
             'subject' => $out['subject'], 'preheader' => $out['preheader'] ?: null,
             'intro' => implode("\n\n", $out['paragraphs']), 'closing' => $out['closing'],

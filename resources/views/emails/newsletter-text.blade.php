@@ -4,15 +4,32 @@
 {!! $newsletter->intro !!}
 
 @php($link = fn (string $l) => \App\Support\NewsletterLinks::tracked($newsletter, $deliveryId ?? null, $l))
-@foreach ((array) $newsletter->items as $i => $it)
-* {{ $it['title'] }}{{ ! empty($it['author']) ? ' — '.$it['author'] : '' }}
-  {{ $it['line'] ?? '' }}
+@php($lay = \App\Support\LetterDesign::sections($newsletter))
+@php($items = (array) $newsletter->items)
+@if ($lay['lead'] !== null)
+@php($it = $items[$lay['lead']])
+== {!! $it['title'] !!}{!! ! empty($it['author']) ? ' — '.$it['author'] : '' !!} ==
+@if (! empty($it['quote']))
+  “{!! $it['quote'] !!}”
+@endif
+  {!! $it['line'] ?? '' !!}
+  {!! $link((string) $lay['lead']) !!}
+
+@endif
+@if ($lay['serials'])
+ধারাবাহিক: গল্প এখন যেখানে
+
+@endif
+@foreach (array_merge($lay['serials'], $lay['more']) as $i)
+@php($it = $items[$i])
+* {!! $it['title'] !!}{!! ! empty($it['author']) && ($it['kind'] ?? '') !== 'serial' ? ' — '.$it['author'] : '' !!}
+  {!! $it['line'] ?? '' !!}
   {!! $link((string) $i) !!}
 
 @endforeach
 @foreach ((array) $newsletter->extras as $i => $it)
-* {{ $it['title'] }}
-  {{ $it['line'] ?? '' }}
+* {!! $it['title'] !!}
+  {!! $it['line'] ?? '' !!}
   {!! $link('x'.$i) !!}
 
 @endforeach

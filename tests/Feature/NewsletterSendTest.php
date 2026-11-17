@@ -140,4 +140,62 @@ class NewsletterSendTest extends TestCase
         $this->assertSame(1, \App\Support\BulkMail::remainingToday(), 'The nearer of the day\'s and the month\'s limit');
         \Illuminate\Support\Carbon::setTestNow();
     }
+
+    /** D225 (owner: "instead of a list, make some creative weekly newsletter"). */
+    public function test_the_weekly_letter_is_laid_out_like_a_small_magazine(): void
+    {
+        $lead = $this->makePost(['status' => 'published', 'slug' => 'lead', 'title' => 'পাঁচিলের ওপর কাক', 'published_at' => now()->subHours(30),
+            'body_html' => '<p>সকালে উঠে দেখি পাঁচিলের ওপর একটা কাক বসে আছে।<br>সে কোথাও যাওয়ার তাড়া দেখায় না।</p>', 'featured_image_path' => 'media/kak.jpg', 'featured_image_width' => 1200]);
+        $other = $this->makePost(['status' => 'published', 'slug' => 'other', 'title' => 'নদীর ধারে', 'published_at' => now()->subDays(2)]);
+        $serial = \App\Models\Serial::create(['title' => 'লাল কাচ', 'slug' => 'lal-kach', 'status' => 'active', 'writer' => 'serial_mystery', 'cover_path' => 'media/lal.jpg']);
+        foreach ([5, 6, 7] as $no) {
+            $ep[$no] = $this->makePost(['status' => 'published', 'slug' => 'lal-'.$no, 'title' => 'লাল কাচ (পর্ব '.$no.')', 'serial_id' => $serial->id, 'episode_no' => $no, 'published_at' => now()->subDays(8 - $no)]);
+        }
+        $said = \App\Models\Comment::create(['post_id' => $other->id, 'author_name' => 'মিতা সেন', 'author_email' => 'm@example.test', 'status' => 'approved',
+            'body' => 'নদীর ধারের সেই বিকেলটা পড়ে নিজের ছোটবেলার কথা মনে পড়ে গেল।']);
+        \App\Models\Comment::create(['post_id' => $other->id, 'author_name' => 'চুপ থাকা পাঠক', 'author_email' => 'q@example.test', 'status' => 'approved', 'feature_opt_out' => true,
+            'body' => 'এই মন্তব্যটি চিঠিতে দেখানো যাবে না, পাঠক তা চাননি বলে জানিয়েছেন।']);
+
+        $asked = '';
+        Claude::$fake = function (...$a) use (&$asked, $lead, $other, $ep) {
+            $asked = json_encode($a, JSON_UNESCAPED_UNICODE);
+
+            return ['subject' => 'পাঁচিলের ওপর একটা কাক', 'preheader' => 'ক', 'paragraphs' => ['প্রিয় পাঠক,', 'সকালের কথা।'], 'closing' => 'ভালো থাকবেন', 'cta_label' => 'পড়ুন', 'cta_target' => 'home',
+                'pieces' => [['id' => $ep[7]->id, 'line' => 'কুয়াশার রাত।'], ['id' => $lead->id, 'line' => 'একটা কাক।', 'quote' => "সে কোথাও যাওয়ার  তাড়া দেখায় না।"],
+                    ['id' => $other->id, 'line' => 'নদী।', 'quote' => 'এই লাইন লেখায় কোথাও নেই, বানানো।'], ['id' => $ep[6]->id, 'line' => 'পুরনো পর্ব']]];
+        };
+        \App\Models\Setting::put(EditorJobs::RHYTHM, 'weekly');
+        $n = EditorJobs::newsletter();
+
+        $this->assertStringContainsString('piece_texts', $asked, 'The copywriter is given the text it may quote from');
+        $ids = collect($n->items)->pluck('id')->all();
+        $this->assertContains($ep[7]->id, $ids);
+        $this->assertNotContains($ep[6]->id, $ids, 'A serial appears once, with its newest episode');
+        $lay = \App\Support\LetterDesign::sections($n);
+        $this->assertSame($lead->id, $n->items[$lay['lead']]['id'], 'The first piece that is not an episode leads');
+        $this->assertSame('সে কোথাও যাওয়ার তাড়া দেখায় না।', $n->items[$lay['lead']]['quote']);
+        $this->assertSame('', collect($n->items)->firstWhere('id', $other->id)['quote'], 'A line that is not in the piece is never shown as a quotation');
+        $this->assertCount(1, $lay['serials']);
+        $this->assertNull(collect($n->extras)->firstWhere('kind', 'serial'), 'The serial is not repeated under the pieces');
+        $voice = collect($n->extras)->firstWhere('kind', 'voice');
+        $this->assertSame($said->body, $voice['line']);
+
+        $html = view('emails.newsletter', ['newsletter' => $n, 'deliveryId' => null, 'unsubscribeUrl' => url('/')])->render();
+        foreach (['এ সপ্তাহের প্রথম পাতা', 'media/kak.jpg', 'লেখা থেকে', 'ধারাবাহিক: গল্প এখন যেখানে', 'পর্ব ৭', 'media/lal.jpg', 'আরও পড়ুন', 'মিতা সেন', 'ভেবে দেখুন'] as $text) {
+            $this->assertStringContainsString($text, $html);
+        }
+        $this->assertStringNotContainsString('চুপ থাকা পাঠক', $html);
+        $text = view('emails.newsletter-text', ['newsletter' => $n, 'deliveryId' => null, 'unsubscribeUrl' => url('/')])->render();
+        $this->assertStringContainsString('== পাঁচিলের ওপর কাক', $text);
+
+        // A rewrite by the copywriter and a save in the desk keep the layout and the checked line.
+        $saved = \App\Filament\Resources\Newsletters\NewsletterResource::resolveItems(collect($n->items)->map(fn ($it) => ['id' => $it['id'], 'line' => $it['line'], 'quote' => $it['quote']])->all());
+        $this->assertSame($n->items, $saved);
+
+        // An older letter (no layout stored) and the writers' letter keep the plain cards.
+        $old = Newsletter::create(['subject' => 'পুরনো', 'intro' => 'ক', 'closing' => 'খ', 'audience' => 'readers', 'source' => 'owner', 'status' => 'draft',
+            'items' => [['id' => $other->id, 'title' => 'নদীর ধারে', 'author' => '', 'url' => $other->url(), 'line' => 'নদী']]]);
+        $this->assertNull(\App\Support\LetterDesign::sections($old)['lead']);
+        $this->assertStringNotContainsString('প্রথম পাতা', view('emails.newsletter', ['newsletter' => $old, 'deliveryId' => null, 'unsubscribeUrl' => url('/')])->render());
+    }
 }
