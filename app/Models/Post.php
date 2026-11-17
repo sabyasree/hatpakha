@@ -222,7 +222,7 @@ class Post extends Model
     /** "কবিতা", "গল্প" or "লেখা", for labels such as "আজকের …" (owner, 2026-11-09). */
     public function kindLabel(): string
     {
-        return $this->isPoem() ? 'কবিতা' : ($this->section?->slug === 'short-stories' ? 'গল্প' : 'লেখা');
+        return $this->isPoem() ? 'কবিতা' : (['short-stories' => 'গল্প', 'anugolpo' => 'অণুগল্প'][$this->section?->slug] ?? 'লেখা');
     }
 
     public function serial(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(Serial::class); }

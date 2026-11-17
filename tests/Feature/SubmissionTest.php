@@ -102,6 +102,23 @@ class SubmissionTest extends TestCase
         $this->assertSoftDeleted('posts', ['id' => $draft->id]);
     }
 
+    /** D223 (owner: "add a separate section for anugolpo. And add to the menus"). */
+    public function test_micro_fiction_has_its_own_section_in_the_menus_and_on_the_form(): void
+    {
+        $s = Section::where('slug', 'anugolpo')->firstOrFail();   // made by the migration
+        $this->assertSame(['অণুগল্প', 'literature', 'prose', true], [$s->name_bn, $s->nav_group, $s->format, (bool) $s->is_active]);
+        cache()->flush();
+        $links = collect(Section::menu()['groups'])->flatMap(fn ($g) => $g['links'])->pluck(1, 0);
+        $this->assertSame(\App\Support\Url::to('/category/anugolpo'), $links['অণুগল্প'], 'In the menu before its first piece, so writers find it');
+        $this->get('/category/anugolpo/')->assertOk()->assertSee('অণুগল্প');
+        $this->get('/')->assertOk()->assertSee('/category/anugolpo/', false);
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->actingAs($this->writer)->get('/submit/')->assertOk()->assertSee('অণুগল্প');
+        $this->post('/submit/', $this->poem(['section_id' => $s->id, 'title' => 'ছাতা', 'body' => 'বৃষ্টি থামল। ছাতাটা সে ইচ্ছে করেই ফেলে এল, যাতে আর একবার আসতে হয়।']))->assertRedirect(url('/account').'/');
+        $piece = Post::where('title', 'ছাতা')->firstOrFail();
+        $this->assertSame(['pending', 'prose', 'অণুগল্প'], [$piece->status, $piece->format, $piece->kindLabel()]);
+    }
+
     public function test_guests_are_sent_to_login_first(): void
     {
         $this->get('/submit/')->assertRedirect(url('/login'));
