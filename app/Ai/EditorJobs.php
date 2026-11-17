@@ -140,7 +140,8 @@ final class EditorJobs
             }
             (clone $open)->get()->each(fn ($n) => $n->forceFill(['status' => 'cancelled'])->save());
         }
-        $posts = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(self::rhythm() === 'weekly' ? 7 : 14))->latest('published_at')->limit(12)->get();
+        $posts = Post::published()->with('authors')->where('published_at', '>=', now()->subDays(self::rhythm() === 'weekly' ? 7 : 14))->latest('published_at')->limit(40)->get();
+        $posts = $posts->unique(fn (Post $p) => $p->serial_id ? 's'.$p->serial_id : 'p'.$p->id)->take(\App\Support\LetterDesign::MAX_PIECES)->values();   // D225: each serial once, with its newest episode
         $archive = $posts->isEmpty();
         if ($archive) {
             $popular = \Illuminate\Support\Facades\DB::table('post_views')->where('day', '>=', now()->subDays(60)->toDateString())->groupBy('post_id')->orderByRaw('SUM(views) DESC')->limit(20)->pluck('post_id');
@@ -159,13 +160,18 @@ final class EditorJobs
                 : 'The weekly letter to readers about this week\'s new pieces. Button: usually "home".')
             .' The subject line must make a reader curious without clickbait (a question or a small concrete image from the strongest piece, under 60 characters; never "সাপ্তাহিক চিঠি" or a date). '
             .'Open with two or three sentences about the one strongest piece, like telling a friend why to read it; then one line per piece that gives a real reason to open it (a question it raises, a scene, never a summary of the ending). '
-            .'Keep it short: readers decide in ten seconds. Do not mention games or other sections: the site adds those below the pieces.',
-            'Week ending '.now('Asia/Kolkata')->format('d/m/Y'), $posts->all());
+            .'Keep it short: readers decide in ten seconds. Do not mention games or other sections: the site adds those below the pieces. '
+            // D225: the letter is laid out like a small magazine, so the opening is a letter and not a list.
+            .'The letter is laid out like a small magazine: the first piece that is not a serial episode leads with its picture, serial episodes get a block of their own, the rest follow. '
+            .'So the opening paragraphs must NOT list the pieces or name every serial: after the greeting write at most two short paragraphs, about the leading piece and the feeling of the week. '
+            .'For a serial episode the line is a hook for THIS episode (where the story stands, what is at stake), never "the seventh episode of …".',
+            'Week ending '.now('Asia/Kolkata')->format('d/m/Y'), $posts->all(), quotes: true);
         if (! $out) {
             return null;
         }
         $n = self::draft('ai_weekly', 'readers', $out, $posts->all());
-        $n->forceFill(['extras' => self::comeBack()])->save();
+        $serialShown = collect((array) $n->items)->contains(fn ($it) => ($it['kind'] ?? '') === 'serial');
+        $n->forceFill(['extras' => array_values(array_filter(self::comeBack(), fn ($b) => ! ($serialShown && $b['kind'] === 'serial')))])->save();
         \App\Support\Handover::letterDrafted($n);   // D208: goes by itself after twelve hours, unless stopped
 
         return $n;
@@ -214,21 +220,27 @@ final class EditorJobs
     {
         $items = [];
         if (\App\Support\WordGame::number() >= 1) {
-            $items[] = ['title' => 'আজকের ধাঁধা', 'author' => 'রোজ একটি নতুন ধাঁধা আর শব্দের খেলা', 'url' => \App\Support\Url::to('/khela/dhadha'), 'line' => \App\Support\WordGame::riddle()['words'][0]['clue']];
+            $items[] = ['kind' => 'riddle', 'title' => 'আজকের ধাঁধা', 'author' => 'রোজ একটি নতুন ধাঁধা আর শব্দের খেলা', 'url' => \App\Support\Url::to('/khela/dhadha'), 'line' => \App\Support\WordGame::riddle()['words'][0]['clue']];
         }
         // Owner (2026-11-14): the letter goes out at the weekend, when the open theme has a day left or is already
         // closed. So it carries the theme that opens on Monday, which gives the reader the whole week. Only a letter
         // sent early in the week (two days or more still to go) points at the open theme.
         $k = \App\Models\ReaderPrompt::where('status', 'open')->latest('id')->first();
         if ($k && $k->closes_at && $k->closes_at->gt(now()->addDays(2))) {
-            $items[] = ['title' => 'পাঠকের কলম: '.$k->title, 'author' => 'শনিবার সন্ধ্যা ৬টা পর্যন্ত লিখতে পারেন', 'url' => $k->url(), 'line' => $k->ask];
+            $items[] = ['kind' => 'kolom', 'title' => 'পাঠকের কলম: '.$k->title, 'author' => 'শনিবার সন্ধ্যা ৬টা পর্যন্ত লিখতে পারেন', 'url' => $k->url(), 'line' => $k->ask];
         } elseif (\App\Support\Kolom::auto() && \App\Models\ReaderPrompt::exists()) {
             [, $title, $ask] = \App\Support\Kolom::nextTheme();
-            $items[] = ['title' => 'পাঠকের কলম: সোমবার থেকে নতুন বিষয় "'.$title.'"', 'author' => 'সোমবার সকাল থেকে শনিবার সন্ধ্যা পর্যন্ত আপনিও লিখুন', 'url' => \App\Support\Url::to('/kolom'), 'line' => $ask];
+            $items[] = ['kind' => 'kolom', 'title' => 'পাঠকের কলম: সোমবার থেকে নতুন বিষয় "'.$title.'"', 'author' => 'সোমবার সকাল থেকে শনিবার সন্ধ্যা পর্যন্ত আপনিও লিখুন', 'url' => \App\Support\Url::to('/kolom'), 'line' => $ask];
         }
         $episode = Post::published()->with('serial')->whereNotNull('serial_id')->where('published_at', '>=', now()->subDays(10))->latest('published_at')->first();
         if ($episode && $episode->serial) {
-            $items[] = ['title' => 'ধারাবাহিক: '.$episode->serial->title, 'author' => 'নতুন পর্ব: '.$episode->title, 'url' => $episode->url(), 'line' => (string) ($episode->episode_teaser ?? '')];
+            $items[] = ['kind' => 'serial', 'title' => 'ধারাবাহিক: '.$episode->serial->title, 'author' => 'নতুন পর্ব: '.$episode->title, 'url' => $episode->url(), 'line' => (string) ($episode->episode_teaser ?? '')];
+        }
+        // D225: a case readers can still guess, and a reader's own words about a piece.
+        foreach ([\App\Support\LetterDesign::guess(), \App\Support\LetterDesign::voice()] as $block) {
+            if ($block) {
+                $items[] = $block;
+            }
         }
 
         return $items;

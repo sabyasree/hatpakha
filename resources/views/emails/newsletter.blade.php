@@ -1,5 +1,7 @@
 {{-- Newsletter e-mail (D58). Inline styles only (e-mail clients); logo palette; all text escaped. --}}
 @php($n = $newsletter)
+@php($items = (array) $n->items)
+@php($lay = \App\Support\LetterDesign::sections($n))
 @php($link = fn (string $l) => \App\Support\NewsletterLinks::tracked($n, $deliveryId ?? null, $l))
 {{-- Web addresses typed in the opening or closing become links (text stays escaped). --}}
 @php($para = fn (string $t) => preg_replace('~https?://[^\s<>"]+[^\s<>".,;:!?)\]।]~u', '<a href="$0" style="color:#1A86C2;font-weight:700">$0</a>', nl2br(e($t))))
@@ -27,25 +29,82 @@
             @if (trim($p) !== '')<p style="margin:0 0 14px">{!! $para(trim($p)) !!}</p>@endif
         @endforeach
     </td></tr>
-    @foreach ((array) $n->items as $i => $it)
-        <tr><td style="padding:6px 28px">
-            <a href="{{ $link((string) $i) }}" style="display:block;border:1px solid #E8DCCB;border-radius:10px;padding:14px 16px;text-decoration:none;color:#13212C">
-                <span style="display:block;font-size:18px;font-weight:700;color:#CB1B32">{{ $it['title'] }}</span>
-                @if (! empty($it['author']))<span style="display:block;font-size:14px;color:#4D5A63">{{ $it['author'] }}</span>@endif
-                @if (! empty($it['line']))<span style="display:block;font-size:16px;margin-top:6px;line-height:1.6">{{ $it['line'] }}</span>@endif
-            </a>
+    {{-- D225: laid out like a small magazine. One piece leads; each serial once; the rest as short rows. --}}
+    @if ($lay['lead'] !== null)
+        @php($it = $items[$lay['lead']])
+        <tr><td style="padding:8px 28px 10px">
+            <div style="font-size:13px;font-weight:700;letter-spacing:1px;color:#CB1B32;padding-bottom:8px">{{ ($it['kind'] ?? '') === 'serial' ? 'ধারাবাহিকের নতুন পর্ব' : 'এ সপ্তাহের প্রথম পাতা' }}</div>
+            @if (! empty($it['image']))
+                <a href="{{ $link((string) $lay['lead']) }}" style="display:block;text-decoration:none"><img src="{{ $it['image'] }}" width="544" alt="" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:12px"></a>
+            @endif
+            <a href="{{ $link((string) $lay['lead']) }}" style="display:block;text-decoration:none;color:#13212C;font-size:26px;font-weight:700;line-height:1.35;padding-top:14px">{{ $it['title'] }}</a>
+            @if (! empty($it['author']))<div style="font-size:15px;color:#4D5A63;padding-top:2px">{{ $it['author'] }}</div>@endif
+            @if (! empty($it['quote']))
+                <div style="margin-top:14px;border-left:4px solid #CB1B32;background:#FBEBD8;border-radius:0 10px 10px 0;padding:14px 18px">
+                    <div style="font-size:19px;line-height:1.75;color:#13212C">“{{ $it['quote'] }}”</div>
+                    <div style="font-size:13px;color:#7A1022;padding-top:6px;font-weight:700">লেখা থেকে</div>
+                </div>
+            @endif
+            @if (! empty($it['line']))<div style="font-size:17px;line-height:1.75;padding-top:12px">{{ $it['line'] }}</div>@endif
+            <div style="padding-top:14px"><a href="{{ $link((string) $lay['lead']) }}" style="display:inline-block;background:#13212C;color:#FFFFFF;text-decoration:none;border-radius:999px;padding:10px 22px;font-weight:700;font-size:16px">পুরোটা পড়ুন →</a></div>
         </td></tr>
-    @endforeach
-    {{-- D184: reasons to come back this week (today's riddle, the open theme, a running serial) --}}
+    @endif
+    @if ($lay['serials'])
+        <tr><td style="padding:16px 28px 0"><div style="border-top:2px solid #13212C;padding-top:12px;font-size:20px;font-weight:700;color:#13212C">ধারাবাহিক: গল্প এখন যেখানে</div></td></tr>
+        @foreach ($lay['serials'] as $i)
+            @php($it = $items[$i])
+            <tr><td style="padding:8px 28px">
+                <a href="{{ $link((string) $i) }}" style="display:block;text-decoration:none;color:#13212C">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                    @if (! empty($it['image']))<td width="84" valign="top" style="padding-right:14px"><img src="{{ $it['image'] }}" width="84" height="84" alt="" style="display:block;width:84px;height:84px;object-fit:cover;border:0;border-radius:10px"></td>@endif
+                    <td valign="top">
+                        <span style="display:block;font-size:18px;font-weight:700;color:#CB1B32;line-height:1.4">{{ $it['serial'] ?? $it['title'] }}</span>
+                        @if (! empty($it['episode']))<span style="display:block;font-size:15px;font-weight:700;color:#13212C">{{ $it['episode'] }}</span>@endif
+                        @if (! empty($it['line']))<span style="display:block;font-size:16px;line-height:1.6;padding-top:4px">{{ $it['line'] }}</span>@endif
+                        <span style="display:block;font-size:14px;font-weight:700;color:#1A86C2;padding-top:4px">এই পর্ব পড়ুন →</span>
+                    </td>
+                </tr></table>
+                </a>
+            </td></tr>
+        @endforeach
+    @endif
+    @if ($lay['more'])
+        @if ($lay['lead'] !== null)<tr><td style="padding:16px 28px 0"><div style="border-top:2px solid #13212C;padding-top:12px;font-size:20px;font-weight:700;color:#13212C">আরও পড়ুন</div></td></tr>@endif
+        @foreach ($lay['more'] as $i)
+            @php($it = $items[$i])
+            <tr><td style="padding:6px 28px">
+                <a href="{{ $link((string) $i) }}" style="display:block;border:1px solid #E8DCCB;border-radius:10px;padding:14px 16px;text-decoration:none;color:#13212C">
+                    <span style="display:block;font-size:18px;font-weight:700;color:#CB1B32">{{ $it['title'] }}</span>
+                    @if (! empty($it['author']))<span style="display:block;font-size:14px;color:#4D5A63">{{ $it['author'] }}</span>@endif
+                    @if (! empty($it['line']))<span style="display:block;font-size:16px;margin-top:6px;line-height:1.6">{{ $it['line'] }}</span>@endif
+                </a>
+            </td></tr>
+        @endforeach
+    @endif
+    {{-- D184: reasons to come back this week. D225: the riddle is set out to be tried, a reader's words as a letter. --}}
     @if ($n->extras)
         <tr><td style="padding:18px 28px 2px;font-size:15px;font-weight:700;color:#4D5A63">এ সপ্তাহে আরও</td></tr>
         @foreach ((array) $n->extras as $i => $it)
             <tr><td style="padding:6px 28px">
-                <a href="{{ $link('x'.$i) }}" style="display:block;background:#FBEBD8;border-radius:10px;padding:14px 16px;text-decoration:none;color:#13212C">
-                    <span style="display:block;font-size:17px;font-weight:700;color:#7A1022">{{ $it['title'] }}</span>
-                    @if (! empty($it['line']))<span style="display:block;font-size:16px;margin-top:4px;line-height:1.6">{{ $it['line'] }}</span>@endif
-                    @if (! empty($it['author']))<span style="display:block;font-size:14px;color:#4D5A63;margin-top:4px">{{ $it['author'] }} →</span>@endif
-                </a>
+                @if (($it['kind'] ?? '') === 'riddle')
+                    <a href="{{ $link('x'.$i) }}" style="display:block;background:#13212C;border-radius:12px;padding:18px 20px;text-decoration:none;color:#FFFFFF">
+                        <span style="display:block;font-size:13px;font-weight:700;letter-spacing:1px;color:#EFC08D">{{ $it['title'] }} · ভেবে দেখুন</span>
+                        <span style="display:block;font-size:21px;font-weight:700;line-height:1.6;padding-top:6px;color:#FFFFFF">{{ $it['line'] ?? '' }}</span>
+                        <span style="display:block;font-size:15px;color:#EFC08D;padding-top:8px;font-weight:700">উত্তর মিলিয়ে নিন →</span>
+                    </a>
+                @elseif (($it['kind'] ?? '') === 'voice')
+                    <a href="{{ $link('x'.$i) }}" style="display:block;border:2px solid #13212C;border-radius:12px;padding:16px 18px;text-decoration:none;color:#13212C">
+                        <span style="display:block;font-size:13px;font-weight:700;letter-spacing:1px;color:#CB1B32">{{ $it['title'] }}</span>
+                        <span style="display:block;font-size:17px;line-height:1.75;padding-top:6px">“{{ $it['line'] ?? '' }}”</span>
+                        <span style="display:block;font-size:14px;color:#4D5A63;padding-top:6px">— {{ $it['author'] ?? '' }}</span>
+                    </a>
+                @else
+                    <a href="{{ $link('x'.$i) }}" style="display:block;background:#FBEBD8;border-radius:10px;padding:14px 16px;text-decoration:none;color:#13212C">
+                        <span style="display:block;font-size:17px;font-weight:700;color:#7A1022">{{ $it['title'] }}</span>
+                        @if (! empty($it['line']))<span style="display:block;font-size:16px;margin-top:4px;line-height:1.6">{{ $it['line'] }}</span>@endif
+                        @if (! empty($it['author']))<span style="display:block;font-size:14px;color:#4D5A63;margin-top:4px">{{ $it['author'] }} →</span>@endif
+                    </a>
+                @endif
             </td></tr>
         @endforeach
     @endif

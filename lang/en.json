@@ -865,6 +865,8 @@
     "লেখা (ঐচ্ছিক)": "Pieces (optional)",
     "লেখা যোগ করুন": "Add a piece",
     "এক লাইনে কেন পড়বেন": "Why read it, in one line",
+    "লেখা থেকে একটি লাইন (ঐচ্ছিক)": "One line from the piece (optional)",
+    "প্রথম লেখাটি বড় করে দেখানো হয়, এই লাইনটি তার নিচে উদ্ধৃতি হিসেবে বসে। লেখায় হুবহু না থাকলে লাইনটি বাদ যায়।": "The first piece is shown large, with this line under it as a quotation. A line that is not in the piece word for word is left out.",
     "শেষের কথা (ঐচ্ছিক)": "Closing words (optional)",
     "কাকে": "To",
     "পাঠানো": "sent",

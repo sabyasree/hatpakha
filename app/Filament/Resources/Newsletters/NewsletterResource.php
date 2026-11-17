@@ -66,6 +66,8 @@ class NewsletterResource extends Resource
                         ->getSearchResultsUsing(fn (string $search) => Post::published()->where('title', 'like', '%'.$search.'%')->latest('published_at')->limit(30)->pluck('title', 'id'))
                         ->getOptionLabelUsing(fn ($value) => Post::find($value)?->title),
                     TextInput::make('line')->label(__('এক লাইনে কেন পড়বেন'))->maxLength(240),
+                    TextInput::make('quote')->label(__('লেখা থেকে একটি লাইন (ঐচ্ছিক)'))->maxLength(220)->columnSpanFull()
+                        ->helperText(__('প্রথম লেখাটি বড় করে দেখানো হয়, এই লাইনটি তার নিচে উদ্ধৃতি হিসেবে বসে। লেখায় হুবহু না থাকলে লাইনটি বাদ যায়।')),
                 ])->columns(2),
             Textarea::make('closing')->label(__('শেষের কথা (ঐচ্ছিক)'))->rows(3)->maxLength(2000)->columnSpanFull(),
             TextInput::make('cta_label')->label(__('বোতামের লেখা'))->maxLength(40)->placeholder(__('যেমন: লেখা পাঠান')),
@@ -81,7 +83,7 @@ class NewsletterResource extends Resource
         return collect($items)->map(function ($it) {
             $p = Post::published()->with('authors')->find($it['id'] ?? 0);
 
-            return $p ? ['id' => $p->id, 'title' => $p->title, 'author' => $p->authors->first()?->publicName() ?? '', 'url' => $p->url(), 'line' => strip_tags((string) ($it['line'] ?? ''))] : null;
+            return $p ? \App\Support\LetterDesign::item($p, (string) ($it['line'] ?? ''), (string) ($it['quote'] ?? '')) : null;
         })->filter()->values()->all();
     }
 
