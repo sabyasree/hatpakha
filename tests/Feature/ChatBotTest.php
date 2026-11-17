@@ -56,6 +56,28 @@ class ChatBotTest extends TestCase
         $this->assertStringContainsString('কিছু বদল দরকার', $this->seen);
         $this->assertStringNotContainsString('অন্যের গোপন লেখা', $this->seen);
         $this->assertSame(1, EditorTask::where('type', 'question')->count());
+
+        // D224 (owner: "I sent this reply from there. Then I could not find any details"): the answer stays with the question.
+        \Illuminate\Support\Facades\Notification::fake();
+        $task = EditorTask::where('type', 'question')->firstOrFail();
+        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->callAction('replyQuestion', ['message' => 'এ সপ্তাহেই জানাব।'], arguments: ['task' => $task->id]);
+        $this->assertSame(['done', 'এ সপ্তাহেই জানাব।'], [$task->fresh()->status, $task->fresh()->payload['reply']]);
+        $page = \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('লেখকদের প্রশ্ন ও আপনার উত্তর')->assertSee('কবে প্রকাশ হবে?')->assertSee('এ সপ্তাহেই জানাব।');
+        // The first e-mail came back: the same answer can be sent again from there.
+        $page->callAction('replyAgain', ['message' => 'এ সপ্তাহেই জানাব। (আবার পাঠালাম)'], arguments: ['task' => $task->id]);
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($me, \App\Notifications\WriterNote::class, 2);
+        $this->assertSame('এ সপ্তাহেই জানাব। (আবার পাঠালাম)', $task->fresh()->payload['reply']);
+    }
+
+    /** D224: Hostinger's mail filter refused an editor's reply; letters to writers go by the chosen mail service when there is one. */
+    public function test_letters_to_writers_go_by_the_chosen_mail_service(): void
+    {
+        $note = fn () => (new \App\Notifications\WriterNote('ক', 'খ', 'https://hatpakha.com/account/'))->toMail(User::factory()->make());
+        $this->assertNull($note()->mailer, 'No service set up: the site\'s ordinary mailbox, as before');
+        config(['mail.mailers.brevo.host' => 'smtp-relay.brevo.com']);
+        $this->assertSame('brevo', $note()->mailer);
     }
 
     public function test_rate_limit_and_input_limits(): void

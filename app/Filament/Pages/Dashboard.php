@@ -170,8 +170,40 @@ class Dashboard extends BaseDashboard
                 $writer = $task->subject;
                 abort_unless($writer instanceof \App\Models\User, 404);
                 $writer->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার প্রশ্নের উত্তর', $data['message'], \App\Support\Url::to('/account')));
+                // D224: the answer is kept with the question, so it can be read (and sent again) afterwards
+                $task->forceFill(['payload' => ['reply' => $data['message'], 'replied_at' => now()->toIso8601String(), 'replied_by' => auth()->id()] + (array) $task->payload])->save();
                 $task->close();
                 Notification::make()->title(__('পাঠানো হয়েছে'))->success()->send();
+            });
+    }
+
+    /** D224 (owner: "I sent this reply from there. Then I could not find any details"): the questions already answered. */
+    public function answeredQuestions(): \Illuminate\Support\Collection
+    {
+        return \App\Models\EditorTask::with('subject')->where('type', 'question')->where('status', 'done')->latest('done_at')->limit(15)->get();
+    }
+
+    /** Answer an already answered question again (the first e-mail came back, or there is more to say). */
+    public function replyAgainAction(): \Filament\Actions\Action
+    {
+        $find = fn (array $arguments) => \App\Models\EditorTask::where('type', 'question')->where('status', 'done')->findOrFail((int) ($arguments['task'] ?? 0));
+
+        return \Filament\Actions\Action::make('replyAgain')->label(__('আবার উত্তর পাঠান'))->icon('heroicon-o-arrow-path')->size('xs')->color('gray')
+            ->modalHeading(__('লেখকের প্রশ্ন'))
+            ->fillForm(fn (array $arguments) => ['message' => $find($arguments)->payload['reply'] ?? ''])
+            ->schema(fn (array $arguments) => [
+                \Filament\Forms\Components\Placeholder::make('q')->label(fn () => ($find($arguments)->payload['name'] ?? '').' · '.($find($arguments)->payload['email'] ?? ''))
+                    ->content($find($arguments)->payload['question'] ?? ''),
+                \Filament\Forms\Components\Textarea::make('message')->label(__('উত্তর'))->required()->rows(8)->maxLength(2000),
+            ])
+            ->modalSubmitActionLabel(__('পাঠান'))
+            ->action(function (array $data, array $arguments) use ($find) {
+                $task = $find($arguments);
+                abort_unless($task->subject instanceof \App\Models\User, 404);
+                $task->subject->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার প্রশ্নের উত্তর', $data['message'], \App\Support\Url::to('/account')));
+                $task->forceFill(['payload' => ['reply' => $data['message'], 'replied_at' => now()->toIso8601String(), 'replied_by' => auth()->id()] + (array) $task->payload])->save();
+                \App\Models\AuditLog::record('task.question.resent', $task->subject, ['task' => $task->id]);
+                Notification::make()->title(__('আবার পাঠানো হয়েছে'))->success()->send();
             });
     }
 
