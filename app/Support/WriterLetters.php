@@ -27,6 +27,13 @@ final class WriterLetters
 
     public static function mark(MailMessage $mail, string $kind, ?Post $post = null): MailMessage
     {
+        // D224: a letter to a writer goes by the mail service chosen in /desk → চিঠি → পাঠানোর পথ (Brevo or Amazon SES) when
+        // there is one. Hostinger's own mailbox passes mail on through a filter that refused an editor's reply to a writer
+        // ("550 5.7.1 [CS] Message blocked", 2026-11-17); the mail services carry our own DKIM signature and report bounces.
+        if (($road = BulkMail::provider()) && blank($mail->mailer)) {
+            $mail->mailer(BulkMail::PROVIDERS[$road][1]);
+        }
+
         return $mail->withSymfonyMessage(function (Email $m) use ($kind, $post) {
             $m->getHeaders()->addTextHeader(self::KIND_HEADER, $kind);
             if ($post?->id) {

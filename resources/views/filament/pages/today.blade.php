@@ -125,6 +125,26 @@
                 @endif
             </x-filament::section>
 
+            @php($answered = $this->answeredQuestions())
+            @if ($answered->isNotEmpty())
+                {{-- D224: questions already answered stay in sight, with what was said --}}
+                <x-filament::section icon="heroicon-o-chat-bubble-left-right" collapsible collapsed persist-collapsed collapse-id="hp-today-qa">
+                    <x-slot name="heading">{{ __('লেখকদের প্রশ্ন ও আপনার উত্তর') }} ({{ Bn::num((string) $answered->count()) }})</x-slot>
+                    <x-slot name="description">{{ __('উত্তরের ই-মেলের হুবহু কপি আছে "পাঠানো চিঠি"-তে।') }}</x-slot>
+                    @foreach ($answered as $qa)
+                        <div class="hp-row" style="display:block">
+                            <div style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:space-between;align-items:center">
+                                <strong>{{ $qa->payload['name'] ?? $qa->subject?->name }}</strong>
+                                <span class="hp-muted">{{ $qa->payload['email'] ?? '' }} · {{ Bn::num(($qa->done_at ?? $qa->updated_at)->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')) }}</span>
+                            </div>
+                            <div style="margin-top:.3rem"><span class="hp-muted">{{ __('প্রশ্ন:') }}</span> {{ $qa->payload['question'] ?? '' }}</div>
+                            <div style="margin-top:.3rem;white-space:pre-line"><span class="hp-muted">{{ __('উত্তর:') }}</span> {{ $qa->payload['reply'] ?? __('(এই উত্তরটি তখন রাখা হয়নি; "পাঠানো চিঠি"-তে দেখুন)') }}</div>
+                            <div style="margin-top:.4rem">{{ ($this->replyAgainAction)(['task' => $qa->id]) }}</div>
+                        </div>
+                    @endforeach
+                </x-filament::section>
+            @endif
+
             @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
                 {{-- Owner (2026-11-16): the editor's pick is always in sight and can be changed, whatever the AI proposed --}}
                 @php($nowPick = $this->currentPick())
