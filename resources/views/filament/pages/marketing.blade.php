@@ -174,7 +174,7 @@
             : __('এখন কমেন্টের উত্তর নিজে থেকে যায় না।') }}</p>
         @forelse ($comments as $c)
             <div style="border-top:1px solid rgba(127,127,127,.2);padding:.6rem 0">
-                <div class="hp-muted" style="font-size:.8rem">{{ $c->network === 'instagram' ? 'Instagram' : 'Facebook' }} · {{ \Illuminate\Support\Str::limit($c->post?->title, 60) }} · {{ __(\App\Support\CommentReplies::STATUSES[$c->status] ?? $c->status) }}@if ($c->reason) · {{ $c->reason }}@endif</div>
+                <div class="hp-muted" style="font-size:.8rem">{{ $c->network === 'instagram' ? 'Instagram' : 'Facebook' }} · {{ \Illuminate\Support\Str::limit($c->post?->title ?? ($c->post_text ?: __('আপনার নিজের পোস্ট')), 60) }} · {{ __(\App\Support\CommentReplies::STATUSES[$c->status] ?? $c->status) }}@if ($c->reason) · {{ $c->reason }}@endif</div>
                 <div style="margin-top:.2rem"><b>{{ __('পাঠক') }}:</b> {{ $c->text }}</div>
                 @if ($c->reply)<div style="margin-top:.2rem"><b>{{ __('হাতপাখা') }}:</b> {{ $c->reply }}</div>@endif
                 <div style="margin-top:.3rem;display:flex;gap:.4rem">

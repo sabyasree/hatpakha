@@ -83,7 +83,61 @@ final class CommentReplies
                 $n++;
             }
         }
+        $n += self::fetchOwn($auth, $base, $page);
         SocialComment::where('created_at', '<', now()->subDays(60))->delete();   // readers' words are not kept longer
+
+        return $n;
+    }
+
+    public const OWN_DAYS = 45;
+
+    /**
+     * D227 (owner: people asked how to send writing under "my own post, I boosted it", and nobody answered): the
+     * page's other recent posts are read too, those the owner put up by hand and adverts made from them. If Facebook
+     * refuses to show the page's posts or comments, the owner is told instead of the job staying silent.
+     */
+    private static function fetchOwn(array $auth, string $base, string $page): int
+    {
+        $ours = SocialPost::whereNotNull('fb_post_id')->where('updated_at', '>=', now()->subDays(self::OWN_DAYS + 7))->pluck('fb_post_id')->all();
+        $posts = [];
+        $refused = null;
+        foreach (['published_posts' => [], 'ads_posts' => ['include_inline_create' => 'true']] as $edge => $extra) {
+            $res = rescue(fn () => Http::timeout(20)->get($base.$page.'/'.$edge, ['fields' => 'id,message,created_time', 'limit' => 25] + $extra + $auth), null, false);
+            if ($edge === 'published_posts' && ! $res?->successful()) {
+                $refused = (string) ($res?->json('error.message') ?? 'no connection');
+            }
+            foreach ((array) ($res?->successful() ? $res->json('data') : []) as $p) {
+                $id = (string) ($p['id'] ?? '');
+                $at = rescue(fn () => \Illuminate\Support\Carbon::parse($p['created_time'] ?? 'now'), now(), false);
+                if ($id !== '' && ! in_array($id, $ours, true) && $at->gte(now()->subDays(self::OWN_DAYS))) {
+                    $posts[$id] = mb_substr(trim((string) ($p['message'] ?? '')), 0, 800);
+                }
+            }
+        }
+        $n = 0;
+        foreach (array_slice($posts, 0, 25, true) as $postId => $words) {
+            $res = rescue(fn () => Http::timeout(20)->get($base.$postId.'/comments', ['fields' => 'id,message,from,created_time,parent', 'filter' => 'toplevel', 'order' => 'reverse_chronological', 'limit' => 40] + $auth), null, false);
+            if (! $res?->successful()) {
+                $refused ??= (string) ($res?->json('error.message') ?? 'no connection');
+
+                continue;
+            }
+            foreach ((array) $res->json('data') as $c) {
+                $id = (string) ($c['id'] ?? '');
+                $text = (string) ($c['message'] ?? '');
+                if ($id === '' || (string) ($c['from']['id'] ?? '') === $page || ! empty($c['parent']) || SocialComment::where('remote_id', $id)->exists()) {
+                    continue;
+                }
+                $at = ! empty($c['created_time']) ? rescue(fn () => \Illuminate\Support\Carbon::parse($c['created_time']), null, false) : now();
+                // An old comment found for the first time is shown to the owner, not answered weeks late.
+                $late = $at && $at->lt(now()->subDays(3));
+                SocialComment::create(['social_post_id' => null, 'post_text' => $words ?: null, 'network' => 'facebook', 'remote_id' => $id, 'text' => mb_substr(trim($text), 0, 1500), 'commented_at' => $at,
+                    'status' => mb_strlen(trim(preg_replace('/[^\p{L}\p{N}]+/u', '', $text))) < 3 ? 'skipped' : ($late ? 'flagged' : 'new'),
+                    'reason' => $late ? 'পুরনো কমেন্ট: দেরিতে চোখে পড়ল, নিজে দেখে উত্তর দিন' : null]);
+                $n++;
+            }
+        }
+        Handover::flag('fb_comments', $refused ? __('Facebook পাতার কমেন্ট পড়া যাচ্ছে না, তাই পাঠকদের উত্তর দেওয়া বন্ধ আছে') : null, $refused ? [$refused] : []);
 
         return $n;
     }
@@ -100,7 +154,7 @@ final class CommentReplies
         if ($batch->isEmpty()) {
             return 0;
         }
-        $items = $batch->map(fn (SocialComment $c) => ['id' => $c->id, 'network' => $c->network, 'our_post' => mb_substr((string) ($c->post->texts[$c->network] ?? $c->post->texts['facebook'] ?? $c->post->title), 0, 500), 'comment' => $c->text])->values()->all();
+        $items = $batch->map(fn (SocialComment $c) => ['id' => $c->id, 'network' => $c->network, 'our_post' => mb_substr((string) ($c->post ? ($c->post->texts[$c->network] ?? $c->post->texts['facebook'] ?? $c->post->title) : $c->post_text), 0, 500), 'comment' => $c->text])->values()->all();
         [$d] = Claude::json('marketing', self::VOICE,
             "<facts>\n".e(self::facts())."\n</facts>\n<comments>\n".e(json_encode($items, JSON_UNESCAPED_UNICODE))."\n</comments>",
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['answers'], 'properties' => ['answers' => ['type' => 'array', 'items' => [
@@ -169,6 +223,7 @@ final class CommentReplies
         return implode("\n", [
             'Hatpakha (হাতপাখা): a Bengali literary web magazine, since 2012. Website: hatpakha.com',
             'Anyone can send writing: hatpakha.com/submit (a free account is needed). Every piece is read; nothing is promised.',
+            'Writing is taken only through that form on the website, never by e-mail, Messenger or a comment. It costs nothing. The rules are at hatpakha.com/submissions',
             'Daily games (a riddle, a word game, a small crossword): hatpakha.com/khela',
             'পাঠকের কলম: each week readers write a few lines on a theme, no account needed: hatpakha.com/kolom',
             'A riddle card\'s answer is given by us as a comment the next morning.',
