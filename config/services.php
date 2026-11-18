@@ -23,6 +23,8 @@ return [
     'social' => [
         'facebook' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/Hatpakhaonline'),
         'instagram' => env('INSTAGRAM_URL', 'https://www.instagram.com/hatpakha/'),
+        // D236: the WhatsApp Channel the owner opened (2026-11-18). Followers do not see the owner's number.
+        'whatsapp' => env('WHATSAPP_CHANNEL_URL', 'https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F'),
         'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
         'facebook_app_id' => env('FACEBOOK_APP_ID'),   // optional: only silences the Sharing Debugger's fb:app_id note
     ],

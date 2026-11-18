@@ -114,6 +114,9 @@
         @endforeach
         <p style="margin:6px 0 20px"><a href="{{ $link('cta') }}" style="display:inline-block;background:#CB1B32;color:#FFFFFF;text-decoration:none;border-radius:999px;padding:12px 26px;font-weight:700;font-size:17px">{{ $n->cta_label ?: 'হাতপাখা খুলুন' }}</a></p>
     </td></tr>
+    @if ($n->audience !== 'writers' && filled($wa = config('services.social.whatsapp')))
+    <tr><td style="padding:0 28px 18px;font-size:15px;line-height:1.6">রোজের খবর হোয়াটসঅ্যাপে চান? <a href="{{ $wa }}" style="color:#1A86C2;font-weight:700">হাতপাখার চ্যানেলে যোগ দিন</a>।</td></tr>
+    @endif
     <tr><td style="border-top:1px solid #E8DCCB;padding:14px 28px;font-size:13px;color:#4D5A63;line-height:1.6">
         এই চিঠি আপনি পাচ্ছেন কারণ আপনি হাতপাখার চিঠি চেয়েছিলেন বা হাতপাখায় লেখেন।
         আর চান না? <a href="{{ $unsubscribeUrl }}" style="color:#1A86C2">এক ক্লিকে বন্ধ করুন</a>।

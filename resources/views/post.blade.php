@@ -167,6 +167,12 @@
             <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp</a>
             <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
         </div>
+        @if ($post->isLive() && ! $post->isKids() && filled($wa = config('services.social.whatsapp')))
+            {{-- D236: the channel reaches readers without Facebook deciding who sees a post --}}
+            <a href="{{ $wa }}" rel="noopener" target="_blank" data-md-skip class="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-white px-5 py-3 font-bold hover:bg-peach-light">
+                <span><span class="block text-lg leading-snug">নতুন লেখার খবর হোয়াটসঅ্যাপে পান</span><span class="block text-sm font-normal text-ink2">হাতপাখার চ্যানেলে যোগ দিন। আপনার নম্বর কেউ দেখতে পায় না।</span></span>
+                <span aria-hidden="true" class="flex-none rounded-full bg-red px-4 py-2 text-white">যোগ দিন →</span></a>
+        @endif
         @if ($post->isLive() && ! $post->isKids())
             <p class="mt-3 text-sm text-ink2"><span aria-hidden="true" class="font-serif text-lg text-red">❝</span> কোনো লাইন ভালো লাগল? আঙুল চেপে ধরে লাইনটা বেছে নিন, তারপর “এই লাইন শেয়ার করুন” টিপুন। হাতপাখার কার্ড হয়ে যাবে।</p>
         @endif

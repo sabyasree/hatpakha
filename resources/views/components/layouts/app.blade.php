@@ -129,6 +129,7 @@
                 <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
                 @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
                 @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
+                @if (filled($wa = config('services.social.whatsapp')))<a href="{{ $wa }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">হোয়াটসঅ্যাপ চ্যানেল</a>@endif
             </nav>
         </div>
         {{-- D128: always a way to keep Hatpakha on a phone, like the store buttons other sites show (hidden inside the app itself) --}}
