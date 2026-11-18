@@ -90,6 +90,7 @@ class HomeController extends Controller
             'stories' => $load(($rot = \App\Support\HomeRotation::today())['stories']),
             'travel' => $load($rot['travel']),
             'freshIds' => $rot['fresh'],
+            'readersChoice' => \App\Support\Feelings::latest(),   // D232
             'onThisDay' => $ids['onThisDay'] ? Post::with('authors')->find($ids['onThisDay']) : null,
             'letters' => Comment::with('post')->whereKey($ids['letters'])->get(),
             'counts' => $ids['counts'],

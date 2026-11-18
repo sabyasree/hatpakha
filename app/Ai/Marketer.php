@@ -37,11 +37,13 @@ final class Marketer
             .'First think of three different openings: a question to the reader ("question"), the piece\'s most striking line quoted exactly ("line"), or one small concrete scene from the piece ("scene"). '
             .'Use the strongest one'.($last !== '' ? ', but not "'.$last.'" (the last post used it)' : '').', and say which in `shape`. '
             .'The Facebook post: that opening as the first line (it must make sense alone, in under 100 characters), then 1-3 short paragraphs that give the reader something real from the piece without telling the ending, '
-            .'then one honest question to readers that they can answer from their own life in a comment. Name the writer. '
+            .'then one honest question to readers that they can answer from their own life in a comment. Name the writer. If <readers_said> is given, you may use ONE of its numbers as a plain true line (for example that so many readers said the piece stayed with them); never change the number, never add up or invent one. '
             .'Also: a WhatsApp channel/status line (1-2 sentences), an Instagram caption with 3-6 Bengali/English hashtags, '
             .'one striking line copied EXACTLY from the piece for a quote card (max 160 characters), '
             .'and, ONLY if the piece is a poem, `slides`: 2 to 4 of its stanzas copied EXACTLY with their line breaks (each at most 8 lines), in order; for anything else an empty list.',
-            '<piece><title>'.e($post->title).'</title><writer>'.e($writer).'</writer><section>'.e($post->section?->name_bn ?? '').'</section><text>'.e(mb_substr($text, 0, 6000)).'</text></piece>',
+            '<piece><title>'.e($post->title).'</title><writer>'.e($writer).'</writer><section>'.e($post->section?->name_bn ?? '').'</section><text>'.e(mb_substr($text, 0, 6000)).'</text>'
+                // D232: what readers on the site said after reading it (true counts; only once five have answered)
+                .(($said = \App\Support\Feelings::facts($post, 5)) !== '' ? '<readers_said>'.e($said).'</readers_said>' : '').'</piece>',
             self::schema(['quote' => ['type' => 'string'], 'shape' => ['type' => 'string', 'enum' => ['question', 'line', 'scene']], 'slides' => ['type' => 'array', 'items' => ['type' => 'string']]]),
             config('ai.anthropic.tags_model'), 2600, $post->id);
         if (! $d) {

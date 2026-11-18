@@ -169,7 +169,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
 - [x] D231: "পড়ে কেমন লাগল?" five reader feelings under each piece; automatic monthly পাঠকের পছন্দ
-- [ ] Later, if wanted: a page of pieces by feeling; feelings in marketing cards and in what the serial writers learn from
+- [x] D232: readers' choice on the home page and the writer's page; /pathoker-pochhondo/; reader counts for marketing and serial writers
 - [x] D227: readers' comments under the owner's own and boosted Facebook posts are read and answered; a flag when Facebook refuses
 - [x] D226: a detective episode with problems is rewritten by the AI writer (twice at most) before a flag reaches the owner
 - [x] D225: the readers' letter as a small magazine (one leading piece with picture and a checked line from the writing, each serial once, riddle box, a reader's words)

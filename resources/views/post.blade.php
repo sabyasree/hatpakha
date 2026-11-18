@@ -18,7 +18,7 @@
             @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
             @if ($post->serial_id && $post->serial?->isPublic())<a href="{{ $post->serial->url() }}" class="rounded-full border-2 border-navy px-3 py-0.5 font-bold hover:bg-peach-light">{{ $post->serial->title }} · পর্ব {{ \App\Support\Bn::num((string) $post->episode_no) }}</a>@endif
-            @if ($post->readers_choice)<span class="rounded-full bg-navy px-3 py-1 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</span>@endif
+            @if ($post->readers_choice)<a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="rounded-full bg-navy px-3 py-1 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</a>@endif
             @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
@@ -153,7 +153,7 @@
                     @endauth
                 @endforeach
             </div>
-            <p class="mt-2 text-sm text-ink2">@if ($post->likes_count){{ \App\Support\Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন। @endif @guest জানাতে লগ ইন করুন। @else একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @endguest</p>
+            <p class="mt-2 text-sm text-ink2">@if ($post->likes_count){{ \App\Support\Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন। @endif @guest জানাতে লগ ইন করুন। @else একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @endguest <a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="font-bold text-sky-night underline">পাঠকের পছন্দের লেখা দেখুন</a></p>
         </div>
         <div data-md-skip class="mt-4 flex flex-wrap items-center justify-center gap-3 border-b border-rule pb-4">
             @auth

@@ -106,6 +106,22 @@ class ReaderFeaturesTest extends TestCase
         $this->get('/p/')->assertSee('পাঠকের পছন্দ · নভেম্বর ২০২৬');
         $block = collect(\App\Ai\EditorJobs::comeBack())->firstWhere('kind', 'choice');
         $this->assertSame('পাঠকের পছন্দ: নদীর ধারে', $block['title']);
+
+        // D232 (owner: "build all 4"): the home page, the writer's page, a page by feeling, and true numbers for the AI.
+        $this->get('/pathoker-pochhondo/')->assertOk()->assertSee('মাসের পাঠকের পছন্দ')->assertSee('নদীর ধারে')
+            ->assertSee('যে লেখা পাঠকের মন ছুঁয়েছে')->assertSee('৬ জনের মন ছুঁয়েছে')->assertSee('যে লেখা পাঠককে হাসিয়েছে')->assertSee('অন্য লেখা')
+            ->assertDontSee('যে লেখা পাঠককে চমকে দিয়েছে')->assertSee('<link rel="canonical" href="'.url('/pathoker-pochhondo').'/"', false);
+        $this->get('/pathoker-pochhondo')->assertRedirect();   // trailing slash, as every public address
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/')->assertSee('পাঠকের পছন্দ, নভেম্বর ২০২৬')->assertSee('নদীর ধারে');
+        $this->get($post->authors->first()->url())->assertSee('পাঠকের পছন্দ · নভেম্বর ২০২৬');
+        $this->assertSame('6 said it moved them, 3 said it made them think, 1 said it will stay with them', \App\Support\Feelings::facts($post->fresh(), 5));
+        $this->assertSame('', \App\Support\Feelings::facts($other->fresh(), 5), 'One answer is not a number to print on a card');
+        $serial = \App\Models\Serial::create(['title' => 'লাল কাচ', 'slug' => 'lal-kach', 'status' => 'active', 'writer' => 'serial_mystery']);
+        $post->forceFill(['serial_id' => $serial->id, 'episode_no' => 1])->saveQuietly();
+        $this->assertStringContainsString('readers: 6 said it moved them', \App\Support\SerialSignals::forEpisode($serial));
+        $this->assertStringContainsString('most often said "it moved them"', \App\Support\SerialSignals::forEpisode($serial));
+
         \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2027-01-02 08:00', 'Asia/Kolkata'));
         $this->assertNull(\App\Support\Feelings::pickMonth(), 'December had too few answers');
         $this->assertNull($other->fresh()->readers_choice);

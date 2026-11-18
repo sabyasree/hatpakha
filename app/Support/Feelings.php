@@ -19,13 +19,13 @@ use Illuminate\Support\Facades\DB;
  */
 final class Feelings
 {
-    /** key => [what the reader taps, how the count reads to the writer] */
+    /** key => [what the reader taps, how the count reads to the writer, the list's heading on /pathoker-pochhondo/, English for the AI] */
     public const LIST = [
-        'touched' => ['মন ছুঁয়ে গেল', ':n জনের মন ছুঁয়েছে'],
-        'think' => ['ভাবিয়ে তুলল', ':n জনকে ভাবিয়েছে'],
-        'smile' => ['হাসি পেল', ':n জনকে হাসিয়েছে'],
-        'surprise' => ['চমকে দিল', ':n জনকে চমকে দিয়েছে'],
-        'stay' => ['মনে থেকে যাবে', ':n জনের মনে থেকে যাবে'],
+        'touched' => ['মন ছুঁয়ে গেল', ':n জনের মন ছুঁয়েছে', 'যে লেখা পাঠকের মন ছুঁয়েছে', 'it moved them'],
+        'think' => ['ভাবিয়ে তুলল', ':n জনকে ভাবিয়েছে', 'যে লেখা পাঠককে ভাবিয়েছে', 'it made them think'],
+        'smile' => ['হাসি পেল', ':n জনকে হাসিয়েছে', 'যে লেখা পাঠককে হাসিয়েছে', 'it made them smile'],
+        'surprise' => ['চমকে দিল', ':n জনকে চমকে দিয়েছে', 'যে লেখা পাঠককে চমকে দিয়েছে', 'it surprised them'],
+        'stay' => ['মনে থেকে যাবে', ':n জনের মনে থেকে যাবে', 'যে লেখা পাঠকের মনে থেকে গেছে', 'it will stay with them'],
     ];
 
     /** Fewer answers than this in the month and nobody is named: a handful of friends must not decide it. */
@@ -75,6 +75,27 @@ final class Feelings
         $c = is_array($p->feeling_counts) ? $p->feeling_counts : (array) json_decode((string) $p->feeling_counts, true);
 
         return collect(array_keys(self::LIST))->mapWithKeys(fn ($k) => [$k => (int) ($c[$k] ?? 0)])->all();
+    }
+
+    /**
+     * D232: the pieces most readers gave this answer to (a writer's or the desk's, any age), most first.
+     * Each carries `feeling_n`, how many.
+     */
+    public static function top(string $feeling, int $limit = 8): \Illuminate\Support\Collection
+    {
+        $n = DB::table('post_likes')->where('feeling', $feeling)->groupBy('post_id')->selectRaw('post_id, count(*) as n')->orderByDesc('n')->orderByDesc('post_id')->limit($limit * 3)->pluck('n', 'post_id');
+        $posts = Post::published()->with('authors')->whereIn('id', $n->keys())->where('noindex', false)->get()->keyBy('id');
+
+        return $n->keys()->map(fn ($id) => $posts[$id] ?? null)->filter()->take($limit)->each(fn (Post $p) => $p->feeling_n = (int) $n[$p->id])->values();
+    }
+
+    /** D232: true counts in plain English for the AI (marketing, serial writers); empty below $min answers in all. */
+    public static function facts(Post $p, int $min = 1): string
+    {
+        $c = array_filter(self::counts($p));
+        arsort($c);
+
+        return array_sum($c) >= $min ? collect($c)->map(fn ($n, $k) => $n.' said '.self::LIST[$k][3])->implode(', ') : '';
     }
 
     /** For the writer: "৩ জনের মন ছুঁয়েছে · ২ জনকে ভাবিয়েছে" (most first); empty when nobody has answered. */

@@ -27,6 +27,7 @@ final class SerialSignals
                 'opens' => (int) DB::table('post_views')->where('post_id', $p->id)->sum('views'),
                 'finished' => (int) DB::table('reading_history')->where('post_id', $p->id)->where('progress', '>=', 90)->count(),
                 'likes' => (int) $p->likes_count,
+                'said' => Feelings::facts($p),   // D232: how the episode left readers
                 'comments' => (int) $p->comments()->where('status', 'approved')->count(),
             ];
         }
@@ -48,6 +49,17 @@ final class SerialSignals
             if ($best && ($best['likes'] + $best['comments']) > 0) {
                 $lessons[] = "Readers reacted most to episode {$best['no']} (\"{$best['title']}\"): notice what that episode did and do more of it.";
             }
+        }
+        // D232: what readers said the episodes did to them, added up over the serial.
+        $said = [];
+        foreach ($s->liveEpisodes()->get() as $p) {
+            foreach (Feelings::counts($p) as $k => $n) {
+                $said[$k] = ($said[$k] ?? 0) + $n;
+            }
+        }
+        arsort($said);
+        if (array_sum($said) >= 10) {
+            $lessons[] = 'Asked how an episode left them, readers of this serial most often said "'.Feelings::LIST[array_key_first($said)][3].'": keep what gives them that, and do not lose it for the sake of plot.';
         }
         foreach ($eps as $e) {
             if ($e['opens'] >= self::ENOUGH && $e['finished'] > 0 && $e['finished'] < 0.25 * $e['opens']) {
@@ -76,7 +88,7 @@ final class SerialSignals
         if (! $eps) {
             return '';
         }
-        $rows = collect($eps)->map(fn ($e) => "episode {$e['no']}: opened {$e['opens']}, read to the end {$e['finished']}, likes {$e['likes']}, comments {$e['comments']}")->implode("\n");
+        $rows = collect($eps)->map(fn ($e) => "episode {$e['no']}: opened {$e['opens']}, read to the end {$e['finished']}, likes {$e['likes']}, comments {$e['comments']}".($e['said'] !== '' ? ", readers: {$e['said']}" : ''))->implode("\n");
         $follows = (int) DB::table('serial_follows')->where('serial_id', $s->id)->count();
 
         return "\n<reader_signals>\nWhat readers did so far (the site's own counts; small numbers are hints, not proof):\n{$rows}\nfollowing this serial: {$follows}"
