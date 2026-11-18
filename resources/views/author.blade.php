@@ -34,6 +34,9 @@
             <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
                 <div class="min-w-0 basis-full sm:basis-auto sm:flex-1">
                     <h1 class="break-normal font-display text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl" style="font-stretch: 80%">{{ $author->publicName() }}</h1>
+                    @foreach (\App\Models\Post::published()->whereNotNull('readers_choice')->whereHas('authors', fn ($q) => $q->whereKey($author->id))->orderByDesc('readers_choice')->limit(6)->get() as $won)
+                        <a href="{{ $won->url() }}" class="mt-2 mr-1 inline-flex min-h-9 items-center gap-2 rounded-full bg-navy px-3 py-1 font-extrabold text-white">♥ পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($won->readers_choice) }}</a>
+                    @endforeach
                     @if ($author->honour_label)
                         <div class="mt-2 inline-flex items-center gap-2 rounded-full bg-peach-light px-3 py-1 font-extrabold text-red-dark">★ {{ $author->honour_label }}</div>
                     @endif

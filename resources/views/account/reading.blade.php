@@ -98,7 +98,7 @@
             <details class="group">
                 <summary class="{{ $more }}"><span>{{ __('লাইক করা লেখা') }} <span class="text-ink2">({{ Bn::num((string) $liked->count()) }})</span></span><span class="transition group-open:rotate-90" aria-hidden="true">›</span></summary>
                 @if ($liked->isEmpty())
-                    <p class="mt-2 px-1 text-ink2">{{ __('যে লেখা ভালো লাগে, লেখার নিচে “ভালো লেগেছে” টিপুন।') }}</p>
+                    <p class="mt-2 px-1 text-ink2">{{ __('লেখার নিচে “পড়ে কেমন লাগল?”-এ একটি বেছে নিলে লেখাটি এখানে জমা থাকে।') }}</p>
                 @else
                     <ul class="mt-2 divide-y divide-rule px-1">@foreach ($liked as $p)<li><a href="{{ $p->url() }}" class="block py-2.5"><span class="font-serif text-lg font-bold">{{ $p->title }}</span> <span class="text-sm text-ink2">· {{ $p->authors->first()?->publicName() }}</span></a></li>@endforeach</ul>
                 @endif

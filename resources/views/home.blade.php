@@ -38,6 +38,17 @@
     </section>
     @endif
 
+    {{-- D232: last month's readers' choice, while it is news --}}
+    @if ($readersChoice)
+    <section class="border-b-2 border-dashed border-navy bg-peach-light">
+        <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4">
+            <span class="font-hand text-2xl text-red">পাঠকের পছন্দ, {{ \App\Support\Feelings::monthLabel($readersChoice->readers_choice) }}</span>
+            <span class="text-lg"><a href="{{ $readersChoice->url() }}" class="border-b-2 border-red font-serif font-bold">“{{ $readersChoice->title }}”</a> — <x-byline :post="$readersChoice" /></span>
+            <a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সব পছন্দ দেখুন</a>
+        </div>
+    </section>
+    @endif
+
     @if ($onThisDay)
     <section class="border-b-2 border-dashed border-navy">
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4">

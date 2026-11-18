@@ -102,6 +102,7 @@ Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCatego
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
 // D108: serial stories
+Route::get('/pathoker-pochhondo', [\App\Http\Controllers\FeelingsController::class, 'index']);   // D232
 Route::get('/dharabahik', [\App\Http\Controllers\SerialController::class, 'index']);
 Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');

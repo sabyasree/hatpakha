@@ -218,6 +218,8 @@ final class Handover
     public static function monthly(): int
     {
         $n = 0;
+        // D231 (owner: "it should be automatic... no need to come to me"): the month's readers' choice.
+        $n += (int) (bool) rescue(fn () => Feelings::pickMonth(), null, true);
         foreach (EditorTask::where('status', 'open')->whereIn('type', ['honour', 'collection', 'collection_add', 'seo_refresh'])->where('created_at', '>=', now()->subDays(45))->oldest('id')->limit(20)->get() as $task) {
             $ok = rescue(function () use ($task) {
                 $s = $task->subject;

@@ -18,6 +18,7 @@
             @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
             @if ($post->serial_id && $post->serial?->isPublic())<a href="{{ $post->serial->url() }}" class="rounded-full border-2 border-navy px-3 py-0.5 font-bold hover:bg-peach-light">{{ $post->serial->title }} · পর্ব {{ \App\Support\Bn::num((string) $post->episode_no) }}</a>@endif
+            @if ($post->readers_choice)<a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="rounded-full bg-navy px-3 py-1 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</a>@endif
             @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
@@ -129,23 +130,38 @@
         {{-- Reactions (D64): like and save (signed-in readers), share. Work without JavaScript too. --}}
         @php
             $me = auth()->user();
-            $liked = $me && \Illuminate\Support\Facades\DB::table('post_likes')->where(['user_id' => $me->id, 'post_id' => $post->id])->exists();
             $saved = $me && \Illuminate\Support\Facades\DB::table('saved_posts')->where(['user_id' => $me->id, 'post_id' => $post->id])->exists();
             $loginNext = \App\Support\Url::to('/login').'?next='.rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#reactions');
         @endphp
-        <div id="reactions" data-md-skip class="scroll-mt-24 flex flex-wrap items-center justify-center gap-3 border-y border-rule py-4">
+        {{-- D231: how the piece left the reader, one of five, in place of the bare heart --}}
+        @php
+            $mine = \App\Support\Feelings::mine($me, $post);
+            $feel = \App\Support\Feelings::counts($post);
+        @endphp
+        <div id="reactions" data-md-skip class="scroll-mt-24 border-t border-rule pt-5 text-center">
+            <p class="font-hand text-2xl text-red">পড়ে কেমন লাগল?</p>
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-2" data-feelings>
+                @foreach (\App\Support\Feelings::LIST as $key => [$label])
+                    @auth
+                        <form method="POST" action="{{ route('like', $post) }}" data-toggle="feel">@csrf<input type="hidden" name="feeling" value="{{ $key }}">
+                            <button data-feeling="{{ $key }}" class="flex min-h-12 items-center gap-2 rounded-full border-2 px-4 font-bold {{ $mine === $key ? 'border-red bg-red text-white' : 'border-navy bg-white' }}" aria-pressed="{{ $mine === $key ? 'true' : 'false' }}">
+                                <span>{{ $label }}</span> <span data-count class="tabular-nums">{{ $feel[$key] ? \App\Support\Bn::num((string) $feel[$key]) : '' }}</span></button>
+                        </form>
+                    @else
+                        <a href="{{ $loginNext }}" class="flex min-h-12 items-center gap-2 rounded-full border-2 border-navy bg-white px-4 font-bold"><span>{{ $label }}</span>
+                            @if ($feel[$key])<span class="tabular-nums">{{ \App\Support\Bn::num((string) $feel[$key]) }}</span>@endif</a>
+                    @endauth
+                @endforeach
+            </div>
+            <p class="mt-2 text-sm text-ink2">@if ($post->likes_count){{ \App\Support\Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন। @endif @guest জানাতে লগ ইন করুন। @else একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @endguest <a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="font-bold text-sky-night underline">পাঠকের পছন্দের লেখা দেখুন</a></p>
+        </div>
+        <div data-md-skip class="mt-4 flex flex-wrap items-center justify-center gap-3 border-b border-rule pb-4">
             @auth
-                <form method="POST" action="{{ route('like', $post) }}" data-toggle="like">@csrf
-                    <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $liked ? 'bg-red text-white border-red' : '' }}" aria-pressed="{{ $liked ? 'true' : 'false' }}">
-                        <span aria-hidden="true">{{ $liked ? '♥' : '♡' }}</span> <span data-label>ভালো লেগেছে</span> <span data-count class="tabular-nums">{{ $post->likes_count ? \App\Support\Bn::num((string) $post->likes_count) : '' }}</span></button>
-                </form>
                 <form method="POST" action="{{ route('save', $post) }}" data-toggle="save">@csrf
                     <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $saved ? 'bg-navy text-white' : '' }}" aria-pressed="{{ $saved ? 'true' : 'false' }}"
                         data-on="✓ তালিকায় আছে" data-off="পরে পড়ব">{{ $saved ? '✓ তালিকায় আছে' : 'পরে পড়ব' }}</button>
                 </form>
             @else
-                <a href="{{ $loginNext }}" class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold"><span aria-hidden="true">♡</span> ভালো লেগেছে
-                    @if ($post->likes_count)<span class="tabular-nums">{{ \App\Support\Bn::num((string) $post->likes_count) }}</span>@endif</a>
                 <a href="{{ $loginNext }}" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">পরে পড়ব</a>
             @endauth
             <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp</a>

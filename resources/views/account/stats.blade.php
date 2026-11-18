@@ -66,6 +66,8 @@
                                 <p class="text-sm text-ink2">{{ Bn::date($r['post']->published_at) }} · {{ $r['post']->section?->name_bn }}</p>
                                 <p class="mt-1 text-sm"><b class="tabular-nums">{{ $n($r['reads']) }}</b> {{ __('বার পড়া · গত ৩০ দিনে :count', ['count' => $n($r['month'])]) }}</p>
                                 <p class="text-sm text-ink2">{{ __(':likes জন লাইক করেছেন · :saves জন সেভ করেছেন', ['likes' => $n($r['likes']), 'saves' => $n($r['saves'])]) }}</p>
+                                @if (! empty($r['feelings']))<p class="text-sm font-semibold text-sky-night">{{ $r['feelings'] }}</p>@endif
+                                @if ($r['post']->readers_choice)<p class="text-sm font-bold text-red">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($r['post']->readers_choice) }}</p>@endif
                             </div>
                             <button type="button" class="h-11 flex-none rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light" data-share-card
                                 data-title="{{ $r['post']->title }}" data-by="{{ $writerName }}" data-section="{{ $r['post']->section?->name_bn }}" data-url="{{ $r['post']->url() }}">{{ __('শেয়ার কার্ড') }}</button>

@@ -119,12 +119,21 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
         const btn = form.querySelector('button');
         btn.disabled = true;
         try {
-            const r = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value } });
+            const r = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value }, body: form.dataset.toggle === 'feel' ? new FormData(form) : undefined });
             if (!r.ok) { form.submit(); return; }
             const d = await r.json();
-            btn.setAttribute('aria-pressed', d.on ? 'true' : 'false');
+            if (form.dataset.toggle !== 'feel') btn.setAttribute('aria-pressed', d.on ? 'true' : 'false');
             const kind = form.dataset.toggle;
-            if (kind === 'like') {
+            if (kind === 'feel') {   // D231: one of five; the others in the row are switched off and every count refreshed
+                const bn = (n) => (n ? new Intl.NumberFormat('bn-BD').format(n) : '');
+                form.closest('[data-feelings]').querySelectorAll('button[data-feeling]').forEach((b) => {
+                    const on = d.feeling === b.dataset.feeling;
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    ['bg-red', 'text-white', 'border-red'].forEach((c) => b.classList.toggle(c, on));
+                    ['bg-white', 'border-navy'].forEach((c) => b.classList.toggle(c, !on));
+                    b.querySelector('[data-count]').textContent = bn((d.counts || {})[b.dataset.feeling]);
+                });
+            } else if (kind === 'like') {
                 btn.classList.toggle('bg-red', d.on); btn.classList.toggle('text-white', d.on); btn.classList.toggle('border-red', d.on);
                 btn.querySelector('[aria-hidden]').textContent = d.on ? '♥' : '♡';
                 const c = btn.querySelector('[data-count]');
