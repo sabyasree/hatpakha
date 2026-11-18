@@ -143,10 +143,14 @@ class CommentRepliesTest extends TestCase
         Claude::$fake = function (...$a) use (&$asked, $new) {
             $asked = json_encode($a, JSON_UNESCAPED_UNICODE);
 
-            return ['answers' => [['id' => $new->id, 'action' => 'reply', 'reply' => 'লেখা নেওয়া হয় ওয়েবসাইটের ফর্মে: hatpakha.com/submit', 'reason' => '']]];
+            return ['answers' => [['id' => $new->id, 'action' => 'send', 'reply' => 'এআই-এর নিজের কথা, টাকা লাগে না', 'reason' => '']]];
         };
         Carbon::setTestNow(now()->addMinutes(15));
         $this->assertSame(1, CommentReplies::answer());
+        // D228: "how do I send writing" gets the owner's own words, exactly, whatever the AI wrote.
+        $this->assertSame(CommentReplies::HOW_TO_SEND, $new->fresh()->reply);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/o1/comments') && $r['message'] === CommentReplies::HOW_TO_SEND);
+        $this->assertDoesNotMatchRegularExpression('/টাকা|খরচ|বিনা পয়সা/u', CommentReplies::HOW_TO_SEND);
         $this->assertStringContainsString('আপনার লেখা পাঠান হাতপাখায়', $asked, 'The answer is written knowing what the post said');
         $this->assertSame('replied', $new->fresh()->status);
 
