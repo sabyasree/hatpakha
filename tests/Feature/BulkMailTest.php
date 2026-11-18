@@ -340,4 +340,15 @@ class BulkMailTest extends TestCase
             && str_contains($m->headers()->text['List-Unsubscribe'] ?? '', 'unsubscribe/w/'.$admin->id));
         $this->assertSame(0, $n->deliveries()->count(), 'A test is not a delivery');
     }
+
+    /** D233 (owner's error list: Hostinger closed the connection on a "we received your writing" e-mail). */
+    public function test_the_submission_receipt_goes_by_the_chosen_mail_service(): void
+    {
+        $writer = User::factory()->create();
+        config(['mail.mailers.bulk.host' => null, 'mail.mailers.brevo.host' => null]);
+        $this->assertNull((new \App\Notifications\FormReceived('submission', 'নদীর ধারে'))->toMail($writer)->mailer, 'No service set up: the site\'s own mailbox, as before');
+        config(['mail.mailers.bulk.host' => 'email-smtp.ap-south-1.amazonaws.com']);
+        $this->assertSame('bulk', (new \App\Notifications\FormReceived('submission', 'নদীর ধারে'))->toMail($writer)->mailer);
+        $this->assertNull((new \App\Notifications\FormReceived('contact'))->toMail($writer)->mailer, 'An address nobody verified stays off the mail service');
+    }
 }

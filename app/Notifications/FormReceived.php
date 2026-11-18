@@ -23,7 +23,10 @@ class FormReceived extends Notification
     public function toMail($notifiable): MailMessage
     {
         return match ($this->kind) {
-            'submission' => \App\Support\MailTemplates::mail('submission_received', ['{নাম}' => $notifiable->name, '{লেখা}' => $this->title], Url::to('/account/writings')),
+            // D233: "we received your writing" goes by the mail service chosen in the desk when there is one, like every
+            // other letter to a writer (D224). Hostinger's mailbox closed the connection on one (owner's error list, 2026-11-18).
+            'submission' => tap(\App\Support\MailTemplates::mail('submission_received', ['{নাম}' => $notifiable->name, '{লেখা}' => $this->title], Url::to('/account/writings')),
+                fn (MailMessage $m) => ($road = \App\Support\BulkMail::provider()) && blank($m->mailer) ? $m->mailer(\App\Support\BulkMail::PROVIDERS[$road][1]) : null),
             'advertise' => \App\Support\MailTemplates::mail('advertise_received', []),
             default => \App\Support\MailTemplates::mail('contact_received', []),
         };
