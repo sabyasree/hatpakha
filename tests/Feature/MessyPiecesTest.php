@@ -85,6 +85,13 @@ class MessyPiecesTest extends TestCase
             }
         }
         \Livewire\Livewire::test(ListPosts::class)->assertOk()->set('activeTab', 'all')->assertOk()->set('activeTab', 'changes')->assertOk();
+
+        // D230 (owner: a piece that was out still sat under "সময় ঠিক করা"): opening the list puts it right, with no wait for the ten-minute job.
+        $out = $this->makePost(['slug' => 'out-already', 'title' => 'জ্যোৎস্না আটকে আছে', 'status' => 'scheduled', 'published_at' => now()->subHour()]);
+        $later = $this->makePost(['slug' => 'not-yet', 'title' => 'কাল বেরোবে', 'status' => 'scheduled', 'published_at' => now()->addDay()]);
+        \Livewire\Livewire::test(ListPosts::class)->set('activeTab', 'scheduled')->assertSee('কাল বেরোবে')->assertDontSee('জ্যোৎস্না আটকে আছে')
+            ->set('activeTab', 'published')->assertSee('জ্যোৎস্না আটকে আছে')->assertDontSee('কাল বেরোবে');
+        $this->assertSame(['published', 'scheduled'], [$out->fresh()->status, $later->fresh()->status]);
         $this->assertSame([], \App\Filament\Support\Safe::$failed, 'No part of a dialog was replaced by the "could not be shown" line');
         $this->assertSame(0, SiteError::count(), 'Nothing was swallowed on the way: '.SiteError::pluck('message')->implode(' | '));
     }

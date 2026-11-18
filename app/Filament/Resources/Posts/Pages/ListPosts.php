@@ -21,6 +21,9 @@ class ListPosts extends ListRecords
     /** "অপেক্ষায়" is the review queue: oldest submission first (later: sorted by AI score, 3d). */
     public function getTabs(): array
     {
+        // D230 (owner: a piece that was out still sat under "সময় ঠিক করা"): the list does not wait for the ten-minute
+        // job. Opening it turns every piece whose time has come into "published" there and then.
+        rescue(fn () => Post::goLive(), null, false);
         return [
             'review' => Tab::make(__('অপেক্ষায়'))
                 ->badge(fn () => Post::where('status', 'pending')->whereNotNull('submitted_by')->count() ?: null)
@@ -46,9 +49,9 @@ class ListPosts extends ListRecords
             'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
             // Owner (2026-11-14: "there is no section for scheduled ones"): pieces with a publishing time set, the next one first.
             'scheduled' => Tab::make(__('সময় ঠিক করা'))
-                ->badge(fn () => Post::where('status', 'scheduled')->count() ?: null)
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'scheduled')->reorder()->orderBy('published_at')),
-            'published' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'published')),
+                ->badge(fn () => Post::where('status', 'scheduled')->where('published_at', '>', now())->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'scheduled')->where('published_at', '>', now())->reorder()->orderBy('published_at')),
+            'published' => Tab::make(__('প্রকাশিত'))->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ['published', 'scheduled'])->where('published_at', '<=', now())),
             'all' => Tab::make(__('সব')),
         ];
     }
