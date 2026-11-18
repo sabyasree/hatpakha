@@ -14,7 +14,8 @@ class PostVersion extends Model
 
     public const KINDS = ['submitted' => 'লেখক পাঠালেন', 'sent_back' => 'সম্পাদক বদল চাইলেন', 'resubmitted' => 'লেখক আবার পাঠালেন', 'withdrawn' => 'লেখক ফিরিয়ে নিলেন',
         'desk_edit' => 'ডেস্কে বদল করা হল', 'before' => 'বদলের আগের লেখা',
-        'ai_fix' => 'ছোট সংশোধন বসানো হল', 'reverted' => 'একটি সংশোধন ফেরানো হল'];   // D210
+        'ai_fix' => 'ছোট সংশোধন বসানো হল', 'reverted' => 'একটি সংশোধন ফেরানো হল',
+        'ai_rewrite' => 'সমস্যা ধরা পড়ায় এআই পর্বটি আবার লিখল'];   // D226   // D210
 
     protected function casts(): array
     {

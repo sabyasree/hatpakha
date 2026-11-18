@@ -388,6 +388,12 @@ final class Handover
                     continue;
                 }
                 $problems = self::episodeProblems($case, $ep);
+                // D226: a problem is first given back to the writer; the owner hears of it only if two rewrites did not cure it.
+                if ($problems && self::repairEpisode($case, $ep, $problems)) {
+                    self::flag('episode.'.$ep->id, null);
+
+                    continue;   // the new text is checked on the next round
+                }
                 if ($problems !== []) {
                     self::flag('episode.'.$ep->id, __('গোয়েন্দা সিরিজের এই পর্বটি নিজে থেকে প্রকাশ হয়নি; পড়ে ঠিক করুন, তারপর নিজে প্রকাশ করুন: ').$ep->title, $problems ?? [__('পর্বটি যাচাই করা যায়নি; একটু পরে আবার চেষ্টা হবে।')]);
 
@@ -443,6 +449,25 @@ final class Handover
         }
 
         return (bool) $case;
+    }
+
+    public const REPAIR_TRIES = 2;
+
+    /**
+     * D226 (owner: "why is it asking for this, it should fix by itself"): an episode of the detective series that fails
+     * its check is written again by the same writer, with the problems named, up to twice. Never an episode a person
+     * has changed by hand: that text is theirs.
+     */
+    private static function repairEpisode(\App\Models\Serial $case, Post $ep, array $problems): bool
+    {
+        if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || \App\Ai\AiSwitch::paused()
+            || \App\Models\PostVersion::where('post_id', $ep->id)->where('kind', 'desk_edit')->exists()
+            || AuditLog::where('action', 'handover.episode_repaired')->where('subject_type', $ep->getMorphClass())->where('subject_id', $ep->id)->count() >= self::REPAIR_TRIES) {
+            return false;
+        }
+        self::note('episode_repaired', $ep, ['problems' => $problems]);   // counted before the call: a try that fails is still a try
+
+        return (bool) rescue(fn () => \App\Ai\SerialWriter::repair($case, $ep, $problems), false, true);
     }
 
     /** Checked once for the text as it stands; again only if the episode was changed. @return ?list<string> */
