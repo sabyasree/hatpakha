@@ -128,6 +128,8 @@ Route::get('/{slug}/feed', [LegacyController::class, 'toPost'])->where('slug', '
 Route::middleware('guest')->group(function () {
     Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [\App\Http\Controllers\Auth\AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/login/google', [\App\Http\Controllers\Auth\AuthController::class, 'google'])->middleware('throttle:20,1')->name('login.google');   // D235
+    Route::get('/login/google/callback', [\App\Http\Controllers\Auth\AuthController::class, 'googleCallback'])->middleware('throttle:20,1');
     Route::get('/register', [\App\Http\Controllers\Auth\AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [\App\Http\Controllers\Auth\AuthController::class, 'register'])->middleware('throttle:register');
     Route::get('/forgot-password', [\App\Http\Controllers\Auth\AuthController::class, 'showForgot'])->name('password.request');

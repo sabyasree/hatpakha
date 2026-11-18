@@ -39,6 +39,9 @@ return [
     ],
 
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
+    // D235: "Google দিয়ে ঢুকুন" (an OAuth client of type "Web application" in Google Cloud Console). Both empty: no button.
+    'google' => ['client_id' => env('GOOGLE_CLIENT_ID'), 'client_secret' => env('GOOGLE_CLIENT_SECRET')],
+
     'adsense' => [
         'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),
         'force' => (bool) env('ADSENSE_FORCE', false),   // show ads off the live site (testing only)

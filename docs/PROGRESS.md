@@ -168,6 +168,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
+- [x] D235: Google sign-in built (button hidden until the key is set)
+- [ ] Owner: create the Google OAuth client (Web application), redirect URIs `https://hatpakha.com/login/google/callback/` and `https://new.hatpakha.com/login/google/callback/`, put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in both ENV_FILEs, re-run Deploy
+- [ ] After Google sign-in is live: re-record the how-to film and PDF (first steps change)
 - [x] D234: how-to box (three steps, film, PDF) at the top of /submissions/
 - [ ] When the sign-up or submission form changes: re-record public/guide/lekha-pathano.mp4 and the PDF
 - [x] D231: "পড়ে কেমন লাগল?" five reader feelings under each piece; automatic monthly পাঠকের পছন্দ
