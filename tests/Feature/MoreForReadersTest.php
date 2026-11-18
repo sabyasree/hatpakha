@@ -73,7 +73,7 @@ class MoreForReadersTest extends TestCase
         $this->actingAs($reader)->get('/account/reading/')->assertSee('টানা ২ দিন পড়ছেন')->assertSee('আপনার সেরা: টানা ৩ দিন');
         Carbon::setTestNow(Carbon::parse('2026-11-18 09:00', 'Asia/Kolkata'));
         $this->assertSame(2, ReadingHistory::streak($reader)['now'], 'Alive until the end of the next day');
-        $this->get('/account/reading/')->assertSee('আজ একটা লেখা পড়লেই ধারাটা থাকবে।');
+        $this->get('/account/reading/')->assertSee('আজ একটা লেখা পড়লেই টানা দিন গোনা চলবে।');
         Carbon::setTestNow(Carbon::parse('2026-11-19 09:00', 'Asia/Kolkata'));
         $this->assertSame(0, ReadingHistory::streak($reader)['now']);
         $this->get('/account/reading/')->assertSee('নতুন করে শুরু করুন')->assertDontSee('ভেঙে');   // never a scolding

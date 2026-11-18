@@ -19,7 +19,7 @@ class FeelingsController extends Controller
         $seo = new Seo(title: 'হাতপাখার পাশে থাকুন', description: 'হাতপাখা পড়তে বা লিখতে কোনো খরচ নেই। ভালো লাগলে নিজের ইচ্ছেমতো সাহায্য করতে পারেন।', canonical: Url::to('/pashe-thakun'),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['পাশে থাকুন', Url::to('/pashe-thakun')]])]);
 
-        return view('support', ['seo' => $seo, 'upi' => $upi, 'pay' => 'upi://pay?'.http_build_query(['pa' => $upi, 'pn' => (string) config('services.support.name'), 'cu' => 'INR', 'tn' => 'Hatpakha'])]);
+        return view('support', ['seo' => $seo, 'upi' => $upi, 'name' => trim((string) config('services.support.name')), 'pay' => 'upi://pay?'.http_build_query(['pa' => $upi, 'pn' => (string) (config('services.support.name') ?: 'Hatpakha'), 'cu' => 'INR', 'tn' => 'Hatpakha'])]);
     }
 
     public function index()

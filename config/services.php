@@ -42,7 +42,7 @@ return [
 
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
     // D237: "হাতপাখার পাশে থাকুন": readers may send what they like by UPI. Empty: no page and no link.
-    'support' => ['upi' => env('SUPPORT_UPI_ID'), 'name' => env('SUPPORT_UPI_NAME', 'Hatpakha')],
+    'support' => ['upi' => env('SUPPORT_UPI_ID'), 'name' => env('SUPPORT_UPI_NAME')],   // name: the payee name the UPI app will show, so a reader can check it
 
     // D235: "Google দিয়ে ঢুকুন" (an OAuth client of type "Web application" in Google Cloud Console). Both empty: no button.
     'google' => ['client_id' => env('GOOGLE_CLIENT_ID'), 'client_secret' => env('GOOGLE_CLIENT_SECRET')],

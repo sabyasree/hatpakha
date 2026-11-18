@@ -39,7 +39,7 @@ class GoogleSignInTest extends TestCase
     public function test_a_new_person_gets_a_verified_account_in_one_step_and_comes_back_to_the_same_one(): void
     {
         $this->get('/login/')->assertSee('Google দিয়ে ঢুকুন');
-        $this->get('/register/')->assertSee('Google দিয়ে ঢুকুন');
+        $this->get('/register/')->assertSee('Google দিয়ে অ্যাকাউন্ট খুলুন');
         $this->back()->assertRedirect(url('/account').'/');
         $user = User::where('email', 'rina@gmail.com')->firstOrFail();
         $this->assertSame(['রিনা বসু', 'g-100', Role::Reader], [$user->name, $user->google_id, $user->role]);

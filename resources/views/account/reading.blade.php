@@ -22,7 +22,7 @@
                 <span>
                     @if ($readStreak['now'] >= 2)
                         <strong class="block text-lg leading-snug">{{ __('টানা :n দিন পড়ছেন', ['n' => \App\Support\Bn::num((string) $readStreak['now'])]) }}</strong>
-                        <span class="text-ink2">{{ $readStreak['today'] ? __('আজকের পড়া হয়ে গেছে। কাল আবার আসুন।') : __('আজ একটা লেখা পড়লেই ধারাটা থাকবে।') }}</span>
+                        <span class="text-ink2">{{ $readStreak['today'] ? __('আজকের পড়া হয়ে গেছে। কাল আবার আসুন।') : __('আজ একটা লেখা পড়লেই টানা দিন গোনা চলবে।') }}</span>
                     @elseif ($readStreak['now'] === 1)
                         <strong class="block text-lg leading-snug">{{ $readStreak['today'] ? __('আজ পড়েছেন') : __('কাল পড়েছিলেন') }}</strong>
                         <span class="text-ink2">{{ $readStreak['today'] ? __('কাল আবার এলে টানা দু’দিন হবে।') : __('আজ একটা লেখা পড়লে টানা দু’দিন হবে।') }}</span>

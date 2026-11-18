@@ -5,19 +5,20 @@
     <p class="font-hand text-2xl text-red">প্রথমবার পাঠাচ্ছেন?</p>
     <h2 id="howto-h" class="font-display text-3xl font-extrabold leading-tight">এক মিনিটে দেখে নিন কীভাবে পাঠাবেন</h2>
     <div class="mt-4 grid gap-5 sm:grid-cols-[220px_1fr] sm:items-start">
-        <figure class="mx-auto w-full max-w-[220px]">
+        <figure class="order-2 mx-auto w-full max-w-[220px] sm:order-1">
+            <figcaption class="mb-1 text-center text-sm font-semibold text-ink2">এক মিনিটের ভিডিও। শব্দ নেই; প্রতিটি ধাপ লেখায় দেখানো আছে।</figcaption>
             <video controls muted playsinline preload="none" width="720" height="1280" poster="{{ asset('guide/lekha-pathano.jpg') }}"
                 class="block aspect-[9/16] h-auto w-full rounded-xl border-2 border-navy bg-navy" aria-describedby="howto-steps">
                 <source src="{{ asset('guide/lekha-pathano.mp4') }}" type="video/mp4">
             </video>
-            <figcaption class="mt-1 text-center text-sm text-ink2">ভিডিওতে শব্দ নেই; প্রতিটি ধাপ লেখায় দেখানো আছে।</figcaption>
         </figure>
-        <div>
+        <div class="order-1 sm:order-2">
             <ol id="howto-steps" class="grid gap-3">
+                @php $google = \App\Auth\GoogleSignIn::ready(); @endphp
                 @foreach ([
-                    ['অ্যাকাউন্ট খুলুন', 'নাম, ই-মেল আর একটা পাসওয়ার্ড। একবারই খুলতে হয়।'],
-                    ['ই-মেলের বোতামটা টিপুন', 'হাতপাখা থেকে একটা চিঠি যাবে। না পেলে স্প্যাম ফোল্ডার দেখুন।'],
-                    ['ফর্মে লেখা বসিয়ে “জমা দিন”', 'লেখাটা টাইপ করুন, বা অন্য জায়গা থেকে কপি করে বসিয়ে দিন।'],
+                    ['অ্যাকাউন্ট খুলুন', $google ? 'সবচেয়ে সহজ: “Google দিয়ে অ্যাকাউন্ট খুলুন” টিপুন, পাসওয়ার্ড লাগে না। নইলে নাম, ই-মেল আর একটা পাসওয়ার্ড দিন। একবারই খুলতে হয়।' : 'নাম, ই-মেল আর একটা পাসওয়ার্ড। একবারই খুলতে হয়।'],
+                    ['নিজের ই-মেল খুলে চিঠির বোতামটা টিপুন', ($google ? 'Google দিয়ে খুললে এই ধাপ লাগে না। ' : '').'হাতপাখা থেকে একটা চিঠি যাবে। না পেলে স্প্যাম ফোল্ডার দেখুন।'],
+                    ['ফর্মে লেখা বসিয়ে “জমা দিন”', 'লেখাটা টাইপ করুন, কপি করে বসান, বা ওয়ার্ড ফাইল বেছে নিন।'],
                 ] as $i => [$title, $line])
                     <li class="flex gap-3">
                         <span aria-hidden="true" class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-red font-bold text-white">{{ \App\Support\Bn::num((string) ($i + 1)) }}</span>

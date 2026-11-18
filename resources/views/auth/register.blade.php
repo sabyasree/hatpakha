@@ -1,6 +1,6 @@
 <x-layouts.app :seo="$seo">
     <x-form-card :title="__('সাইন আপ')" :subtitle="__('লেখা পাঠাতে আর নিজের লেখার খবর দেখতে একটি অ্যাকাউন্ট লাগে। পুরো ফ্রি।')">
-        @include('partials.google-sign-in')
+        @include('partials.google-sign-in', ['new' => true])
         <form method="POST" action="{{ \App\Support\Url::to('/register') }}">
             @csrf
             <input type="hidden" name="started" value="{{ $started }}">
