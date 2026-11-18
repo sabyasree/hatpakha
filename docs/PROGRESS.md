@@ -168,6 +168,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
+- [x] D234: how-to box (three steps, film, PDF) at the top of /submissions/
+- [ ] When the sign-up or submission form changes: re-record public/guide/lekha-pathano.mp4 and the PDF
 - [x] D231: "পড়ে কেমন লাগল?" five reader feelings under each piece; automatic monthly পাঠকের পছন্দ
 - [x] D232: readers' choice on the home page and the writer's page; /pathoker-pochhondo/; reader counts for marketing and serial writers
 - [x] D227: readers' comments under the owner's own and boosted Facebook posts are read and answered; a flag when Facebook refuses

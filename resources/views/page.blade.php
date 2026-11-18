@@ -6,6 +6,7 @@
             <a href="{{ $crumbs[0][1] }}" class="inline-flex min-h-11 items-center hover:text-red">← প্রথম পাতা</a>
         </nav>
         <h1 class="mt-4 font-display text-4xl font-extrabold leading-tight md:text-5xl" style="font-stretch: 85%">{{ $page->title }}</h1>
+        @includeWhen($page->slug === 'submissions', 'partials.submit-howto')
         {{-- body_html is sanitised on save (App\Support\HtmlSanitizer); Embeds only adds validated YouTube players. --}}
         <div class="prose-bn mt-6">{!! \App\Support\Images::renderBody(\App\Support\Embeds::render($page->body_html ?? '')) !!}</div>
         @if (in_array($page->slug, ['contact-us', 'advertise'], true))

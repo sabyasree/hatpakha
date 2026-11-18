@@ -95,4 +95,20 @@ class PageTest extends TestCase
 
         $this->get('/submit/')->assertRedirect(url('/login'));   // the form needs an account
     }
+
+    /** D234 (owner: "add this video and pdf to the rules page, at the top... so users will find this easily"). */
+    public function test_the_rules_page_opens_with_how_to_send_a_film_and_a_printable_guide(): void
+    {
+        Page::create(['slug' => 'submissions', 'title' => 'লেখা পাঠানোর নিয়ম', 'body_html' => '<p>RULES-BODY</p>']);
+        $html = $this->get('/submissions/')->assertOk()->assertSee('প্রথমবার পাঠাচ্ছেন?')->assertSee('অ্যাকাউন্ট খুলুন')->getContent();
+        $this->assertTrue(strpos($html, 'guide/lekha-pathano.mp4') < strrpos($html, 'RULES-BODY'), 'Before the rules, not after');
+        foreach (['guide/lekha-pathano.mp4', 'guide/lekha-pathano.jpg', 'guide/lekha-pathanor-niyom.pdf'] as $file) {
+            $this->assertStringContainsString($file, $html);
+            $this->assertFileExists(public_path($file));
+        }
+        $this->assertStringContainsString('preload="none"', $html, 'The film is not downloaded until a reader presses play');
+        $this->assertStringNotContainsString('mailto:', $html);
+        Page::create(['slug' => 'about-x', 'title' => 'অন্য পাতা', 'body_html' => '<p>x</p>']);
+        $this->get('/about-x/')->assertDontSee('প্রথমবার পাঠাচ্ছেন?');
+    }
 }
