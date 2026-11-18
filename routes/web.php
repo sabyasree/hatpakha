@@ -102,6 +102,7 @@ Route::get('/category/{parent}/{child}', [LegacyController::class, 'nestedCatego
 Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
 // D108: serial stories
+Route::get('/pashe-thakun', [\App\Http\Controllers\FeelingsController::class, 'support']);   // D237
 Route::get('/pathoker-pochhondo', [\App\Http\Controllers\FeelingsController::class, 'index']);   // D232
 Route::get('/dharabahik', [\App\Http\Controllers\SerialController::class, 'index']);
 Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class, 'show'])->where('slug', '[a-z0-9-]+');
@@ -219,6 +220,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/submit', [\App\Http\Controllers\SubmissionController::class, 'create'])->name('submit');
     Route::post('/submit', [\App\Http\Controllers\SubmissionController::class, 'store']);
     Route::post('/submit/autosave', [\App\Http\Controllers\SubmissionController::class, 'autosave'])->middleware('throttle:60,1');
+    Route::post('/submit/word', [\App\Http\Controllers\SubmissionController::class, 'word'])->middleware('throttle:12,1');   // D237
     Route::post('/submit/preview', [\App\Http\Controllers\SubmissionController::class, 'preview'])->middleware('throttle:60,1');
     Route::get('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'edit'])->whereNumber('post');
     Route::post('/submit/{post}', [\App\Http\Controllers\SubmissionController::class, 'update'])->whereNumber('post');

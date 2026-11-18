@@ -94,6 +94,7 @@ final class Handover
             }
         }
         rescue(fn () => self::watch(), null, true);
+        rescue(fn () => self::replyDue(), null, true);
         Setting::put('handover.ran_at', now()->toIso8601String());
 
         return $done;
@@ -127,6 +128,14 @@ final class Handover
         $waiting = self::on('publish') ? $sent->filter(fn (Post $p) => ! $p->auto_publish_at && $p->submitted_at->lt(now()->subDays(self::WAITING_DAYS)) && EditorPackage::report($p)) : collect();
         self::flag('waiting', $waiting->isEmpty() ? null : __('এই লেখাগুলো আপনার সিদ্ধান্তের অপেক্ষায় আছে; "নিজে থেকে চলা কাজ" পাতায় কারণ দেখুন'),
             $waiting->take(8)->map(fn (Post $p) => $p->title.': '.(self::hold($p) ?? ''))->values()->all());
+    }
+
+    /** D237: writers are told "usually within 14 days"; the desk hears when a piece has waited 10. */
+    public static function replyDue(): void
+    {
+        $late = Post::where('status', 'pending')->whereNotNull('submitted_at')->where('submitted_at', '<', now()->subDays(Review::REPLY_WARN_DAYS))->oldest('submitted_at')->limit(8)->get();
+        self::flag('reply_due', $late->isEmpty() ? null : __('লেখকদের বলা আছে ১৪ দিনের মধ্যে জানাব; এই লেখাগুলো ১০ দিনের বেশি অপেক্ষায় আছে'),
+            $late->map(fn (Post $p) => $p->title.' · '.Bn::num((string) (int) $p->submitted_at->diffInDays(now())).' '.__('দিন'))->all());
     }
 
     /** How many of the pieces sent through the form need the owner now (for the desk menu). */

@@ -127,6 +127,7 @@
                 @endforeach
                 <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
                 <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
+                @if (filled(config('services.support.upi')))<a href="{{ \App\Support\Url::to('/pashe-thakun') }}" class="flex min-h-11 items-center hover:text-sky">পাশে থাকুন</a>@endif
                 @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
                 @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
                 @if (filled($wa = config('services.social.whatsapp')))<a href="{{ $wa }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">হোয়াটসঅ্যাপ চ্যানেল</a>@endif

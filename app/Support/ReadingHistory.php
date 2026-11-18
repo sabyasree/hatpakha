@@ -24,6 +24,9 @@ final class ReadingHistory
             return;
         }
         $progress = max(0, min(100, $progress));
+        if ($progress >= self::STARTED) {   // D237: a day counts once something has really been read
+            DB::table('reading_days')->insertOrIgnore(['user_id' => $user->id, 'day' => now('Asia/Kolkata')->toDateString()]);
+        }
         $row = DB::table('reading_history')->where('user_id', $user->id)->where('post_id', $post->id);
         $before = $row->value('progress');
         if ($before !== null) {
@@ -34,8 +37,30 @@ final class ReadingHistory
         }
     }
 
+    /**
+     * D237 (owner: "add the 8 feature recommendations"): days in a row with something read, and the longest run.
+     * A run stays alive until the end of the day after the last reading day.
+     *
+     * @return array{now: int, best: int, today: bool}
+     */
+    public static function streak(User $user): array
+    {
+        $days = DB::table('reading_days')->where('user_id', $user->id)->orderBy('day')->pluck('day')->map(fn ($d) => \Illuminate\Support\Carbon::parse($d)->toDateString())->all();
+        $best = $run = 0;
+        $prev = null;
+        foreach ($days as $d) {
+            $run = $prev && \Illuminate\Support\Carbon::parse($prev)->addDay()->toDateString() === $d ? $run + 1 : 1;
+            $best = max($best, $run);
+            $prev = $d;
+        }
+        $today = now('Asia/Kolkata')->toDateString();
+
+        return ['now' => $prev && in_array($prev, [$today, now('Asia/Kolkata')->subDay()->toDateString()], true) ? $run : 0, 'best' => $best, 'today' => $prev === $today];
+    }
+
     public static function clear(User $user): int
     {
+        DB::table('reading_days')->where('user_id', $user->id)->delete();
         return DB::table('reading_history')->where('user_id', $user->id)->delete();
     }
 

@@ -220,6 +220,33 @@ if (form) {
     });
     title.addEventListener('input', () => showError('title', false));
     form.querySelector('[name=original]')?.addEventListener('change', () => showError('original', false));
+    // D237: a Word (.docx) file read into the writing box. The server reads the file and sends back clean text;
+    // the writer looks it over and sends as usual. The file itself is not kept.
+    const wordBox = form.querySelector('[data-word-import]');
+    if (wordBox) {
+        wordBox.hidden = false;
+        const pick = wordBox.querySelector('[data-word-file]');
+        const say = (text, bad = false) => { const el = wordBox.querySelector('[data-word-status]'); el.hidden = !text; el.textContent = text; el.classList.toggle('text-red', bad); el.classList.toggle('text-sky-night', !bad); };
+        pick.addEventListener('change', async () => {
+            const file = pick.files[0];
+            pick.value = '';
+            if (!file) return;
+            const has = editor ? editor.getText().trim() !== '' : textarea.value.trim() !== '';
+            if (has && !window.confirm('এখন ঘরে যে লেখা আছে, তার জায়গায় ফাইলের লেখা বসবে। ঠিক আছে?')) return;
+            say('ফাইল পড়া হচ্ছে…');
+            try {
+                const body = new FormData();
+                body.append('word', file);
+                const r = await fetch(form.dataset.wordUrl, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.html) { say((d.errors && d.errors.word && d.errors.word[0]) || 'ফাইলটি পড়া গেল না। লেখাটা কপি করে নিচের ঘরে বসিয়ে দিন।', true); return; }
+                if (editor) { editor.commands.setContent(d.html, true); editor.commands.focus('start'); }
+                else { const t = document.createElement('div'); t.innerHTML = d.html.replace(/<\/p>/g, '\n').replace(/<br\s*\/?>/g, '\n'); textarea.value = t.textContent.trim(); textarea.dispatchEvent(new Event('input', { bubbles: true })); }
+                say('লেখা বসানো হয়েছে। একবার চোখ বুলিয়ে নিন: সবটা এসেছে তো? লাইনগুলো ঠিক আছে?');
+            } catch (err) { say('ফাইলটি পড়া গেল না। ইন্টারনেট আছে তো? আবার চেষ্টা করুন।', true); }
+        });
+    }
+
     window.addEventListener('beforeunload', (e) => { if (dirty) { save(); e.preventDefault(); } });
     words();
     setHint();

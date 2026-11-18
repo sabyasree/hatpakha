@@ -87,6 +87,7 @@
             @endif
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
                 action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
+                data-word-url="{{ \App\Support\Url::to('/submit/word') }}"
                 data-autosave-url="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id.'/autosave' : '/submit/autosave') }}"
                 data-preview-url="{{ \App\Support\Url::to('/submit/preview') }}" enctype="multipart/form-data" class="mt-5" novalidate>
                 @csrf
@@ -217,6 +218,17 @@
                     </label>
                     <p data-error="title" hidden class="px-4 pt-1 text-sm font-bold text-red" role="alert">একটি শিরোনাম দিন।</p>
 
+                    {{-- D237: a Word file read into the box below (needs JavaScript; hidden without it) --}}
+                    <div data-word-import hidden class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t-2 border-rule px-4 py-3">
+                        <label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-2 border-navy bg-white px-4 text-sm font-bold hover:bg-peach-light focus-within:ring-2 focus-within:ring-sky">
+                            <svg viewBox="0 0 24 24" class="h-5 w-5 flex-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Zm0 0v5h5M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/></svg>
+                            <span>ওয়ার্ড ফাইল থেকে লেখা আনুন</span>
+                            <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="sr-only" data-word-file>
+                        </label>
+                        <span class="text-sm text-ink2">লেখা ওয়ার্ডে থাকলে ফাইলটা বেছে নিন, লেখা নিজে থেকে নিচে বসে যাবে।</span>
+                        <p data-word-status hidden class="w-full text-sm font-bold" role="status" aria-live="polite"></p>
+                    </div>
+
                     {{-- Editor (D40). Without JavaScript the plain box below still works. --}}
                     <input type="hidden" name="body_format" value="text" data-body-format>
                     <script type="application/json" id="body-initial">@json(old('body_format') === 'html' ? (string) old('body') : $html)</script>
@@ -315,6 +327,9 @@
                         <textarea name="writer_note" rows="3" maxlength="2000" class="mt-2 block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg" placeholder="যেমন: শেষ স্তবকটা নতুন করে লিখেছি; নামটা যেমন ছিল রেখেছি।">{{ old('writer_note') }}</textarea>
                     </label>
                 @endif
+
+                {{-- D237: what happens next, before the button is pressed --}}
+                <p class="mt-4 rounded-xl bg-sky-tint p-3 text-sm font-semibold text-sky-night">জমা দেওয়ার পর সম্পাদক লেখাটা পড়েন। সাধারণত {{ \App\Support\Bn::num((string) \App\Support\Review::REPLY_DAYS) }} দিনের মধ্যে ই-মেলে জানাই, আর “আমার লেখা”-য় যে কোনো সময় অবস্থা দেখা যায়।</p>
 
                 {{-- 5. Actions: fixed at the bottom on phones (like a social app), at the end on wider screens --}}
                 <div data-action-bar class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-navy bg-paper/95 px-4 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">

@@ -315,7 +315,16 @@ class SubmissionController extends Controller
         $what = $serial && $serial->user_id === $request->user()->id
             ? ($serial->status === 'proposed' ? 'নতুন ধারাবাহিক “'.$serial->title.'”-এর প্রথম পর্ব ' : 'ধারাবাহিক “'.$serial->title.'”-এর পর্ব '.\App\Support\Bn::num((string) $post->fresh()->episode_no).' ') : '';
 
-        return redirect(Url::to('/account'))->with('status', $what.'"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
+        return redirect(Url::to('/account'))->with('status', $what.'"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে সাধারণত '.\App\Support\Bn::num((string) \App\Support\Review::REPLY_DAYS).' দিনের মধ্যে ই-মেলে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
+    }
+
+    /** D237: a Word file is read into the writing box; the writer checks it and sends as usual. Nothing is kept. */
+    public function word(Request $request)
+    {
+        $request->validate(['word' => ['required', 'file', 'max:5120']], ['word.*' => 'ফাইলটি ৫ MB-এর মধ্যে হতে হবে।']);
+        $read = \App\Support\WordFile::read($request->file('word'));
+
+        return response()->json(['html' => \App\Support\HtmlSanitizer::clean($read['html']), 'paragraphs' => $read['paragraphs']]);
     }
 
     private function fill(Request $request, Post $post, string $title, string $body, ?int $sectionId): void
