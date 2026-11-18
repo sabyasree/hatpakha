@@ -236,6 +236,11 @@ final class EditorJobs
         if ($episode && $episode->serial) {
             $items[] = ['kind' => 'serial', 'title' => 'ধারাবাহিক: '.$episode->serial->title, 'author' => 'নতুন পর্ব: '.$episode->title, 'url' => $episode->url(), 'line' => (string) ($episode->episode_teaser ?? '')];
         }
+        // D231: last month's readers' choice, while it is news.
+        if ($choice = \App\Support\Feelings::latest()) {
+            $items[] = ['kind' => 'choice', 'title' => 'পাঠকের পছন্দ: '.$choice->title, 'author' => ($choice->authors->first()?->publicName() ?: 'হাতপাখা').' · পড়ুন', 'url' => $choice->url(),
+                'line' => \App\Support\Feelings::monthLabel($choice->readers_choice).' মাসে পাঠকেরা এই লেখাটিতেই সবচেয়ে বেশি সাড়া দিয়েছেন।'];
+        }
         // D225: a case readers can still guess, and a reader's own words about a piece.
         foreach ([\App\Support\LetterDesign::guess(), \App\Support\LetterDesign::voice()] as $block) {
             if ($block) {

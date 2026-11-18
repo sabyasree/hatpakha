@@ -32,7 +32,7 @@ class ReaderFeaturesTest extends TestCase
     {
         $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()]);
         $this->postJson('/like/'.$post->id)->assertUnauthorized();
-        $this->get('/p/')->assertSee('ভালো লেগেছে');
+        $this->get('/p/')->assertSee('পড়ে কেমন লাগল?')->assertSee('ভাবিয়ে তুলল');
 
         $reader = User::factory()->create();
         $this->actingAs($reader)->postJson('/like/'.$post->id)->assertJson(['on' => true, 'count' => 1]);
@@ -72,5 +72,43 @@ class ReaderFeaturesTest extends TestCase
             ->assertSee('data-quote-title="নদীর গান"', false)->assertSee('এই লাইন শেয়ার করুন');
         $post->forceFill(['status' => 'draft'])->save();
         $this->actingAs(\App\Models\User::factory()->create(['role' => \App\Enums\Role::Admin]))->get($post->url())->assertDontSee('data-quote-pill', false);
+    }
+
+    /** D231 (owner: "we can do something from this idea"; "build it, it should be automatic... no need to come to me"). */
+    public function test_a_reader_says_how_a_piece_left_them_and_the_month_gets_a_readers_choice(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-20 12:00', 'Asia/Kolkata'));
+        $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'title' => 'নদীর ধারে', 'published_at' => now()->subDays(5)]);
+        $other = $this->makePost(['status' => 'published', 'slug' => 'q', 'title' => 'অন্য লেখা', 'published_at' => now()->subDays(5)]);
+        $reader = User::factory()->create();
+
+        $this->actingAs($reader)->postJson('/like/'.$post->id, ['feeling' => 'think'])->assertJson(['on' => true, 'feeling' => 'think', 'count' => 1, 'counts' => ['think' => 1, 'touched' => 0]]);
+        $this->postJson('/like/'.$post->id, ['feeling' => 'touched'])->assertJson(['feeling' => 'touched', 'count' => 1, 'counts' => ['think' => 0, 'touched' => 1]]);   // one answer a reader: changed, not added
+        $this->get('/p/')->assertSee('aria-pressed="true"', false);
+        $this->postJson('/like/'.$post->id, ['feeling' => 'touched'])->assertJson(['on' => false, 'count' => 0]);   // the same again takes it back
+        $this->postJson('/like/'.$post->id, ['feeling' => 'made-up'])->assertJson(['on' => true, 'feeling' => 'heart', 'count' => 1]);   // an unknown word is a plain heart
+        $this->post('/like/'.$post->id, ['feeling' => 'stay'])->assertRedirect();   // works without JavaScript
+        $this->assertSame('১ জনের মনে থেকে যাবে', \App\Support\Feelings::summary($post->fresh()));
+
+        // Nine more readers: ten answers in November. One answer on the other piece.
+        foreach (User::factory()->count(9)->create() as $i => $u) {
+            \App\Support\Feelings::set($u, $post, $i < 6 ? 'touched' : 'think');
+        }
+        \App\Support\Feelings::set($reader, $other, 'smile');
+        $this->assertStringStartsWith('৬ জনের মন ছুঁয়েছে · ৩ জনকে ভাবিয়েছে', \App\Support\Feelings::summary($post->fresh()));
+        $this->assertSame(10, $post->fresh()->likes_count);
+
+        // December: the month's choice is made by itself, once; too few answers and nobody is named.
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-12-01 08:00', 'Asia/Kolkata'));
+        $this->assertSame($post->id, \App\Support\Feelings::pickMonth()?->id);
+        $this->assertSame('2026-11', $post->fresh()->readers_choice);
+        $this->assertNull(\App\Support\Feelings::pickMonth(), 'Once a month');
+        $this->get('/p/')->assertSee('পাঠকের পছন্দ · নভেম্বর ২০২৬');
+        $block = collect(\App\Ai\EditorJobs::comeBack())->firstWhere('kind', 'choice');
+        $this->assertSame('পাঠকের পছন্দ: নদীর ধারে', $block['title']);
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2027-01-02 08:00', 'Asia/Kolkata'));
+        $this->assertNull(\App\Support\Feelings::pickMonth(), 'December had too few answers');
+        $this->assertNull($other->fresh()->readers_choice);
+        \Illuminate\Support\Carbon::setTestNow();
     }
 }

@@ -14,11 +14,10 @@ class ReaderController extends Controller
     {
         abort_unless($post->isLive(), 404);
 
-        return $this->toggle($request, 'post_likes', 'post_id', $post->id, function (bool $on) use ($post) {
-            $post->forceFill(['likes_count' => DB::table('post_likes')->where('post_id', $post->id)->count()])->saveQuietly();
+        // D231: how the piece left the reader, one of five; with none (an old page still open) it is the plain heart.
+        $d = \App\Support\Feelings::set($request->user(), $post, $request->string('feeling')->toString() ?: null);
 
-            return ['count' => $post->likes_count];
-        }, $post->url().'#reactions');
+        return $request->expectsJson() ? response()->json($d) : redirect($post->url().'#reactions');
     }
 
     public function save(Request $request, Post $post)

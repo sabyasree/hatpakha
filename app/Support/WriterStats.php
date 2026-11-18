@@ -48,6 +48,7 @@ final class WriterStats
             'reads' => (int) ($total[$p->id]->v ?? 0),
             'month' => (int) ($month[$p->id] ?? 0),
             'likes' => (int) $p->likes_count,
+            'feelings' => Feelings::summary($p),   // D231
             'saves' => (int) ($saves[$p->id] ?? 0),
         ]);
 
