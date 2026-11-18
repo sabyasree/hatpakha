@@ -451,7 +451,7 @@ final class Handover
         return (bool) $case;
     }
 
-    public const REPAIR_TRIES = 2;
+    public const REPAIR_TRIES = 3;
 
     /**
      * D226 (owner: "why is it asking for this, it should fix by itself"): an episode of the detective series that fails
@@ -462,12 +462,13 @@ final class Handover
     {
         if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || \App\Ai\AiSwitch::paused()
             || \App\Models\PostVersion::where('post_id', $ep->id)->where('kind', 'desk_edit')->exists()
-            || AuditLog::where('action', 'handover.episode_repaired')->where('subject_type', $ep->getMorphClass())->where('subject_id', $ep->id)->count() >= self::REPAIR_TRIES) {
+            || AuditLog::where('action', 'handover.episode_mended')->where('subject_type', $ep->getMorphClass())->where('subject_id', $ep->id)->count() >= self::REPAIR_TRIES) {
             return false;
         }
-        self::note('episode_repaired', $ep, ['problems' => $problems]);   // counted before the call: a try that fails is still a try
+        self::note('episode_mended', $ep, ['problems' => $problems]);   // counted before the call: a try that fails is still a try
 
-        return (bool) rescue(fn () => \App\Ai\SerialWriter::repair($case, $ep, $problems), false, true);
+        // D229: first the smallest cure (only the paragraphs at fault); a whole rewrite only when that cannot be done.
+        return (bool) rescue(fn () => \App\Ai\SerialWriter::mend($case, $ep, $problems) || \App\Ai\SerialWriter::repair($case, $ep, $problems), false, true);
     }
 
     /** Checked once for the text as it stands; again only if the episode was changed. @return ?list<string> */
@@ -479,7 +480,7 @@ final class Handover
         }
         $problems = rescue(fn () => \App\Ai\Casebook::check($case, $ep), null, true);
         if ($problems !== null) {
-            self::note('episode_checked', $ep, ['hash' => md5((string) $ep->body_html), 'problems' => $problems]);
+            self::note('episode_checked', $ep, ['hash' => md5((string) $ep->body_html), 'problems' => $problems, 'doubts' => \App\Ai\Casebook::$doubts]);
         }
 
         return $problems;
