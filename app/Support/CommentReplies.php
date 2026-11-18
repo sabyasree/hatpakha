@@ -30,6 +30,12 @@ final class CommentReplies
 
     public const DAY_CAP = 40;
 
+    /**
+     * D228 (owner, 2026-11-18, gave these words): the one answer to "how do I send writing". Posted as it stands,
+     * never reworded by the AI, and with no talk of money.
+     */
+    public const HOW_TO_SEND = 'ধন্যবাদ, আপনার লেখা পেলে আমাদের ভালো লাগবে 🙂 লেখা পাঠানো হয় শুধু ওয়েবসাইটের ফর্ম দিয়ে, ই-মেল বা মেসেঞ্জারে নয়। hatpakha.com/submit/ খুলে ই-মেল দিয়ে একটা অ্যাকাউন্ট করুন, তারপর ফর্মে লেখাটা বসিয়ে পাঠিয়ে দিন। পাঠানোর পর লেখাটা কোন অবস্থায় আছে, নিজের অ্যাকাউন্টেই দেখতে পাবেন। নিয়মগুলো এখানে: hatpakha.com/submissions/';
+
     public const STATUSES = ['new' => 'নতুন', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'উত্তর লাগে না', 'flagged' => 'আপনি দেখুন', 'failed' => 'উত্তর যায়নি', 'deleted' => 'উত্তর মুছে ফেলা হয়েছে'];
 
     public static function auto(): bool
@@ -83,7 +89,61 @@ final class CommentReplies
                 $n++;
             }
         }
+        $n += self::fetchOwn($auth, $base, $page);
         SocialComment::where('created_at', '<', now()->subDays(60))->delete();   // readers' words are not kept longer
+
+        return $n;
+    }
+
+    public const OWN_DAYS = 45;
+
+    /**
+     * D227 (owner: people asked how to send writing under "my own post, I boosted it", and nobody answered): the
+     * page's other recent posts are read too, those the owner put up by hand and adverts made from them. If Facebook
+     * refuses to show the page's posts or comments, the owner is told instead of the job staying silent.
+     */
+    private static function fetchOwn(array $auth, string $base, string $page): int
+    {
+        $ours = SocialPost::whereNotNull('fb_post_id')->where('updated_at', '>=', now()->subDays(self::OWN_DAYS + 7))->pluck('fb_post_id')->all();
+        $posts = [];
+        $refused = null;
+        foreach (['published_posts' => [], 'ads_posts' => ['include_inline_create' => 'true']] as $edge => $extra) {
+            $res = rescue(fn () => Http::timeout(20)->get($base.$page.'/'.$edge, ['fields' => 'id,message,created_time', 'limit' => 25] + $extra + $auth), null, false);
+            if ($edge === 'published_posts' && ! $res?->successful()) {
+                $refused = (string) ($res?->json('error.message') ?? 'no connection');
+            }
+            foreach ((array) ($res?->successful() ? $res->json('data') : []) as $p) {
+                $id = (string) ($p['id'] ?? '');
+                $at = rescue(fn () => \Illuminate\Support\Carbon::parse($p['created_time'] ?? 'now'), now(), false);
+                if ($id !== '' && ! in_array($id, $ours, true) && $at->gte(now()->subDays(self::OWN_DAYS))) {
+                    $posts[$id] = mb_substr(trim((string) ($p['message'] ?? '')), 0, 800);
+                }
+            }
+        }
+        $n = 0;
+        foreach (array_slice($posts, 0, 25, true) as $postId => $words) {
+            $res = rescue(fn () => Http::timeout(20)->get($base.$postId.'/comments', ['fields' => 'id,message,from,created_time,parent', 'filter' => 'toplevel', 'order' => 'reverse_chronological', 'limit' => 40] + $auth), null, false);
+            if (! $res?->successful()) {
+                $refused ??= (string) ($res?->json('error.message') ?? 'no connection');
+
+                continue;
+            }
+            foreach ((array) $res->json('data') as $c) {
+                $id = (string) ($c['id'] ?? '');
+                $text = (string) ($c['message'] ?? '');
+                if ($id === '' || (string) ($c['from']['id'] ?? '') === $page || ! empty($c['parent']) || SocialComment::where('remote_id', $id)->exists()) {
+                    continue;
+                }
+                $at = ! empty($c['created_time']) ? rescue(fn () => \Illuminate\Support\Carbon::parse($c['created_time']), null, false) : now();
+                // An old comment found for the first time is shown to the owner, not answered weeks late.
+                $late = $at && $at->lt(now()->subDays(3));
+                SocialComment::create(['social_post_id' => null, 'post_text' => $words ?: null, 'network' => 'facebook', 'remote_id' => $id, 'text' => mb_substr(trim($text), 0, 1500), 'commented_at' => $at,
+                    'status' => mb_strlen(trim(preg_replace('/[^\p{L}\p{N}]+/u', '', $text))) < 3 ? 'skipped' : ($late ? 'flagged' : 'new'),
+                    'reason' => $late ? 'পুরনো কমেন্ট: দেরিতে চোখে পড়ল, নিজে দেখে উত্তর দিন' : null]);
+                $n++;
+            }
+        }
+        Handover::flag('fb_comments', $refused ? __('Facebook পাতার কমেন্ট পড়া যাচ্ছে না, তাই পাঠকদের উত্তর দেওয়া বন্ধ আছে') : null, $refused ? [$refused] : []);
 
         return $n;
     }
@@ -100,12 +160,12 @@ final class CommentReplies
         if ($batch->isEmpty()) {
             return 0;
         }
-        $items = $batch->map(fn (SocialComment $c) => ['id' => $c->id, 'network' => $c->network, 'our_post' => mb_substr((string) ($c->post->texts[$c->network] ?? $c->post->texts['facebook'] ?? $c->post->title), 0, 500), 'comment' => $c->text])->values()->all();
+        $items = $batch->map(fn (SocialComment $c) => ['id' => $c->id, 'network' => $c->network, 'our_post' => mb_substr((string) ($c->post ? ($c->post->texts[$c->network] ?? $c->post->texts['facebook'] ?? $c->post->title) : $c->post_text), 0, 500), 'comment' => $c->text])->values()->all();
         [$d] = Claude::json('marketing', self::VOICE,
             "<facts>\n".e(self::facts())."\n</facts>\n<comments>\n".e(json_encode($items, JSON_UNESCAPED_UNICODE))."\n</comments>",
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['answers'], 'properties' => ['answers' => ['type' => 'array', 'items' => [
                 'type' => 'object', 'additionalProperties' => false, 'required' => ['id', 'action', 'reply', 'reason'],
-                'properties' => ['id' => ['type' => 'integer'], 'action' => ['type' => 'string', 'enum' => ['reply', 'skip', 'flag']], 'reply' => ['type' => 'string'], 'reason' => ['type' => 'string']]]]]],
+                'properties' => ['id' => ['type' => 'integer'], 'action' => ['type' => 'string', 'enum' => ['reply', 'send', 'skip', 'flag']], 'reply' => ['type' => 'string'], 'reason' => ['type' => 'string']]]]]],
             config('ai.anthropic.review_model'), 3000);
         if (! $d) {
             return 0;   // the AI is resting: the comments wait
@@ -115,13 +175,14 @@ final class CommentReplies
         $sent = 0;
         foreach ($batch as $c) {
             $a = $byId[$c->id] ?? null;
-            $reply = trim((string) ($a['reply'] ?? ''));
+            $fixed = ($a['action'] ?? '') === 'send';
+            $reply = $fixed ? self::HOW_TO_SEND : trim((string) ($a['reply'] ?? ''));
             $reason = mb_substr(trim((string) ($a['reason'] ?? '')), 0, 190) ?: null;
             if (! $a || $a['action'] === 'flag') {
                 $c->forceFill(['status' => 'flagged', 'reason' => $reason])->save();
             } elseif ($a['action'] === 'skip' || $reply === '') {
                 $c->forceFill(['status' => 'skipped', 'reason' => $reason])->save();
-            } elseif (! self::safe($reply)) {
+            } elseif (! $fixed && ! self::safe($reply)) {
                 $c->forceFill(['status' => 'flagged', 'reason' => 'উত্তরটি নিয়মে আটকেছে (লিংক, প্রতিশ্রুতি বা বেশি লম্বা)', 'reply' => mb_substr($reply, 0, 600)])->save();
             } else {
                 $res = rescue(fn () => Http::asForm()->timeout(25)->post($base.$c->remote_id.($c->network === 'instagram' ? '/replies' : '/comments'), ['message' => $reply] + $auth), null, false);
@@ -169,6 +230,7 @@ final class CommentReplies
         return implode("\n", [
             'Hatpakha (হাতপাখা): a Bengali literary web magazine, since 2012. Website: hatpakha.com',
             'Anyone can send writing: hatpakha.com/submit (a free account is needed). Every piece is read; nothing is promised.',
+            'Writing is taken only through that form on the website, never by e-mail, Messenger or a comment. The rules are at hatpakha.com/submissions',
             'Daily games (a riddle, a word game, a small crossword): hatpakha.com/khela',
             'পাঠকের কলম: each week readers write a few lines on a theme, no account needed: hatpakha.com/kolom',
             'A riddle card\'s answer is given by us as a comment the next morning.',
@@ -178,8 +240,9 @@ final class CommentReplies
     private const VOICE = 'You answer readers\' comments under the Facebook and Instagram posts of Hatpakha (হাতপাখা), a Bengali literary web magazine, in its own name. These replies are public. '
         .'For each comment decide one action: '
         ."\n- \"reply\": the comment is a kind word, a reader's own memory or thought, an answer to the question our post asked, or a simple question that the facts given can answer. "
+        ."\n- \"send\": the comment only asks how or where to send writing, or says the person wants to send writing (\"লেখা কীভাবে পাঠাব\", \"আমি লেখা পাঠাতে চাই\"). The site then posts its own fixed answer; leave `reply` empty. If the same comment also asks anything else (what kinds are taken, payment, deadlines, a word limit, their own piece), it is not \"send\": flag it. "
         ."\n- \"skip\": spam, an advert, a link, only names or tags, greetings with nothing to answer (\"nice\", \"ভালো\" alone may get a short thanks: your choice), or a comment not meant for us. "
-        ."\n- \"flag\": a complaint, anger, abuse, sarcasm you cannot read surely, anything about politics, religion, caste or a named person, a question the facts cannot answer, a request about one's own submission or account, or anything you are not sure about. When in doubt, flag. "
+        ."\n- \"flag\": a complaint, anger, abuse, sarcasm you cannot read surely, anything about politics, religion, caste or a named person, a question the facts cannot answer, a request about one's own submission or account, any question that needs more than one plain fact to answer (two questions in one comment, \"why\", \"how much\", \"when will\", anything about money, rules or decisions), or anything you are not sure about. The editor answers those himself. When in doubt, flag. Never mention money, fees or that something is free. "
         ."\n\nA reply: one or two short sentences in everyday Bengali (চলিত), as a warm, well-read person at the magazine would write to a reader. Answer what THIS person said: pick up their own word or memory; never a stock thank-you that could go under any comment. "
         .'If they wrote in English or in Bengali with Latin letters, you may answer in simple Bengali script. '
         .'At most one emoji, usually none. No hashtags. No links except hatpakha.com addresses from the facts, and only when the reader asked how or where. '

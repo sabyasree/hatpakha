@@ -111,4 +111,54 @@ class CommentRepliesTest extends TestCase
         $this->assertSame('deleted', $c->fresh()->status);
         Http::assertSent(fn ($r) => $r->method() === 'DELETE' && str_ends_with(strtok($r->url(), '?'), '/r1'));
     }
+
+    /** D227 (owner: questions under "my own post, I boosted it" got no answer). */
+    public function test_comments_under_the_owners_own_and_boosted_posts_are_read_and_answered(): void
+    {
+        $this->social();   // a post the site made: not read a second time as an "own" post
+        Http::fake([
+            'graph.facebook.com/*/111/published_posts*' => Http::response(['data' => [
+                ['id' => '111_9', 'message' => 'সাইটের পোস্ট', 'created_time' => '2026-11-18T05:00:00+0000'],
+                ['id' => '111_50', 'message' => 'আপনার লেখা পাঠান হাতপাখায়', 'created_time' => '2026-11-15T05:00:00+0000'],
+                ['id' => '111_1', 'message' => 'অনেক পুরনো', 'created_time' => '2026-08-01T05:00:00+0000'],
+            ]]),
+            'graph.facebook.com/*/111/ads_posts*' => Http::response(['error' => ['message' => 'no permission']], 400),
+            'graph.facebook.com/*/111_50/comments*' => Http::response(['data' => [
+                ['id' => 'o1', 'message' => 'লেখা কীভাবে কোথায় পাঠাবো', 'from' => ['id' => '900', 'name' => 'Someone'], 'created_time' => '2026-11-19T05:00:00+0000'],
+                ['id' => 'o2', 'message' => 'আমি লেখা পাঠাতে চাই', 'from' => ['id' => '901'], 'created_time' => '2026-11-10T05:00:00+0000'],
+                ['id' => 'o3', 'message' => 'আমাদের উত্তর', 'from' => ['id' => '111']],
+            ]]),
+            'graph.facebook.com/*/o1/comments' => Http::response(['id' => 'r9']),
+            'graph.facebook.com/*' => Http::response(['data' => []]),
+        ]);
+        $this->assertSame(2, CommentReplies::fetch());
+        $this->assertSame(0, CommentReplies::fetch());
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '111_1/comments'));
+        $new = SocialComment::where('remote_id', 'o1')->firstOrFail();
+        $this->assertSame(['new', null, 'আপনার লেখা পাঠান হাতপাখায়'], [$new->status, $new->social_post_id, $new->post_text]);
+        $this->assertSame('flagged', SocialComment::where('remote_id', 'o2')->value('status'), 'A comment found a week late goes to the owner');
+        $this->assertFalse(\App\Models\EditorTask::where('key', 'handover.fb_comments')->where('status', 'open')->exists());
+
+        $asked = '';
+        Claude::$fake = function (...$a) use (&$asked, $new) {
+            $asked = json_encode($a, JSON_UNESCAPED_UNICODE);
+
+            return ['answers' => [['id' => $new->id, 'action' => 'send', 'reply' => 'এআই-এর নিজের কথা, টাকা লাগে না', 'reason' => '']]];
+        };
+        Carbon::setTestNow(now()->addMinutes(15));
+        $this->assertSame(1, CommentReplies::answer());
+        // D228: "how do I send writing" gets the owner's own words, exactly, whatever the AI wrote.
+        $this->assertSame(CommentReplies::HOW_TO_SEND, $new->fresh()->reply);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/o1/comments') && $r['message'] === CommentReplies::HOW_TO_SEND);
+        $this->assertDoesNotMatchRegularExpression('/টাকা|খরচ|বিনা পয়সা/u', CommentReplies::HOW_TO_SEND);
+        $this->assertStringContainsString('আপনার লেখা পাঠান হাতপাখায়', $asked, 'The answer is written knowing what the post said');
+        $this->assertSame('replied', $new->fresh()->status);
+
+        // Facebook refuses: the owner is told, and told again no more once it works.
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::fake(['graph.facebook.com/*/111/published_posts*' => Http::response(['error' => ['message' => '(#200) Requires pages_read_engagement']], 403), 'graph.facebook.com/*' => Http::response(['data' => []])]);
+        CommentReplies::fetch();
+        $flag = \App\Models\EditorTask::where('key', 'handover.fb_comments')->where('status', 'open')->firstOrFail();
+        $this->assertStringContainsString('pages_read_engagement', $flag->payload['errors'][0]);
+    }
 }

@@ -331,13 +331,19 @@ class HandoverTest extends TestCase
             'cover_prompt' => 'a press'];
         $n = 0;
         $rewrites = [];
-        \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$problems, &$plan, &$n, &$rewrites) {
+        \App\Ai\Claude::$fake = function ($purpose, $user, $schema) use (&$problems, &$plan, &$n, &$rewrites, &$whole) {
             if ($purpose === 'case_check') {
                 return ['problems' => $problems];
             }
 
-            if (str_contains((string) $user, '<problems_found>')) {
+            if (isset($schema['properties']['edits'])) {   // D229: the smallest cure first
                 $rewrites[] = $user;
+
+                return count($rewrites) === 2 ? ['edits' => []]   // cannot be mended: the whole episode is written again
+                    : ['edits' => [['paragraph' => 1, 'text' => str_repeat('সারানো হল, বার '.count($rewrites).'। ', 100)], ['paragraph' => 9, 'text' => 'নেই এমন অনুচ্ছেদ']]];
+            }
+            if (str_contains((string) $user, '<problems_found>')) {
+                $whole = ($whole ?? 0) + 1;
 
                 return ['episode' => ['title' => 'উধাও', 'paragraphs' => [str_repeat('আবার লেখা হল, বার '.count($rewrites).'। ', 100)], 'summary' => 'ফর্মা উধাও।', 'image_prompt' => '', 'teaser' => 'একটা বানান মিলছে না।']];
             }
@@ -381,15 +387,18 @@ class HandoverTest extends TestCase
             $this->assertSame(0, Handover::cases());
             $this->assertCount(1, $rewrites);
             $this->assertStringContainsString('অপরাধীর নাম এই পর্বেই', $rewrites[0]);
-            $this->assertStringContainsString('বার 1', $ep2->fresh()->body_html);
+            $this->assertStringContainsString('সারানো হল, বার 1', $ep2->fresh()->body_html);
+            $this->assertStringNotContainsString('নেই এমন অনুচ্ছেদ', $ep2->fresh()->body_html);
             $this->assertSame($ep2->title, $ep2->fresh()->title, 'Same place, same title');
             $this->assertSame(['before', 'ai_rewrite'], \App\Models\PostVersion::where('post_id', $ep2->id)->orderBy('id')->pluck('kind')->all());
             $this->assertSame($first, \App\Models\PostVersion::where('post_id', $ep2->id)->orderBy('id')->first()->body_html, 'The first text is kept');
             $this->assertFalse(\App\Models\EditorTask::where('key', 'handover.episode.'.$ep2->id)->where('status', 'open')->exists(), 'Nobody is asked while it is being put right');
             $this->assertSame(0, Handover::cases());
-            $this->assertCount(2, $rewrites);
+            $this->assertSame([2, 1], [count($rewrites), $whole], 'What cannot be mended is written again whole');
             $this->assertSame(0, Handover::cases());
-            $this->assertCount(2, $rewrites, 'Two tries, then a person');
+            $this->assertCount(3, $rewrites);
+            $this->assertSame(0, Handover::cases());
+            $this->assertCount(3, $rewrites, 'Three tries, then a person');
             $flag = \App\Models\EditorTask::where('key', 'handover.episode.'.$ep2->id)->where('status', 'open')->firstOrFail();
             $this->assertSame($problems, $flag->payload['errors']);
             $this->assertSame('draft', $ep2->fresh()->status);

@@ -168,6 +168,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
+- [x] D227: readers' comments under the owner's own and boosted Facebook posts are read and answered; a flag when Facebook refuses
 - [x] D226: a detective episode with problems is rewritten by the AI writer (twice at most) before a flag reaches the owner
 - [x] D225: the readers' letter as a small magazine (one leading piece with picture and a checked line from the writing, each serial once, riddle box, a reader's words)
 - [ ] Owner: switch off Amazon SES open and click tracking (links in letters currently pass through awstrack.me), then send a test of the next letter
