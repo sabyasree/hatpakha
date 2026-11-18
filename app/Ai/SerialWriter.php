@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Author;
 use App\Models\EditorTask;
 use App\Models\Post;
+use App\Models\PostVersion;
 use App\Models\Section;
 use App\Models\Serial;
 use App\Support\CoverImage;
@@ -134,12 +135,49 @@ final class SerialWriter
             return [null, 'ধারাবাহিকটি এখন বন্ধ।'];
         }
         $n = $serial->nextEpisodeNo();
-        $plan = (array) ($serial->bible['episodes'] ?? []);
-        if ($n > max(count($plan), 1) + 2) {
+        if ($n > max(count((array) ($serial->bible['episodes'] ?? [])), 1) + 2) {
             return [null, 'পরিকল্পনার সব পর্ব লেখা হয়ে গেছে।'];
         }
+        [$d, $err] = self::compose($serial, $n);
+        if (! is_array($d) || empty($d['episode']['paragraphs'])) {
+            return [null, $err ?: 'পর্ব তৈরি হয়নি।'];
+        }
+
+        return [self::saveEpisode($serial, $n, (array) $d['episode']), null];
+    }
+
+    /**
+     * D226 (owner, shown a flag that an episode of the detective series had problems: "it should fix by itself"): the
+     * same writer writes the episode again with the continuity editor's problems in front of it. The episode keeps its
+     * place, title and picture; the text before the rewrite is kept in the piece's history.
+     */
+    public static function repair(Serial $serial, Post $episode, array $problems): bool
+    {
+        [$d] = self::compose($serial, (int) $episode->episode_no, $episode, $problems);
+        $paras = array_values(array_filter(array_map(fn ($p) => trim((string) $p), (array) ($d['episode']['paragraphs'] ?? []))));
+        if (! $paras) {
+            return false;
+        }
+        $e = (array) $d['episode'];
+        if (! PostVersion::where('post_id', $episode->id)->exists()) {
+            PostVersion::snap($episode, 'before');
+        }
+        $episode->forceFill([
+            'body_html' => collect($paras)->map(fn ($p) => '<p>'.e($p).'</p>')->implode(''),
+            'episode_summary' => mb_substr(trim((string) ($e['summary'] ?? $episode->episode_summary)), 0, 2000),
+            'episode_teaser' => filled($e['teaser'] ?? null) ? mb_substr(trim((string) $e['teaser']), 0, 300) : $episode->episode_teaser,
+        ])->save();
+        PostVersion::snap($episode, 'ai_rewrite', implode("\n", $problems));
+
+        return true;
+    }
+
+    /** One call to the writer for episode $n: a first draft, or ($redo) the same episode again without the problems found in it. */
+    private static function compose(Serial $serial, int $n, ?Post $redo = null, array $problems = []): array
+    {
+        $plan = (array) ($serial->bible['episodes'] ?? []);
         $last = $n >= count($plan);
-        $before = $serial->episodes()->get();
+        $before = $serial->episodes()->when($redo, fn ($q) => $q->where('episode_no', '<', $n))->get();
         $story = $before->map(fn (Post $p) => 'পর্ব '.$p->episode_no.' "'.self::ownTitle((string) $p->title, $serial->title).'": '.($p->episode_summary ?: mb_substr(strip_tags((string) $p->body_html), 0, 400)))->implode("\n");
         $tail = mb_substr(trim(html_entity_decode(strip_tags(str_replace('</p>', "\n", (string) $before->last()?->body_html)))), -2500);
         [$d, $err] = Claude::json('serial', self::CRAFT.FeedbackLessons::forPrompt('dharabahik', $serial->id).' '.(self::WRITERS[$serial->writer][1] ?? ''),
@@ -159,14 +197,16 @@ final class SerialWriter
             ."\n<last_episode_ending>".e($tail).'</last_episode_ending></serial>'
             .\App\Support\SerialSignals::forEpisode($serial)   // D215: what readers did with the episodes so far
             ."\nWrite episode {$n}".($n === 1 ? ', the opening: draw the reader in from the first line, introduce the world through a scene, and end on a hook.' : ($last ? ', the FINAL episode: resolve the story.' : ', following the plan (you may improve it if the story asks for it), and end on a hook.'))
+            .($redo ? "\nYou already wrote this episode; the continuity editor found problems in it and it cannot be published as it is."
+                ."\n<your_draft>\n".e(trim(html_entity_decode(strip_tags(str_replace('</p>', "\n", (string) $redo->body_html)))))."\n</your_draft>"
+                ."\n<problems_found>\n".e(collect($problems)->map(fn ($x) => '- '.$x)->implode("\n"))."\n</problems_found>"
+                ."\nWrite the whole episode again so that every one of these problems is gone. Keep the scenes, the voice and the length that work, and the same title; change only what the problems require, and bring in no new fault: still no reveal before the final episode, every clue of this episode planted in a scene, nothing later than the 1970s, a complete ending with a hook."
+                : '')
             .' The title is only this episode\'s own short title (2-5 words): never the serial\'s name, never "পর্ব" or a number. Also give its private summary, an image_prompt, and a teaser: ONE short Bengali line (under 20 words) that will be printed under this episode as "পরের পর্বে" to make readers come back for the NEXT episode: it hints at what is coming (from the plan) through a concrete detail or a question in the story\'s own world, gives nothing away, and is not a question to the reader. For the final episode the teaser is an empty string.',
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['episode'], 'properties' => ['episode' => self::episodeSchema()]],
             (string) config('ai.anthropic.writer_model'), 64000);   // thinking + up to 1800 Bengali words; streamed
-        if (! is_array($d) || empty($d['episode']['paragraphs'])) {
-            return [null, $err ?: 'পর্ব তৈরি হয়নি।'];
-        }
 
-        return [self::saveEpisode($serial, $n, (array) $d['episode']), null];
+        return [$d, $err];
     }
 
     /** Daily: every running serial keeps exactly one unpublished episode ready (one week ahead). */
