@@ -3,6 +3,8 @@
 Written 19 November 2026. Everything here is yours to do; the site side is already built.
 Never paste keys, secrets or passwords into the chat with Claude. They go only into the GitHub **ENV_FILE**.
 
+**Rule for ENV_FILE:** any value that contains a space must be inside double quotes, like `NAME="Two Words"`. Without the quotes the deploy fails with "The environment file is invalid".
+
 ## 1. Merge and deploy (5 minutes)
 
 - [ ] Merge the open request: https://github.com/sabyasree/hatpakha/pull/88
@@ -40,7 +42,7 @@ The page and its footer link stay hidden until you do this.
 - [ ] Decide which UPI address should receive support.
 - [ ] Add to the production ENV_FILE:
   - `SUPPORT_UPI_ID=yourname@bank`
-  - `SUPPORT_UPI_NAME=` the account holder's name **exactly** as UPI apps show it (readers are told to check it before paying).
+  - `SUPPORT_UPI_NAME="Your Name"` the account holder's name **exactly** as UPI apps show it (readers are told to check it before paying). **Keep the double quotes**: a value with a space in it and no quotes stops the deploy.
 - [ ] Re-run Deploy, then open hatpakha.com/pashe-thakun/ and send yourself ₹1 to check the name matches.
 
 ## 5. AdSense
