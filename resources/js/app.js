@@ -761,7 +761,7 @@ document.querySelectorAll('[data-serial-box]').forEach((box) => {
         const v = value();
         if (fresh) fresh.hidden = v !== 'new';
         if (next) next.hidden = v === '' || v === 'new';
-        if (title) title.placeholder = v === '' ? 'শিরোনাম' : 'এই পর্বের নাম';
+        if (title) title.placeholder = v === '' ? 'লেখার নাম (শিরোনাম)' : 'এই পর্বের নাম';
     };
     choices.forEach((c) => c.addEventListener('change', paint));
     paint();

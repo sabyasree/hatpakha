@@ -214,7 +214,7 @@
                     <label class="block border-b-2 border-rule px-4 pt-3">
                         <span class="sr-only">শিরোনাম</span>
                         <input name="title" value="{{ old('title', $post->exists || filled($post->title) ? $post->title : '') }}" maxlength="200" required autocomplete="off" enterkeyhint="next"
-                            placeholder="লেখার নাম (শিরোনাম) এখানে লিখুন" class="block h-14 w-full border-0 bg-transparent p-0 font-display text-2xl font-extrabold placeholder:text-ink2 focus:outline-none focus:ring-0">
+                            placeholder="লেখার নাম (শিরোনাম)" class="block h-14 w-full border-0 bg-transparent p-0 font-display text-2xl font-extrabold placeholder:text-ink2 focus:outline-none focus:ring-0">
                     </label>
                     <p data-error="title" hidden class="px-4 pt-1 text-sm font-bold text-red" role="alert">একটি শিরোনাম দিন।</p>
 
