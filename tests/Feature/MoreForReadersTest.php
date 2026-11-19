@@ -102,7 +102,8 @@ class MoreForReadersTest extends TestCase
         $this->get('/pashe-thakun/')->assertNotFound();
         $this->get('/')->assertDontSee('pashe-thakun');
         config(['services.support.upi' => 'hatpakha@okbank']);
-        $this->get('/pashe-thakun/')->assertOk()->assertSee('hatpakha@okbank')->assertSee('upi://pay?pa=hatpakha%40okbank', false)->assertSee('নিজের ইচ্ছেমতো');
+        $this->get('/pashe-thakun/')->assertOk()->assertSee('hatpakha@okbank')->assertSee('upi://pay?pa=hatpakha%40okbank', false)->assertSee('নিজের ইচ্ছেমতো')
+            ->assertSee('data:image/svg+xml;base64,', false)->assertSee('স্ক্যান করুন');   // D238: the same link as a QR code
         $this->get('/')->assertSee('pashe-thakun');
         config(['services.support.upi' => 'not a upi <script>']);
         $this->get('/pashe-thakun/')->assertNotFound();

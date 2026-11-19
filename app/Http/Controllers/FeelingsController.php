@@ -19,7 +19,14 @@ class FeelingsController extends Controller
         $seo = new Seo(title: 'হাতপাখার পাশে থাকুন', description: 'হাতপাখা পড়তে বা লিখতে কোনো খরচ নেই। ভালো লাগলে নিজের ইচ্ছেমতো সাহায্য করতে পারেন।', canonical: Url::to('/pashe-thakun'),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['পাশে থাকুন', Url::to('/pashe-thakun')]])]);
 
-        return view('support', ['seo' => $seo, 'upi' => $upi, 'name' => trim((string) config('services.support.name')), 'pay' => 'upi://pay?'.http_build_query(['pa' => $upi, 'pn' => (string) (config('services.support.name') ?: 'Hatpakha'), 'cu' => 'INR', 'tn' => 'Hatpakha'])]);
+        // D238 (owner: "can I add QR to UPI"): the same payment link as a QR code, drawn here (the library the
+        // certificates already use), so a reader on a computer can scan it with the phone's UPI app.
+        $pay = 'upi://pay?'.http_build_query(['pa' => $upi, 'pn' => (string) (config('services.support.name') ?: 'Hatpakha'), 'cu' => 'INR', 'tn' => 'Hatpakha']);
+        $qr = rescue(fn () => 'data:image/svg+xml;base64,'.base64_encode((new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions([
+            'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class, 'outputBase64' => false, 'svgAddXmlHeader' => false, 'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true,
+        ])))->render($pay)), null, true);
+
+        return view('support', ['seo' => $seo, 'upi' => $upi, 'qr' => $qr, 'name' => trim((string) config('services.support.name')), 'pay' => $pay]);
     }
 
     public function index()

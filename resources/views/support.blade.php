@@ -10,6 +10,13 @@
         <div class="mt-6 rounded-2xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
             <h2 class="font-display text-2xl font-extrabold">UPI দিয়ে পাঠান</h2>
             <p class="mt-1 text-ink2">GPay, PhonePe, Paytm বা যে কোনো UPI অ্যাপে নিচের ঠিকানায় পাঠানো যায়।</p>
+            @if ($qr)
+                {{-- D238: scan with any UPI app; the address and buttons below do the same for someone already on the phone --}}
+                <figure class="mx-auto mt-4 w-full max-w-[260px] text-center">
+                    <img src="{{ $qr }}" width="260" height="260" alt="হাতপাখাকে UPI দিয়ে পাঠানোর কিউআর কোড" class="block h-auto w-full rounded-xl border-2 border-navy bg-white p-2">
+                    <figcaption class="mt-2 text-sm text-ink2">অন্য ফোন বা কম্পিউটারে দেখছেন? UPI অ্যাপ খুলে এই কোডটা স্ক্যান করুন।</figcaption>
+                </figure>
+            @endif
             <p class="mt-4 text-sm font-bold text-ink2">UPI ঠিকানা</p>
             <p class="mt-1 break-all rounded-xl bg-peach-light p-4 text-center font-mono text-xl font-bold" data-upi>{{ $upi }}</p>
             @if (filled($name))<p class="mt-2 text-ink2">অ্যাপে প্রাপকের নাম দেখাবে: <strong class="text-ink">{{ $name }}</strong>। নাম মিললে তবেই পাঠান।</p>@endif
