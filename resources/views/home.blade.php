@@ -1,21 +1,5 @@
 <x-layouts.app :seo="$seo">
-    {{-- HERO: sunrise fan (design board ১) --}}
-    <section class="relative overflow-hidden border-b-2 border-navy" style="background: linear-gradient(160deg,#7CCBEE 0%,#2DAAE2 45%,#1A86C2 100%)">
-        <div class="halftone absolute inset-0" aria-hidden="true"></div>
-        <div class="relative mx-auto max-w-[1320px] px-5 pb-10 pt-8 md:min-h-[640px] md:pb-0 md:pt-16">
-            <div class="relative z-10 max-w-[640px]">
-                <span class="inline-block -rotate-3 rounded-full border-2 border-navy bg-paper px-4 pt-1 font-hand text-2xl shadow-[3px_3px_0_#13212C]">২০১২ থেকে</span>
-                <h1 class="mt-5 font-display text-[3.6rem] font-extrabold leading-[.85] [word-spacing:.22em] sm:text-7xl sm:tracking-tight sm:[word-spacing:normal] md:text-[150px]" style="font-stretch: 75%">বাংলা সাহিত্যের<br><span class="text-paper [-webkit-text-stroke:3px_#13212C] [paint-order:stroke]">নতুন হাওয়া</span></h1>
-                <p class="mt-6 max-w-[460px] font-serif text-lg font-medium leading-relaxed">কবিতা, গল্প, প্রবন্ধ আর ভ্রমণকথার অনলাইন পত্রিকা। লেখা পাঠান — প্রকাশ সবসময় বিনামূল্যে।</p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex h-14 items-center rounded-full bg-navy px-6 text-lg font-bold text-paper shadow-[4px_4px_0_#CB1B32]">পড়া শুরু করুন</a>
-                    <a href="{{ \App\Support\Url::to('/submit') }}" class="flex h-14 items-center rounded-full border-2 border-navy bg-paper px-6 text-lg font-bold">লেখা পাঠান</a>
-                </div>
-                <p class="mt-6 text-base font-semibold">{{ \App\Support\Bn::num($counts['years']) }} বছর ধরে <b>{{ \App\Support\Bn::num($counts['writers']) }} জন লেখক</b>, <b>{{ \App\Support\Bn::num($counts['pieces']) }}টি লেখা</b> — সবাই আপনার মতোই পাঠক ছিলেন একদিন।</p>
-            </div>
-            <x-fan class="absolute -right-[2%] bottom-0 hidden w-[min(58vw,820px)] md:block" stroke="#13212C" />
-        </div>
-    </section>
+    @include('partials.hero')
 
     @if ($issue)
     {{-- The month's issue, as a magazine on the stand: cover, name, editorial, and "পত্রিকা খুলুন" (owner, 2026-11-12) --}}
