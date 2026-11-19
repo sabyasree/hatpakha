@@ -19,6 +19,16 @@ class PostController extends Controller
             return $this->page($slug) ?? app(LegacyController::class)->fallback(request());
         }
 
+        // D241: a feeling a guest tapped before logging in is recorded now, once, and the card asks for a line.
+        if (($later = session('feel_later')) && auth()->check() && (int) ($later['post'] ?? 0) === $post->id) {
+            session()->forget('feel_later');
+            if (\App\Support\Feelings::mine(auth()->user(), $post) === null) {
+                \App\Support\Feelings::set(auth()->user(), $post, (string) ($later['feeling'] ?? ''));
+                $post->refresh();
+                session()->now('felt', true);
+            }
+        }
+
         // "আরও পড়ুন": the SEO expert's picks (D46), otherwise the newest in the same section.
         $picked = array_map('intval', (array) $post->related_ids);
         $related = $picked

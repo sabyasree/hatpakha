@@ -59,6 +59,6 @@ class DeskLanguageTest extends TestCase
     {
         $this->makePost(['slug' => 'pub']);
         $this->actingAs(User::factory()->create(['role' => Role::Admin, 'desk_locale' => 'en']))
-            ->get('/pub/')->assertOk()->assertSee('পাঠকের মতামত');
+            ->get('/pub/')->assertOk()->assertSee('লেখককে দু লাইন লিখুন');
     }
 }

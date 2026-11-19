@@ -39,7 +39,7 @@ class CommentTest extends TestCase
     {
         $post = $this->makePost(['slug' => 'nodi']);
         $this->post("/comment/{$post->id}", $this->form(['name' => 'অতিথি পাঠক', 'body' => '<script>alert(1)</script> ভালো']))
-            ->assertRedirect($post->url().'#comments')->assertSessionHas('comment_status');
+            ->assertRedirect($post->url().'#reactions')->assertSessionHas('comment_status');   // D241: the form is in the card under the piece
         $c = Comment::sole();
         $this->assertSame('pending', $c->status);
         $this->assertNull($c->user_id);
