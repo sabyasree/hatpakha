@@ -116,4 +116,39 @@ class GoogleSignInTest extends TestCase
             $this->assertArrayHasKey($key, config('services.google'));
         }
     }
+
+    /**
+     * D240: every setting the owner can write in ENV_FILE must reach the site. Each name a config file reads is given
+     * a value of its own here and the file is loaded again: a value that does not arrive means the line was
+     * overwritten, misplaced or lost (as GA_MEASUREMENT_ID was on 2026-11-19).
+     */
+    public function test_every_setting_named_in_a_config_file_reaches_the_site(): void
+    {
+        foreach (['services', 'ai', 'mail'] as $name) {
+            $source = (string) file_get_contents(config_path($name.'.php'));
+            // only plain reads: a value that is cast, compared or split is not expected back as written
+            preg_match_all("/^(?!\s*\/\/).*=>\s*env\('([A-Z0-9_]+)'(?:,[^()]*)?\),?\s*(?:\/\/.*)?$/m", $source, $m);
+            $this->assertNotEmpty($m[1], $name);
+            $before = [];
+            foreach ($m[1] as $key) {
+                $before[$key] = $_ENV[$key] ?? null;
+                $_ENV[$key] = $_SERVER[$key] = 'sentinel-'.$key;
+            }
+            try {
+                $loaded = json_encode(require config_path($name.'.php'));
+            } finally {
+                foreach ($before as $key => $old) {
+                    unset($_SERVER[$key]);
+                    if ($old === null) {
+                        unset($_ENV[$key]);
+                    } else {
+                        $_ENV[$key] = $_SERVER[$key] = $old;
+                    }
+                }
+            }
+            foreach ($m[1] as $key) {
+                $this->assertStringContainsString('sentinel-'.$key, (string) $loaded, "{$key} is read in config/{$name}.php but its value does not reach the site");
+            }
+        }
+    }
 }
