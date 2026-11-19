@@ -61,7 +61,7 @@ class MoreForReadersTest extends TestCase
     public function test_a_reader_sees_their_reading_run_and_can_wipe_it(): void
     {
         $reader = User::factory()->create(['email_verified_at' => now()]);
-        $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()->subDays(9)]);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => '2026-11-01 00:00:00']);   // a fixed day: the test must not depend on the hour it runs
         foreach (['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-16', '2026-11-17'] as $day) {
             Carbon::setTestNow(Carbon::parse($day.' 21:00', 'Asia/Kolkata'));
             ReadingHistory::record($reader, $post, 5);    // opened and left: not a day of reading

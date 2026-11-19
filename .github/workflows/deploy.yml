@@ -146,6 +146,28 @@ jobs:
             sleep 1
           done
 
+      # D240 (owner, after Google sign-in silently switched Analytics off: "can you do something, so in future you
+      # will not do this kind of mistake"): look at the live site after each release, the way a visitor's browser
+      # does. A red mark here means the release is up but something a test could not see is wrong. Production only.
+      - name: Check the live site after the release
+        if: github.ref_name == 'main'
+        env:
+          SITE: https://hatpakha.com
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          fail=0
+          code=$(curl -s -o home.html --max-time 40 -w "%{http_code}" "$SITE/?deploy-check=$GITHUB_RUN_ID")
+          [ "$code" = "200" ] || { echo "::error::The home page answered $code"; fail=1; }
+          if printf '%s\n' "$ENV_FILE" | grep -Eq '^GA_MEASUREMENT_ID=["'"'"']?G-'; then
+            grep -q 'googletagmanager.com/gtag' home.html || { echo "::error::Google Analytics is set in ENV_FILE but its tag is not on the home page"; fail=1; }
+          fi
+          for path in /sitemap.xml /submissions/ /khela/ /login/; do
+            c=$(curl -s -o /dev/null --max-time 40 -w "%{http_code}" "$SITE$path")
+            [ "$c" = "200" ] || { echo "::error::$path answered $c"; fail=1; }
+          done
+          rm -f home.html
+          [ "$fail" = "0" ] && echo "Live site looks right." || exit 1
+
       # Staging only, and only when the commit message contains [run-blind-test] (owner asked to run it).
       # The command estimates first and stops above $6 (≈ ₹500); see docs/AI.md.
       - name: AI blind test (on request)

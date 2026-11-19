@@ -35,6 +35,7 @@ Changing the stack, hosting, URL patterns, the design direction or palette, the 
 
 ## 4. After you finish a piece of work
 1. Run `php artisan test` (and `npm run build` if you touched CSS or JS).
+   - If you touched `config/`, routes, the layout or a shared partial: also open the pages that do **not** belong to your change but share that file (home page, a piece, the desk's আজকের কাজ) and check they still show what they showed. Say in the report what you looked at and what you could not.
 2. Update **`docs/PROGRESS.md`** (tick what's done; add what's next).
 3. Add any new decision to **`docs/DECISIONS.md`** (date, decision, reason, who decided).
 4. Commit with a clear message. Never commit to `main` directly; work on a branch.
@@ -78,6 +79,12 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - Laravel 13 refuses to unserialize models from the cache: cache IDs/scalars (D18).
 - A new desk dialog for a piece, or a newly met kind of awkward piece, goes into `tests/Feature/MessyPiecesTest.php`; a preview or report inside a dialog is drawn with `App\Filament\Support\Safe` so it cannot stop the dialog (D191).
 - Pipe test output carefully: use `set -o pipefail` so a failing `php artisan test | tail` stops the commit.
+- **A settings group is written once.** In `config/*.php` add a key to the group that is already there (`'google' => [...]`); a second group with the same name silently replaces the first (2026-11-19: Google sign-in switched Analytics off). `GoogleSignInTest` guards this, and checks that every `env()` name in `config/services.php`, `ai.php` and `mail.php` reaches the site.
+- **Before adding a setting, a route, a column or a helper, search for the name first** (`grep -rn`): it may exist already, with another meaning or the same one (the writer's audio reading and the daily WhatsApp message were both "new" ideas that were already built).
+- **ENV_FILE values with a space need double quotes** (`NAME="Two Words"`); say so every time the owner is asked to add one. Without them the deploy stops with "The environment file is invalid".
+- **Tests never depend on the clock or the day they run.** Fix the time (`Carbon::setTestNow`) and write dates out; a record made with `now()` before the clock is fixed breaks at some hour of the day.
+- **Editing a file by script: find the end of a block from its start**, never from the top of the file (a second "wa.me" link earlier in `post.blade.php` once made an edit duplicate half the page; `AdsTest` caught it). After a scripted edit of a Blade file, look at `git diff --stat` for that file: far more lines than intended means the edit went wrong.
+- **What a test sets by hand, it cannot see missing.** A test that writes `config([...])` proves the code works with the setting, not that the setting arrives. For anything read from ENV_FILE, the settings test above and the live check after each release (deploy workflow, "Check the live site after the release") are the proof.
 
 ## 7. Language
 UI copy is **Bengali-first** (English section for English content). In /desk, write labels in Bengali inside `__()` and add the English to `lang/en.json` (D45; a test checks it). Code, comments and docs are in English. Write UI text simply; a native Bengali copy editor reviews it before launch.
