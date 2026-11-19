@@ -101,4 +101,19 @@ class GoogleSignInTest extends TestCase
         $this->back(['sub' => 'g-500', 'email' => 'bot@gmail.com']);
         $this->assertGuest();
     }
+
+    /**
+     * 2026-11-19: Google sign-in was added as a second 'google' key in config/services.php. PHP keeps only the last
+     * of two equal keys, so the Analytics tag, the reports and the live count in the desk were switched off.
+     */
+    public function test_no_settings_group_is_written_twice_so_one_cannot_wipe_another(): void
+    {
+        foreach (glob(config_path('*.php')) as $file) {
+            preg_match_all("/^    '([a-z_]+)' => /m", (string) file_get_contents($file), $m);
+            $this->assertSame([], array_keys(array_filter(array_count_values($m[1]), fn ($n) => $n > 1)), basename($file).' has a top-level key twice');
+        }
+        foreach (['measurement_id', 'ga_property', 'search_console_site', 'service_account', 'client_id', 'client_secret'] as $key) {
+            $this->assertArrayHasKey($key, config('services.google'));
+        }
+    }
 }

@@ -17,6 +17,11 @@ return [
         'ga_property' => env('GA_PROPERTY_ID'),                  // numeric property id (the reports)
         'search_console_site' => env('SEARCH_CONSOLE_SITE'),     // sc-domain:hatpakha.com
         'service_account' => env('GOOGLE_SERVICE_ACCOUNT_JSON'), // the service account's JSON key, base64
+        // D235: "Google দিয়ে ঢুকুন" (an OAuth client of type "Web application" in Google Cloud Console). Both empty: no button.
+        // These live in this same array: a second 'google' key further down once replaced the whole of it and
+        // switched Analytics off (2026-11-19).
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
 
     // D116: the magazine's own social pages (footer link + Organization sameAs) and Meta's domain verification code.
@@ -43,9 +48,6 @@ return [
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
     // D237: "হাতপাখার পাশে থাকুন": readers may send what they like by UPI. Empty: no page and no link.
     'support' => ['upi' => env('SUPPORT_UPI_ID'), 'name' => env('SUPPORT_UPI_NAME')],   // name: the payee name the UPI app will show, so a reader can check it
-
-    // D235: "Google দিয়ে ঢুকুন" (an OAuth client of type "Web application" in Google Cloud Console). Both empty: no button.
-    'google' => ['client_id' => env('GOOGLE_CLIENT_ID'), 'client_secret' => env('GOOGLE_CLIENT_SECRET')],
 
     'adsense' => [
         'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),
