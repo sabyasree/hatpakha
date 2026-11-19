@@ -13,6 +13,7 @@ class GameController extends Controller
 {
     public function word()
     {
+        \App\Support\Ads::allow();   // D237: one ad under the game
         return view('game', ['game' => WordGame::day(), 'kind' => 'word', 'seo' => new Seo(
             title: 'শব্দ-খেলা: রোজ পাঁচটা বাংলা শব্দ',
             description: 'হাতপাখার রোজকার শব্দের খেলা। এলোমেলো অক্ষর সাজিয়ে পাঁচটা বাংলা শব্দ বানান, বন্ধুদের সঙ্গে মিলিয়ে দেখুন। রোজ রাত বারোটায় নতুন খেলা।',
@@ -22,6 +23,7 @@ class GameController extends Controller
 
     public function riddle()
     {
+        \App\Support\Ads::allow();
         return view('game', ['game' => WordGame::riddle(), 'kind' => 'riddle', 'seo' => new Seo(
             title: 'ধাঁধা: রোজ একটা বাংলা ধাঁধা',
             description: 'হাতপাখায় রোজ একটা বাংলা ধাঁধা। ভেবে উত্তর বের করুন, অক্ষর সাজিয়ে মিলিয়ে দেখুন, বন্ধুদের জিজ্ঞেস করুন।',
@@ -34,6 +36,7 @@ class GameController extends Controller
     {
         $key = ['' => 'medium', 'sohoj' => 'easy', 'kothin' => 'hard'][(string) $level] ?? abort(404);
         [$name] = WordGame::LEVELS[$key];
+        \App\Support\Ads::allow();
 
         return view('crossword', ['game' => WordGame::crossword(null, $key), 'level' => $key, 'seo' => new Seo(
             title: $key === 'medium' ? 'শব্দজব্দ: রোজ একটা ছোট বাংলা শব্দছক' : 'শব্দজব্দ ('.$name.'): রোজকার বাংলা শব্দছক',

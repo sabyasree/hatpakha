@@ -23,6 +23,8 @@ return [
     'social' => [
         'facebook' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/Hatpakhaonline'),
         'instagram' => env('INSTAGRAM_URL', 'https://www.instagram.com/hatpakha/'),
+        // D236: the WhatsApp Channel the owner opened (2026-11-18). Followers do not see the owner's number.
+        'whatsapp' => env('WHATSAPP_CHANNEL_URL', 'https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F'),
         'facebook_domain_verification' => env('FACEBOOK_DOMAIN_VERIFICATION'),
         'facebook_app_id' => env('FACEBOOK_APP_ID'),   // optional: only silences the Sharing Debugger's fb:app_id note
     ],
@@ -39,6 +41,12 @@ return [
     ],
 
     // D111: one slot id per ad spot, created in AdSense; an empty one simply doesn't show.
+    // D237: "হাতপাখার পাশে থাকুন": readers may send what they like by UPI. Empty: no page and no link.
+    'support' => ['upi' => env('SUPPORT_UPI_ID'), 'name' => env('SUPPORT_UPI_NAME')],   // name: the payee name the UPI app will show, so a reader can check it
+
+    // D235: "Google দিয়ে ঢুকুন" (an OAuth client of type "Web application" in Google Cloud Console). Both empty: no button.
+    'google' => ['client_id' => env('GOOGLE_CLIENT_ID'), 'client_secret' => env('GOOGLE_CLIENT_SECRET')],
+
     'adsense' => [
         'client' => env('ADSENSE_CLIENT', 'ca-pub-4627594058272769'),
         'force' => (bool) env('ADSENSE_FORCE', false),   // show ads off the live site (testing only)

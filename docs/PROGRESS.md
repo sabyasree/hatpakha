@@ -168,6 +168,13 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
+- [x] D237: Word file import, 14-day promise + desk flag, reading run, support page (hidden until UPI set), ads under games; UX review applied
+- [ ] Owner: to switch on support, put `SUPPORT_UPI_ID` and `SUPPORT_UPI_NAME` in ENV_FILE
+- [ ] Owner: decide the free e-book (which pieces, writers' consent) and whether guests may answer "পড়ে কেমন লাগল?" without an account
+- [ ] Owner: create the two missing AdSense units and put their ids in ENV_FILE
+- [x] D235: Google sign-in built (button hidden until the key is set)
+- [ ] Owner: create the Google OAuth client (Web application), redirect URIs `https://hatpakha.com/login/google/callback/` and `https://new.hatpakha.com/login/google/callback/`, put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in both ENV_FILEs, re-run Deploy
+- [ ] After Google sign-in is live: re-record the how-to film and PDF (first steps change)
 - [x] D234: how-to box (three steps, film, PDF) at the top of /submissions/
 - [ ] When the sign-up or submission form changes: re-record public/guide/lekha-pathano.mp4 and the PDF
 - [x] D231: "পড়ে কেমন লাগল?" five reader feelings under each piece; automatic monthly পাঠকের পছন্দ

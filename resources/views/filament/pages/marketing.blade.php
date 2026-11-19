@@ -96,6 +96,7 @@
             <p class="hp-muted">{{ __('হোয়াটসঅ্যাপ চ্যানেলে বাইরে থেকে নিজে পোস্ট করার ব্যবস্থা নেই। তাই দিনে একবার এটি কপি করে চ্যানেলে পেস্ট করে দিন।') }}</p>
             <div class="hp-mk-text" x-ref="wa">{{ $whatsapp }}</div>
             <x-filament::button size="sm" color="gray" icon="heroicon-o-clipboard" style="margin-top:.4rem" x-on:click="navigator.clipboard.writeText($refs.wa.innerText); copied = true; setTimeout(() => copied = false, 2000)"><span x-show="!copied">{{ __('কপি') }}</span><span x-show="copied" x-cloak>{{ __('কপি হয়েছে') }}</span></x-filament::button>
+            @if (filled($wa = config('services.social.whatsapp')))<x-filament::button size="sm" color="gray" tag="a" :href="$wa" target="_blank" icon="heroicon-o-arrow-top-right-on-square" style="margin-top:.4rem">{{ __('চ্যানেল খুলুন') }}</x-filament::button>@endif
         </div>
     </x-filament::section>
 

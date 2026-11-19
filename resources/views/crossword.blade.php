@@ -73,6 +73,7 @@
             </ul>
         </details>
         <script type="application/json" data-jobdo-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+        <x-ad-slot spot="list" :height="250" class="!mt-16" />   {{-- D237: far below the grid --}}
     </section>
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
     <script src="{{ asset('js/hp-jobdo.js') }}?v=3" defer></script>

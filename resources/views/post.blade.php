@@ -140,12 +140,13 @@
         @endphp
         <div id="reactions" data-md-skip class="scroll-mt-24 border-t border-rule pt-5 text-center">
             <p class="font-hand text-2xl text-red">পড়ে কেমন লাগল?</p>
+            @guest<p class="mt-1 text-ink2">জানাতে একবার লগ ইন করতে হবে{{ \App\Auth\GoogleSignIn::ready() ? ' (Google দিয়ে এক টিপেই হয়)' : '' }}। তারপর এই লেখাতেই ফিরে আসবেন।</p>@endguest
             <div class="mt-3 flex flex-wrap items-center justify-center gap-2" data-feelings>
                 @foreach (\App\Support\Feelings::LIST as $key => [$label])
                     @auth
                         <form method="POST" action="{{ route('like', $post) }}" data-toggle="feel">@csrf<input type="hidden" name="feeling" value="{{ $key }}">
                             <button data-feeling="{{ $key }}" class="flex min-h-12 items-center gap-2 rounded-full border-2 px-4 font-bold {{ $mine === $key ? 'border-red bg-red text-white' : 'border-navy bg-white' }}" aria-pressed="{{ $mine === $key ? 'true' : 'false' }}">
-                                <span>{{ $label }}</span> <span data-count class="tabular-nums">{{ $feel[$key] ? \App\Support\Bn::num((string) $feel[$key]) : '' }}</span></button>
+                                <span>{{ $label }}</span> <span data-count class="tabular-nums" @if ($feel[$key]) title="{{ \App\Support\Bn::num((string) $feel[$key]) }} জন" @endif>{{ $feel[$key] ? \App\Support\Bn::num((string) $feel[$key]) : '' }}</span></button>
                         </form>
                     @else
                         <a href="{{ $loginNext }}" class="flex min-h-12 items-center gap-2 rounded-full border-2 border-navy bg-white px-4 font-bold"><span>{{ $label }}</span>
@@ -153,9 +154,11 @@
                     @endauth
                 @endforeach
             </div>
-            <p class="mt-2 text-sm text-ink2">@if ($post->likes_count){{ \App\Support\Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন। @endif @guest জানাতে লগ ইন করুন। @else একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @endguest <a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="font-bold text-sky-night underline">পাঠকের পছন্দের লেখা দেখুন</a></p>
+            <p class="mt-2 text-sm text-ink2">@if ($post->likes_count){{ \App\Support\Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন; পাশের সংখ্যা বলছে কতজন কোনটা বেছেছেন। @endif @auth একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @endauth</p>
+            <a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="mx-auto flex min-h-11 w-fit items-center font-bold text-sky-night underline">পাঠকের পছন্দের লেখা দেখুন</a>
         </div>
-        <div data-md-skip class="mt-4 flex flex-wrap items-center justify-center gap-3 border-b border-rule pb-4">
+        <p data-md-skip class="mt-6 text-center text-sm font-bold text-ink2">বন্ধুকে পাঠান, বা পরে পড়ার জন্য রেখে দিন</p>
+        <div data-md-skip class="mt-2 flex flex-wrap items-center justify-center gap-3 border-b border-rule pb-5">
             @auth
                 <form method="POST" action="{{ route('save', $post) }}" data-toggle="save">@csrf
                     <button class="flex h-12 items-center gap-2 rounded-full border-2 border-navy px-5 font-bold {{ $saved ? 'bg-navy text-white' : '' }}" aria-pressed="{{ $saved ? 'true' : 'false' }}"
@@ -164,9 +167,15 @@
             @else
                 <a href="{{ $loginNext }}" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">পরে পড়ব</a>
             @endauth
-            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">WhatsApp</a>
-            <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">Facebook</a>
+            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full bg-red px-5 font-bold text-white">হোয়াটসঅ্যাপে পাঠান</a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($post->url()) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy px-5 font-bold">ফেসবুকে শেয়ার</a>
         </div>
+        @if ($post->isLive() && ! $post->isKids() && filled($wa = config('services.social.whatsapp')))
+            {{-- D236: the channel reaches readers without Facebook deciding who sees a post --}}
+            <a href="{{ $wa }}" rel="noopener" target="_blank" data-md-skip class="mt-8 flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-white px-5 py-4 hover:bg-peach-light">
+                <span><span class="block text-lg font-bold leading-snug">নতুন লেখা বেরোলে হোয়াটসঅ্যাপে খবর পান</span><span class="block text-sm text-ink2">হাতপাখার চ্যানেলে যোগ দিন। আপনার নম্বর কেউ দেখতে পায় না।</span></span>
+                <span class="flex min-h-11 flex-none items-center rounded-full bg-navy px-5 font-bold text-white">চ্যানেলে যোগ দিন →</span></a>
+        @endif
         @if ($post->isLive() && ! $post->isKids())
             <p class="mt-3 text-sm text-ink2"><span aria-hidden="true" class="font-serif text-lg text-red">❝</span> কোনো লাইন ভালো লাগল? আঙুল চেপে ধরে লাইনটা বেছে নিন, তারপর “এই লাইন শেয়ার করুন” টিপুন। হাতপাখার কার্ড হয়ে যাবে।</p>
         @endif

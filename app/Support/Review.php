@@ -49,6 +49,11 @@ final class Review
         return $note === '' ? null : $note;
     }
 
+    /** D237: what a writer is told to expect ("সাধারণত ১৪ দিনের মধ্যে জানাই"), and when the desk is warned. */
+    public const REPLY_DAYS = 14;
+
+    public const REPLY_WARN_DAYS = 10;
+
     /** Approve: publish now or on a date; give the post its readable Latin URL (D14). */
     public static function approve(Post $post, User $editor, ?CarbonInterface $at = null, ?string $slug = null, ?string $note = null): void
     {

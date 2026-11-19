@@ -15,6 +15,24 @@
 @endphp
 <x-layouts.app :seo="$seo">
     <x-account-shell tab="reading" :user="$user" :author="$author" :counts="$counts" :two-factor-on="$twoFactorOn" :cert-count="$certCount">
+        {{-- D237: the reading habit, said kindly; never a scolding when a day is missed --}}
+        @if ($readStreak && $readStreak['best'] > 0)
+            <div class="mb-6 flex items-center gap-4 rounded-2xl border-2 border-navy bg-peach-light p-4" role="status">
+                <span aria-hidden="true" class="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-red font-display text-2xl font-extrabold text-white">{{ \App\Support\Bn::num((string) max(1, $readStreak['now'])) }}</span>
+                <span>
+                    @if ($readStreak['now'] >= 2)
+                        <strong class="block text-lg leading-snug">{{ __('টানা :n দিন পড়ছেন', ['n' => \App\Support\Bn::num((string) $readStreak['now'])]) }}</strong>
+                        <span class="text-ink2">{{ $readStreak['today'] ? __('আজকের পড়া হয়ে গেছে। কাল আবার আসুন।') : __('আজ একটা লেখা পড়লেই টানা দিন গোনা চলবে।') }}</span>
+                    @elseif ($readStreak['now'] === 1)
+                        <strong class="block text-lg leading-snug">{{ $readStreak['today'] ? __('আজ পড়েছেন') : __('কাল পড়েছিলেন') }}</strong>
+                        <span class="text-ink2">{{ $readStreak['today'] ? __('কাল আবার এলে টানা দু’দিন হবে।') : __('আজ একটা লেখা পড়লে টানা দু’দিন হবে।') }}</span>
+                    @else
+                        <strong class="block text-lg leading-snug">{{ __('আজ একটা লেখা পড়ে নতুন করে শুরু করুন') }}</strong>
+                    @endif
+                    @if ($readStreak['best'] > $readStreak['now'])<span class="block text-sm text-ink2">{{ __('আপনার সেরা: টানা :n দিন', ['n' => \App\Support\Bn::num((string) $readStreak['best'])]) }}</span>@endif
+                </span>
+            </div>
+        @endif
         @if ($unfinished->isNotEmpty())
             <h2 class="font-display text-2xl font-extrabold">{{ __('পড়া চালিয়ে যান') }}</h2>
             <p class="text-ink2">{{ __('লেখার নামে টিপুন, যেখানে থেমেছিলেন সেখান থেকেই খুলবে।') }}</p>

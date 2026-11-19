@@ -127,4 +127,13 @@ class ReaderFeaturesTest extends TestCase
         $this->assertNull($other->fresh()->readers_choice);
         \Illuminate\Support\Carbon::setTestNow();
     }
+
+    /** D236: the owner's WhatsApp Channel is offered under a piece and in the footer. */
+    public function test_the_whatsapp_channel_is_offered_to_readers(): void
+    {
+        $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()]);
+        $this->get('/p/')->assertSee('https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F', false)->assertSee('হাতপাখার চ্যানেলে যোগ দিন');
+        config(['services.social.whatsapp' => null]);
+        $this->get('/p/')->assertDontSee('whatsapp.com/channel', false);
+    }
 }

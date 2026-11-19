@@ -87,6 +87,7 @@
             @endif
             <form method="POST" data-submit-form @if ($editable) data-editable="1" @endif @if (! $post->exists) data-new="1" @endif
                 action="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id : '/submit') }}"
+                data-word-url="{{ \App\Support\Url::to('/submit/word') }}"
                 data-autosave-url="{{ \App\Support\Url::to($post->exists ? '/submit/'.$post->id.'/autosave' : '/submit/autosave') }}"
                 data-preview-url="{{ \App\Support\Url::to('/submit/preview') }}" enctype="multipart/form-data" class="mt-5" novalidate>
                 @csrf
@@ -213,9 +214,20 @@
                     <label class="block border-b-2 border-rule px-4 pt-3">
                         <span class="sr-only">শিরোনাম</span>
                         <input name="title" value="{{ old('title', $post->exists || filled($post->title) ? $post->title : '') }}" maxlength="200" required autocomplete="off" enterkeyhint="next"
-                            placeholder="শিরোনাম" class="block h-14 w-full border-0 bg-transparent p-0 font-display text-2xl font-extrabold placeholder:text-ink2/60 focus:outline-none focus:ring-0">
+                            placeholder="লেখার নাম (শিরোনাম)" class="block h-14 w-full border-0 bg-transparent p-0 font-display text-2xl font-extrabold placeholder:text-ink2 focus:outline-none focus:ring-0">
                     </label>
                     <p data-error="title" hidden class="px-4 pt-1 text-sm font-bold text-red" role="alert">একটি শিরোনাম দিন।</p>
+
+                    {{-- D237: a Word file read into the box below (needs JavaScript; hidden without it) --}}
+                    <div data-word-import hidden class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t-2 border-rule px-4 py-3">
+                        <label class="flex min-h-12 cursor-pointer items-center gap-2 rounded-full border-2 border-navy bg-white px-5 font-bold hover:bg-peach-light focus-within:ring-2 focus-within:ring-sky">
+                            <svg viewBox="0 0 24 24" class="h-5 w-5 flex-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Zm0 0v5h5M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/></svg>
+                            <span>ওয়ার্ড ফাইল থেকে লেখা আনুন</span>
+                            <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="sr-only" data-word-file>
+                        </label>
+                        <span class="text-sm text-ink2">লেখা ওয়ার্ডে (.docx) থাকলে ফাইলটা বেছে নিন, লেখা নিজে থেকে নিচে বসে যাবে। অন্য ফাইল হলে লেখাটা কপি করে বসান।</span>
+                        <p data-word-status hidden class="w-full text-sm font-bold" role="status" aria-live="polite"></p>
+                    </div>
 
                     {{-- Editor (D40). Without JavaScript the plain box below still works. --}}
                     <input type="hidden" name="body_format" value="text" data-body-format>
@@ -278,6 +290,7 @@
                         <span data-editor-hint hidden></span>
                         <span id="word-count" class="ml-auto"></span>
                     </div>
+                    <p class="border-t-2 border-rule px-4 py-3 text-sm font-semibold text-sky-night">জমা দিলে সাধারণত {{ \App\Support\Bn::num((string) \App\Support\Review::REPLY_DAYS) }} দিনের মধ্যে ই-মেলে জানাই। লেখা নিজে থেকেই সেভ হতে থাকে; পরে এসে শেষ করতে পারেন।</p>
                 </div>
                 <p data-error="body" hidden class="mt-2 text-sm font-bold text-red" role="alert">লেখাটি এখনও ফাঁকা।</p>
 
@@ -315,6 +328,8 @@
                         <textarea name="writer_note" rows="3" maxlength="2000" class="mt-2 block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg" placeholder="যেমন: শেষ স্তবকটা নতুন করে লিখেছি; নামটা যেমন ছিল রেখেছি।">{{ old('writer_note') }}</textarea>
                     </label>
                 @endif
+
+
 
                 {{-- 5. Actions: fixed at the bottom on phones (like a social app), at the end on wider screens --}}
                 <div data-action-bar class="fixed inset-x-0 bottom-0 z-40 border-t-2 border-navy bg-paper/95 px-4 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mt-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">

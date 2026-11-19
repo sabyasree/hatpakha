@@ -14,7 +14,7 @@ class SocialLinksTest extends TestCase
     {
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('href="https://www.facebook.com/Hatpakhaonline"', $html);
-        $this->assertStringContainsString('"sameAs":["https://www.facebook.com/Hatpakhaonline","https://www.instagram.com/hatpakha/"]', $html);
+        $this->assertStringContainsString('"sameAs":["https://www.facebook.com/Hatpakhaonline","https://www.instagram.com/hatpakha/","https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F"]', $html);
         $this->assertStringContainsString('href="https://www.instagram.com/hatpakha/"', $html);
         $this->assertStringNotContainsString('facebook-domain-verification', $html);
     }

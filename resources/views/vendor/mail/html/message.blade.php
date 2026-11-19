@@ -20,7 +20,7 @@
 <x-mail::footer>
 **হাতপাখা** · বাংলা সাহিত্যের ওয়েব পত্রিকা · <span style="white-space:nowrap;font-size:14px;">ISSN 2321-3035</span>
 
-[hatpakha.com]({{ \App\Support\Url::to('/') }}) · [ফেসবুক]({{ config('services.social.facebook') }}) · [ইনস্টাগ্রাম]({{ config('services.social.instagram') }}) · [যোগাযোগ]({{ \App\Support\Url::to('/contact-us') }})
+[hatpakha.com]({{ \App\Support\Url::to('/') }}) · [ফেসবুক]({{ config('services.social.facebook') }}) · [ইনস্টাগ্রাম]({{ config('services.social.instagram') }}) · [হোয়াটসঅ্যাপ]({{ config('services.social.whatsapp') }}) · [যোগাযোগ]({{ \App\Support\Url::to('/contact-us') }})
 
 {{ $reason ?: 'হাতপাখার ওয়েবসাইট থেকে পাঠানো ই-মেল।' }} উত্তর দিলে সম্পাদকের কাছে পৌঁছবে।
 </x-mail::footer>

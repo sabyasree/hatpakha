@@ -71,6 +71,8 @@
             </ul>
         </details>
         <script type="application/json" data-khela-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+        {{-- D237: far below the letters a player taps, so no ad is touched by mistake --}}
+        <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
     <script src="{{ asset('js/hp-khela.js') }}?v=3" defer></script>

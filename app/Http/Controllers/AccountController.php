@@ -122,6 +122,7 @@ class AccountController extends Controller
         $likedIds = $db::table('post_likes')->where('user_id', $user->id)->latest('created_at')->limit(20)->pluck('post_id');
 
         return view('account.reading', self::shell($request, 'reading', 'লাইব্রেরি') + [
+            'readStreak' => $user->reading_history ? \App\Support\ReadingHistory::streak($user) : null,   // D237
             'unfinished' => $user->reading_history ? \App\Support\ReadingHistory::unfinished($user) : collect(),
             'fresh' => \App\Support\ReadingHistory::newForYou($user),
             'saved' => Post::published()->with('authors', 'section')->whereIn('id', $savedIds)->latest('published_at')->paginate(self::PER_PAGE)->withPath(Url::to('/account/reading')),

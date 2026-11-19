@@ -24,6 +24,13 @@ Every feature must meet this checklist. Items marked ✅test are enforced by tes
 - Rate limits ✅test: login 5 per minute per IP+email; password reset 3 per hour; registration 5 per hour per IP; submissions 3 per day per writer.
 - Generic error messages (no "user exists" leaks).
 
+- **Google sign-in (D235, `App\Auth\GoogleSignIn`, tests in `GoogleSignInTest`).** OpenID Connect code flow, readers and writers only.
+  - A one-time `state` and `nonce` live in the visitor's session for 15 minutes; a callback without the matching `state` signs nobody in.
+  - The code is exchanged server to server with the client secret; the ID token's `iss`, `aud`, `exp`, `nonce` and `email_verified` are all checked. Only `openid email profile` is asked for.
+  - Looked up by Google account id first, then by e-mail. Joining an account whose e-mail was never verified replaces its password (a stranger may have opened it).
+  - Never signs in an editor or admin (password + 2FA only). An account with 2FA on is still sent to the code page. An account marked as a bot stays out.
+  - The client secret lives only in ENV_FILE (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`); with either empty there is no button and the routes answer 404.
+
 ## 3. Authorisation
 - Roles: `reader`, `writer`, `trusted_writer`, `editor`, `chief_editor`, `admin`. Laravel **Policies** for every model; no role checks inside Blade.
 - The admin panel (`/desk`) is reachable only by editor+ (`canAccessPanel`). Optional Cloudflare Access or IP allowlist. ✅test

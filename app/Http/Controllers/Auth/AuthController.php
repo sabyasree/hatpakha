@@ -111,6 +111,66 @@ class AuthController extends Controller
         return false;
     }
 
+    /** D235: off to Google, with a one-time state and nonce kept in this visitor's session. */
+    public function google(Request $request)
+    {
+        abort_unless(\App\Auth\GoogleSignIn::ready(), 404);
+        $request->session()->put('google', ['state' => $state = Str::random(40), 'nonce' => $nonce = Str::random(40), 'at' => now()->timestamp]);
+
+        return redirect()->away(\App\Auth\GoogleSignIn::url($state, $nonce));
+    }
+
+    /**
+     * D235: back from Google. A known Google account, or the account with that e-mail, is signed in; otherwise an
+     * account is made, already verified (Google vouches for the address). Never for the desk: an editor's account
+     * needs its password and second step, and an account with 2FA is still asked for its code.
+     */
+    public function googleCallback(Request $request)
+    {
+        abort_unless(\App\Auth\GoogleSignIn::ready(), 404);
+        $sent = (array) $request->session()->pull('google');
+        $fail = fn (string $why) => redirect(Url::to('/login'))->withErrors(['email' => __($why)]);
+        if (blank($sent['state'] ?? null) || ! hash_equals((string) $sent['state'], (string) $request->query('state')) || now()->timestamp - (int) ($sent['at'] ?? 0) > 900 || blank($request->query('code'))) {
+            return $fail('Google দিয়ে ঢোকা গেল না। আবার চেষ্টা করুন।');
+        }
+        $who = \App\Auth\GoogleSignIn::person((string) $request->query('code'), (string) $sent['nonce']);
+        if (! $who) {
+            AuditLog::record('user.google_failed');
+
+            return $fail('Google দিয়ে ঢোকা গেল না। আবার চেষ্টা করুন, বা ই-মেল আর পাসওয়ার্ড দিয়ে সাইন ইন করুন।');
+        }
+        $user = User::where('google_id', $who['sub'])->first() ?? User::where('email', $who['email'])->first();
+        if ($user && $user->hasRole(Role::Editor)) {
+            AuditLog::record('user.google_refused_desk', $user);
+
+            return $fail('এই অ্যাকাউন্টে ই-মেল আর পাসওয়ার্ড দিয়ে সাইন ইন করুন।');
+        }
+        if (! $user) {
+            $user = new User();
+            $user->forceFill(['name' => $who['name'], 'email' => $who['email'], 'password' => Str::random(48), 'role' => Role::Reader, 'google_id' => $who['sub'], 'email_verified_at' => now()])->save();
+            AuditLog::record('user.registered', $user, ['via' => 'google']);
+            \App\Support\Invites::claim($user, $request);
+            \App\Support\BotCheck::check($user);
+            event(new \Illuminate\Auth\Events\Verified($user));
+        } elseif ($user->google_id !== $who['sub']) {
+            // An account nobody had proved the address of may have been opened by a stranger who knows its password:
+            // that password stops working the moment the real owner of the address arrives.
+            $proved = $user->hasVerifiedEmail();
+            $user->forceFill(['google_id' => $who['sub']] + ($proved ? [] : ['password' => Str::random(48), 'email_verified_at' => now()]))->save();
+            AuditLog::record('user.google_linked', $user, ['password_reset' => ! $proved]);
+            if (! $proved) {
+                event(new \Illuminate\Auth\Events\Verified($user));
+            }
+        }
+        if (filled($user->app_authentication_secret)) {
+            $request->session()->put('2fa', ['id' => $user->id, 'remember' => true, 'at' => now()->timestamp]);
+
+            return redirect(Url::to('/login/2fa'));
+        }
+
+        return $this->finishLogin($request, $user, true);
+    }
+
     private function finishLogin(Request $request, User $user, bool $remember)
     {
         // D121: an account the owner confirmed as a bot can't sign in.

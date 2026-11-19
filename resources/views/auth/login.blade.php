@@ -1,6 +1,7 @@
 <x-layouts.app :seo="$seo">
     <x-form-card :title="__('সাইন ইন')" :subtitle="__('পুরনো হাতপাখা অ্যাকাউন্টের ই-মেল আর পাসওয়ার্ড দিয়েও সাইন ইন করা যাবে।')">
         <p class="-mt-2 mb-5 text-center">{{ __('নতুন?') }} <a href="{{ \App\Support\Url::to('/register') }}" class="font-bold text-red underline">{{ __('ফ্রিতে সাইন আপ করুন') }}</a></p>
+        @include('partials.google-sign-in')
         <form method="POST" action="{{ \App\Support\Url::to('/login') }}">
             @csrf
             <x-field name="email" type="email" :label="__('ই-মেল')" autocomplete="email" required autofocus />
