@@ -1,4 +1,4 @@
-@props(['author'])
+@props(['author', 'compact' => false])
 {{-- The writer box under a piece (D64): photo, name, honour, a little bio, follow, all pieces. --}}
 @php
     $a = $author;
@@ -7,6 +7,37 @@
     $canFollow = ! $a->is_desk && (! $me || $a->user_id !== $me->id);
     $since = \App\Models\Post::published()->whereHas('authors', fn ($q) => $q->whereKey($a->id))->min('posts.published_at');
 @endphp
+@if ($compact)
+    {{-- D241: under a piece the writer takes one row; the full box is on their own page --}}
+    <section class="mt-8 rounded-2xl border-2 border-navy bg-white p-3" aria-label="লেখক">
+        <div class="flex items-center gap-3">
+            <a href="{{ $a->url() }}" class="flex-none" aria-label="{{ $a->publicName() }}">
+                @if ($a->avatar_path)
+                    <img src="{{ $a->avatar_path }}" alt="" loading="lazy" class="h-14 w-14 rounded-full object-cover outline outline-2 outline-navy">
+                @else
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-peach to-peach-deep text-2xl font-extrabold outline outline-2 outline-navy" aria-hidden="true">{{ $a->initial() }}</span>
+                @endif
+            </a>
+            <div class="min-w-0 flex-1">
+                <a href="{{ $a->url() }}" class="block font-display text-xl font-extrabold leading-tight hover:text-red">{{ $a->publicName() }}</a>
+                @if ($a->honour_label)<span class="rounded-full bg-peach-light px-2 py-0.5 text-xs font-extrabold text-red-dark">★ {{ $a->honour_label }}</span>@endif
+                @if ($a->bio)<p class="line-clamp-1 text-sm text-ink2">{{ $a->bio }}</p>@endif
+            </div>
+            @if ($canFollow)
+                <form method="POST" action="{{ route('follow', $a) }}" data-toggle="follow" class="flex-none">
+                    @csrf
+                    @auth
+                        <button class="flex h-11 items-center gap-1 rounded-full px-3 text-sm font-bold {{ $following ? 'border-2 border-navy' : 'bg-red text-white' }}" aria-pressed="{{ $following ? 'true' : 'false' }}"
+                            data-on="✓ অনুসরণ করছেন" data-off="+ অনুসরণ করুন">{{ $following ? '✓ অনুসরণ করছেন' : '+ অনুসরণ করুন' }}</button>
+                    @else
+                        <a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($a->url(), PHP_URL_PATH)) }}" class="flex h-11 items-center rounded-full bg-red px-3 text-sm font-bold text-white">+ অনুসরণ করুন</a>
+                    @endauth
+                </form>
+            @endif
+        </div>
+        <a href="{{ $a->url() }}" class="mt-1 inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ $a->publicName() }}-এর সব লেখা →</a>
+    </section>
+@else
 <section class="mt-10 overflow-hidden rounded-3xl border-2 border-navy bg-white" aria-label="লেখক">
     <div class="h-16 bg-sky {{ $a->cover_path ? '' : 'halftone' }}" @if ($a->cover_path) style="background:url('{{ $a->cover_path }}') center/cover" @endif></div>
     <div class="px-5 pb-5">
@@ -47,3 +78,4 @@
         </div>
     </div>
 </section>
+@endif

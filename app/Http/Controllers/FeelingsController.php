@@ -29,6 +29,26 @@ class FeelingsController extends Controller
         return view('support', ['seo' => $seo, 'upi' => $upi, 'qr' => $qr, 'name' => trim((string) config('services.support.name')), 'pay' => $pay]);
     }
 
+    /**
+     * D241: a guest tapped a feeling. It is kept in their session and they are sent to log in; back on the piece it is
+     * recorded (PostController) and the card asks for a line. A POST with the form token: never a link that reacts.
+     */
+    public function later(\Illuminate\Http\Request $request, Post $post)
+    {
+        abort_unless($post->isLive(), 404);
+        $path = parse_url($post->url(), PHP_URL_PATH).'#reactions';
+        if ($request->user()) {
+            Feelings::set($request->user(), $post, $request->string('feeling')->toString() ?: null);
+
+            return redirect($post->url().'#reactions');
+        }
+        if (isset(Feelings::LIST[$request->input('feeling')])) {
+            $request->session()->put('feel_later', ['post' => $post->id, 'feeling' => $request->input('feeling')]);
+        }
+
+        return redirect(Url::to('/login').'?next='.rawurlencode($path));
+    }
+
     public function index()
     {
         $winners = Post::published()->with('authors')->whereNotNull('readers_choice')->orderByDesc('readers_choice')->limit(12)->get();

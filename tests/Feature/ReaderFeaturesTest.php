@@ -132,8 +132,61 @@ class ReaderFeaturesTest extends TestCase
     public function test_the_whatsapp_channel_is_offered_to_readers(): void
     {
         $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'published_at' => now()]);
-        $this->get('/p/')->assertSee('https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F', false)->assertSee('হাতপাখার চ্যানেলে যোগ দিন');
+        $this->get('/p/')->assertSee('https://whatsapp.com/channel/0029VbA3b0DICVfp4sWcgb1F', false)->assertSee('হোয়াটসঅ্যাপে খবর নিন');
         config(['services.social.whatsapp' => null]);
         $this->get('/p/')->assertDontSee('whatsapp.com/channel', false);
+    }
+
+    /** D241 (owner: "the scroll is too much... he is not able to find it"; two UX reviews; "2nd ad at the end; cards in one line"). */
+    public function test_under_a_piece_the_reader_finds_the_response_card_first_and_the_ads_keep_their_distance(): void
+    {
+        config(['services.adsense.slots' => ['article' => '3', 'article_2' => '4'], 'services.adsense.force' => true]);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'p', 'title' => 'নদীর ধারে', 'published_at' => now()->subDay()]);
+        foreach (['ক', 'খ', 'গ'] as $i => $t) {
+            $this->makePost(['status' => 'published', 'slug' => 'r'.$i, 'title' => 'পরের লেখা '.$t, 'section_id' => $post->section_id, 'published_at' => now()->subDays(2 + $i)]);
+        }
+        foreach (['প্রথম মত', 'দ্বিতীয় মত', 'তৃতীয় মত'] as $i => $body) {
+            \App\Models\Comment::create(['post_id' => $post->id, 'author_name' => 'পাঠক '.($i + 1), 'author_email' => "r{$i}@example.test", 'status' => 'approved', 'body' => $body, 'created_at' => now()->subHours(9 - $i)]);
+        }
+        $html = $this->get('/p/')->assertOk()->getContent();
+        $at = fn (string $needle) => tap(strpos($html, $needle), fn ($p) => $this->assertNotFalse($p, $needle));
+        // the order a reader meets things in
+        $order = [$at('পড়ে কেমন লাগল?'), $at('লেখককে দু লাইন লিখুন'), $at('মতামত পাঠান'), $at('সব পড়ুন ↓'), $at('হোয়াটসঅ্যাপে পাঠান'), $at('data-ad-slot="3"'),
+            $at('aria-label="লেখক"'), $at('id="next-h"'), $at('id="comments"'), $at('data-ad-slot="4"'), $at('id="news-h"')];
+        $this->assertSame($order, collect($order)->sort()->values()->all(), 'Card, sharing, ad, writer, more pieces, every comment, ad, news');
+        // the card shows the two newest; the full list has all three
+        $card = substr($html, $at('id="reactions"'), $at('ভালো লাগলে বন্ধুকে পাঠান') - $at('id="reactions"'));
+        $this->assertStringContainsString('তৃতীয় মত', $card);
+        $this->assertStringContainsString('দ্বিতীয় মত', $card);
+        $this->assertStringNotContainsString('প্রথম মত', $card);
+        $this->assertSame(2, substr_count($html, 'প্রথম মত') + substr_count($card, 'তৃতীয় মত'), 'Oldest once (full list); newest in the card');
+        // a guest still writes with a name only, and may keep the comment off the front page
+        $this->assertStringContainsString('name="name"', $card);
+        $this->assertStringContainsString('name="not_featured"', $card);
+        // no button or link between the rule above the first ad and the ad itself
+        $gap = substr($html, $at('পাঠকের পছন্দের লেখা দেখুন</a>'), $at('data-ad-slot="3"') - $at('পাঠকের পছন্দের লেখা দেখুন</a>'));
+        $this->assertStringNotContainsString('<button', $gap);
+        $this->assertStringContainsString('border-t', $gap);
+        // more pieces: cards in one line that scrolls sideways
+        $this->assertStringContainsString('overflow-x-auto', $html);
+        $this->assertStringContainsString('পরের লেখা ক', $html);
+
+        // A guest's tap on a feeling is not lost on the way through the login.
+        $this->post('/feel/'.$post->id, ['feeling' => 'think'])->assertRedirect();
+        $this->assertSame(0, (int) $post->fresh()->likes_count);
+        $reader = User::factory()->create(['email_verified_at' => now()]);
+        $this->actingAs($reader)->get('/p/')->assertOk()->assertSee('আপনার কথাটা লেখকের কাছে পৌঁছবে');
+        $this->assertSame('think', \App\Support\Feelings::mine($reader, $post));
+        $this->get('/p/');
+        $this->assertSame(1, (int) $post->fresh()->likes_count, 'Recorded once');
+    }
+
+    public function test_a_childrens_piece_has_the_card_without_comments_or_the_first_ad(): void
+    {
+        config(['services.adsense.slots' => ['article' => '3', 'article_2' => '4'], 'services.adsense.force' => true]);
+        $kids = \App\Models\Section::firstOrCreate(['slug' => 'chhotoder'], ['name_bn' => 'ছোটদের হাতপাখা', 'name_en' => 'Kids']);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'k', 'section_id' => $kids->id, 'published_at' => now()->subDay()]);
+        $this->assertTrue($post->fresh()->isKids());
+        $this->get('/k/')->assertOk()->assertSee('পড়ে কেমন লাগল?')->assertDontSee('লেখককে দু লাইন লিখুন')->assertDontSee('data-ad-slot="3"', false)->assertDontSee('হোয়াটসঅ্যাপে খবর নিন');
     }
 }

@@ -133,6 +133,8 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
                     ['bg-white', 'border-navy'].forEach((c) => b.classList.toggle(c, !on));
                     b.querySelector('[data-count]').textContent = bn((d.counts || {})[b.dataset.feeling]);
                 });
+                const thanks = document.querySelector('[data-feel-thanks]');   // D241: ask for a line now; nothing is focused
+                if (thanks) thanks.hidden = !d.feeling;
             } else if (kind === 'like') {
                 btn.classList.toggle('bg-red', d.on); btn.classList.toggle('text-white', d.on); btn.classList.toggle('border-red', d.on);
                 btn.querySelector('[aria-hidden]').textContent = d.on ? '♥' : '♡';

@@ -168,6 +168,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Phase 2 Migration · Phase 3 Submissions + AI review (+ blind provider test) · Phase 4 Launch · Phase 5 Issues, e-book/flipbook, contests, certificates, newsletter · Phase 6 Growth
 
 ## ছোটদের হাতপাখা (D101), 2026-11-07
+- [x] D241: section under a piece rebuilt (response card first, ads spaced, writer in a row, cards in a line)
+- [ ] Owner, about 3 December: compare AdSense earnings per page with the two weeks before D241; move the second ad back above the comments if they fell
 - [x] D237: Word file import, 14-day promise + desk flag, reading run, support page (hidden until UPI set), ads under games; UX review applied
 - [ ] Owner: to switch on support, put `SUPPORT_UPI_ID` and `SUPPORT_UPI_NAME` in ENV_FILE
 - [ ] Owner: decide the free e-book (which pieces, writers' consent) and whether guests may answer "পড়ে কেমন লাগল?" without an account

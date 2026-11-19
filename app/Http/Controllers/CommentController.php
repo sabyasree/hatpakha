@@ -21,7 +21,7 @@ class CommentController extends Controller
     {
         abort_unless($post->isLive() && ! $post->isKids(), 404);   // D101: no comments on children's pieces
         $user = $request->user();
-        $back = $post->url().'#comments';
+        $back = $post->url().'#reactions';   // D241: the form and its answer are in the card under the piece
         if ($user && AccountController::verificationRequired() && ! $user->hasVerifiedEmail()) {
             throw ValidationException::withMessages(['body' => 'মন্তব্য করার আগে ই-মেল যাচাই করুন (আপনার ইনবক্সে লিংক আছে)।'])->redirectTo($back);   // D59
         }
