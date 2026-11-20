@@ -10,6 +10,19 @@ use App\Support\Slug;
 
 class PostController extends Controller
 {
+    /**
+     * D251 (owner: "there is no way to see how it looks before publish from desk"): the piece exactly as readers will
+     * see it, whatever its state, for desk staff only. Never indexed, never cached, never counted as a read, no ads.
+     */
+    public function preview(\Illuminate\Http\Request $request, Post $post)
+    {
+        abort_unless($request->user()?->hasRole(\App\Enums\Role::Editor), 403);
+        request()->attributes->set('hp.preview', true);
+
+        return response($this->render($post->loadMissing(['authors', 'section', 'issue', 'tags']), true))
+            ->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
     public function __invoke(string $slug)
     {
         $post = Post::published()->with(['authors', 'section', 'issue', 'tags'])
@@ -19,8 +32,14 @@ class PostController extends Controller
             return $this->page($slug) ?? app(LegacyController::class)->fallback(request());
         }
 
+        return $this->render($post);
+    }
+
+    private function render(Post $post, bool $preview = false)
+    {
+
         // D241: a feeling a guest tapped before logging in is recorded now, once, and the card asks for a line.
-        if (($later = session('feel_later')) && auth()->check() && (int) ($later['post'] ?? 0) === $post->id) {
+        if (! $preview && ($later = session('feel_later')) && auth()->check() && (int) ($later['post'] ?? 0) === $post->id) {
             session()->forget('feel_later');
             if (\App\Support\Feelings::mine(auth()->user(), $post) === null) {
                 \App\Support\Feelings::set(auth()->user(), $post, (string) ($later['feeling'] ?? ''));
@@ -61,7 +80,7 @@ class PostController extends Controller
             title: $post->metaTitle(),
             description: $post->metaDescription(),
             canonical: $post->url(),
-            noindex: $post->noindex,
+            noindex: $preview || $post->noindex,
             image: \App\Support\ShareImage::forPost($post),
             type: 'article',
             lang: $post->language,
@@ -72,11 +91,11 @@ class PostController extends Controller
 
         if ($post->isKids()) {
             request()->attributes->set('hp.no_ads', true);   // D101: no ads around children's pieces
-        } elseif (! $post->no_ads && $post->isLive()) {
+        } elseif (! $preview && ! $post->no_ads && $post->isLive()) {
             \App\Support\Ads::allow();   // D111
         }
 
-        return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs'));
+        return view('post', compact('post', 'related', 'comments', 'seo', 'crumbs', 'preview'));
     }
 
     /** Static pages share the /{slug}/ namespace with posts, exactly as on WordPress. */

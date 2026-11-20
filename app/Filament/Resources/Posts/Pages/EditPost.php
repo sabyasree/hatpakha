@@ -55,6 +55,10 @@ class EditPost extends EditRecord
             Action::make('view')->label(__('সাইটে দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->color('gray')
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
+            // D251: how it will look to readers, before it is published (the saved version)
+            Action::make('preview')->label(__('কেমন দেখাবে'))->icon('heroicon-o-eye')->color('gray')
+                ->url(fn (Post $record) => \App\Support\Url::to('/post-preview/'.$record->id))->openUrlInNewTab()
+                ->visible(fn (Post $record) => $record->status !== 'published'),
             ...$review,
             // D208: a strong piece is selected by itself after a day; this keeps it for the owner
             Action::make('stopAuto')->label(fn (Post $record) => __('নিজে থেকে প্রকাশ থামান').' ('.\App\Support\Bn::num($record->auto_publish_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')).')')

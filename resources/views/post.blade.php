@@ -1,8 +1,12 @@
 <x-layouts.app :seo="$seo">
+    @if (! empty($preview))
+        {{-- D251: the desk's preview; readers never see this page --}}
+        <div class="sticky top-0 z-40 bg-navy px-4 py-2.5 text-center font-bold text-white">প্রিভিউ: পাঠকেরা ঠিক এভাবেই দেখবেন। @if (! $post->isLive())এখনও প্রকাশিত হয়নি।@endif <span class="font-semibold text-peach">ডেস্কে যা সেভ করেছেন, সেটাই দেখাচ্ছে।</span></div>
+    @endif
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
-    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive()) data-view="{{ $post->id }}" @endif @if ($post->isLive() && ! $post->isKids()) data-quote-by="{{ $post->authors->map->publicName()->implode(', ') }}" data-quote-title="{{ $post->title }}" data-quote-url="{{ $post->url() }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
+    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive() && empty($preview)) data-view="{{ $post->id }}" @endif @if ($post->isLive() && ! $post->isKids()) data-quote-by="{{ $post->authors->map->publicName()->implode(', ') }}" data-quote-title="{{ $post->title }}" data-quote-url="{{ $post->url() }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
         {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text.
              D167: from 1280px (common laptops) as a narrow 160px ad, the 300px one from 1500px; both fit the margin even with a 17px scrollbar. --}}
         <div class="absolute left-full top-[85vh] ml-8 hidden h-[calc(100%-85vh)] w-[160px] min-[1280px]:block min-[1500px]:ml-10 min-[1500px]:w-[300px]">
