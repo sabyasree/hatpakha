@@ -546,7 +546,7 @@
     "বাংলা বানানে নাম (লেখক নিজে দিলে)": "Name in Bengali spelling (if the writer gave one)",
     "বাকি আছে": "Still to do",
     "বাতিল": "Reject",
-    "বাদ দিন": "Drop",
+    "বাদ দিন": "Keep off",
     "বাদ দেওয়া হয়েছে": "Dropped",
     "বানান": "Spelling",
     "বানান (": "Spelling (",
@@ -2879,5 +2879,15 @@
     "Google দিয়ে সাইন ইন করেছেন: :g জন · শুধু ই-মেল আর পাসওয়ার্ডে: :p জন। গত ৩০ দিনে ঢুকেছেন: Google দিয়ে :g30 জন, পাসওয়ার্ড দিয়ে :p30 জন।": "Have signed in with Google: :g · e-mail and password only: :p. Signed in during the last 30 days: :g30 with Google, :p30 with a password.",
     "কীভাবে সাইন ইন করেন": "How they sign in",
     "Google দিয়ে": "With Google",
-    "শুধু ই-মেল আর পাসওয়ার্ডে": "E-mail and password only"
+    "শুধু ই-মেল আর পাসওয়ার্ডে": "E-mail and password only",
+    "খেলার তালিকায় ফেরান": "Put back on the games boards",
+    "খেলার তালিকা থেকে বাদ": "Keep off the games boards",
+    ":name-কে খেলার তালিকায় ফেরাবেন?": "Put :name back on the games boards?",
+    ":name-কে খেলার তালিকা থেকে বাদ দেবেন?": "Keep :name off the games boards?",
+    "তাঁর নাম আবার তালিকায় দেখা যাবে, খেতাবও পেতে পারবেন।": "Their name will show on the boards again, and they can win titles.",
+    "এ মাসে: :p পয়েন্ট, :d দিন। বাদ দিলে তাঁর নাম কোনো তালিকায় থাকবে না, খেতাবও পাবেন না। তিনি খেলতে পারবেন, কিছু মোছা হবে না। পরে ফেরানো যায়।": "This month: :p points, :d days. Their name will be on no board and they will win no title. They can still play and nothing is deleted. This can be undone.",
+    "আগে জেতা খেতাবও তুলে নিন (ফেরানো যাবে না)": "Also take away titles already won (cannot be undone)",
+    "ফেরান": "Put back",
+    "খেলার তালিকা থেকে বাদ দেওয়া হল": "Kept off the games boards",
+    "খেলার তালিকায় ফেরানো হল": "Put back on the games boards"
 }

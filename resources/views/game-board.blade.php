@@ -19,6 +19,7 @@
         'year' => 'বছরের সেরা '.Bn::num((string) GameScores::YEAR_MONTHS).' মাসের পয়েন্ট গোনা হয়। বছরের সেরা হতে অন্তত '.Bn::num((string) GameScores::YEAR_MIN_MONTHS).' মাস নিয়মিত খেলতে হয়।',
     ];
     $mine = $boards['month']['mine'];
+    $desk = (bool) $me?->hasRole(\App\Enums\Role::Admin);   // D245: the owner goes from a name to that player in the desk
 @endphp
 <x-layouts.app :seo="$seo">
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-board>
@@ -76,7 +77,7 @@
                             <li class="flex min-h-[3.75rem] items-center gap-2.5 border-b border-rule px-3.5 py-1.5 last:border-b-0 {{ $r['me'] ? 'bg-sky-tint' : '' }}">
                                 <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full font-extrabold {{ [1 => 'bg-red text-white', 2 => 'bg-navy text-white', 3 => 'bg-sky'][$r['rank']] ?? 'bg-peach-light' }}">{{ Bn::num((string) $r['rank']) }}</span>
                                 <span class="min-w-0 flex-1 leading-tight">
-                                    <span class="flex items-center gap-1.5"><span class="truncate font-serif text-lg font-semibold">{{ $r['name'] }}</span>@foreach ($marks[$r['user_id']] ?? [] as $m){!! GameTitles::mark($m) !!}@endforeach @if ($r['me'])<span class="flex-none text-sm font-bold text-ink2">(আপনি)</span>@endif</span>
+                                    <span class="flex items-center gap-1.5"><span class="truncate font-serif text-lg font-semibold">{{ $r['name'] }}</span>@foreach ($marks[$r['user_id']] ?? [] as $m){!! GameTitles::mark($m) !!}@endforeach @if ($r['me'])<span class="flex-none text-sm font-bold text-ink2">(আপনি)</span>@endif @if ($desk)<a href="{{ url('/desk/users/'.$r['user_id'].'/edit') }}" class="flex-none text-sm font-bold text-sky-night underline">ডেস্ক</a>@endif</span>
                                     <span class="block text-[15px] text-ink2">{{ $levels[$r['user_id']] ?? GameScores::LEVELS[0][1] }}@if ($key === 'month') · {{ Bn::num((string) $r['days']) }} দিন খেলেছেন@elseif ($key === 'year') · {{ Bn::num((string) $r['months']) }} মাস নিয়মিত@endif</span>
                                 </span>
                                 <span class="flex-none text-lg font-extrabold">{{ $n($r['points']) }}</span>

@@ -95,6 +95,55 @@ class GameTitlesTest extends TestCase
         $this->actingAs($c)->get('/account/profile/')->assertOk()->assertSee('মাসের সেরা তিন জন খেতাব পান');
     }
 
+    /** D245 (owner: winners should be told; and "a desk button to remove a suspicious score"). */
+    public function test_winners_are_told_and_the_desk_can_keep_a_player_off_the_boards(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->at('2026-12-31 20:00');
+        [$cheat, $a, $b, $quiet] = [User::factory()->create(['name' => 'Too Fast']), User::factory()->create(['name' => 'Asha']), User::factory()->create(['name' => 'Bina']), User::factory()->create(['name' => 'Quiet', 'mail_opt_out' => true])];
+        for ($i = 1; $i <= 12; $i++) {
+            $day = sprintf('2026-12-%02d', $i);
+            $this->played($cheat, $day, ['word' => 100, 'riddle' => 40, 'riddle2' => 60, 'probad' => 100], 3);
+            $this->played($a, $day, ['word' => 100, 'probad' => 100]);
+            $this->played($b, $day, ['word' => 80]);
+            $this->played($quiet, $day, ['word' => 40]);
+        }
+        $this->assertSame('Too Fast', GameScores::board('month')['rows'][0]['name']);
+
+        $admin = User::factory()->create(['role' => \App\Enums\Role::Admin]);
+        $this->actingAs($admin)->get('/khela/board/')->assertOk()->assertSee('/desk/users/'.$cheat->id.'/edit', false);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)->callTableAction('gameBlock', $cheat)->assertHasNoTableActionErrors();
+        $this->assertNotNull($cheat->fresh()->game_blocked_at);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'game.player_blocked', 'subject_id' => $cheat->id]);
+        $this->assertSame(['Asha', 'Bina', 'Quiet'], array_column(GameScores::board('month')['rows'], 'name'), 'Off the board at once');
+        $this->assertSame(36, DB::table('game_scores')->where('user_id', $cheat->id)->count() - 12, 'Nothing is deleted');
+        auth()->logout();
+        $this->actingAs($a)->get('/khela/board/')->assertOk()->assertDontSee('Too Fast')->assertDontSee('/desk/users/', false);
+
+        $this->at('2027-01-01 00:20');
+        $this->assertSame(3, GameTitles::award());
+        $this->assertSame([$a->id, $b->id, $quiet->id], DB::table('game_titles')->orderBy('place')->pluck('user_id')->all(), 'No title for a player kept off');
+        \Illuminate\Support\Facades\Notification::assertSentTo($a, \App\Notifications\TemplateMail::class, function ($n) use ($a) {
+            $mail = $n->toMail($a);
+
+            return $n->key === 'game_title' && str_contains($mail->subject, 'মাসের সেরা') && str_contains(implode(' ', $mail->introLines), 'ডিসেম্বর ২০২৬') && str_contains((string) $mail->actionUrl, '/khela/board/#hall');
+        });
+        \Illuminate\Support\Facades\Notification::assertSentTo($b, \App\Notifications\TemplateMail::class, fn ($n) => $n->values['{খেতাব}'] === 'মাসের সেরা তিনে' && $n->values['{স্থান}'] === 'দ্বিতীয়');
+        \Illuminate\Support\Facades\Notification::assertNotSentTo($quiet, \App\Notifications\TemplateMail::class);
+        \Illuminate\Support\Facades\Notification::assertNotSentTo($cheat, \App\Notifications\TemplateMail::class);
+        GameTitles::award();
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($a, \App\Notifications\TemplateMail::class, 1);
+
+        // put back; and titles can be taken away with the same button
+        $this->actingAs($admin);
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)->callTableAction('gameBlock', $cheat);
+        $this->assertNull($cheat->fresh()->game_blocked_at);
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)->callTableAction('gameBlock', $a, ['titles' => true]);
+        $this->assertSame(0, DB::table('game_titles')->where('user_id', $a->id)->count());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'game.player_blocked', 'subject_id' => $a->id]);
+    }
+
     public function test_november_is_not_judged_and_a_year_needs_six_regular_months(): void
     {
         $this->at('2026-12-01 00:20');

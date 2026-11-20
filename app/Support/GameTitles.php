@@ -55,10 +55,37 @@ final class GameTitles
             if (++$place > 3) {
                 break;
             }
-            DB::table('game_titles')->insertOrIgnore(['user_id' => $r['user_id'], 'kind' => $kind, 'period' => $period, 'place' => $place, 'points' => $r['points'], 'days' => $r[$count], 'created_at' => now()]);
+            if (DB::table('game_titles')->insertOrIgnore(['user_id' => $r['user_id'], 'kind' => $kind, 'period' => $period, 'place' => $place, 'points' => $r['points'], 'days' => $r[$count], 'created_at' => now()])) {
+                rescue(fn () => self::tell($r['user_id'], $kind, $period, $place, $r['points']));   // a letter that fails must not stop the roll
+            }
         }
 
         return min(3, $place);
+    }
+
+    /**
+     * D245 (owner: winners should be told): an e-mail and a note on the phone, once, when the title is written down.
+     * The owner's own template (desk → চিঠির বয়ান → খেলার খেতাব). Not to an address that asked for no mail.
+     */
+    public static function tell(int $userId, string $kind, string $period, int $place, int $points): void
+    {
+        $user = User::find($userId);
+        if (! $user) {
+            return;
+        }
+        $title = $place === 1 ? ($kind === 'year' ? 'বছরের সেরা' : 'মাসের সেরা') : ($kind === 'year' ? 'বছরের সেরা তিনে' : 'মাসের সেরা তিনে');
+        if ($kind === 'year' && $place === 1 && ($multi = self::multiName(DB::table('game_titles')->where('user_id', $userId)->where('kind', 'year')->where('place', 1)->count()))) {
+            $title .= ', '.$multi;
+        }
+        $when = self::label($kind, $period);
+        $url = Url::to('/khela/board').'#hall';
+        if (filled($user->email) && ! $user->mail_opt_out && $user->hasVerifiedEmail()) {
+            $user->notify(new \App\Notifications\TemplateMail('game_title', ['{খেতাব}' => $title, '{সময়}' => $when, '{স্থান}' => self::PLACES[$place], '{পয়েন্ট}' => Bn::num(number_format($points))], $url));
+        }
+        foreach (\App\Models\PushSubscription::where('user_id', $userId)->get() as $sub) {
+            WebPush::send($sub, ['title' => 'অভিনন্দন! আপনি '.$title, 'body' => $when.'-এর খেলায় আপনি '.self::PLACES[$place].'। নাম উঠেছে সম্মান-ফলকে।', 'url' => $url, 'tag' => 'game-title', 'kind' => 'game-title']);
+        }
+        \App\Models\AuditLog::record('game.title_told', $user, ['kind' => $kind, 'period' => $period, 'place' => $place]);
     }
 
     /** "ডিসেম্বর ২০২৬" or "২০২৭" */
