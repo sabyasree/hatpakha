@@ -122,6 +122,26 @@ class HumanFeedbackTest extends TestCase
         $this->assertNull($post->fresh()->rewrite_html);
     }
 
+    /** D251 (owner: "there is no way to see how it looks before publish from desk"). */
+    public function test_the_desk_can_see_a_piece_as_readers_will_before_it_is_published(): void
+    {
+        $post = $this->aiDraft();
+        $post->forceFill(['status' => 'pending', 'slug' => 'not-yet'])->save();
+        $this->get('/not-yet/')->assertNotFound();
+        $this->get('/post-preview/'.$post->id.'/')->assertRedirect();   // a guest is sent to sign in
+        $this->actingAs(User::factory()->create())->get('/post-preview/'.$post->id.'/')->assertForbidden();
+
+        $editor = User::factory()->create(['role' => Role::Editor]);
+        $html = $this->actingAs($editor)->get('/post-preview/'.$post->id.'/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+            ->assertSee('প্রিভিউ: পাঠকেরা ঠিক এভাবেই দেখবেন')->assertSee('এখনও প্রকাশিত হয়নি')->assertSee($post->title)->getContent();
+        $this->assertStringNotContainsString('data-view=', $html, 'A preview is never counted as a read');
+        $this->assertStringContainsString('noindex', $html);
+
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(EditPost::class, ['record' => $post->getRouteKey()])->assertActionVisible('preview')
+            ->assertActionHasUrl('preview', \App\Support\Url::to('/post-preview/'.$post->id));
+    }
+
     /** D250 (owner: "in desk the header is not sticky; difficult for a long writing"). */
     public function test_the_desk_editor_keeps_its_toolbar_in_view(): void
     {
