@@ -27,6 +27,7 @@ class EditUser extends EditRecord
                 ->requiresConfirmation()->modalHeading(__('এঁর চোখে সাইটটি দেখুন'))
                 ->modalDescription(__('শুধু দেখা যাবে: কিছু বদলানো বা পাঠানো যাবে না। ৩০ মিনিট পরে বা "বন্ধ করুন" টিপলে শেষ হবে।'))
                 ->action(fn () => ($to = \App\Http\Middleware\ViewAs::start($this->record)) ? $this->redirect($to) : null),
+            \App\Filament\Resources\Users\Tables\UsersTable::gameBlock()->record(fn () => $this->record),   // D245
             \App\Filament\Support\Deleting::page(static::$resource)->hidden(fn () => $this->record->is(auth()->user())),
         ];
     }

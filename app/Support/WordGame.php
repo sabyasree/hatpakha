@@ -23,20 +23,99 @@ final class WordGame
      */
     public static function listFor(string $game, ?Carbon $day = null): array
     {
-        $base = require database_path($game === 'riddle' ? 'content/riddles.php' : 'content/word-game.php');
-        $fixes = self::fixes($game, $day);
+        $day ??= now('Asia/Kolkata');
+        $new = $day->toDateString() >= self::NEW_FROM;
+        $base = array_merge(...array_map(fn ($f) => self::file($f), array_filter([
+            'word' => ['word-game', $new ? 'word-game-2' : null],
+            'hard' => ['word-game-hard', $new ? 'word-game-hard-2' : null],
+            'riddle' => ['riddles', $new ? 'riddles-2' : null],
+            'riddle2' => ['riddles-hard'],
+        ][$game])));
+        $riddle = $game === 'riddle' || $game === 'riddle2';
+        $fixes = self::fixes($riddle ? 'riddle' : 'word', $day);
         if (! $fixes) {
             return $base;
         }
-        $k = $game === 'riddle' ? 1 : 0;   // where the answer sits in a pair
+        $k = $riddle ? 1 : 0;   // where the answer sits in a pair
         foreach ($base as $i => $row) {
             if ($f = $fixes[$row[$k]] ?? null) {
                 $base[$i] = $f['action'] === 'remove' ? null
-                    : ($game === 'riddle' ? [$f['new_clue'] ?: $row[0], $f['new_word'] ?: $row[1]] : [$f['new_word'] ?: $row[0], $f['new_clue'] ?: $row[1]]);
+                    : ($riddle ? [$f['new_clue'] ?: $row[0], $f['new_word'] ?: $row[1]] : [$f['new_word'] ?: $row[0], $f['new_clue'] ?: $row[1]]);
             }
         }
 
         return $base;
+    }
+
+    /** A content list, read once. */
+    public static function file(string $name): array
+    {
+        static $read = [];
+
+        return $read[$name] ??= is_file($path = database_path('content/'.$name.'.php')) ? require $path : [];
+    }
+
+    /**
+     * D243 (owner: "add more words so it will not repeat for 1 year"): from NEW_FROM the lists are longer and are
+     * handed out so that nothing comes back before the whole list has been used: 3 everyday words a day, 2 harder
+     * ones, one ধাঁধা of each kind. What was already played before NEW_FROM goes to the end of the first round.
+     */
+    public const NEW_FROM = GameScores::RULES_FROM;
+
+    /** The day the কঠিন ধাঁধা and প্রবাদ পূরণ began. */
+    public const EXTRA_FROM = '2026-11-20';
+
+    /**
+     * $perDay entries for the $i-th day of a list: shuffled once per round, so none repeats within a round.
+     * @param list<string> $late answers to keep for the end of the first round
+     */
+    public static function rota(array $list, int $perDay, int $i, int $seed, array $late = [], int $key = 0): array
+    {
+        $count = count($list);
+        if ($count < $perDay) {
+            return [];
+        }
+        $i = max(0, $i);
+        $perRound = intdiv($count, $perDay);
+        $round = intdiv($i, $perRound);
+        mt_srand($seed + $round);
+        $order = range(0, $count - 1);
+        shuffle($order);
+        mt_srand();
+        if ($round === 0 && $late) {
+            $late = array_flip($late);
+            $isLate = fn ($k) => isset($late[$list[$k][$key] ?? '']);
+            $order = array_merge(array_values(array_filter($order, fn ($k) => ! $isLate($k))), array_values(array_filter($order, $isLate)));
+        }
+        $out = [];
+        for ($k = 0; $k < $perDay; $k++) {
+            $entry = self::at($list, $order[($i % $perRound) * $perDay + $k]);
+            if (($entry[0] ?? '') !== '') {
+                $out[] = $entry;
+            }
+        }
+
+        return $out;
+    }
+
+    /** What was played before NEW_FROM. @return array{word: list<string>, riddle: list<string>} */
+    private static function played(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('hp.game.played-before.'.self::NEW_FROM, 86400 * 30, function () {
+            $out = ['word' => [], 'riddle' => []];
+            $end = Carbon::parse(self::NEW_FROM, 'Asia/Kolkata');
+            for ($d = Carbon::parse(self::START, 'Asia/Kolkata'); $d->lt($end); $d = $d->copy()->addDay()) {
+                $out['word'] = array_merge($out['word'], array_column(self::day($d)['words'], 'answer'));
+                $out['riddle'][] = self::riddle($d)['words'][0]['answer'];
+            }
+
+            return $out;
+        });
+    }
+
+    private static function daysSince(string $from, Carbon $day): int
+    {
+        return (int) Carbon::parse($from, 'Asia/Kolkata')->diffInDays($day->copy()->startOfDay(), false);
     }
 
     /** @return array<string, array{action: string, new_word: ?string, new_clue: ?string}> fixes in force on that day */
@@ -136,18 +215,27 @@ final class WordGame
      *
      * @return array{no: int, date: string, words: list<array{answer: string, clue: string, tiles: list<string>}>}
      */
-    public static function riddle(?Carbon $day = null): array
+    public static function riddle(?Carbon $day = null, string $level = 'easy'): array
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $index = max(0, self::number($day) - 1);
-        $list = self::listFor('riddle', $day);
         $all = self::riddles($day);
-        $count = count($list);
-        mt_srand(7723 + intdiv($index, $count));
-        $order = range(0, $count - 1);
-        shuffle($order);
-        [$riddle, $answer] = self::at($list, $order[$index % $count]);
-        mt_srand(5519 + $index);
+        if ($level === 'hard') {   // D243: its own list, more spare letters
+            [$riddle, $answer] = self::rota(self::listFor('riddle2', $day), 1, self::daysSince(self::EXTRA_FROM, $day), 8831, [], 1)[0] ?? ['', ''];
+            if ($answer === '') {
+                return ['no' => max(1, $index + 1), 'date' => $day->toDateString(), 'level' => 'hard', 'words' => []];
+            }
+        } elseif ($day->toDateString() >= self::NEW_FROM) {
+            [$riddle, $answer] = self::rota(self::listFor('riddle', $day), 1, self::daysSince(self::NEW_FROM, $day), 7723, self::played()['riddle'], 1)[0];
+        } else {
+            $list = self::listFor('riddle', $day);
+            $count = count($list);
+            mt_srand(7723 + intdiv($index, $count));
+            $order = range(0, $count - 1);
+            shuffle($order);
+            [$riddle, $answer] = self::at($list, $order[$index % $count]);
+        }
+        mt_srand(($level === 'hard' ? 6143 : 5519) + $index);
         $letters = self::letters($answer);
         $pool = [];
         foreach ($all as [, $other]) {
@@ -159,11 +247,11 @@ final class WordGame
         }
         $pool = array_keys($pool);
         shuffle($pool);
-        $tiles = array_merge($letters, array_slice($pool, 0, max(3, 7 - count($letters))));
+        $tiles = array_merge($letters, array_slice($pool, 0, $level === 'hard' ? max(5, 10 - count($letters)) : max(3, 7 - count($letters))));
         shuffle($tiles);
         mt_srand();
 
-        return ['no' => max(1, $index + 1), 'date' => $day->toDateString(), 'words' => [['answer' => $answer, 'clue' => $riddle, 'tiles' => $tiles]]];
+        return ['no' => max(1, $index + 1), 'date' => $day->toDateString(), 'level' => $level, 'words' => [['answer' => $answer, 'clue' => $riddle, 'tiles' => $tiles]]];
     }
 
     /**
@@ -350,21 +438,32 @@ final class WordGame
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $no = self::number($day);
-        $all = self::listFor('word', $day);
-        $count = count($all);
-        $perCycle = intdiv($count, self::PER_DAY);
         $index = max(0, $no - 1);
-        $cycle = intdiv($index, $perCycle);
-        mt_srand(9173 + $cycle);
-        $order = range(0, $count - 1);
-        shuffle($order);
-        $picked = array_slice($order, ($index % $perCycle) * self::PER_DAY, self::PER_DAY);
-        $words = array_map(fn ($i) => self::at($all, $i), $picked);
-        usort($words, fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0])));
-        // D199: from HARD_FROM the day's last two words are harder ones, from their own list and in their own order
-        // (so the everyday words' order, and "no word again within six months", stay exactly as they were).
-        foreach (self::hardWords($day) as $k => $hard) {
-            $words[self::PER_DAY - self::HARD_PER_DAY + $k] = $hard;
+        $byLength = fn ($a, $b) => count(self::letters($a[0])) <=> count(self::letters($b[0]));
+        if ($day->toDateString() >= self::NEW_FROM) {   // D243: three everyday words and two harder ones, none again for a year
+            $i = self::daysSince(self::NEW_FROM, $day);
+            $late = self::played()['word'];
+            $words = self::rota(self::listFor('word', $day), self::PER_DAY - self::HARD_PER_DAY, $i, 9173, $late);
+            $hard = self::rota(self::listFor('hard', $day), self::HARD_PER_DAY, $i, 6607, $late);
+            usort($words, $byLength);
+            usort($hard, $byLength);
+            $words = array_merge($words, $hard);
+        } else {
+            $all = self::listFor('word', $day);
+            $count = count($all);
+            $perCycle = intdiv($count, self::PER_DAY);
+            $cycle = intdiv($index, $perCycle);
+            mt_srand(9173 + $cycle);
+            $order = range(0, $count - 1);
+            shuffle($order);
+            $picked = array_slice($order, ($index % $perCycle) * self::PER_DAY, self::PER_DAY);
+            $words = array_map(fn ($i) => self::at($all, $i), $picked);
+            usort($words, $byLength);
+            // D199: from HARD_FROM the day's last two words are harder ones, from their own list and in their own order
+            // (so the everyday words' order, and "no word again within six months", stay exactly as they were).
+            foreach (self::hardWords($day) as $k => $hard) {
+                $words[self::PER_DAY - self::HARD_PER_DAY + $k] = $hard;
+            }
         }
 
         mt_srand(4421 + $index);

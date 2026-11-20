@@ -83,6 +83,7 @@ Schedule::call(fn () => \App\Support\Kolom::screen())->name('reader entries scre
 Schedule::call(fn () => \App\Support\Kolom::pickWeek())->name('reader entries picked')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');
 Schedule::call(fn () => \App\Support\Kolom::autoPublish())->name('reader picks published')->weeklyOn(0, '08:00')->timezone('Asia/Kolkata');   // D176
 Schedule::call(fn () => \App\Support\WordReports::review())->name('reported game words reviewed')->hourlyAt(40);   // D179
+Schedule::call(fn () => \App\Support\GameTitles::award())->name('game titles of the month and the year')->dailyAt('00:20')->timezone('Asia/Kolkata');   // D243
 
 // D188 (owner, 2026-11-14: "the team should handle everything automatically"): personal invitations to the regular
 // writers for the ফিরে আসা সংখ্যা. Letters are written a few at a time, wait twelve hours in /desk → লেখকদের আমন্ত্রণ,

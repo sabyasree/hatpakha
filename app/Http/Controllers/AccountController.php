@@ -288,6 +288,7 @@ class AccountController extends Controller
     {
         $on = $request->boolean('on');
         $request->user()->forceFill(['board_hidden' => ! $on])->save();
+        \App\Support\GameScores::forget();   // D243: the boards are kept for two minutes; show the change at once
 
         return redirect(Url::to('/account/settings').'#games')->with('status', $on ? __('লিডারবোর্ডে আপনার নাম দেখা যাবে।') : __('লিডারবোর্ডে আপনার নাম আর দেখা যাবে না।'));
     }

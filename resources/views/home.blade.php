@@ -46,7 +46,7 @@
     <section class="border-b-2 border-navy bg-peach-light">
         <a href="{{ \App\Support\Url::to('/khela') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 hover:bg-white sm:flex-nowrap">
             <span class="flex flex-none gap-1" aria-hidden="true">@foreach (['শ', 'ব্দ', 'খে', 'লা'] as $t)<span class="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-navy bg-white font-serif text-lg font-bold shadow-[2px_2px_0_#13212C] {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
-            <span class="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-0"><span class="block text-lg font-extrabold leading-tight">আজকের শব্দ-খেলা</span><span class="block text-sm text-ink2">শব্দ-খেলা, ধাঁধা আর শব্দজব্দ: রোজ নতুন। সঙ্গে লিডারবোর্ড আর ব্যাজ।</span></span>
+            <span class="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-0"><span class="block text-lg font-extrabold leading-tight">আজকের শব্দ-খেলা</span><span class="block text-sm text-ink2">শব্দ-খেলা, ধাঁধা, শব্দজব্দ, প্রবাদ পূরণ: রোজ নতুন। মাসের সেরা হওয়ার লড়াই।</span></span>
             <span class="flex h-11 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
         </a>
     </section>

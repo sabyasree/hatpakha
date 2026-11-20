@@ -106,6 +106,30 @@ class GoogleSignInTest extends TestCase
      * 2026-11-19: Google sign-in was added as a second 'google' key in config/services.php. PHP keeps only the last
      * of two equal keys, so the Analytics tag, the reports and the live count in the desk were switched off.
      */
+    /** D244 (owner: "how many people logged in with Google and how many the normal way; I need the count in desk"). */
+    public function test_the_desk_counts_who_signs_in_with_google_and_who_with_a_password(): void
+    {
+        $this->back()->assertRedirect(url('/account').'/');
+        $rina = User::where('email', 'rina@gmail.com')->firstOrFail();
+        $this->assertSame('google', $rina->last_login_via);
+        auth()->logout();
+
+        $mita = User::factory()->create(['email' => 'mita@example.com', 'password' => 'correct-horse-battery', 'email_verified_at' => now()]);
+        $this->post('/login/', ['email' => 'mita@example.com', 'password' => 'correct-horse-battery'])->assertRedirect();
+        $this->assertSame('password', $mita->fresh()->last_login_via);
+        auth()->logout();
+        User::factory()->create(['email' => 'old@example.com', 'last_login_at' => now()->subDays(90), 'last_login_via' => 'password']);
+        User::factory()->create(['email' => 'spam@example.com', 'google_id' => 'g-spam', 'spam_reason' => 'bot']);
+
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)
+            ->assertSee('Google দিয়ে সাইন ইন করেছেন: ১ জন')->assertSee('শুধু ই-মেল আর পাসওয়ার্ডে: ৩ জন')
+            ->assertSee('Google দিয়ে ১ জন, পাসওয়ার্ড দিয়ে ১ জন')
+            ->filterTable('signin', 'google')->assertCanSeeTableRecords([$rina])->assertCanNotSeeTableRecords([$mita]);
+    }
+
     public function test_no_settings_group_is_written_twice_so_one_cannot_wipe_another(): void
     {
         foreach (glob(config_path('*.php')) as $file) {

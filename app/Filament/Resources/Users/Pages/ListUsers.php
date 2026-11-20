@@ -10,6 +10,24 @@ class ListUsers extends ListRecords
 {
     protected static string $resource = UserResource::class;
 
+    /**
+     * D244 (owner: "how many people logged in with Google, and how many the normal way; I need the count in desk").
+     * Accounts that have ever signed in with Google against those that use e-mail and password only, and which way
+     * people came in during the last 30 days. Accounts marked as spam are left out.
+     */
+    public function getSubheading(): ?string
+    {
+        $n = fn (int $x) => \App\Support\Bn::num(number_format($x));
+        $real = fn () => \App\Models\User::query()->whereNull('spam_reason');
+        $since = now()->subDays(30);
+
+        return __('Google দিয়ে সাইন ইন করেছেন: :g জন · শুধু ই-মেল আর পাসওয়ার্ডে: :p জন। গত ৩০ দিনে ঢুকেছেন: Google দিয়ে :g30 জন, পাসওয়ার্ড দিয়ে :p30 জন।', [
+            'g' => $n($real()->whereNotNull('google_id')->count()), 'p' => $n($real()->whereNull('google_id')->count()),
+            'g30' => $n($real()->where('last_login_via', 'google')->where('last_login_at', '>=', $since)->count()),
+            'p30' => $n($real()->where('last_login_via', 'password')->where('last_login_at', '>=', $since)->count()),
+        ]);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

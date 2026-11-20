@@ -145,7 +145,7 @@ final class PushNotifier
             $message = [
                 'title' => $a ? 'টানা '.Bn::num((string) $days).' দিন খেলছেন' : 'আজকের ধাঁধাটা এখনও বাকি',
                 'body' => $a ? 'আজ খেললে '.Bn::num((string) ($days + 1)).' দিন হবে। দু মিনিটের খেলা।' : 'টানা '.Bn::num((string) $days).' দিনের ধারাটা ধরে রাখুন। দু মিনিট লাগবে।',
-                'url' => Url::to('/khela').'?utm_source=hatpakha-push&utm_medium=push&utm_campaign=streak-'.($a ? 'a' : 'b'),
+                'url' => Url::to('/khela/aaj').'?utm_source=hatpakha-push&utm_medium=push&utm_campaign=streak-'.($a ? 'a' : 'b'),
                 'tag' => 'streak', 'kind' => 'streak',
             ];
             foreach ($subs as $sub) {

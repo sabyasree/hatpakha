@@ -70,7 +70,7 @@
                     <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
                 {{-- Owner, 2026-11-14: games and পাঠকের কলম in the top bar on wide screens (always in "সব বিভাগ" too) --}}
-                <a href="{{ \App\Support\Url::to('/khela') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('khela*')) aria-current="page" @endif>{{ __('খেলা') }}</a>
+                <a href="{{ \App\Support\Url::to('/khela/aaj') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('khela*')) aria-current="page" @endif>{{ __('খেলা') }}</a>
                 <a href="{{ \App\Support\Url::to('/kolom') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('kolom*')) aria-current="page" @endif>{{ __('পাঠকের কলম') }}</a>
                 <details class="relative" data-menu>
                     <summary class="flex h-11 cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-full px-3 hover:text-red [&::-webkit-details-marker]:hidden">{{ __('সব বিভাগ') }} <span aria-hidden="true">▾</span></summary>
