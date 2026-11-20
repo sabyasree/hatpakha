@@ -174,8 +174,8 @@ class PostsTable
                         ->content(fn (Post $record) => $record->proof['note'] ?? '')
                         ->visible(fn (Post $record) => ($record->proof['note'] ?? '') !== ''),
                     \Filament\Forms\Components\Placeholder::make('plagiarism')->label(__('মৌলিকতা যাচাই'))
-                        ->content(fn (Post $record) => \App\Ai\PlagiarismCheck::summary($record))
-                        ->visible(fn (Post $record) => \App\Ai\PlagiarismCheck::summary($record) !== ''),
+                        ->content(fn (Post $record) => trim(\App\Ai\PlagiarismCheck::summary($record).' '.\App\Support\TextPrints::summary($record)))
+                        ->visible(fn (Post $record) => \App\Ai\PlagiarismCheck::summary($record) !== '' || \App\Support\TextPrints::summary($record) !== ''),
                     Toggle::make('use_ai_image')->label(__('এআই-এর আঁকা প্রচ্ছদ ব্যবহার করুন'))->default(true)
                         ->helperText(fn (Post $record) => $record->proposed_image_path ? new \Illuminate\Support\HtmlString('<img src="'.e(asset($record->proposed_image_path)).'" alt="" style="margin-top:.5rem;max-height:10rem;border-radius:.75rem">') : null)
                         ->visible(fn (Post $record) => $record->proposed_image_path && ! $record->featured_image_path),

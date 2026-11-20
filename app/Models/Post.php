@@ -57,6 +57,7 @@ class Post extends Model
             'proof' => 'array',
             'proof_at' => 'datetime',
             'plagiarism' => 'array',
+            'own_match' => 'array',   // D248
             'plagiarism_at' => 'datetime',
         ];
     }
@@ -102,6 +103,9 @@ class Post extends Model
         static::saved(function (self $post) {
             if ($post->wasChanged(['title', 'body_html', 'excerpt', 'status']) || $post->wasRecentlyCreated) {
                 rescue(fn () => \App\Support\BnSearch::index($post), null, false);
+            }
+            if ($post->wasChanged('body_html') || $post->wasRecentlyCreated) {   // D248: the fingerprint follows the text
+                rescue(fn () => \App\Support\TextPrints::store($post), null, false);
             }
             if ($post->wasChanged('status')) {   // writers' counts follow publishing from anywhere
                 rescue(fn () => $post->authors()->get()->each->refreshCount(), null, false);
