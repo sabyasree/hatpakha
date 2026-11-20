@@ -122,6 +122,16 @@ class HumanFeedbackTest extends TestCase
         $this->assertNull($post->fresh()->rewrite_html);
     }
 
+    /** D250 (owner: "in desk the header is not sticky; difficult for a long writing"). */
+    public function test_the_desk_editor_keeps_its_toolbar_in_view(): void
+    {
+        $post = $this->aiDraft();
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(EditPost::class, ['record' => $post->getRouteKey()])->assertSee('fi-fo-rich-editor-sticky-toolbar', false);
+        $this->assertStringContainsString('ed-toolbar sticky top-0', file_get_contents(resource_path('views/submit.blade.php')), 'The writers\' form toolbar stays too');
+    }
+
     /** D247 (owner: "how to rewrite the editorial? there is no option to ask to rewrite"). */
     public function test_the_ais_editorial_draft_can_be_sent_back_with_notes(): void
     {

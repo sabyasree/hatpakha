@@ -18,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // D250 (owner: "in desk the header is not sticky; difficult for a long writing"): every desk editor keeps its toolbar in view.
+        \Filament\Forms\Components\RichEditor::configureUsing(fn (\Filament\Forms\Components\RichEditor $editor) => $editor->stickyToolbar());
         // Staging never e-mails readers or writers, whatever its ENV_FILE says (App\Support\MailGuard).
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class, [\App\Support\MailGuard::class, 'check']);
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSent::class, [\App\Support\WriterLetters::class, 'record']);   // D161
