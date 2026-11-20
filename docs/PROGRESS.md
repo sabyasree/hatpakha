@@ -176,6 +176,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D246: home page lighter (small WebP covers in cards; Google scripts start after the page draws)
 - [x] D247: "আবার লেখান" on the AI's editorial draft
 - [x] D248: new submissions compared with every earlier piece (declined ones included) for copying
+- [x] D249: how-to box, film and PDF redone with Google first, in plain words
 - [ ] Owner: run PageSpeed on hatpakha.com again after D246 is live, and compare AdSense earnings a week later
 - [ ] Owner or a Bengali reader: read through the new word, riddle and proverb lists (database/content/*-2.php, riddles-hard.php, proverbs.php)
 - [ ] 1 January 2027: check that December's মাসের সেরা were written to the সম্মান-ফলক by themselves

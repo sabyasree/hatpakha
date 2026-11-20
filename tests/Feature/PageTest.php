@@ -100,7 +100,14 @@ class PageTest extends TestCase
     public function test_the_rules_page_opens_with_how_to_send_a_film_and_a_printable_guide(): void
     {
         Page::create(['slug' => 'submissions', 'title' => 'লেখা পাঠানোর নিয়ম', 'body_html' => '<p>RULES-BODY</p>']);
-        $html = $this->get('/submissions/')->assertOk()->assertSee('প্রথমবার পাঠাচ্ছেন?')->assertSee('অ্যাকাউন্ট খুলুন')->getContent();
+        $html = $this->get('/submissions/')->assertOk()->assertSee('প্রথমবার পাঠাচ্ছেন?')->assertSee('লেখা বসান')->assertSee('সাইন আপ')->assertDontSee('Gmail নেই?')->getContent();
+        // D249: with Google sign-in on, the Google way comes first and the e-mail way is folded under "Gmail নেই?"
+        config(['services.google.client_id' => 'cid.apps.googleusercontent.com', 'services.google.client_secret' => 'sec']);
+        $this->get('/submissions/')->assertSee('“Google দিয়ে ঢুকুন” বোতামে টিপুন')->assertSee('Gmail নেই?')->assertSee('ঢুকেছেন কি না, বুঝবেন কীভাবে?')->assertSee('@gmail.com')->assertSee('লেখাটি আমার নিজের');
+        // the sign-in page: Google first; the sign-up link after it says who it is for
+        $login = $this->get('/login/')->getContent();
+        $this->assertLessThan(strpos($login, 'Gmail নেই, আর নতুন?'), strpos($login, 'login/google'));
+        config(['services.google.client_id' => null]);
         $this->assertTrue(strpos($html, 'guide/lekha-pathano.mp4') < strrpos($html, 'RULES-BODY'), 'Before the rules, not after');
         foreach (['guide/lekha-pathano.mp4', 'guide/lekha-pathano.jpg', 'guide/lekha-pathanor-niyom.pdf'] as $file) {
             $this->assertStringContainsString($file, $html);
