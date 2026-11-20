@@ -40,6 +40,8 @@
                     @if ($post)
                         <x-filament::button size="sm" :color="$state === 'draft' ? 'danger' : 'gray'" tag="a" :href="PostResource::getUrl('edit', ['record' => $post])" icon="heroicon-o-pencil-square">{{ $state === 'draft' ? __('খসড়া খুলুন') : __('খুলুন') }}</x-filament::button>
                         @if ($state === 'live')<x-filament::button size="sm" color="gray" tag="a" :href="$post->url()" target="_blank" icon="heroicon-o-eye">{{ __('সাইটে দেখুন') }}</x-filament::button>@endif
+                        {{-- D247: the AI's draft can be sent back with notes; the new version waits on the editorial's page --}}
+                        @if (\App\Ai\Rewriter::isEditorial($post))<x-filament::button size="sm" color="warning" tag="a" :href="PostResource::getUrl('edit', ['record' => $post]).'?action=humanFeedback'" icon="heroicon-o-chat-bubble-left-right">{{ __('আবার লেখান') }}</x-filament::button>@endif
                     @else
                         <x-filament::button size="sm" icon="heroicon-o-pencil" wire:click="write({{ $i->id }})">{{ __('নিজে লিখুন') }}</x-filament::button>
                         @if ($admin)<x-filament::button size="sm" color="gray" icon="heroicon-o-sparkles" wire:click="draft({{ $i->id }})">{{ __('এআই খসড়া লিখুক') }}</x-filament::button>@endif
