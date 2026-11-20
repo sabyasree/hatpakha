@@ -145,7 +145,7 @@
                 <li class="w-[44%] flex-none snap-start sm:w-[calc(25%-.6rem)]">
                     <a href="{{ $r->url() }}" class="lift block h-full overflow-hidden rounded-2xl border-2 border-navy bg-white hover:bg-peach-light">
                         @if ($r->hasCardImage())
-                            <img src="{{ asset($r->featured_image_path) }}" alt="" loading="lazy" width="300" height="200" class="aspect-[3/2] w-full object-cover">
+                            <picture class="contents">{!! \App\Support\Images::source($r->featured_image_path, '300px') !!}<img src="{{ asset($r->featured_image_path) }}" alt="" loading="lazy" width="300" height="200" class="aspect-[3/2] w-full object-cover"></picture>
                         @else
                             <span class="flex aspect-[3/2] w-full items-center justify-center bg-peach-light font-display text-4xl font-extrabold text-red" aria-hidden="true">{{ mb_substr($r->title, 0, 1) }}</span>
                         @endif

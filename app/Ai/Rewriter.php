@@ -15,7 +15,21 @@ final class Rewriter
 {
     public static function canRewrite(?Post $post): bool
     {
+        if (self::isEditorial($post)) {
+            return true;   // D247: the AI's editorial draft is signed with the owner's name, not the desk's
+        }
+
         return $post && $post->ai_drafted_at && $post->authors()->exists() && ! $post->authors()->where('is_desk', false)->exists();
+    }
+
+    /**
+     * D247 (owner: "how to rewrite the editorial? there is no option to ask to rewrite"): an editorial the AI drafted
+     * (EditorialWriter) can be sent back with the owner's notes. The new version waits beside the old one until the
+     * owner chooses it, as for every rewrite; nothing is published by this.
+     */
+    public static function isEditorial(?Post $post): bool
+    {
+        return $post && $post->ai_drafted_at && $post->section?->slug === 'editorial';
     }
 
     /** Every minute from the scheduler: queued rewrites and rules still to be written down. */
@@ -43,6 +57,10 @@ final class Rewriter
         }
         $slug = $post->section?->slug;
         $brief = $post->serial_id ? (SerialWriter::WRITERS[$post->serial?->writer][1] ?? '') : (DeskWriter::SECTIONS[$slug] ?? '');
+        if (self::isEditorial($post)) {   // D247: the same rules the editorial was first written by
+            $brief = 'This is the monthly editorial (সম্পাদকীয়), written as the magazine (আমরা) and published under the owner-editor\'s name after they approve it. '
+                .'Keep it an editorial in the tradition of Bengali little magazines; do not list the contents; quote no line from a piece; invent no fact, event or number.';
+        }
         $paras = collect(preg_split('~</p>~i', (string) $post->body_html))->map(fn ($p) => trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br />'], "\n", $p)))))->filter()->values();
         [$d, $err] = Claude::json('rewrite',
             'You revise a piece written by the AI desk of Hatpakha (হাতপাখা), a Bengali literary web magazine, after a human reader\'s feedback. '

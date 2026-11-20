@@ -122,6 +122,37 @@ class HumanFeedbackTest extends TestCase
         $this->assertNull($post->fresh()->rewrite_html);
     }
 
+    /** D247 (owner: "how to rewrite the editorial? there is no option to ask to rewrite"). */
+    public function test_the_ais_editorial_draft_can_be_sent_back_with_notes(): void
+    {
+        $owner = User::factory()->create(['role' => Role::Admin, 'name' => 'Owner']);
+        $mine = Author::create(['user_id' => $owner->id, 'slug' => 'editor-'.$owner->id, 'display_name' => 'Owner']);
+        $section = Section::firstOrCreate(['slug' => 'editorial'], ['name' => 'Editorial', 'name_bn' => 'সম্পাদকীয়']);
+        $issue = \App\Models\Issue::create(['slug' => '2026-12', 'title' => 'পৌষ সংখ্যা', 'status' => 'draft']);
+        $ed = $this->makePost(['slug' => 'sompadokiyo-2026-12', 'title' => 'শীতের প্রথম আলো', 'status' => 'draft', 'section_id' => $section->id, 'issue_id' => $issue->id,
+            'ai_drafted_at' => now(), 'body_html' => '<p>কুয়াশা নামে গলিতে।</p>'], $mine);
+        $issue->forceFill(['editorial_post_id' => $ed->id])->save();
+        $this->assertTrue(Rewriter::canRewrite($ed), 'Signed with the owner\'s name, but the AI wrote it');
+
+        $handWritten = $this->makePost(['slug' => 'sompadokiyo-old', 'status' => 'draft', 'section_id' => $section->id], $mine);
+        $this->assertFalse(Rewriter::canRewrite($handWritten), 'An editorial the owner wrote is never rewritten');
+
+        $this->actingAs($owner);
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('আবার লেখান')->assertSee('action=humanFeedback', false);
+        Livewire::test(EditPost::class, ['record' => $ed->getRouteKey()])->assertActionVisible('humanFeedback')->assertActionHasLabel('humanFeedback', 'আবার লেখান')
+            ->callAction('humanFeedback', ['body' => 'আরও ছোট করুন, শুরুটা শীতের সকাল দিয়ে।', 'apply_now' => true, 'apply_future' => false])->assertHasNoActionErrors();
+
+        $prompt = '';
+        Claude::$fake = function ($purpose, $system = '') use (&$prompt) { $prompt = (string) $system; return ['title' => 'শীতের সকাল', 'paragraphs' => ['ভোরে কুয়াশা।'], 'what_changed' => 'ছোট করা হয়েছে।']; };
+        $this->assertSame(1, Rewriter::runQueued());
+        $ed->refresh();
+        $this->assertStringContainsString('কুয়াশা নামে গলিতে', $ed->body_html, 'Nothing changes until the owner chooses the new version');
+        $this->assertSame('proposed', $ed->rewrite_kind);
+        $this->assertStringContainsString('ভোরে কুয়াশা', $ed->rewrite_html);
+        $this->assertSame('draft', $ed->status, 'Never published by this');
+    }
+
     public function test_owner_adds_own_rule_and_editors_cannot_open_the_rules(): void
     {
         $this->actingAs(User::factory()->create(['role' => Role::Editor]));

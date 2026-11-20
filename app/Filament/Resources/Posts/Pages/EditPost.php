@@ -75,9 +75,9 @@ class EditPost extends EditRecord
                 ->visible(fn (Post $record) => \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->exists())
                 ->url(fn (Post $record) => \App\Filament\Resources\PieceReviews\PieceReviewResource::getUrl('index').'?post='.$record->id),
             // D113 (owner): a real person read this AI-written piece; their feedback rewrites it and/or guides the next ones.
-            Action::make('humanFeedback')->label(__('মানুষের মতামত'))->icon('heroicon-o-chat-bubble-left-right')->color('warning')
+            Action::make('humanFeedback')->label(fn (Post $record) => \App\Ai\Rewriter::isEditorial($record) ? __('আবার লেখান') : __('মানুষের মতামত'))->icon('heroicon-o-chat-bubble-left-right')->color('warning')
                 ->visible(fn (Post $record) => \App\Ai\Rewriter::canRewrite($record))
-                ->modalHeading(__('কেউ লেখাটি পড়ে মতামত দিয়েছেন'))
+                ->modalHeading(fn (Post $record) => \App\Ai\Rewriter::isEditorial($record) ? __('কী বদলাতে চান, লিখুন') : __('কেউ লেখাটি পড়ে মতামত দিয়েছেন'))
                 ->modalDescription(__('মতামত লিখুন, তারপর বাছুন: এই লেখাটিই আবার লেখানো, আর/অথবা পরের লেখাগুলোতে মেনে চলা। নতুন সংস্করণ আপনি দেখে তবেই বসাবেন।'))
                 ->schema(fn (Post $record) => self::feedbackSchema($record))
                 ->action(fn (Post $record, array $data) => self::saveFeedback($record, $data)),

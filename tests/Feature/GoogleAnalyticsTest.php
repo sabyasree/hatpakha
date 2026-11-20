@@ -34,6 +34,9 @@ class GoogleAnalyticsTest extends TestCase
         $this->asLiveSite();
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('gtag/js?id=G-ABC123XYZ9', $html);
+        // D246: Google's script is started after the page has drawn, never as a tag in the page's head
+        $this->assertStringNotContainsString('src="https://www.googletagmanager.com', $html);
+        $this->assertStringContainsString("hpLater('https://www.googletagmanager.com/gtag/js?id=G-ABC123XYZ9')", $html);
         $this->assertStringContainsString("location.origin + location.pathname", $html);
         $this->assertStringContainsString('allow_google_signals: false', $html);
         $this->assertStringContainsString('"GB"', $html);   // consent first in Europe

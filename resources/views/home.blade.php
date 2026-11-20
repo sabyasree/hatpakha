@@ -6,7 +6,7 @@
     <section class="border-b-2 border-navy bg-navy text-paper" aria-labelledby="issue-h">
         <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-5 px-5 py-6 sm:flex-nowrap">
             <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative block aspect-[1/1.41] w-24 flex-none overflow-hidden rounded-md border-2 border-paper bg-navy shadow-[4px_4px_0_#CB1B32] sm:w-28" aria-hidden="true" tabindex="-1">
-                @if ($issue->cover_path)<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy">@else<x-fan class="absolute -bottom-3 -right-6 w-28" stroke="#FFFBF4" />@endif
+                @if ($issue->cover_path)<picture class="contents">{!! \App\Support\Images::source($issue->cover_path, '112px') !!}<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy"></picture>@else<x-fan class="absolute -bottom-3 -right-6 w-28" stroke="#FFFBF4" />@endif
                 <span class="absolute left-1.5 top-1 font-hand text-lg text-paper [text-shadow:0_1px_3px_#13212C]">হাতপাখা</span>
             </a>
             <div class="min-w-0 flex-1">
@@ -106,7 +106,7 @@
                         @foreach ([$s->latestEpisode()] as $ep)
                             <li class="lift flex flex-col overflow-hidden rounded-2xl border-2 border-navy bg-white shadow-[5px_5px_0_#13212C]">
                                 <a href="{{ $s->url() }}" class="relative block">
-                                    @if ($s->cover_path)<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover">@endif
+                                    @if ($s->cover_path)<picture class="contents">{!! \App\Support\Images::source($s->cover_path, '(max-width: 640px) 100vw, 420px') !!}<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover"></picture>@endif
                                     @if ($ep && $ep->published_at->gt(now()->subDays(7)))<span class="absolute left-3 top-3 rounded-full bg-red px-3 py-1 text-sm font-extrabold text-white">নতুন পর্ব</span>@endif
                                 </a>
                                 <div class="flex flex-1 flex-col p-4">

@@ -23,8 +23,11 @@
     @if ($gaId = \App\Support\Analytics::id())
         {{-- D119: Google Analytics 4. Only the page's path (plus utm_ campaign labels) is sent, never the rest of the query: signed links stay private; no Google signals or ad
              personalisation from analytics; visitors in Europe are asked first (the consent message updates Google's consent mode). --}}
-        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
         <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            {{-- D246 (owner's PageSpeed, 2026-11-20): Google's scripts start after the page has drawn, never in its way. Calls made before are queued and sent then. --}}
+            window.hpLater = window.hpLater || ((src, attrs) => { const go = () => { const el = document.createElement('script'); el.src = src; el.async = true; el.nonce = @json(\Illuminate\Support\Facades\Vite::cspNonce()); Object.assign(el, attrs || {}); document.head.appendChild(el); };
+                const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 3000 }) : setTimeout(go, 1500)); document.readyState === 'complete' ? idle() : addEventListener('load', idle, { once: true }); });
+            hpLater('https://www.googletagmanager.com/gtag/js?id={{ $gaId }}');
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('consent', 'default', {ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', region: @json(\App\Support\Analytics::CONSENT_REGIONS)});
@@ -35,7 +38,12 @@
     @endif
     @if (\App\Support\Ads::on())
         {{-- D111: only on page types that allow ads, on the live site --}}
-        <script async nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ \App\Support\Ads::client() }}" crossorigin="anonymous"></script>
+        {{-- D246: started after the page has drawn (the ads themselves are only asked for when a reader scrolls near them) --}}
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            window.hpLater = window.hpLater || ((src, attrs) => { const go = () => { const el = document.createElement('script'); el.src = src; el.async = true; el.nonce = @json(\Illuminate\Support\Facades\Vite::cspNonce()); Object.assign(el, attrs || {}); document.head.appendChild(el); };
+                const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 3000 }) : setTimeout(go, 1500)); document.readyState === 'complete' ? idle() : addEventListener('load', idle, { once: true }); });
+            hpLater('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ \App\Support\Ads::client() }}', { crossOrigin: 'anonymous' });
+        </script>
     @endif
 </head>
 <body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
