@@ -72,6 +72,15 @@ The page and its footer link stay hidden until you do this.
 - [ ] /desk → আজকের কাজ: a new warning appears when a writer has waited 10 days for an answer.
 - [ ] Reply to the writer who found the form hard, with the link hatpakha.com/submissions/ (the how-to video and PDF are at the top of that page).
 
+## Games (D243 to D245)
+
+- [ ] Play each game once on your own phone on new.hatpakha.com before merging: শব্দ-খেলা, both ধাঁধা, শব্দজব্দ, প্রবাদ পূরণ.
+- [ ] Ask a Bengali reader to read through the new lists. They were written by AI and only checked by machine. Files: `database/content/word-game-2.php`, `word-game-hard-2.php`, `riddles-2.php`, `riddles-hard.php`, `proverbs.php`. A wrong one can also be reported from the game itself.
+- [ ] Read the winner's letter once and change the wording if you like: /desk → চিঠির বয়ান → "খেলার খেতাব".
+- [ ] 1 January 2027: check that December's three names are on the সম্মান-ফলক and that the winners got their letter.
+- [ ] Proverbs repeat after about four months (507 of them, four a day). Say if you want more written.
+- [ ] If a score looks wrong: /desk → ব্যবহারকারী → the player → "খেলার তালিকা থেকে বাদ" (can be undone).
+
 ## Where things are
 
 | What | Where |
@@ -82,3 +91,6 @@ The page and its footer link stay hidden until you do this.
 | Errors on the site | /desk → Site Errors |
 | How-to video and PDF for writers | hatpakha.com/submissions/ |
 | Readers' choice page | hatpakha.com/pathoker-pochhondo/ |
+| Today's games | hatpakha.com/khela/aaj/ |
+| Leaderboard and roll of honour | hatpakha.com/khela/board/ |
+| Google and password sign-in counts | /desk → ব্যবহারকারী (top of the page) |

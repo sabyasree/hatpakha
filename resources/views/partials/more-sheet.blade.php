@@ -42,7 +42,7 @@
             {{-- Owner, 2026-11-14 ("পাঠকের কলম and games are not in the menu"): the two things to do every day come first,
                  above the account, for everyone. --}}
             <div class="grid grid-cols-2 gap-2 px-3 pt-3">
-                <a href="{{ Url::to('/khela') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-peach-light px-3 py-2 font-bold hover:bg-peach">
+                <a href="{{ Url::to('/khela/aaj') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-peach-light px-3 py-2 font-bold hover:bg-peach">
                     <span class="text-lg leading-tight">{{ __('খেলা') }}</span><span class="text-sm font-medium text-ink2">{{ __('রোজের ধাঁধা ও শব্দের খেলা') }}</span></a>
                 <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
                     <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>

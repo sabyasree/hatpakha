@@ -135,6 +135,10 @@ class GameTitlesTest extends TestCase
         GameTitles::award();
         \Illuminate\Support\Facades\Notification::assertSentToTimes($a, \App\Notifications\TemplateMail::class, 1);
 
+        // the same button sits on the player's own desk page (where the leaderboard's link leads)
+        $this->actingAs($admin);
+        \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\EditUser::class, ['record' => $cheat->id])->assertActionVisible('gameBlock')->assertActionHasLabel('gameBlock', 'খেলার তালিকায় ফেরান');
+
         // put back; and titles can be taken away with the same button
         $this->actingAs($admin);
         \Livewire\Livewire::test(\App\Filament\Resources\Users\Pages\ListUsers::class)->callTableAction('gameBlock', $cheat);
@@ -215,7 +219,12 @@ class GameTitlesTest extends TestCase
         $this->postJson('/khela/score', ['game' => 'riddle', 'day' => '2026-12-05', 'seconds' => 9, 'results' => ['g']])->assertUnauthorized();
 
         $u = User::factory()->create();
-        $page = $this->actingAs($u)->get('/khela/dhadha/kothin/')->assertOk()->assertSee($hard['clue'])->assertSee('"kind":"riddle2"', false)->getContent();
+        // the hard riddle's first day shows no "yesterday's answer": it would be today's
+        $this->at(WordGame::EXTRA_FROM.' 10:00');
+        $this->actingAs($u)->get('/khela/dhadha/kothin/')->assertOk()->assertDontSee('কালকের ধাঁধার উত্তর');
+        $this->at('2026-12-05 10:00');
+        $this->get('/khela/dhadha/kothin/')->assertOk()->assertSee('কালকের ধাঁধার উত্তর');
+        $page = $this->get('/khela/dhadha/kothin/')->assertOk()->assertSee($hard['clue'])->assertSee('"kind":"riddle2"', false)->getContent();
         $this->assertStringNotContainsString('>'.$hard['answer'].'<', $page);
         $this->assertNotSame($hard['answer'], WordGame::riddle()['words'][0]['answer'], 'Two different riddles a day');
         $this->assertGreaterThan(count(WordGame::riddle()['words'][0]['tiles']) - count(WordGame::letters(WordGame::riddle()['words'][0]['answer'])), count($hard['tiles']) - count(WordGame::letters($hard['answer'])), 'More spare letters');
@@ -230,6 +239,7 @@ class GameTitlesTest extends TestCase
 
         $this->postJson('/khela/score', ['game' => 'riddle2', 'day' => '2026-12-05', 'seconds' => 30, 'results' => ['g']])->assertOk()
             ->assertJson(['ok' => true, 'points' => 60, 'today' => ['total' => 60, 'max' => 300], 'rank' => ['now' => 1], 'next' => ['name' => 'শব্দ-খেলা']]);
+        $this->postJson('/khela/score', ['game' => 'riddle', 'day' => '2026-12-04', 'seconds' => 30, 'results' => ['g']])->assertJson(['points' => 40, 'next' => ['name' => 'কঠিন ধাঁধা']]);   // yesterday's, just after midnight: the hard one is offered next
         $this->postJson('/khela/score', ['game' => 'probad', 'day' => '2026-12-05', 'seconds' => 30, 'results' => ['g', 'g', 'g', 'y']])->assertJson(['points' => 85, 'today' => ['total' => 145]]);
         $this->get('/khela/aaj/')->assertOk()->assertSee('হয়ে গেছে · ৮৫ পয়েন্ট')->assertSee('আরও বাকি');
         $this->get('/khela/dhadha/')->assertSee('✓ হয়ে গেছে');

@@ -32,7 +32,8 @@ class GameController extends Controller
         abort_if(! $game['words'], 404);
 
         return view('game', ['game' => $game, 'kind' => $hard ? 'riddle2' : 'riddle', 'locked' => $hard && ! $request->user(),
-            'yesterday' => WordGame::riddle(now('Asia/Kolkata')->subDay(), $hard ? 'hard' : 'easy')['words'][0] ?? null,
+            // the hard riddle's first day has no yesterday: asking for one would hand back today's
+            'yesterday' => $hard && now('Asia/Kolkata')->subDay()->toDateString() < WordGame::EXTRA_FROM ? null : (WordGame::riddle(now('Asia/Kolkata')->subDay(), $hard ? 'hard' : 'easy')['words'][0] ?? null),
             'seo' => new Seo(
                 title: $hard ? 'কঠিন ধাঁধা: রোজ একটা ভাবার মতো বাংলা ধাঁধা' : 'ধাঁধা: রোজ দুটো বাংলা ধাঁধা',
                 description: $hard ? 'হাতপাখার রোজকার কঠিন ধাঁধা। ভেবে উত্তর বের করুন, অক্ষর সাজিয়ে মিলিয়ে দেখুন। ঠিক হলে ৬০ পয়েন্ট।'
@@ -120,7 +121,7 @@ class GameController extends Controller
         $streak = GameScores::streak($user);
         // the next game not played today, in the order of the games' menu
         $urls = ['word' => Url::to('/khela'), 'riddle' => Url::to('/khela/dhadha'), 'cross' => WordGame::crosswordUrl('medium'), 'probad' => Url::to('/khela/probad')];
-        $next = null;
+        $next = $data['game'] === 'riddle' && ! isset($today['games']['riddle2']) ? ['name' => 'কঠিন ধাঁধা', 'url' => Url::to('/khela/dhadha/kothin')] : null;
         foreach ($today['groups'] as $g) {
             if (! $g['done'] && ! $next) {
                 $next = ['name' => $g['name'], 'url' => $urls[$g['key']]];

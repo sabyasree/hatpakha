@@ -2648,7 +2648,6 @@
     "টি লেখা রিভিউ করেছেন": " pieces reviewed",
     "খেলা": "Games",
     "লিডারবোর্ডে আমার নাম দেখান": "Show my name on the leaderboard",
-    "বন্ধ করলেও খেলতে পারবেন, পয়েন্ট আর ব্যাজ জমবে; শুধু তালিকায় নাম থাকবে না।": "With this off you can still play and earn points and badges; only your name is left off the list.",
     "লিডারবোর্ডে আপনার নাম দেখা যাবে।": "Your name will show on the leaderboard.",
     "লিডারবোর্ডে আপনার নাম আর দেখা যাবে না।": "Your name will no longer show on the leaderboard.",
     "রিভিউয়ার": "Reviewer",
@@ -2889,5 +2888,6 @@
     "আগে জেতা খেতাবও তুলে নিন (ফেরানো যাবে না)": "Also take away titles already won (cannot be undone)",
     "ফেরান": "Put back",
     "খেলার তালিকা থেকে বাদ দেওয়া হল": "Kept off the games boards",
-    "খেলার তালিকায় ফেরানো হল": "Put back on the games boards"
+    "খেলার তালিকায় ফেরানো হল": "Put back on the games boards",
+    "বন্ধ করলেও খেলতে পারবেন, পয়েন্ট আর ব্যাজ জমবে; শুধু তালিকায় নাম থাকবে না, আর মাসের বা বছরের সেরার খেতাব পাওয়া যাবে না।": "With this off you can still play and earn points and badges; only your name is left off the list, and you cannot win a title of the month or the year."
 }

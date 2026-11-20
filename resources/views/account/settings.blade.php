@@ -62,7 +62,7 @@
             <form method="POST" action="{{ Url::to('/account/board') }}">@csrf
                 <input type="hidden" name="on" value="{{ $user->board_hidden ? 1 : 0 }}">
                 <button class="{{ $setRow }} w-full text-left" role="switch" aria-checked="{{ $user->board_hidden ? 'false' : 'true' }}">
-                    <span><span class="block text-lg font-bold">{{ __('লিডারবোর্ডে আমার নাম দেখান') }}</span><span class="block text-ink2">{{ __('বন্ধ করলেও খেলতে পারবেন, পয়েন্ট আর ব্যাজ জমবে; শুধু তালিকায় নাম থাকবে না।') }}</span></span>
+                    <span><span class="block text-lg font-bold">{{ __('লিডারবোর্ডে আমার নাম দেখান') }}</span><span class="block text-ink2">{{ __('বন্ধ করলেও খেলতে পারবেন, পয়েন্ট আর ব্যাজ জমবে; শুধু তালিকায় নাম থাকবে না, আর মাসের বা বছরের সেরার খেতাব পাওয়া যাবে না।') }}</span></span>
                     {!! $switch(! $user->board_hidden) !!}
                 </button>
             </form>
