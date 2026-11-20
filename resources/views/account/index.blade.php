@@ -17,6 +17,10 @@
         @if ($needsVerification)
             <div class="mb-5 rounded-xl border-2 border-red bg-peach-light p-4 font-semibold">{{ __('লেখা পাঠানোর আগে ই-মেল ভেরিফাই করুন। আপনার ইনবক্সে লিংক আছে।') }}</div>
         @endif
+        @if (! $needsVerification && ! \App\Models\Post::where('submitted_by', $user->id)->exists())
+            {{-- D249: a new member is told in so many words that they are in, and what to do next --}}
+            <div class="mb-5 rounded-2xl border-2 border-navy bg-sky-tint p-4 text-lg"><p class="font-bold">{{ __('আপনি এখন হাতপাখার সদস্য।') }}</p><p>{{ __('নিচের লাল বোতাম টিপে আপনার প্রথম লেখা পাঠান।') }}</p></div>
+        @endif
         <a href="{{ Url::to('/submit') }}" class="flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-10">+ {{ __('নতুন লেখা পাঠান') }}</a>
 
         @if ($act->isNotEmpty())
