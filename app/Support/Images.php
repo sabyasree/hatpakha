@@ -58,6 +58,17 @@ final class Images
     }
 
     /**
+     * A <source> with the WebP copies, for a <picture> around a cover shown in a card or a thumbnail (owner, 2026-11-20:
+     * PageSpeed found the home page sending 1.2 MB of full-size cover JPGs where 50 KB copies existed). '' when none.
+     */
+    public static function source(?string $path, string $sizes): string
+    {
+        $set = $path ? self::srcset('/'.ltrim($path, '/')) : '';
+
+        return $set === '' ? '' : '<source type="image/webp" srcset="'.e($set).'" sizes="'.e($sizes).'">';
+    }
+
+    /**
      * Post body: every upload <img> becomes <picture> with WebP sizes (when present), lazy-loaded.
      * Rebuilt from parsed src/alt/width/height only, all re-escaped, so no attribute can be injected.
      */

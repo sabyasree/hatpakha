@@ -275,6 +275,26 @@ class GameTitlesTest extends TestCase
         $this->assertSame(WordGame::day($from), WordGame::day($from->copy()->addHours(20)), 'Same for everyone all day');
     }
 
+    /** D246: covers in cards and thumbnails come as small WebP copies when they exist. */
+    public function test_cover_thumbnails_use_the_small_copies(): void
+    {
+        $dir = public_path('media/covers/2026/11');
+        @mkdir($dir, 0777, true);
+        foreach (['.jpg', '.w480.webp', '.w960.webp'] as $ext) {
+            file_put_contents($dir.'/testcoverabc'.$ext, 'x');
+        }
+        try {
+            $this->assertStringContainsString('/media/covers/2026/11/testcoverabc.w480.webp 480w', \App\Support\Images::source('media/covers/2026/11/testcoverabc.jpg', '88px'));
+            $this->assertSame('', \App\Support\Images::source('media/covers/2026/11/none.jpg', '88px'));
+            $html = \Illuminate\Support\Facades\Blade::render('<x-post-row :post="$p" />', ['p' => $this->makePost(['slug' => 'cover-row', 'featured_image_path' => 'media/covers/2026/11/testcoverabc.jpg', 'featured_image_width' => 1536, 'featured_image_height' => 1024, 'status' => 'published', 'published_at' => '2026-11-19 10:00:00'])]);
+            $this->assertStringContainsString('<source type="image/webp" srcset="/media/covers/2026/11/testcoverabc.w480.webp 480w', $html);
+        } finally {
+            foreach (['.jpg', '.w480.webp', '.w960.webp'] as $ext) {
+                @unlink($dir.'/testcoverabc'.$ext);
+            }
+        }
+    }
+
     public function test_every_new_entry_is_fit_for_its_game(): void
     {
         $seen = [];

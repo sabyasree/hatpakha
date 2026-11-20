@@ -38,6 +38,8 @@ class AdsTest extends TestCase
         $post = $this->makePost(['slug' => 'a-story', 'format' => 'prose', 'body_html' => '<p>'.str_repeat('গল্পের লাইন। ', 50).'</p>']);
         $html = $this->get($post->url())->assertOk()->getContent();
         $this->assertStringContainsString('ca-pub-4627594058272769', $html);
+        $this->assertStringNotContainsString('src="https://pagead2.googlesyndication.com', $html, 'D246: the ad script starts after the page has drawn');
+        $this->assertStringContainsString("hpLater('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4627594058272769'", $html);
         $this->assertSame(3, substr_count($html, 'class="hp-ad-pending"'), 'Article, second article and the wide-screen side ad');
         $this->assertStringContainsString('>বিজ্ঞাপন<', $html);
         $this->assertGreaterThan(strpos($html, 'গল্পের লাইন'), strpos($html, 'data-ad-slot="3"'), 'Never before or inside the text');

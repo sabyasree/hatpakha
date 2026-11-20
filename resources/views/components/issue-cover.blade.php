@@ -6,7 +6,7 @@
 @endphp
 <span {{ $attributes->merge(['class' => "relative block flex-none overflow-hidden rounded-md bg-navy shadow-[3px_3px_0_#CB1B32] {$box}"]) }}>
     @if ($issue->cover_path)
-        <img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover">
+        <picture class="contents">{!! \App\Support\Images::source($issue->cover_path, '(max-width: 640px) 50vw, 240px') !!}<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover"></picture>
     @else
         <span class="absolute inset-0 flex flex-col justify-between p-3">
             <span class="font-hand text-white {{ $size === 'sm' ? 'text-sm' : 'text-xl' }} leading-none">হাতপাখা</span>

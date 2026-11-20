@@ -11,7 +11,7 @@
                 @foreach ($serials as $s)
                     <li><a href="{{ $s->url() }}" class="lift block overflow-hidden rounded-2xl border-2 border-navy bg-white hover:bg-peach-light">
                         @if ($s->cover_path)
-                            <img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover">
+                            <picture class="contents">{!! \App\Support\Images::source($s->cover_path, '(max-width: 640px) 100vw, 420px') !!}<img src="{{ asset($s->cover_path) }}" alt="" width="{{ $s->cover_width }}" height="{{ $s->cover_height }}" loading="lazy" class="aspect-[3/2] w-full object-cover"></picture>
                         @endif
                         <span class="block p-4">
                             <span class="text-sm font-bold text-red">{{ $s->genre }} · {{ $s->status === 'finished' ? 'সমাপ্ত' : 'প্রতি '.$s->dayName() }}</span>

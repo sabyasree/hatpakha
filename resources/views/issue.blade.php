@@ -15,7 +15,7 @@
                  edge, the fan in its corner, the name on its own navy panel, like the cover inside the magazine. --}}
             <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block aspect-[1/1.41] w-56 overflow-hidden rounded-md border-4 border-paper bg-sky-night shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
                 @if ($issue->cover_path)
-                    <img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover">
+                    <picture class="contents">{!! \App\Support\Images::source($issue->cover_path, '(max-width: 640px) 60vw, 320px') !!}<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover"></picture>
                 @else
                     <span class="absolute -right-[30%] top-[24%] aspect-square w-[80%] rounded-full" style="background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg)" aria-hidden="true"></span>
                 @endif

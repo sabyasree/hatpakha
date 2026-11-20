@@ -173,6 +173,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D243: games: one scale of points (300 a day), মাসের সেরা / বছরের সেরা / শব্দ-সাধক / হাতপাখা-রত্ন, levels, two riddles a day, প্রবাদ পূরণ, a year of words, games home and new leaderboard, easy games for guests
 - [x] D244: desk → ব্যবহারকারী shows how many sign in with Google and how many with a password
 - [x] D245: winners of a games title get an e-mail and a phone notice; desk can keep a player off the boards (and put them back)
+- [x] D246: home page lighter (small WebP covers in cards; Google scripts start after the page draws)
+- [ ] Owner: run PageSpeed on hatpakha.com again after D246 is live, and compare AdSense earnings a week later
 - [ ] Owner or a Bengali reader: read through the new word, riddle and proverb lists (database/content/*-2.php, riddles-hard.php, proverbs.php)
 - [ ] 1 January 2027: check that December's মাসের সেরা were written to the সম্মান-ফলক by themselves
 - [ ] Owner, about 3 December: compare AdSense earnings per page with the two weeks before D241; move the second ad back above the comments if they fell

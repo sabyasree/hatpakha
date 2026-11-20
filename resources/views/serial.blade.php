@@ -9,7 +9,7 @@
             <p class="mt-3 rounded-xl border-2 border-red bg-peach-light p-3 font-bold" role="status">প্রস্তাব: এখনও শুরু হয়নি। শুধু সম্পাদকেরা দেখতে পাচ্ছেন।</p>
         @endunless
         @if ($serial->cover_path)
-            <img src="{{ asset($serial->cover_path) }}" alt="" width="{{ $serial->cover_width }}" height="{{ $serial->cover_height }}" fetchpriority="high" class="mt-4 block h-auto max-h-[70vh] w-full rounded-2xl object-cover">
+            <picture class="contents">{!! \App\Support\Images::source($serial->cover_path, '(max-width: 760px) 100vw, 720px') !!}<img src="{{ asset($serial->cover_path) }}" alt="" width="{{ $serial->cover_width }}" height="{{ $serial->cover_height }}" fetchpriority="high" class="mt-4 block h-auto max-h-[70vh] w-full rounded-2xl object-cover"></picture>
             <p class="mt-1 text-right text-[11px] leading-none text-ink2">ছবি: এআই</p>
         @endif
         <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-bold">
