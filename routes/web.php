@@ -31,6 +31,9 @@ Route::get('/bondhu/{code}', fn (string $code) => redirect(url('/').'/?utm_sourc
 // D174, D177: the daily games and their leaderboard
 Route::get('/khela', [\App\Http\Controllers\GameController::class, 'word'])->name('game');
 Route::get('/khela/dhadha', [\App\Http\Controllers\GameController::class, 'riddle'])->name('game.riddle');
+Route::get('/khela/dhadha/{level}', [\App\Http\Controllers\GameController::class, 'riddle'])->whereIn('level', ['kothin'])->name('game.riddle.hard');   // D243
+Route::get('/khela/probad', [\App\Http\Controllers\GameController::class, 'proverb'])->name('game.probad');   // D243
+Route::get('/khela/aaj', [\App\Http\Controllers\GameController::class, 'hub'])->name('game.hub');   // D243
 Route::get('/khela/shobdojobdo', [\App\Http\Controllers\GameController::class, 'crossword'])->name('game.cross');
 Route::get('/khela/shobdojobdo/{level}', [\App\Http\Controllers\GameController::class, 'crossword'])->whereIn('level', ['sohoj', 'kothin'])->name('game.cross.level');   // D201
 Route::get('/khela/board', [\App\Http\Controllers\GameController::class, 'board'])->name('game.board');

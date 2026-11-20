@@ -49,6 +49,11 @@ class UsersTable
                         ? $query->whereIn('role', ['editor', 'chief_editor', 'admin']) : $query),
                 \Filament\Tables\Filters\Filter::make('reviewers')->label(__('শুধু যাচাইকারী'))->query(fn ($query) => $query->where('is_reviewer', true)),
                 TernaryFilter::make('spam_reason')->label(__('স্প্যাম চিহ্নিত'))->nullable(),
+                // D244: which way a person signs in
+                SelectFilter::make('signin')->label(__('কীভাবে সাইন ইন করেন'))->options(['google' => __('Google দিয়ে'), 'password' => __('শুধু ই-মেল আর পাসওয়ার্ডে')])
+                    ->query(fn ($query, array $data) => match ($data['value'] ?? null) {
+                        'google' => $query->whereNotNull('google_id'), 'password' => $query->whereNull('google_id'), default => $query,
+                    }),
             ])
             ->recordActions([
                 Action::make('resetLink')->label(__('পাসওয়ার্ড লিংক'))->icon('heroicon-o-key')->color('gray')

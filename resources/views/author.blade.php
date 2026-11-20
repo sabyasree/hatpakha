@@ -106,6 +106,14 @@
                 <div class="mt-6 max-w-[720px] rounded-2xl bg-peach-light p-5"><div class="text-lg font-extrabold">এই প্রোফাইল কি আপনার?</div>
                     <p class="mt-1 text-ink2">ছবি আর পরিচিতি যোগ করতে <a href="{{ \App\Support\Url::to('/contact-us') }}" class="font-bold underline">আমাদের জানান</a>; যাচাই করে প্রোফাইলটি আপনার অ্যাকাউন্টে জুড়ে দেওয়া হবে।</p></div>
             @endif
+            {{-- D243: the games' titles this writer holds --}}
+            @if ($author->user && ($gt = \App\Support\GameTitles::of($author->user)) && ($gt['years'] || $gt['months']))
+                <ul class="mt-5 flex flex-wrap gap-4" aria-label="খেলার খেতাব">
+                    @if ($gt['multi'])<li class="flex w-24 flex-col items-center text-center">{!! \App\Support\GameTitles::svg('multi', 1, 84, 'সেরা', count($gt['years'])) !!}<span class="mt-1 text-xs font-bold leading-tight">{{ $gt['multi'] }}</span></li>
+                    @elseif ($gt['years'])<li class="flex w-24 flex-col items-center text-center">{!! \App\Support\GameTitles::svg('year', 1, 84, \App\Support\Bn::year((int) end($gt['years']))) !!}<span class="mt-1 text-xs font-bold leading-tight">খেলায় বছরের সেরা</span></li>@endif
+                    @if ($gt['months'])<li class="flex w-24 flex-col items-center text-center">{!! \App\Support\GameTitles::svg('month', 1, 84, 'সেরা', count($gt['months'])) !!}<span class="mt-1 text-xs font-bold leading-tight">খেলায় মাসের সেরা</span></li>@endif
+                </ul>
+            @endif
             {{-- D178: the badges this writer has earned on Hatpakha --}}
             @if ($author->user && ($earned = \App\Support\Badges::earned($author->user)))
                 <ul class="mt-5 flex flex-wrap gap-4" aria-label="হাতপাখার ব্যাজ">

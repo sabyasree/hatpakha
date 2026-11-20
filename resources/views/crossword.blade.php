@@ -5,13 +5,15 @@
     use App\Support\Url;
     use App\Support\WordGame;
     $level = $level ?? 'medium';
-    [$levelName, , $levelKey, , , , $full, $cost] = WordGame::LEVELS[$level];
+    [$levelName, , $levelKey] = WordGame::LEVELS[$level];
+    [$full, $cost, $least] = \App\Support\GameScores::crossPoints($level, $game['date']);
+    $locked = ! empty($locked);
     $payload = ['no' => $game['no'], 'date' => $game['date'], 'size' => $game['size'], 'url' => WordGame::crosswordUrl($level), 'bank' => $game['bank'],
-        'level' => $level, 'levelName' => $levelName, 'key' => $levelKey, 'full' => $full, 'cost' => $cost,
+        'level' => $level, 'levelName' => $levelName, 'key' => $levelKey, 'full' => $full, 'cost' => $cost, 'least' => $least,
         'words' => array_map(fn ($w) => ['s' => base64_encode(json_encode($w['letters'], JSON_UNESCAPED_UNICODE)), 'n' => count($w['letters']), 'clue' => $w['clue'], 'row' => $w['row'], 'col' => $w['col'], 'down' => $w['down']], $game['words'])];
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-jobdo @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jobdo @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
         @include('partials.game-nav', ['on' => 'cross'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -20,15 +22,19 @@
             </div>
             <p class="text-right text-sm font-bold text-ink2">ছক নং {{ Bn::num((string) $game['no']) }}</p>
         </div>
-        {{-- D201: three levels a day, all open --}}
+        {{-- D201: three levels a day; D243: সহজ is open to all, the other two need an account --}}
         <nav class="mt-3 flex gap-2" aria-label="ধাপ">
-            @foreach (WordGame::LEVELS as $k => [$n, , , , , , $pts])
+            @foreach (WordGame::LEVELS as $k => [$n])
                 <a href="{{ WordGame::crosswordUrl($k) }}" @if ($k === $level) aria-current="page" @endif
                    class="flex min-h-11 flex-1 flex-col items-center justify-center rounded-2xl border-2 border-navy px-2 py-1 text-center font-bold leading-tight {{ $k === $level ? 'bg-navy text-white' : 'bg-white' }}">
-                    <span>{{ $n }}</span><span class="text-xs font-semibold">{{ Bn::num((string) $pts) }} পয়েন্ট</span>
+                    <span>{{ $n }}@guest @if ($k !== 'easy') @include('partials.lock-icon')@endif @endguest</span><span class="text-xs font-semibold">{{ Bn::num((string) \App\Support\GameScores::crossPoints($k, $game['date'])[0]) }} পয়েন্ট</span>
                 </a>
             @endforeach
         </nav>
+        @guest<p class="mt-2 text-ink2">অ্যাকাউন্ট ছাড়া সহজটা খেলা যায়; পয়েন্ট জমাতে আর বাকি দুটো খেলতে অ্যাকাউন্ট লাগে।</p>@endguest
+        @if ($locked)
+            @include('partials.game-lock', ['what' => $levelName.' শব্দজব্দ', 'easy' => ['সহজ শব্দজব্দ', WordGame::crosswordUrl('easy')]])
+        @else
         <p class="mt-3 text-ink2">একটা ঘরে টিপুন, তারপর নিচের অক্ষরে টিপুন। সূত্র মিলিয়ে সব ঘর ভরুন।
             @if ($level === 'easy') ছোট ছক, চেনা ছোট শব্দ। @elseif ($level === 'hard') বড় ছক, বইয়ের পাতার শব্দ; নিচে কয়েকটা বাড়তি অক্ষরও আছে। @endif</p>
 
@@ -62,19 +68,23 @@
             <p class="mt-3 font-bold">নতুন ছক আসবে রাত বারোটায়।</p>
         </div>
 
+        @endif
         <noscript><p class="mt-5 rounded-xl border-2 border-red bg-peach-light p-4 font-bold">খেলাটি চালাতে ব্রাউজারে জাভাস্ক্রিপ্ট চালু থাকতে হবে।</p></noscript>
-        <details class="mt-6 rounded-2xl border border-rule bg-white p-4">
-            <summary class="flex min-h-11 cursor-pointer items-center font-bold">কীভাবে খেলবেন</summary>
+        <details class="mt-6 rounded-2xl border-2 border-navy bg-white p-4">
+            <summary class="flex min-h-11 cursor-pointer items-center justify-between font-bold">কীভাবে খেলবেন <span aria-hidden="true">▾</span></summary>
             <ul class="mt-2 list-disc space-y-1 ps-6 text-ink2">
                 <li>ছকের ঘরে বা নিচের সূত্রে টিপলে শব্দটা বাছা হয়। একই ঘরে আবার টিপলে দিক বদলায় (পাশাপাশি ↔ উপর-নিচ)।</li>
                 <li>এক ঘরে একটা অক্ষর: “প্র”, “ন্ত”, “কা” প্রতিটাই একটা অক্ষর।</li>
                 <li>“মিলিয়ে দেখুন” টিপলে ভুল ঘরগুলো লাল হয়। “এই ঘরটা দেখান” একটা অক্ষর বসিয়ে দেয় ({{ Bn::num((string) $cost) }} পয়েন্ট কমে)।</li>
-                <li>রোজ তিনটে ছক: সহজ (৬০ পয়েন্ট), মাঝারি (১০০), কঠিন (১৫০)। তিনটেই খেলা যায়।</li>
+                <li>রোজ তিনটে ছক: সহজ ({{ Bn::num((string) \App\Support\GameScores::crossPoints('easy', $game['date'])[0]) }} পয়েন্ট), মাঝারি ({{ Bn::num((string) \App\Support\GameScores::crossPoints('medium', $game['date'])[0]) }}), কঠিন ({{ Bn::num((string) \App\Support\GameScores::crossPoints('hard', $game['date'])[0]) }})। তিনটেই খেলা যায়, তিনটের পয়েন্টই জমে।</li>
             </ul>
         </details>
-        <script type="application/json" data-jobdo-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+        @unless ($locked)<script type="application/json" data-jobdo-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>@endunless
         <x-ad-slot spot="list" :height="250" class="!mt-16" />   {{-- D237: far below the grid --}}
     </section>
+    @unless ($locked)
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-jobdo.js') }}?v=3" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-jobdo.js') }}?v=4" defer></script>
+    @endunless
 </x-layouts.app>

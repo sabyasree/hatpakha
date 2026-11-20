@@ -1,0 +1,2 @@
+{{-- D243: a padlock in the palette's navy (the emoji is yellow). Decorative: the words beside it say "অ্যাকাউন্ট লাগে". --}}
+<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" class="inline-block flex-none align-[-2px]"><rect x="4" y="10.5" width="16" height="11" rx="2.5" fill="currentColor"/><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>

@@ -1,0 +1,92 @@
+{{-- D243: today's games in one place (with a game designer and a UX designer): what is done, what is left, today's
+     points and who is ahead this month. A guest sees which games are open and which need an account. --}}
+@php
+    use App\Support\Bn;
+    use App\Support\GameScores;
+    use App\Support\Url;
+    use App\Support\WordGame;
+    $day = now('Asia/Kolkata')->toDateString();
+    $got = $today['games'] ?? [];
+    $cards = [
+        ['word', 'শব্দ-খেলা', 'এলোমেলো অক্ষর সাজিয়ে পাঁচটা শব্দ', Url::to('/khela'), 100, true, ['শ', 'ব্দ']],
+        ['riddle', 'ধাঁধা', 'রোজ দুটো: সহজ আর কঠিন', Url::to('/khela/dhadha'), 100, true, ['ধাঁ', 'ধা']],
+        ['cross', 'শব্দজব্দ', 'ছোট শব্দছক, তিন ধাপ', WordGame::crosswordUrl($me ? 'medium' : 'easy'), 100, true, ['ছ', 'ক']],
+        ['probad', 'প্রবাদ পূরণ', 'চারটে প্রবাদ, একটা করে শব্দ নেই', Url::to('/khela/probad'), 100, false, ['প্র', 'বা']],
+    ];
+    $groups = collect($today['groups'] ?? [])->keyBy('key');
+    $lead = $month['rows'][0] ?? null;
+    $mine = $month['mine'] ?? null;
+@endphp
+<x-layouts.app :seo="$seo">
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6">
+        @include('partials.game-nav', ['on' => 'hub'])
+        <p class="font-hand text-2xl text-red">রোজ চারটে খেলা</p>
+        <h1 class="font-display text-4xl font-extrabold leading-tight">আজকের খেলা</h1>
+
+        @if ($me)
+            <a href="{{ Url::to('/account/profile') }}#games" class="mt-4 grid grid-cols-3 items-center rounded-3xl border-2 border-navy bg-white px-2 py-3 text-center shadow-[4px_4px_0_#13212C]">
+                <span><span class="block font-display text-3xl font-extrabold leading-none">{{ Bn::num((string) $streak['now']) }}</span><span class="text-sm font-bold text-ink2">দিন টানা খেলছেন</span></span>
+                <span class="border-x-2 border-rule"><span class="block font-display text-3xl font-extrabold leading-none text-red">{{ Bn::num((string) $today['total']) }}<span class="text-lg text-navy"> / {{ Bn::num((string) GameScores::DAY_MAX) }}</span></span><span class="text-sm font-bold text-ink2">আজকের পয়েন্ট</span></span>
+                <span><span class="block font-display text-xl font-extrabold leading-tight">{{ $level['name'] }}</span><span class="text-sm font-bold text-ink2">আপনার স্তর</span></span>
+            </a>
+        @else
+            <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট, লিডারবোর্ড আর খেতাবের জন্য অ্যাকাউন্ট লাগে।</p>
+        @endif
+
+        <ul class="mt-5 grid gap-3">
+            @foreach ($cards as [$key, $name, $line, $href, $max, $open, $tiles])
+                @php
+                    $g = $groups[$key] ?? null;
+                    $isDone = (bool) ($g['done'] ?? false);
+                    $needsAccount = ! $me && ! $open;
+                    // ধাঁধা and শব্দজব্দ have more than one part a day: say how much is still to be had
+                    $more = $isDone && $g['points'] < 100 && in_array($key, ['riddle', 'cross'], true)
+                        && count(array_intersect_key($got, array_flip(GameScores::GROUPS[$key][1]))) < count(GameScores::GROUPS[$key][1]);
+                @endphp
+                <li>
+                    <a href="{{ $href }}" class="flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $isDone && ! $more ? 'bg-peach-light' : 'bg-white shadow-[4px_4px_0_#13212C]' }}">
+                        <span class="flex flex-none gap-0.5" aria-hidden="true">@foreach ($tiles as $t)<span class="flex h-11 w-10 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
+                        <span class="min-w-0 flex-1 leading-tight">
+                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}</span>
+                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)অ্যাকাউন্ট লাগে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
+                        </span>
+                        @if ($isDone && ! $more)
+                            <span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
+                        @elseif ($needsAccount)
+                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') খুলুন</span>
+                        @else
+                            <span class="flex h-12 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
+                        @endif
+                    </a>
+                </li>
+            @endforeach
+        </ul>
+        <p class="mt-3 text-ink2">প্রতিটি খেলা দিনে ১০০ পয়েন্ট। দিনের সেরা তিনটে খেলা গোনা হয়, তাই পুরো দিন = ৩০০।</p>
+
+        {{-- who is ahead this month --}}
+        <div class="mt-6 rounded-3xl border-2 border-navy bg-sky-tint p-4">
+            @if ($lead)
+                <p class="font-hand text-2xl text-red">এ মাসে এগিয়ে</p>
+                <p class="flex items-center gap-2 font-serif text-xl font-bold"><span class="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-red font-sans text-base font-extrabold text-white">১</span> {{ $lead['name'] }} <span class="font-sans text-base font-extrabold">· {{ Bn::num(number_format($lead['points'])) }}</span></p>
+                @if ($mine && $mine['rank'] > 1)<p class="mt-1 text-lg">আপনি {{ Bn::num((string) $mine['rank']) }} নম্বরে@if ($mine['gap'])। আর {{ Bn::num(number_format($mine['gap'])) }} পয়েন্ট পেলে {{ Bn::num((string) ($mine['rank'] - 1)) }} নম্বরে@endif।</p>
+                @elseif ($mine && $mine['rank'] === 1)<p class="mt-1 text-lg font-bold">আপনিই সবার আগে।</p>@endif
+            @else
+                <p class="font-hand text-2xl text-red">এ মাসে এখনও কেউ খেলেননি</p>
+                <p class="text-lg">প্রথম নামটা আপনার হোক।</p>
+            @endif
+            <a href="{{ Url::to('/khela/board') }}" class="mt-3 flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">কারা এগিয়ে, পুরো তালিকা দেখুন</a>
+        </div>
+
+        @guest
+            <div class="mt-6 rounded-3xl border-2 border-navy bg-peach-light p-4">
+                <p class="text-lg font-bold">অ্যাকাউন্ট খুললে চারটে খেলাই খোলে, পয়েন্ট জমে, লিডারবোর্ডে নাম ওঠে।</p>
+                <a href="{{ Url::to('/register') }}?next={{ rawurlencode('/khela/aaj/') }}" class="mt-3 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">বিনামূল্যে অ্যাকাউন্ট খুলুন</a>
+                <p class="mt-2 text-center"><a href="{{ Url::to('/login') }}?next={{ rawurlencode('/khela/aaj/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">আগে থেকে আছে? সাইন ইন</a></p>
+            </div>
+        @endguest
+
+        <p class="mt-6 font-bold">নতুন খেলা আসে রোজ রাত বারোটায়।</p>
+        {{-- one ad, under everything a player taps --}}
+        <x-ad-slot spot="list" :height="250" class="!mt-12" />
+    </section>
+</x-layouts.app>

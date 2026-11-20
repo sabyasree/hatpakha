@@ -342,6 +342,7 @@ class MarketingPlanTest extends TestCase
         MarketingPlan::plan($friday);
         $this->assertFalse(SocialPost::where('plan_key', '2026-11-20:board')->exists(), 'Two names are not a top three');
         $users[2]->forceFill(['board_hidden' => false])->save();
+        \App\Support\GameScores::forget();   // the boards are kept for two minutes (D243); the settings page clears them the same way
         MarketingPlan::plan($friday);
         $board = SocialPost::where('plan_key', '2026-11-20:board')->firstOrFail();
         $this->assertSame('17:00', $board->slot_at->timezone('Asia/Kolkata')->format('H:i'));

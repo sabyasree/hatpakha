@@ -168,10 +168,10 @@ class AuthController extends Controller
             return redirect(Url::to('/login/2fa'));
         }
 
-        return $this->finishLogin($request, $user, true);
+        return $this->finishLogin($request, $user, true, 'google');
     }
 
-    private function finishLogin(Request $request, User $user, bool $remember)
+    private function finishLogin(Request $request, User $user, bool $remember, string $via = 'password')
     {
         // D121: an account the owner confirmed as a bot can't sign in.
         if ($user->bot_review === 'bot') {
@@ -180,7 +180,7 @@ class AuthController extends Controller
         }
         Auth::login($user, $remember);
         $request->session()->regenerate();
-        $user->forceFill(['last_login_at' => now()])->saveQuietly();
+        $user->forceFill(['last_login_at' => now(), 'last_login_via' => $via])->saveQuietly();   // D244: which way, for the desk's count
 
         return redirect()->intended(Url::to('/account'));
     }

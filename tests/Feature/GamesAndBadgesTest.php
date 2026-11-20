@@ -18,6 +18,13 @@ class GamesAndBadgesTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** A fixed day before the new games and points (D243), so these tests read the same on any day. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Carbon::setTestNow(Carbon::parse('2026-11-18 12:00', 'Asia/Kolkata'));
+    }
+
     public function test_the_riddle_and_the_crossword_are_the_same_for_everyone_and_well_formed(): void
     {
         $day = Carbon::parse('2026-12-01', 'Asia/Kolkata');
@@ -51,11 +58,14 @@ class GamesAndBadgesTest extends TestCase
 
     public function test_game_pages_load_and_do_not_print_answers_in_plain_sight(): void
     {
-        $this->get('/khela/dhadha/')->assertOk()->assertSee('ধাঁধা')->assertSee('js/hp-khela.js', false)->assertSee('লিডারবোর্ড');
+        $this->get('/khela/dhadha/')->assertOk()->assertSee('ধাঁধা')->assertSee('js/hp-khela.js', false)->assertSee('কারা এগিয়ে');
         $c = WordGame::crossword();
-        $page = $this->get('/khela/shobdojobdo/')->assertOk()->assertSee('শব্দজব্দ')->assertSee('js/hp-jobdo.js', false)->assertSee($c['words'][0]['clue'])->getContent();
-        $this->assertStringNotContainsString('"'.$c['words'][0]['answer'].'"', $page);
         $this->get('/khela/board/')->assertOk()->assertSee('লিডারবোর্ড')->assertSee('এখনও কেউ খেলেননি');
+        // D243: the middle and hard crosswords need an account; a guest is shown what an account gives and the easy one
+        $this->get('/khela/shobdojobdo/')->assertOk()->assertSee('শব্দজব্দ')->assertDontSee('js/hp-jobdo.js', false)->assertDontSee($c['words'][0]['clue'])
+            ->assertSee('অ্যাকাউন্ট খুলুন')->assertSee('/khela/shobdojobdo/sohoj/', false);
+        $page = $this->actingAs(User::factory()->create())->get('/khela/shobdojobdo/')->assertOk()->assertSee('js/hp-jobdo.js', false)->assertSee($c['words'][0]['clue'])->getContent();
+        $this->assertStringNotContainsString('"'.$c['words'][0]['answer'].'"', $page);
     }
 
     public function test_scores_of_signed_in_players_make_the_leaderboard_once_a_day(): void
@@ -170,15 +180,16 @@ class GamesAndBadgesTest extends TestCase
 
         $hard = WordGame::crossword(null, 'hard');
         $this->get('/khela/shobdojobdo/')->assertOk()->assertSee('সহজ')->assertSee('কঠিন')->assertSee('/khela/shobdojobdo/kothin/', false);
-        $page = $this->get('/khela/shobdojobdo/kothin/')->assertOk()->assertSee($hard['words'][0]['clue'])->assertSee('"key":"cross3"', false)
+        $this->get('/khela/shobdojobdo/sohoj/')->assertOk()->assertSee('"key":"cross1"', false);   // open to a guest
+        $this->get('/khela/shobdojobdo/kothin/')->assertOk()->assertDontSee($hard['words'][0]['clue'])->assertSee('অ্যাকাউন্ট খুলুন');
+        $u = User::factory()->create();
+        $page = $this->actingAs($u)->get('/khela/shobdojobdo/kothin/')->assertOk()->assertSee($hard['words'][0]['clue'])->assertSee('"key":"cross3"', false)
             ->assertSee('<link rel="canonical" href="'.\App\Support\Url::to('/khela/shobdojobdo/kothin').'"', false)->getContent();
         $this->assertStringNotContainsString('"'.$hard['words'][0]['answer'].'"', $page);
-        $this->get('/khela/shobdojobdo/sohoj/')->assertOk()->assertSee('"key":"cross1"', false);
         $this->get('/khela/shobdojobdo/majhari/')->assertNotFound();
 
         $today = now('Asia/Kolkata')->toDateString();
-        $u = User::factory()->create();
-        $this->actingAs($u)->postJson('/khela/score', ['game' => 'cross1', 'day' => $today, 'seconds' => 40, 'hints' => 2, 'solved' => true])->assertJson(['points' => 50]);
+        $this->postJson('/khela/score', ['game' => 'cross1', 'day' => $today, 'seconds' => 40, 'hints' => 2, 'solved' => true])->assertJson(['points' => 50]);
         $this->postJson('/khela/score', ['game' => 'cross', 'day' => $today, 'seconds' => 40, 'hints' => 0, 'solved' => true])->assertJson(['points' => 100]);
         $this->postJson('/khela/score', ['game' => 'cross3', 'day' => $today, 'seconds' => 40, 'hints' => 1, 'solved' => true])->assertJson(['points' => 125]);
         $this->assertSame(275, (int) DB::table('game_scores')->where('user_id', $u->id)->sum('points'), 'All three count on the same day');

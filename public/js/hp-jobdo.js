@@ -7,7 +7,7 @@
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const dec = (b) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0))));
     const KEY = 'hp-jobdo' + (data.level && data.level !== 'medium' ? '-' + data.level : '');   // D201: each level keeps its own progress
-    const FULL = data.full || 100, COST = data.cost || 10, GAME = data.key || 'cross';
+    const FULL = data.full || 100, COST = data.cost || 10, LEAST = data.least || 10, GAME = data.key || 'cross';
     let st = {};
     try { st = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { st = {}; }
     if (st.date !== data.date) st = { date: data.date, fill: {}, hints: 0, start: Date.now(), end: null, gaveUp: false, sent: false };
@@ -108,7 +108,7 @@
     const result = () => {
         const secs = Math.max(1, Math.round(((st.end || Date.now()) - st.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
-        const points = st.gaveUp ? 0 : Math.max(10, FULL - COST * st.hints);
+        const points = st.gaveUp ? 0 : Math.max(LEAST, FULL - COST * st.hints);
         return { secs, time, points, text: 'হাতপাখা শব্দজব্দ #' + bn(data.no) + (data.levelName ? ' (' + data.levelName + ')' : '') + '\n' + (st.gaveUp ? 'আজ পারিনি' : bn(points) + ' পয়েন্ট · ' + time + (st.hints ? ' · ' + bn(st.hints) + 'টি ঘর দেখে' : ' · কোনো সাহায্য ছাড়া')) + '\nআপনিও খেলুন: ' + data.url };
     };
     const finish = (ok) => {
@@ -122,14 +122,12 @@
         $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(r.text);
         if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), GAME, words.map((w) => ({ word: w.cells.map((k) => sol[k]).join(''), clue: w.clue })));
         const url = root.dataset.scoreUrl;
-        if (url && !st.sent) {
+        if (url) {
             fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },
                 body: JSON.stringify({ game: GAME, day: data.date, seconds: r.secs, hints: st.hints, solved: !st.gaveUp }) })
                 .then((x) => x.ok ? x.json() : null).then((j) => {
                     if (!j || !j.ok) return;
-                    st.sent = true; save();
-                    const el = root.querySelector('[data-khela-board-msg]');
-                    if (el) el.textContent = '✓ লিডারবোর্ডে উঠল: আজ ' + bn(j.points) + ' পয়েন্ট';
+                    if (window.hpAfter) window.hpAfter(root, j);
                 }).catch(() => {});
         }
         if (ok) $('done').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
