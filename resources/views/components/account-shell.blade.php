@@ -38,6 +38,16 @@
 </nav>
 
 <div class="mx-auto max-w-[1000px] px-5 pb-8 pt-5">
+    @if ($tab !== 'comments' && ($newWords = \App\Http\Controllers\AccountController::newComments($user)) > 0)
+        {{-- D253: readers' words on my pieces and replies to my comments, since I last looked --}}
+        <a href="{{ Url::to('/account/comments') }}" class="mb-5 flex items-center gap-3 rounded-2xl border-2 border-navy bg-sky-tint p-4 font-bold hover:bg-white">
+            <span class="flex h-10 min-w-10 flex-none items-center justify-center rounded-full bg-navy px-2 text-lg text-white" aria-hidden="true">{{ \App\Support\Bn::num((string) $newWords) }}</span>
+            <span class="flex-1">{{ __('নতুন মতামত ও উত্তর') }}<span class="block text-sm font-medium text-ink2">{{ __('পড়ুন, এখান থেকেই উত্তর দিন') }}</span></span>
+            <span aria-hidden="true">›</span>
+        </a>
+    @elseif ($tab !== 'comments')
+        <a href="{{ Url::to('/account/comments') }}" class="mb-4 inline-flex min-h-11 items-center gap-1 font-bold text-sky-night underline">{{ __('মতামত ও উত্তর দেখুন') }} ›</a>
+    @endif
     @if ($acct['toReview'] > 0 && $tab !== 'review')
         {{-- D168: pieces the desk asked this reviewer to read --}}
         <a href="{{ Url::to('/account/review') }}" class="mb-5 flex items-center gap-3 rounded-2xl border-2 border-red bg-peach-light p-4 font-bold hover:bg-white">

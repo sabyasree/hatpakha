@@ -48,6 +48,39 @@ class AccountController extends Controller
     }
 
     /**
+     * D253 (owner: "in the profile they can see the comments and replies, and reply from there too"): readers' words on
+     * my pieces (for a writer) and my own comments with the replies they got (for anyone), newest first, each with a
+     * reply box. What came since the last visit is marked "নতুন"; opening the page counts as seen.
+     */
+    public function comments(Request $request)
+    {
+        $user = $request->user();
+        $replies = fn ($q) => $q->with('user')->where('status', 'approved')->oldest();
+        $postIds = \Illuminate\Support\Facades\DB::table('author_post')->join('authors', 'authors.id', '=', 'author_post.author_id')
+            ->where('authors.user_id', $user->id)->pluck('author_post.post_id');
+        $onMine = $postIds->isEmpty() ? collect() : \App\Models\Comment::with(['post', 'user', 'replies' => $replies])->whereIn('post_id', $postIds)
+            ->whereNull('parent_id')->where('status', 'approved')->latest()->limit(40)->get();
+        $mineAnswered = \App\Models\Comment::with(['post', 'user', 'replies' => $replies])->where('user_id', $user->id)->whereNull('parent_id')
+            ->where('status', 'approved')->whereNotIn('post_id', $postIds)->whereHas('replies', fn ($q) => $q->where('status', 'approved'))->latest()->limit(30)->get();
+        $seen = $user->comments_seen_at;
+        $user->forceFill(['comments_seen_at' => now()])->saveQuietly();
+
+        return view('account.comments', self::shell($request, 'comments', 'মতামত ও উত্তর') + compact('onMine', 'mineAnswered', 'seen') + ['writerIds' => $postIds->isEmpty() ? [] : [$user->id]]);
+    }
+
+    /** How many readers' words on my pieces, and replies to my comments, came since I last looked. */
+    public static function newComments(\App\Models\User $user): int
+    {
+        $since = $user->comments_seen_at ?? now()->subDays(30);
+        $postIds = \Illuminate\Support\Facades\DB::table('author_post')->join('authors', 'authors.id', '=', 'author_post.author_id')->where('authors.user_id', $user->id)->pluck('author_post.post_id');
+        $onMine = $postIds->isEmpty() ? 0 : \App\Models\Comment::whereIn('post_id', $postIds)->where('status', 'approved')->where('created_at', '>', $since)->where(fn ($q) => $q->whereNull('user_id')->orWhere('user_id', '!=', $user->id))->count();
+        $toMe = \App\Models\Comment::where('status', 'approved')->where('created_at', '>', $since)->where(fn ($q) => $q->whereNull('user_id')->orWhere('user_id', '!=', $user->id))
+            ->whereNotIn('post_id', $postIds)->whereIn('parent_id', \App\Models\Comment::where('user_id', $user->id)->select('id'))->count();
+
+        return $onMine + $toMe;
+    }
+
+    /**
      * D166: "আমার" opens "আমার লেখা" for a writer and "আমার পড়া" for a reader (who never sees empty writing pages).
      * আমার লেখা: what needs the writer first (sent back, drafts), then with the editor, then published pieces with
      * WhatsApp, certificate and read counts, the reader numbers, and the writer page with its link.

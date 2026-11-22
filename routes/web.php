@@ -164,6 +164,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/review/{review}', [\App\Http\Controllers\ReviewController::class, 'submit'])->whereNumber('review')->middleware('throttle:10,1');
     Route::post('/account/review/{review}/after-ai', [\App\Http\Controllers\ReviewController::class, 'afterAi'])->whereNumber('review')->middleware('throttle:10,1');
     Route::get('/account/stats', [\App\Http\Controllers\AccountController::class, 'stats'])->name('account.stats');   // "আমার পাঠক"
+    Route::get('/account/comments', [\App\Http\Controllers\AccountController::class, 'comments'])->name('account.comments');   // D253: মতামত ও উত্তর
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
     Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
         $request->session()->forget('view_as');

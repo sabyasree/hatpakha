@@ -34,6 +34,7 @@ class CommentController extends Controller
             'body' => ['required', 'string', 'min:2', 'max:3000'],
             'not_featured' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'integer'],
+            'from' => ['nullable', 'in:account'],
         ], [
             'name.required' => 'আপনার নাম লিখুন।',
             'body.required' => 'মন্তব্য লিখুন।',
@@ -54,7 +55,7 @@ class CommentController extends Controller
                 throw ValidationException::withMessages(['body' => 'যে মন্তব্যের উত্তর দিচ্ছিলেন, সেটি আর নেই।'])->redirectTo($back);
             }
             $parent = $parent->parent_id ? ($parent->parent ?? $parent) : $parent;
-            $back = $post->url().'#comment-'.$parent->id;
+            $back = ($data['from'] ?? null) === 'account' && $user ? \App\Support\Url::to('/account/comments').'#comment-'.$parent->id : $post->url().'#comment-'.$parent->id;
         }
         $status = Comment::statusFor($user);
         $comment = Comment::create([

@@ -93,6 +93,38 @@ class CommentsAndSharingTest extends TestCase
         $this->assertNotNull($mine->fresh()->reply_told_at);
     }
 
+    /** D253: the account shows readers' words and replies, and a reply sent from there comes back there. */
+    public function test_the_account_shows_comments_and_replies_and_takes_a_reply(): void
+    {
+        $reader = User::factory()->create(['name' => 'Anirban', 'email_verified_at' => now()]);
+        $c = Comment::create(['post_id' => $this->post->id, 'user_id' => $reader->id, 'author_name' => 'Anirban', 'body' => 'শেষ লাইনটা মনে থাকবে।', 'status' => 'approved']);
+        $this->actingAs($this->writer)->get('/account/')->assertDontSee('আপনি এখন হাতপাখার সদস্য', false);   // a writer with pieces (from the old site) is not welcomed as new
+        $this->actingAs($this->writer)->get('/account/reading/')->assertSee('নতুন মতামত ও উত্তর');
+        $this->get('/account/comments/')->assertOk()->assertSee('আপনার লেখায় পাঠকের মতামত')->assertSee('শেষ লাইনটা মনে থাকবে।')->assertSee('নতুন')
+            ->assertSee('name="from" value="account"', false);
+        $this->get('/account/reading/')->assertDontSee('নতুন মতামত ও উত্তর')->assertSee('মতামত ও উত্তর দেখুন');   // seen now
+        $started = \Illuminate\Support\Facades\Crypt::encryptString((string) now()->subMinute()->timestamp);
+        $this->post('/comment/'.$this->post->id, ['body' => 'ধন্যবাদ!', 'parent_id' => $c->id, 'from' => 'account', 'started' => $started])
+            ->assertRedirect(\App\Support\Url::to('/account/comments').'#comment-'.$c->id);
+        Comment::where('parent_id', $c->id)->update(['status' => 'approved']);
+        $this->actingAs($reader)->get('/account/reading/')->assertSee('নতুন মতামত ও উত্তর');
+        $this->get('/account/comments/')->assertSee('আপনার মতামতের উত্তর')->assertSee('ধন্যবাদ!');
+    }
+
+    /** D253: on release, the last week's published comments are told to their writers once more. */
+    public function test_the_last_weeks_comments_are_queued_again_once(): void
+    {
+        $old = Comment::create(['post_id' => $this->post->id, 'author_name' => 'A', 'body' => 'আগের', 'status' => 'approved', 'writer_told_at' => now(), 'created_at' => now()->subDays(10)]);
+        $week = Comment::create(['post_id' => $this->post->id, 'author_name' => 'B', 'body' => 'এ সপ্তাহের', 'status' => 'approved', 'writer_told_at' => now(), 'created_at' => now()->subDays(3)]);
+        $migration = require database_path('migrations/2026_11_22_000200_comments_page_and_catch_up.php');
+        \Illuminate\Support\Facades\Schema::table('users', fn ($t) => $t->dropColumn('comments_seen_at'));
+        $migration->up();
+        $this->assertNull($week->fresh()->writer_told_at);
+        $this->assertNotNull($old->fresh()->writer_told_at);
+        $this->assertSame(1, CommentNews::send());
+        Notification::assertSentTo($this->writer, TemplateMail::class, fn ($n) => $n->key === 'new_comments' && str_contains($n->values['{মন্তব্য}'], 'এ সপ্তাহের'));
+    }
+
     public function test_guests_react_without_an_account_once_a_phone(): void
     {
         $this->withCredentials()->withCookie('hp_dev', str_repeat('a', 32))->postJson('/feel/'.$this->post->id, ['feeling' => 'touched'])->assertOk()->assertJson(['feeling' => 'touched', 'counts' => ['touched' => 1]]);
