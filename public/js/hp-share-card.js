@@ -91,4 +91,7 @@
             await navigator.share({ files: [f], text: current.title + ' — ' + current.by + '\n' + current.url });
         } catch (e) { /* the writer closed the share sheet */ }
     });
+    // D252: the card page opens the card at once (the writer came from the "your piece is live" e-mail)
+    const now = document.querySelector('[data-share-card][data-open-now]');
+    if (now) now.click();
 })();

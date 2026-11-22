@@ -171,14 +171,9 @@ class ReaderFeaturesTest extends TestCase
         $this->assertStringContainsString('overflow-x-auto', $html);
         $this->assertStringContainsString('পরের লেখা ক', $html);
 
-        // A guest's tap on a feeling is not lost on the way through the login.
-        $this->post('/feel/'.$post->id, ['feeling' => 'think'])->assertRedirect();
-        $this->assertSame(0, (int) $post->fresh()->likes_count);
-        $reader = User::factory()->create(['email_verified_at' => now()]);
-        $this->actingAs($reader)->get('/p/')->assertOk()->assertSee('আপনার কথাটা লেখকের কাছে পৌঁছবে');
-        $this->assertSame('think', \App\Support\Feelings::mine($reader, $post));
-        $this->get('/p/');
-        $this->assertSame(1, (int) $post->fresh()->likes_count, 'Recorded once');
+        // D252: a guest's tap is recorded at once, without signing in, and counted once a phone
+        $this->post('/feel/'.$post->id, ['feeling' => 'think'])->assertRedirect($post->url().'#reactions')->assertCookie('hp_dev');
+        $this->assertSame(1, (int) $post->fresh()->likes_count);
     }
 
     public function test_a_childrens_piece_has_the_card_without_comments_or_the_first_ad(): void

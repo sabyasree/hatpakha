@@ -68,7 +68,9 @@ class PostController extends Controller
             $related = collect([$same])->concat($related)->take(4)->values();
         }
 
-        $comments = $post->comments()->with('user')->where('status', 'approved')->oldest()->limit(50)->get();
+        // D252: comments with their published replies under them (one level)
+        $comments = $post->comments()->with(['user', 'replies' => fn ($q) => $q->with('user')->where('status', 'approved')->oldest()])
+            ->whereNull('parent_id')->where('status', 'approved')->oldest()->limit(50)->get();
 
         $crumbs = [['হাতপাখা', url('/').'/']];
         if ($post->section) {

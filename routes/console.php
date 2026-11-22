@@ -111,4 +111,4 @@ Schedule::call(function () {
 })->name('handed-over jobs')->everyTenMinutes()->withoutOverlapping(20);
 
 // D217 (owner: "yes, add daily comment email for writers"): one e-mail a day to a writer whose pieces got new comments.
-Schedule::call(fn () => \App\Support\CommentNews::send())->name('comments told to writers')->dailyAt('18:40')->timezone('Asia/Kolkata');
+Schedule::call(function () { \App\Support\CommentNews::send(); \App\Support\CommentNews::replies(); \App\Support\PieceLive::send(); })->name('comments told to writers')->everyTenMinutes()->withoutOverlapping(10);   // D217, D252: comments, replies, a piece going live

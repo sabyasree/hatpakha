@@ -30,23 +30,41 @@ class FeelingsController extends Controller
     }
 
     /**
-     * D241: a guest tapped a feeling. It is kept in their session and they are sent to log in; back on the piece it is
-     * recorded (PostController) and the card asks for a line. A POST with the form token: never a link that reacts.
+     * D241, D252: a reader without an account taps a feeling. Since D252 it is recorded at once (no sign-in): counted
+     * once a phone by a random id the phone keeps in a cookie. With JavaScript the page updates in place; without it,
+     * the reader is sent back to the card. A POST with the form token: never a link that reacts.
      */
     public function later(\Illuminate\Http\Request $request, Post $post)
     {
         abort_unless($post->isLive(), 404);
-        $path = parse_url($post->url(), PHP_URL_PATH).'#reactions';
+        $back = $post->url().'#reactions';
         if ($request->user()) {
-            Feelings::set($request->user(), $post, $request->string('feeling')->toString() ?: null);
+            $d = Feelings::set($request->user(), $post, $request->string('feeling')->toString() ?: null);
 
-            return redirect($post->url().'#reactions');
+            return $request->expectsJson() ? response()->json($d) : redirect($back);
         }
-        if (isset(Feelings::LIST[$request->input('feeling')])) {
-            $request->session()->put('feel_later', ['post' => $post->id, 'feeling' => $request->input('feeling')]);
+        $id = (string) $request->cookie('hp_dev');
+        if (! preg_match('/^[a-f0-9]{32}$/', $id)) {
+            $id = bin2hex(random_bytes(16));
+        }
+        $d = Feelings::guestSet($post, $id, (string) $request->ip(), $request->string('feeling')->toString() ?: null);
+        $cookie = cookie('hp_dev', $id, 60 * 24 * 365 * 2, '/', null, null, true, false, 'Lax');
+        if ($d === null) {
+            return $request->expectsJson() ? response()->json(['ok' => false, 'message' => 'আজ এই নেটওয়ার্ক থেকে অনেকে এই লেখায় সাড়া দিয়েছেন। কাল আবার চেষ্টা করুন।'], 429)->withCookie($cookie)
+                : redirect($back)->withCookie($cookie);
         }
 
-        return redirect(Url::to('/login').'?next='.rawurlencode($path));
+        return ($request->expectsJson() ? response()->json($d + ['guest' => true]) : redirect($back)->with('felt', (bool) $d['feeling']))->withCookie($cookie);
+    }
+
+    /** D252: a published piece's picture card, for anyone (no sign-in); nothing private is on it. Not indexed. */
+    public function card(Post $post)
+    {
+        abort_unless($post->isLive(), 404);
+        $by = $post->authors->map(fn ($a) => $a->publicName())->implode(', ');
+
+        return view('share-card', ['post' => $post, 'by' => $by, 'seo' => new Seo(title: 'লেখার ছবি: '.$post->title, description: 'হাতপাখায় প্রকাশিত “'.$post->title.'”-এর ছবি।',
+            canonical: Url::to('/chhobi/'.$post->id), noindex: true)]);
     }
 
     public function index()

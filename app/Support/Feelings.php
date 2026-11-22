@@ -59,12 +59,51 @@ final class Feelings
         return ['on' => $now !== null, 'feeling' => $now, 'count' => (int) $p->likes_count, 'counts' => $counts];
     }
 
-    /** @return array<string, int> */
+    /** D252: one network may give at most this many guest answers to one piece in a day (Jio and BSNL put many phones behind one address: UX review). */
+    public const GUEST_PER_NET = 30;
+
+    /**
+     * D252 (owner: "build B": readers without an account can say how a piece left them). Counted once a phone: the
+     * phone keeps a random id in a cookie, and only a hash of it is stored; a network gives at most GUEST_PER_NET a
+     * piece a day. Tapping the same answer again takes it back. These answers are added to the counts readers see,
+     * but the monthly পাঠকের পছন্দ is still decided by members' answers alone (it cannot be swayed by cleared cookies).
+     *
+     * @return array{on: bool, feeling: ?string, count: int, counts: array<string, int>}|null null when the cap is reached
+     */
+    public static function guestSet(Post $p, string $deviceId, string $ip, ?string $feeling): ?array
+    {
+        $feeling = isset(self::LIST[$feeling]) ? $feeling : null;
+        $device = hash('sha256', 'hp-dev|'.$deviceId);
+        $net = hash('sha256', 'hp-net|'.$ip.'|'.now('Asia/Kolkata')->toDateString());
+        $key = ['post_id' => $p->id, 'device' => $device];
+        $row = DB::table('guest_feelings')->where($key)->first();
+        if ($row && ($feeling === null || $row->feeling === $feeling)) {
+            DB::table('guest_feelings')->where($key)->delete();
+            $now = null;
+        } elseif ($row) {
+            DB::table('guest_feelings')->where($key)->update(['feeling' => $feeling]);
+            $now = $feeling;
+        } elseif ($feeling) {
+            if (DB::table('guest_feelings')->where('post_id', $p->id)->where('net', $net)->count() >= self::GUEST_PER_NET) {
+                return null;
+            }
+            DB::table('guest_feelings')->insertOrIgnore($key + ['net' => $net, 'feeling' => $feeling, 'created_at' => now()]);
+            $now = $feeling;
+        } else {
+            $now = null;
+        }
+        $counts = self::recount($p);
+
+        return ['on' => $now !== null, 'feeling' => $now, 'count' => (int) $p->likes_count, 'counts' => $counts];
+    }
+
+    /** @return array<string, int> members' and guests' answers together */
     public static function recount(Post $p): array
     {
         $by = DB::table('post_likes')->where('post_id', $p->id)->selectRaw('feeling, count(*) as n')->groupBy('feeling')->pluck('n', 'feeling');
-        $counts = collect(array_keys(self::LIST))->mapWithKeys(fn ($k) => [$k => (int) ($by[$k] ?? 0)])->all();
-        $p->forceFill(['likes_count' => (int) $by->sum(), 'feeling_counts' => $counts])->saveQuietly();
+        $guests = DB::table('guest_feelings')->where('post_id', $p->id)->selectRaw('feeling, count(*) as n')->groupBy('feeling')->pluck('n', 'feeling');
+        $counts = collect(array_keys(self::LIST))->mapWithKeys(fn ($k) => [$k => (int) ($by[$k] ?? 0) + (int) ($guests[$k] ?? 0)])->all();
+        $p->forceFill(['likes_count' => (int) $by->sum() + (int) $guests->sum(), 'feeling_counts' => $counts])->saveQuietly();
 
         return $counts;
     }
