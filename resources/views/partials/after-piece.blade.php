@@ -96,7 +96,7 @@
                     @php [$isWriter, $isDesk] = $who($c); @endphp
                     <p class="mt-1 break-words leading-relaxed"><strong>{{ $c->author_name }}</strong>@if ($isWriter) <span class="rounded-full bg-red px-2 py-0.5 text-xs font-bold text-white">লেখক</span>@elseif ($isDesk) <span class="rounded-full bg-navy px-2 py-0.5 text-xs font-bold text-white">হাতপাখা</span>@endif<strong>:</strong> {{ \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', (string) $c->body)), 140) }}</p>
                 @endforeach
-                <a href="#comments" class="mt-1 inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ Bn::num((string) $comments->count()) }} জন মতামত লিখেছেন, সব পড়ুন ↓</a>
+                <a href="#comments" class="mt-1 inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ Bn::num((string) ($comments->count() + $comments->sum(fn ($c) => $c->replies->count()))) }}টি মতামত ও উত্তর, সব পড়ুন ↓</a>
             @endif
         </div>
     @endunless

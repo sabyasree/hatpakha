@@ -238,7 +238,7 @@ final class MailTemplates
             return new \Illuminate\Support\HtmlString('<h2 style="font-size:21px;line-height:1.45;font-weight:bold;color:#13212C;margin:4px 0 14px;">'.e(trim(substr($para, 3))).'</h2>');
         }
         if (str_starts_with($para, '> ')) {
-            $text = trim(substr($para, 2));
+            $text = preg_replace('/\n>[ \t]?/u', "\n", trim(substr($para, 2)));   // a quote over several lines: "> " on each
             // "লেবেল: কথা" → the label in bold on its own line
             $html = preg_match('/^([^:：]{2,30})[:：]\s*(.+)$/us', $text, $mm)
                 ? '<strong class="hp-note-label" style="display:block;font-size:15px;color:#7A1022;margin-bottom:4px;">'.e($mm[1]).'</strong>'.nl2br(e($mm[2]))
@@ -246,6 +246,12 @@ final class MailTemplates
 
             return new \Illuminate\Support\HtmlString('<table class="hp-note" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px;background-color:#FBEBD8;border-left:4px solid #CB1B32;border-radius:0 10px 10px 0;">'
                 .'<tr><td style="padding:14px 18px;font-size:17px;line-height:1.75;color:#13212C;">'.$html.'</td></tr></table>');
+        }
+
+        // D252: "[কথা](https://…)" alone in a paragraph is a second button (outlined), with any words after it below
+        if (preg_match('~^\[([^\]\n]{2,60})\]\((https?://[^)\s]+)\)\s*(.*)$~su', $para, $bm)) {
+            return new \Illuminate\Support\HtmlString('<p style="margin:4px 0 16px;"><a href="'.e($bm[2]).'" class="hp-btn2" style="display:inline-block;padding:11px 22px;border:2px solid #13212C;border-radius:999px;color:#13212C;font-weight:bold;text-decoration:none;font-size:16px;">'.e($bm[1]).'</a>'
+                .($bm[3] !== '' ? '<br><span style="display:inline-block;margin-top:6px;font-size:14px;color:#4D5A63;">'.e(trim($bm[3])).'</span>' : '').'</p>');
         }
 
         // Web addresses become short links: a long signed address (stop-following, unsubscribe) would otherwise
