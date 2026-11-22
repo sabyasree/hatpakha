@@ -112,6 +112,9 @@ document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
     });
 });
 
+// D252: "বাতিল" folds a reply box away again
+document.addEventListener('click', (e) => { const b = e.target.closest?.('[data-close-details]'); if (b) { const d = b.closest('details'); if (d) d.open = false; } });
+
 // D252: a reader without an account sees the answer they gave on this phone (the page itself may come from the cache)
 document.querySelectorAll('form[data-guest]').forEach((form) => {
     let mine = null;

@@ -175,13 +175,13 @@
         <ol class="mt-2">
             @foreach ($comments as $c)
                 @php [$isWriter, $isDesk] = $who($c); @endphp
-                <li id="comment-{{ $c->id }}" class="scroll-mt-24 border-b border-rule py-5 last:border-0 target:rounded-xl target:bg-sky-tint target:px-3">
+                <li id="comment-{{ $c->id }}" class="scroll-mt-24 border-b border-rule py-5 last:border-0 target:rounded-xl target:border-l-4 target:border-navy target:bg-sky-tint target:px-3">
                     @include('partials.comment-one', ['c' => $c, 'isWriter' => $isWriter, 'isDesk' => $isDesk, 'small' => false])
                     @if ($c->replies->isNotEmpty())
                         <ol class="ml-6 mt-3 border-l-4 border-peach pl-4" aria-label="উত্তর">
                             @foreach ($c->replies as $r)
                                 @php [$rWriter, $rDesk] = $who($r); @endphp
-                                <li id="comment-{{ $r->id }}" class="scroll-mt-24 py-2 target:rounded-xl target:bg-sky-tint target:px-3">
+                                <li id="comment-{{ $r->id }}" class="scroll-mt-24 py-2 target:rounded-xl target:border-l-4 target:border-navy target:bg-sky-tint target:px-3">
                                     @include('partials.comment-one', ['c' => $r, 'isWriter' => $rWriter, 'isDesk' => $rDesk, 'small' => true])
                                 </li>
                             @endforeach
@@ -201,6 +201,7 @@
                             @if (! $me && $writerUsers)
                                 <p class="mb-2 rounded-xl bg-peach-light p-3 text-sm">লেখক? লেখক হিসেবে উত্তর দিতে আগে <a href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#comment-'.$c->id) }}" class="font-bold text-sky-night underline">লগ-ইন করুন</a>।</p>
                             @endif
+                            @auth<p class="mb-2 text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong>@if (in_array($me->id, $writerUsers, true)) (লেখক)@endif হিসেবে লিখছেন</p>@endauth
                             <label class="block"><span class="sr-only">আপনার উত্তর</span>
                                 <textarea name="body" rows="2" required minlength="2" maxlength="3000" placeholder="{{ $c->author_name }}-কে উত্তর লিখুন…"
                                     class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white"></textarea>
@@ -211,7 +212,10 @@
                                 </label>
                                 <x-turnstile action="comment" class="mt-2" :lazy="true" appearance="interaction-only" />
                             @endguest
-                            <button class="mt-2 flex h-12 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto">উত্তর পাঠান</button>
+                            <div class="mt-2 flex flex-wrap items-center gap-3">
+                                <button class="flex h-12 flex-1 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:flex-none">উত্তর পাঠান</button>
+                                <button type="button" data-close-details class="flex h-12 items-center px-3 font-bold text-ink2 underline">বাতিল</button>
+                            </div>
                             <p class="mt-2 text-xs text-ink2">@guest সম্পাদক দেখে প্রকাশ করেন। কেউ উত্তর দিলে ই-মেলে খবর পেতে চান? আগে <a class="font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#comment-'.$c->id) }}">লগ-ইন করে</a> লিখুন। @else কেউ আপনার উত্তরের পরে লিখলে ই-মেলে খবর পাবেন। @endguest</p>
                         </form>
                     </details>
