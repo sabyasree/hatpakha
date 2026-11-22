@@ -106,6 +106,13 @@ class CommentsAndSharingTest extends TestCase
         $started = \Illuminate\Support\Facades\Crypt::encryptString((string) now()->subMinute()->timestamp);
         $this->post('/comment/'.$this->post->id, ['body' => 'ধন্যবাদ!', 'parent_id' => $c->id, 'from' => 'account', 'started' => $started])
             ->assertRedirect(\App\Support\Url::to('/account/comments').'#comment-'.$c->id);
+        // a reply that fails stays in its own box on the account page, never in the piece's comment box (UX review)
+        $this->from(\App\Support\Url::to('/account/comments'))->post('/comment/'.$this->post->id, ['body' => 'x', 'parent_id' => $c->id, 'from' => 'account', 'started' => $started])
+            ->assertRedirect(\App\Support\Url::to('/account/comments').'#comment-'.$c->id);
+        $this->get('/account/comments/')->assertSee('এখনও উত্তর দেননি', false);
+        $this->post('/comment/'.$this->post->id, ['body' => 'দ্রুত উত্তর', 'parent_id' => $c->id, 'from' => 'account', 'started' => \Illuminate\Support\Facades\Crypt::encryptString((string) now()->timestamp)])
+            ->assertRedirect(\App\Support\Url::to('/account/comments').'#comment-'.$c->id);
+        $this->assertTrue(Comment::where('body', 'দ্রুত উত্তর')->exists(), 'A signed-in reader is not timed: a quick reply is not a robot');
         Comment::where('parent_id', $c->id)->update(['status' => 'approved']);
         $this->actingAs($reader)->get('/account/reading/')->assertSee('নতুন মতামত ও উত্তর');
         $this->get('/account/comments/')->assertSee('আপনার মতামতের উত্তর')->assertSee('ধন্যবাদ!');

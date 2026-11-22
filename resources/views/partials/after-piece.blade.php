@@ -62,9 +62,9 @@
             <label class="block">
                 <span class="mb-1 block text-lg font-bold">লেখককে দু লাইন লিখুন</span>
                 <textarea name="body" rows="2" enterkeyhint="send" required minlength="2" maxlength="3000" placeholder="লেখাটি পড়ে কেমন লাগল? এখানে লিখুন…"
-                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('body') }}</textarea>
+                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('parent_id') ? '' : old('body') }}</textarea>
             </label>
-            @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+            @if (! old('parent_id'))@error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror @endif
             @auth
                 <p class="mt-2 text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong> হিসেবে লিখছেন</p>
             @else
@@ -191,7 +191,8 @@
                         <p class="ml-6 mt-3 rounded-xl bg-sky-tint p-3 font-semibold" role="status">{{ $replied['text'] }}</p>
                     @endif
                     {{-- reply box --}}
-                    <details class="ml-6 mt-2 group" @if (is_array($replied) && (int) ($replied['to'] ?? 0) === $c->id && $errors->any()) open @endif>
+                    @php($mineFailed = (int) old('parent_id') === $c->id && $errors->any())
+                    <details class="ml-6 mt-2 group" @if ($mineFailed) open @endif>
                         <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">উত্তর দিন</summary>
                         <form method="POST" action="{{ route('comment.store', $post) }}" class="mt-3">
                             @csrf
@@ -204,8 +205,9 @@
                             @auth<p class="mb-2 text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong>@if (in_array($me->id, $writerUsers, true)) (লেখক)@endif হিসেবে লিখছেন</p>@endauth
                             <label class="block"><span class="sr-only">আপনার উত্তর</span>
                                 <textarea name="body" rows="2" required minlength="2" maxlength="3000" placeholder="{{ $c->author_name }}-কে উত্তর লিখুন…"
-                                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white"></textarea>
+                                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ $mineFailed ? old('body') : '' }}</textarea>
                             </label>
+                            @if ($mineFailed)@error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror @endif
                             @guest
                                 <label class="mt-2 block"><span class="sr-only">আপনার নাম</span>
                                     <input name="name" type="text" required minlength="2" maxlength="80" autocomplete="name" placeholder="আপনার নাম" class="block h-12 w-full rounded-xl border-2 border-navy bg-paper px-4 text-lg focus:border-sky-deep focus:bg-white">

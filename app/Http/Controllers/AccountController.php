@@ -62,7 +62,7 @@ class AccountController extends Controller
             ->whereNull('parent_id')->where('status', 'approved')->latest()->limit(40)->get();
         $mineAnswered = \App\Models\Comment::with(['post', 'user', 'replies' => $replies])->where('user_id', $user->id)->whereNull('parent_id')
             ->where('status', 'approved')->whereNotIn('post_id', $postIds)->whereHas('replies', fn ($q) => $q->where('status', 'approved'))->latest()->limit(30)->get();
-        $seen = $user->comments_seen_at;
+        $seen = $user->comments_seen_at ?? now()->subDays(30);   // same rule as the banner count (newComments)
         $user->forceFill(['comments_seen_at' => now()])->saveQuietly();
 
         return view('account.comments', self::shell($request, 'comments', 'মতামত ও উত্তর') + compact('onMine', 'mineAnswered', 'seen') + ['writerIds' => $postIds->isEmpty() ? [] : [$user->id]]);
