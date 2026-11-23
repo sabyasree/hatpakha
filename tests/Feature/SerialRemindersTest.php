@@ -68,4 +68,27 @@ class SerialRemindersTest extends TestCase
         $second->save();
         $this->assertStringNotContainsString('প্রতি শনিবার প্রকাশ হবে', implode(' ', array_map('strval', (new SubmissionDecision($second, 'approved'))->toMail($writer)->outroLines)), 'Only with the first episode');
     }
+
+    /** D269 (owner): episodes go out on Saturdays only; the desk's times are India time. */
+    public function test_an_episode_can_only_be_set_for_a_saturday(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-30 10:00', 'Asia/Kolkata'));   // a Monday
+        $this->assertSame('Asia/Kolkata', \Filament\Support\Facades\FilamentTimezone::get(), 'The desk shows India time');
+        $writer = User::factory()->create();
+        $s = $this->serial($writer);
+        $this->assertSame('2026-12-05 03:30:00', $s->nextEpisodeAt()->toDateTimeString(), 'Next Saturday, 9am India time');
+        $ep = $this->makePost(['slug' => 'porbo-2', 'title' => 'পর্ব ২', 'status' => 'pending', 'published_at' => null, 'submitted_at' => now()]);
+        $ep->forceFill(['serial_id' => $s->id, 'episode_no' => 2, 'submitted_by' => $writer->id, 'originality_confirmed_at' => now()])->save();
+
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        $this->actingAs(User::factory()->create(['role' => \App\Enums\Role::Admin]));
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class)
+            ->callTableAction('approve', $ep, ['at' => '2026-12-02 09:00:00', 'slug' => 'porbo-dui'])   // a Wednesday, as typed in India time
+            ->assertHasTableActionErrors(['at']);
+        $this->assertSame('pending', $ep->fresh()->status);
+        \Livewire\Livewire::test(\App\Filament\Resources\Posts\Pages\ListPosts::class)
+            ->callTableAction('approve', $ep, ['at' => '2026-12-05 23:00:00', 'slug' => 'porbo-dui'])   // Saturday 11pm India time is still Saturday
+            ->assertHasNoTableActionErrors();
+        $this->assertSame(['scheduled', '2026-12-05 17:30:00'], [$ep->fresh()->status, $ep->fresh()->published_at->toDateTimeString()], 'Stored in UTC');
+    }
 }
