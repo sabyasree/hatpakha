@@ -68,6 +68,7 @@ class PostsTable
             ])
             ->filters([
                 SelectFilter::make('status')->label(__('অবস্থা'))->options(\App\Support\Lang::t(self::STATUS)),
+                SelectFilter::make('issue_id')->label(__('সংখ্যা'))->relationship('issue', 'title')->searchable()->preload(),   // owner, 2026-11-23: who sent pieces for an issue
                 SelectFilter::make('section_id')->label(__('বিভাগ'))->options(fn () => \App\Models\Section::orderBy('sort')->pluck('name_bn', 'id')->all()),
                 SelectFilter::make('language')->label(__('ভাষা'))->options(['bn' => __('বাংলা'), 'en' => __('ইংরেজি'), 'hi' => __('হিন্দি/উর্দু')]),
                 SelectFilter::make('audit_label')->label(__('অডিট সুপারিশ'))->options(\App\Support\Lang::t(ContentAudit::LABELS)),
