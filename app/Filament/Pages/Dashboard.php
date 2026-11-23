@@ -44,8 +44,10 @@ class Dashboard extends BaseDashboard
     public function today(): array
     {
         $isAdmin = auth()->user()?->hasRole(Role::Admin) ?? false;
+        // D256: a piece whose writer objected to the word changes comes first, with the writer's words
         $submissions = Post::with(['authors', 'section', 'latestAiReview'])
-            ->where('status', 'pending')->whereNotNull('submitted_by')->orderBy('submitted_at')->limit(20)->get();
+            ->where('status', 'pending')->whereNotNull('submitted_by')
+            ->orderByRaw('CASE WHEN review_note LIKE ? THEN 0 ELSE 1 END', [\App\Ai\EditorPackage::OBJECTED.'%'])->orderBy('submitted_at')->limit(20)->get();
         $packaged = AiReview::where('status', 'done')->whereNull('blind_run')->where('report', 'like', '%"edits"%')->select('post_id');
         $issue = $isAdmin ? Issue::where('status', 'proposed')->latest('updated_at')->first() : null;
         if ($isAdmin) {

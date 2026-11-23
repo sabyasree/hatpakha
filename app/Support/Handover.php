@@ -281,6 +281,9 @@ final class Handover
      */
     public static function hold(Post $post): ?string
     {
+        if (str_starts_with((string) $post->review_note, \App\Ai\EditorPackage::OBJECTED)) {
+            return __('লেখক বদলে আপত্তি করেছেন: আপনি দেখবেন');   // D256
+        }
         $r = EditorPackage::report($post);
         if (! $r) {
             return __('এআই রিপোর্ট এখনও নেই');
