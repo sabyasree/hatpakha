@@ -67,16 +67,22 @@ class ReaderEntryResource extends Resource
             ->emptyStateHeading(__('এখনও কোনো লেখা আসেনি'))
             ->emptyStateDescription(__('প্রতি সোমবার নতুন বিষয় খোলে আর পাঠকদের ডাকার পোস্ট তৈরি হয়। পাঠকেরা /kolom/ পাতায় লেখেন।'))
             ->columns([
+                // Owner, 2026-11-23 ("too tough to read"): the writing gets the room, in readable lines with its own line breaks;
+                // the AI's note sits in a narrower column that wraps.
                 TextColumn::make('body')->label(__('লেখা'))->wrap()->searchable()
+                    ->formatStateUsing(fn ($state) => new \Illuminate\Support\HtmlString(nl2br(e(trim((string) $state)))))
+                    ->extraCellAttributes(['style' => 'min-width:22rem;width:42%;vertical-align:top'])
+                    ->extraAttributes(['style' => 'font-size:1.05rem;line-height:1.75;max-width:40rem'])
                     ->description(fn (ReaderEntry $record) => '— '.$record->name.($record->anonymous ? ' ('.__('নাম গোপন চান').')' : '')),
-                TextColumn::make('prompt.title')->label(__('বিষয়'))->wrap()->toggleable(),
-                TextColumn::make('status')->label(__('অবস্থা'))->badge()
+                TextColumn::make('prompt.title')->label(__('বিষয়'))->wrap()->toggleable()->extraCellAttributes(['style' => 'min-width:6.5rem;vertical-align:top']),
+                TextColumn::make('status')->label(__('অবস্থা'))->badge()->extraCellAttributes(['style' => 'vertical-align:top'])
                     ->formatStateUsing(fn ($state) => __(ReaderEntry::STATUSES[$state] ?? $state))
                     ->color(fn ($state) => ['picked' => 'success', 'ok' => 'info', 'flagged' => 'danger', 'rejected' => 'gray'][$state] ?? 'warning'),
                 TextColumn::make('ai_score')->label(__('এআই'))->placeholder('—')
                     ->formatStateUsing(fn ($state) => Bn::num((string) $state).__(' / ১০'))
-                    ->description(fn (ReaderEntry $record) => $record->ai_note),
-                TextColumn::make('created_at')->label(__('কবে'))->since()->toggleable(),
+                    ->description(fn (ReaderEntry $record) => $record->ai_note)->wrap()
+                    ->extraCellAttributes(['style' => 'min-width:12rem;max-width:18rem;vertical-align:top']),
+                TextColumn::make('created_at')->label(__('কবে'))->since()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('reader_prompt_id')->label(__('বিষয়'))->relationship('prompt', 'title'),
