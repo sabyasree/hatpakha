@@ -68,6 +68,18 @@ final class WriterInvites
     }
 
     /** The issue itself, made once (in planning; the owner publishes it). */
+    /** Owner (2026-11-23): a piece marked for the ফিরে আসা সংখ্যা goes out with the issue, not before it. */
+    public static function forIssue(\App\Models\Post $post): bool
+    {
+        return $post->issue_id !== null && $post->issue?->slug === self::ISSUE_SLUG && now()->lt(self::issueAt());
+    }
+
+    /** The issue's day, 9am India time, when its pieces go live (the usual morning slot). */
+    public static function issueAt(): \Illuminate\Support\Carbon
+    {
+        return \Illuminate\Support\Carbon::parse(self::ISSUE_DATE.' 09:00', self::TZ)->utc();
+    }
+
     public static function issue(): Issue
     {
         return Issue::firstOrCreate(['slug' => self::ISSUE_SLUG], ['title' => 'ফিরে আসা সংখ্যা', 'kind' => 'festival', 'status' => 'planning']);

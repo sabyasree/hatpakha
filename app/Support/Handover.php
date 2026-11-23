@@ -318,6 +318,9 @@ final class Handover
         if ($post->contest_id) {
             return __('প্রতিযোগিতার লেখা: আপনি দেখবেন');
         }
+        if (\App\Support\WriterInvites::forIssue($post)) {
+            return __('ফিরে আসা সংখ্যার লেখা: সংখ্যার দিনে একসঙ্গে প্রকাশ হবে');   // owner, 2026-11-23: never before the issue
+        }
         if (\App\Models\PieceReview::where('post_id', $post->id)->where('status', 'assigned')->exists()) {
             return __('যাচাইকারীর মতামত বাকি');
         }

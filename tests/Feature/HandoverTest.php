@@ -89,6 +89,17 @@ class HandoverTest extends TestCase
         $this->assertSame(['approved', 'pending', 'pending'], [$fine->fresh()->status, $doubt->fresh()->status, $unread->fresh()->status]);
     }
 
+    public function test_a_piece_for_the_phire_asha_issue_waits_for_the_issue_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-23 06:00:00', 'UTC'));
+        $post = $this->piece();
+        $post->forceFill(['issue_id' => \App\Support\WriterInvites::issue()->id])->saveQuietly();
+        $this->assertStringContainsString('ফিরে আসা সংখ্যা', (string) Handover::hold($post->fresh()), 'Owner: never published before the issue');
+        $this->assertSame('2026-12-14 03:30:00', \App\Support\WriterInvites::issueAt()->toDateTimeString(), '9am India time on the issue day');
+        Carbon::setTestNow(Carbon::parse('2026-12-14 04:00:00', 'UTC'));
+        $this->assertNull(Handover::hold($post->fresh()), 'After the issue day it is an ordinary piece again');
+    }
+
     public function test_a_strong_clean_piece_waits_a_day_then_is_selected_and_the_owner_can_stop_it(): void
     {
         $post = $this->piece();
