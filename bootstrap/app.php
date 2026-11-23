@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             \Illuminate\Support\Facades\Route::post('/v/{post}', \App\Http\Controllers\ViewController::class)
                 ->whereNumber('post')->middleware(\Illuminate\Routing\Middleware\ThrottleRequests::class.':120,1');
-            // D127: the service worker, outside the web group: no session, cookie or page cache; never stored by Cloudflare.
+            // D127: the service worker, outside the web group: no session or cookie; browsers never keep it, Cloudflare ten minutes (D263).
             \Illuminate\Support\Facades\Route::get('/sw.js', [\App\Http\Controllers\AppController::class, 'serviceWorker']);
             // D132: a tapped notification is counted (kind only; no session, no person).
             \Illuminate\Support\Facades\Route::post('/push/opened', [\App\Http\Controllers\AppController::class, 'opened'])

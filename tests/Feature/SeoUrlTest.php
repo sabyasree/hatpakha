@@ -98,6 +98,10 @@ class SeoUrlTest extends TestCase
         $this->get('/sitemap.xml')->assertOk()->assertSee('sitemap-posts-1.xml');
         $this->get('/sitemap-posts-1.xml')->assertOk()->assertSee(url('/in-sitemap').'/', false)->assertDontSee('not-in-sitemap');
         $this->get('/robots.txt')->assertOk()->assertSee('Sitemap: '.url('/sitemap.xml'), false)->assertDontSee('Disallow: /wp-content');
+        foreach (['/login', '/register', '/language/', '/csrf-token'] as $p) {   // D263
+            $this->get('/robots.txt')->assertSee('Disallow: '.$p."\n", false);
+        }
+        $this->get('/robots.txt')->assertDontSee('Disallow: /fonts')->assertDontSee('Disallow: /build');   // CSS, JS and fonts stay open
     }
 
     public function test_staging_is_never_indexable(): void
