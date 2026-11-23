@@ -23,6 +23,11 @@ class ReaderPrompt extends Model
 
     public function picked(): HasMany { return $this->entries()->where('status', 'picked')->orderByDesc('ai_score')->orderBy('id'); }
 
+    /** D266: the stricter of this week's stored limit and today's rule for its kind. */
+    public function limit(): int { return min((int) ($this->max_chars ?: 9999), \App\Support\Kolom::LIMITS[$this->kind] ?? 600); }
+
+    public function maxLines(): int { return \App\Support\Kolom::LINES[$this->kind] ?? 12; }
+
     public function url(): string { return \App\Support\Url::to('/kolom/'.$this->slug); }
 
     public function isOpen(): bool { return $this->status === 'open' && (! $this->closes_at || $this->closes_at->isFuture()); }

@@ -18,7 +18,11 @@ use Illuminate\Support\Str;
  */
 final class Kolom
 {
-    public const LIMITS = ['six' => 80, 'letter' => 600, 'memory' => 240];
+    /** Characters per kind. D266 (owner: "why can people write so big?"): a one-line memory was taking five lines; 160 now. */
+    public const LIMITS = ['six' => 80, 'letter' => 600, 'memory' => 160];
+
+    /** Lines with words in them, per kind (blank lines between a letter's paragraphs do not count). */
+    public const LINES = ['six' => 1, 'letter' => 12, 'memory' => 2];
 
     public const PICKS = 10;
 
