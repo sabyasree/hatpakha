@@ -18,7 +18,11 @@ use Illuminate\Support\Str;
  */
 final class Kolom
 {
-    public const LIMITS = ['six' => 80, 'letter' => 600, 'memory' => 240];
+    /** Characters per kind. D266 (owner: "why can people write so big?"): a one-line memory was taking five lines; 160 now. */
+    public const LIMITS = ['six' => 80, 'letter' => 600, 'memory' => 160];
+
+    /** Lines with words in them, per kind (blank lines between a letter's paragraphs do not count). */
+    public const LINES = ['six' => 1, 'letter' => 12, 'memory' => 2];
 
     public const PICKS = 10;
 
@@ -169,10 +173,31 @@ final class Kolom
             'quote' => Str::limit(preg_replace('/\s+/u', ' ', (string) $picked->first()->body), 180), 'link' => $p->url(), 'kolom' => $p->id,
         ]]);
         self::share($social);
+        self::tellPicked($p, $picked);
         EditorTask::open('kolom')->where('subject_id', $p->id)->get()->each->close('done');
         AuditLog::record('kolom.published', null, ['prompt' => $p->id, 'by' => $by, 'entries' => $picked->count()]);
 
         return true;
+    }
+
+    /**
+     * D265 (owner: "yes, build both"): a reader who wrote while signed in hears by e-mail that their words were chosen,
+     * with the link to their entry and a WhatsApp link to share it. Sent once, when the week is published (by itself on
+     * Sunday, or the editor's click). Guests left no address and are not written to.
+     */
+    private static function tellPicked(ReaderPrompt $p, \Illuminate\Support\Collection $picked): void
+    {
+        foreach ($picked->whereNotNull('user_id')->unique('user_id') as $e) {
+            $u = \App\Models\User::find($e->user_id);
+            if (! $u || blank($u->email) || $u->mail_opt_out || $u->spam_reason || ! $u->hasVerifiedEmail()) {
+                continue;
+            }
+            $link = $p->url().'#e'.$e->id;
+            $wa = 'https://wa.me/?text='.rawurlencode('“'.Str::limit(preg_replace('/\s+/u', ' ', $e->body), 300).'” — '.$e->shownName()."\nহাতপাখার পাঠকের কলমে আমার লেখা: ".$link);
+            rescue(fn () => $u->notify(new \App\Notifications\TemplateMail('kolom_picked', [
+                '{বিষয়}' => $p->title, '{লেখা}' => '“'.Str::limit(preg_replace('/\s+/u', ' ', $e->body), 400).'”', '{হোয়াটসঅ্যাপ}' => $wa,
+            ], $link)), null, true);
+        }
     }
 
     /** Who sent it, without keeping an address: limits repeats per theme. */

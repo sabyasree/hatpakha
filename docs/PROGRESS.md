@@ -218,6 +218,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: check the AI's list and the letter text (/desk → পুরনো লেখকদের চিঠি), then approve
 - [x] D188: the regular writers (3+ pieces, or rated 8+, any year) get a personal letter written and sent by the team for the ফিরে আসা সংখ্যা (pieces by 7 Dec, issue 14 Dec); answers, one reminder and received pieces tracked in /desk → লেখকদের আমন্ত্রণ
 - [ ] Owner: read the first letters in /desk → লেখকদের আমন্ত্রণ during their 12-hour wait (the wording could not be tried with the real AI before release); set the signer's name in /desk → শংসাপত্র if the letters should carry it
+- [x] D265: chosen পাঠকের কলম writers (signed in) told by e-mail; the form offers it
+- [x] D266: পাঠকের কলম redesign (two UX reviews) and shorter memory limits
+- [ ] Maybe later: reactions on পাঠকের কলম picks; a picture card for chosen writers
 - [x] D264: no database connection held during waits on outside services
 - [ ] Owner's choice: `CACHE_STORE=file`, `SESSION_DRIVER=file` in ENV_FILE (D264)
 - [x] D263: robots.txt keeps crawlers off sign-in pages; Cloudflare serves sw.js for 10 minutes

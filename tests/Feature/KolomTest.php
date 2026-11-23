@@ -51,10 +51,12 @@ class KolomTest extends TestCase
     {
         $this->withoutMiddleware(\App\Http\Middleware\PerRouteThrottle::class);   // the 6-a-minute limit is not what this checks
         $p = Kolom::openWeek();
-        $this->post('/kolom/', $this->entry())->assertRedirect(url('/kolom').'/#form')->assertSessionHas('kolom_sent');
+        $this->post('/kolom/', $this->entry())->assertRedirect(url('/kolom').'/#sent')->assertSessionHas('kolom_sent');
         $e = ReaderEntry::sole();
         $this->assertSame(['মিতা সেন', 'new', null], [$e->name, $e->status, $e->user_id]);
-        $this->get('/kolom/')->assertDontSee('আমি ফিরিনি');
+        $this->get('/kolom/')->assertSee('আপনার লেখা পৌঁছেছে')->assertSee('আমি ফিরিনি');   // D266: the sender sees their own words back
+        $this->flushSession();
+        $this->get('/kolom/')->assertDontSee('আমি ফিরিনি');   // nobody else does
 
         $this->post('/kolom/', $this->entry(['name' => '']))->assertSessionHasErrors('name');
         $this->post('/kolom/', $this->entry(['agree' => null]))->assertSessionHasErrors('agree');
@@ -119,5 +121,41 @@ class KolomTest extends TestCase
         Kolom::publish($p->fresh());
         auth()->logout();
         $this->get('/kolom/')->assertSee('প্রথম লেখা এখানে')->assertDontSee('দ্বিতীয় লেখা এখানে');
+    }
+
+    /** D265: a signed-in writer hears by e-mail that their words were chosen; a guest is offered that on the form. */
+    public function test_a_chosen_signed_in_writer_is_told_by_email_once(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        config(['ai.enabled' => false]);
+        $p = Kolom::openWeek();
+        $this->get('/kolom/')->assertSee('বাছাই হওয়ার খবর ই-মেলে পাবেন', false)->assertSee('সাইন ইন করে লিখলে');
+        $reader = User::factory()->create(['email_verified_at' => now()]);
+        $this->actingAs($reader)->get('/kolom/')->assertSee('বাছাই হলে রবিবার আপনাকে ই-মেলে জানিয়ে দেব');
+        auth()->logout();
+        $mine = ReaderEntry::create(['reader_prompt_id' => $p->id, 'user_id' => $reader->id, 'name' => 'ক', 'body' => 'আমার ছোট্ট লেখা', 'sender_hash' => 'a']);
+        ReaderEntry::create(['reader_prompt_id' => $p->id, 'name' => 'খ', 'body' => 'অতিথির লেখা', 'sender_hash' => 'b']);
+        Kolom::pickWeek();
+        $this->assertTrue(Kolom::publish($p->fresh()));
+        $this->assertFalse(Kolom::publish($p->fresh()), 'Published once');
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($reader, \App\Notifications\TemplateMail::class, 1);
+        \Illuminate\Support\Facades\Notification::assertSentTo($reader, \App\Notifications\TemplateMail::class,
+            fn ($n) => $n->key === 'kolom_picked' && $n->url === $p->url().'#e'.$mine->id && str_contains($n->values['{লেখা}'], 'আমার ছোট্ট লেখা'));
+    }
+
+    /** D266 (owner: "why can people write so big?"): a one-line memory stays a line or two, 160 characters. */
+    public function test_a_memory_stays_short_and_a_letter_may_have_paragraphs(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\PerRouteThrottle::class);
+        $p = ReaderPrompt::create(['slug' => 'brishti', 'kind' => 'memory', 'title' => 'প্রথম বৃষ্টির দিন', 'ask' => 'এক-দু লাইনে।', 'max_chars' => 240, 'status' => 'open', 'opens_at' => now(), 'closes_at' => now()->addDays(3)]);
+        $this->assertSame(160, $p->limit(), 'The stricter rule holds for a week opened before it');
+        $this->post('/kolom/', $this->entry(['body' => "স্মৃতির পাতায় সেই বর্ষা\nবর্ষার প্রথম বৃষ্টি,\nতুমুল ঝড়ে আশ্রয় সেই স্কুলের ক্লাসরুম।"]))->assertSessionHasErrors(['body' => 'এক লাইনের স্মৃতি: এক-দুই লাইনে লিখুন।']);
+        $this->post('/kolom/', $this->entry(['body' => str_repeat('বৃষ্টি ', 30)]))->assertSessionHasErrors('body');
+        $this->post('/kolom/', $this->entry(['body' => "মা ছাতা নিয়ে স্টেশনে দাঁড়িয়ে ছিল।\nআমি ভিজে ভিজে হেঁটে এলাম।"]))->assertSessionHasNoErrors();
+
+        $p->update(['status' => 'closed']);
+        $letter = ReaderPrompt::create(['slug' => 'bondhu', 'kind' => 'letter', 'title' => 'ছোটবেলার বন্ধুকে', 'ask' => 'চিঠি', 'max_chars' => 600, 'status' => 'open', 'opens_at' => now(), 'closes_at' => now()->addDays(3)]);
+        $this->post('/kolom/', $this->entry(['body' => "বাবলু,\n\nকতদিন তোর সাথে কথা হয় না।\n\nভালো থাকিস।\n\nইতি,\nতোর বন্ধু"]))->assertSessionHasNoErrors();
+        $this->assertSame(2, ReaderEntry::count());
     }
 }

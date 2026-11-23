@@ -16,10 +16,10 @@ class KolomController extends Controller
     public function index()
     {
         $current = ReaderPrompt::current();
-        $past = ReaderPrompt::where('status', 'published')->latest('published_at')->limit(12)->get();
-        $latest = $past->first()?->load('picked');
+        $past = ReaderPrompt::where('status', 'published')->latest('published_at')->limit(12)->with('picked')->get();
+        $latest = $past->first();
 
-        return view('kolom', ['current' => $current, 'past' => $past, 'latest' => $latest, 'prompt' => null, 'seo' => new Seo(
+        return view('kolom', self::extras($current) + ['current' => $current, 'past' => $past, 'latest' => $latest, 'prompt' => null, 'seo' => new Seo(
             title: 'পাঠকের কলম: এ সপ্তাহের বিষয়ে আপনিও লিখুন',
             description: 'প্রতি সপ্তাহে একটি বিষয়: ছয় শব্দের গল্প, না-পাঠানো চিঠি বা এক লাইনের স্মৃতি। এক মিনিটে লিখে পাঠান; সেরা দশটি রবিবার হাতপাখায় ছাপা হয়।',
             canonical: Url::to('/kolom'),
@@ -34,11 +34,30 @@ class KolomController extends Controller
         }
         $prompt->load('picked');
 
-        return view('kolom', ['current' => ReaderPrompt::current(), 'past' => collect(), 'latest' => null, 'prompt' => $prompt, 'seo' => new Seo(
+        $current = ReaderPrompt::current();
+
+        return view('kolom', self::extras($current) + ['current' => $current, 'past' => collect(), 'latest' => null, 'prompt' => $prompt, 'seo' => new Seo(
             title: 'পাঠকের কলম: '.$prompt->title,
             description: 'পাঠকের কলম: “'.$prompt->title.'” বিষয়ে পাঠকদের সেরা লেখা।',
             canonical: $prompt->url(),
         )]);
+    }
+
+    /**
+     * D266 (owner: "make this section interesting"; two UX reviews): what the page shows around the form, all from real
+     * records: how long is left, how many people wrote (only from ten up), and next Monday's theme from the fixed list.
+     */
+    private static function extras(?ReaderPrompt $current): array
+    {
+        $left = $current?->closes_at && $current->closes_at->isFuture() ? now()->diff($current->closes_at) : null;
+        $writers = $current ? ReaderEntry::where('reader_prompt_id', $current->id)->distinct()->count('sender_hash') : 0;
+
+        return [
+            'leftText' => $left ? ($left->days ? \App\Support\Bn::num((string) $left->days).' দিন '.\App\Support\Bn::num((string) $left->h).' ঘণ্টা' : ($left->h ? \App\Support\Bn::num((string) $left->h).' ঘণ্টা' : \App\Support\Bn::num((string) max(1, $left->i)).' মিনিট')) : null,
+            'writers' => $writers >= 20 ? $writers : null,   // a small number on Monday looks sad (UX review)
+            'next' => Kolom::nextTheme(),
+            'judging' => ReaderPrompt::where('status', 'closed')->exists(),   // Saturday evening to Sunday morning
+        ];
     }
 
     public function store(Request $request)
@@ -48,21 +67,31 @@ class KolomController extends Controller
             throw ValidationException::withMessages(['body' => 'এ সপ্তাহের লেখা নেওয়া শেষ। সোমবার নতুন বিষয় আসবে।']);
         }
         if (filled($request->input('website'))) {   // a field people never see: only robots fill it
-            return redirect(Url::to('/kolom').'#form')->with('kolom_sent', true);
+            return redirect(Url::to('/kolom').'#sent')->with('kolom_sent', ['body' => '', 'left' => 0]);
         }
         $data = $request->validate([
             'name' => [$request->user() ? 'nullable' : 'required', 'string', 'max:80'],
-            'body' => ['required', 'string', 'min:8', 'max:'.$prompt->max_chars],
+            'body' => ['required', 'string', 'min:8', 'max:'.$prompt->limit()],
             'anonymous' => ['nullable', 'boolean'],
             'agree' => ['accepted'],
         ], [
             'name.required' => 'আপনার নাম লিখুন (ছাপার সময় নাম গোপন রাখতে চাইলে নিচের ঘরে টিক দিন)।',
             'body.required' => 'লেখাটি লিখুন।',
             'body.min' => 'আর একটু লিখুন।',
-            'body.max' => 'লেখাটি একটু বড় হয়ে গেছে: সর্বোচ্চ '.\App\Support\Bn::num((string) $prompt->max_chars).' অক্ষর।',
+            'body.max' => 'লেখাটি একটু বড় হয়ে গেছে: সর্বোচ্চ '.\App\Support\Bn::num((string) $prompt->limit()).' অক্ষর।',
             'agree.accepted' => 'লেখাটি আপনার নিজের, আর হাতপাখা ছাপতে পারে: এই ঘরে টিক দিন।',
         ]);
         $body = trim(preg_replace("/[ \t]+/u", ' ', preg_replace("/\R{3,}/u", "\n\n", strip_tags($data['body']))));
+        // D266: a "one-line memory" stays a line or two; a six-word story is one line
+        if ($prompt->kind === 'six') {
+            $body = trim(preg_replace('/\s+/u', ' ', $body));
+        }
+        $lines = count(array_filter(preg_split('/\R/u', $body), fn ($l) => trim($l) !== ''));
+        if ($lines > $prompt->maxLines()) {
+            throw ValidationException::withMessages(['body' => $prompt->kind === 'memory'
+                ? 'এক লাইনের স্মৃতি: এক-দুই লাইনে লিখুন।'
+                : 'লেখাটি একটু ছোট করুন: সর্বোচ্চ '.\App\Support\Bn::num((string) $prompt->maxLines()).' লাইন।']);
+        }
         if ($prompt->kind === 'six' && count(preg_split('/\s+/u', $body, -1, PREG_SPLIT_NO_EMPTY)) > 8) {
             throw ValidationException::withMessages(['body' => 'ছয় শব্দের গল্প: ছয়টি শব্দের মধ্যে রাখুন।']);
         }
@@ -80,6 +109,9 @@ class KolomController extends Controller
             'anonymous' => $request->boolean('anonymous'), 'body' => $body, 'sender_hash' => $hash,
         ]);
 
-        return redirect(Url::to('/kolom').'#form')->with('kolom_sent', true);
+        // D266: the after-send card shows the reader's own words back, and how many more they may send this week
+        $left = max(0, Kolom::PER_PERSON - ReaderEntry::where('reader_prompt_id', $prompt->id)->where('sender_hash', $hash)->count());
+
+        return redirect(Url::to('/kolom').'#sent')->with('kolom_sent', ['body' => $body, 'left' => $left]);
     }
 }

@@ -797,3 +797,29 @@ document.querySelectorAll('[data-serial-box]').forEach((box) => {
         }
     }));
 });
+
+// D266: পাঠকের কলম. A live count under the box (words for a six-word story, characters otherwise), and a shared link
+// to one entry opens its folded letter.
+document.querySelectorAll('[data-kolom-count]').forEach((box) => {
+    const out = document.getElementById(box.getAttribute('aria-describedby'));
+    const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
+    const show = () => {
+        const text = box.value.trim();
+        if (box.dataset.kind === 'six') {
+            const words = text ? text.split(/\s+/u).length : 0;
+            out.textContent = `${bn(words)}/৬ শব্দ`;
+            out.classList.toggle('text-red', words > 6);
+        } else {
+            const max = Number(box.dataset.max);
+            out.textContent = `${bn([...box.value].length)}/${bn(max)} অক্ষর${box.dataset.kind === 'memory' ? ', এক-দুই লাইনে' : ''}`;
+        }
+    };
+    box.addEventListener('input', show);
+    if (box.value) show();
+});
+const hpOpenEntry = () => {
+    const id = location.hash.match(/^#(e\d+)$/)?.[1];
+    document.getElementById(id ?? '')?.querySelector('details[data-kolom-more]')?.setAttribute('open', '');
+};
+hpOpenEntry();
+window.addEventListener('hashchange', hpOpenEntry);
