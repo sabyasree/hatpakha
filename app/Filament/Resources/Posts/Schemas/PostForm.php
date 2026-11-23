@@ -182,7 +182,11 @@ class PostForm
                 Section::make(__('প্রকাশ'))->collapsible()->schema([
                     Select::make('status')->label(__('অবস্থা'))->required()->default('draft')
                         ->options(\App\Support\Lang::t(\App\Filament\Resources\Posts\Tables\PostsTable::STATUS)),
-                    DateTimePicker::make('published_at')->label(__('প্রকাশের সময়'))->native(false)->displayFormat('d/m/Y, h:i A')->seconds(false),
+                    DateTimePicker::make('published_at')->label(__('প্রকাশের সময়'))->native(false)->displayFormat('d/m/Y, h:i A')->seconds(false)->live(),
+                    // Owner, 2026-11-23: a writer already told a date hears of a new one, when the editor saves with this ticked.
+                    Toggle::make('tell_new_date')->label(__('লেখককে নতুন তারিখ জানান (ই-মেলে)'))->default(true)->dehydrated(false)
+                        ->helperText(__('সংরক্ষণ করলে লেখক আগের আর নতুন তারিখ দিয়ে একটি ছোট ই-মেল পাবেন।'))
+                        ->visible(fn (?Post $record, $get) => \App\Support\DateChange::applies($record, $get('published_at'), $get('status'))),
                     Select::make('section_id')->label(__('বিভাগ'))->relationship('section', 'name_bn')->preload(),
                     Select::make('authors')->label(__('লেখক'))->relationship('authors', 'display_name')->multiple()->searchable()->required(),
                     Select::make('issue_id')->label(__('সংখ্যা'))->relationship('issue', 'title'),

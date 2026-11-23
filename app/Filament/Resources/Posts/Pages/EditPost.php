@@ -214,12 +214,39 @@ class EditPost extends EditRecord
         ];
     }
 
+    /** The "tell the writer the new date" box starts ticked (it is hidden until the date moves, so its own default never applies). */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['tell_new_date'] = true;
+
+        return $data;
+    }
+
     /** Marks the post as edited here, so a later WordPress re-import never overwrites it. */
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['edited_in_desk_at'] = now();
 
         return $data;
+    }
+
+    /** The date a scheduled piece had before this save, and whether to tell its writer of a new one (owner, 2026-11-23). */
+    private ?\Illuminate\Support\Carbon $dateBefore = null;
+
+    private bool $wasScheduled = false;
+
+    protected function beforeSave(): void
+    {
+        $this->dateBefore = $this->record->published_at?->copy();
+        $this->wasScheduled = $this->record->status === 'scheduled';
+    }
+
+    protected function afterSave(): void
+    {
+        if ($this->wasScheduled && ($this->data['tell_new_date'] ?? false)
+            && \App\Support\DateChange::tell($this->record->fresh(), $this->dateBefore, auth()->user())) {
+            \Filament\Notifications\Notification::make()->title(__('লেখককে নতুন তারিখ জানানো হয়েছে'))->success()->send();
+        }
     }
 
     /** @return \Illuminate\Support\Collection<int, \App\Models\Certificate> valid certificates for this piece */
