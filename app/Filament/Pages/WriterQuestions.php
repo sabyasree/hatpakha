@@ -69,7 +69,7 @@ class WriterQuestions extends Page implements HasTable
             ->defaultSort(fn ($query) => $query->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")->orderByDesc('id'))
             ->columns([
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
-                    ->formatStateUsing(fn (string $state) => $state === 'open' ? __('উত্তর বাকি') : __('উত্তর দেওয়া'))
+                    ->formatStateUsing(fn (string $state) => ['open' => __('উত্তর বাকি'), 'dismissed' => __('উত্তর লাগেনি')][$state] ?? __('উত্তর দেওয়া'))
                     ->color(fn (string $state) => $state === 'open' ? 'danger' : 'gray'),
                 TextColumn::make('payload.name')->label(__('লেখক'))->description(fn (EditorTask $record) => $record->payload['email'] ?? null)->wrap(),
                 TextColumn::make('payload.question')->label(__('প্রশ্ন'))->wrap()->lineClamp(4),
@@ -77,10 +77,10 @@ class WriterQuestions extends Page implements HasTable
                 TextColumn::make('created_at')->label(__('কবে'))->since()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('status')->label(__('অবস্থা'))->options(['open' => __('উত্তর বাকি'), 'done' => __('উত্তর দেওয়া')]),
+                SelectFilter::make('status')->label(__('অবস্থা'))->options(['open' => __('উত্তর বাকি'), 'done' => __('উত্তর দেওয়া'), 'dismissed' => __('উত্তর লাগেনি')]),
             ])
             ->recordActions([
-                Action::make('answer')->label(fn (EditorTask $record) => $record->status === 'open' ? __('উত্তর দিন') : __('আবার উত্তর পাঠান'))
+                Action::make('answer')->label(fn (EditorTask $record) => filled($record->payload['reply'] ?? null) ? __('আবার উত্তর পাঠান') : __('উত্তর দিন'))
                     ->icon('heroicon-o-paper-airplane')->button()->size('sm')
                     ->color(fn (EditorTask $record) => $record->status === 'open' ? 'primary' : 'gray')
                     ->visible(fn (EditorTask $record) => $record->subject instanceof \App\Models\User)

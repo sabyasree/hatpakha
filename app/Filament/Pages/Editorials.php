@@ -96,7 +96,7 @@ class Editorials extends Page
             ?? Author::create(['user_id' => $user->id, 'display_name' => $user->name, 'slug' => 'editor-'.$user->id]);
         $post = Post::create([
             'title' => 'সম্পাদকীয়: '.$issue->title, 'body_html' => '', 'section_id' => $section->id, 'format' => 'prose', 'language' => 'bn',
-            'status' => 'draft', 'slug' => 'sompadokiyo-'.$issue->slug, 'issue_id' => $issue->id,
+            'status' => 'draft', 'slug' => \App\Support\Review::uniqueSlug('sompadokiyo-'.$issue->slug, 0), 'issue_id' => $issue->id,   // D272: an old one may hold the name
         ]);
         $post->authors()->sync([$author->id => ['position' => 0]]);
         $issue->forceFill(['editorial_post_id' => $post->id])->save();

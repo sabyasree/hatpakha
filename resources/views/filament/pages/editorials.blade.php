@@ -27,7 +27,7 @@
             <div class="hp-ed-row">
                 <div class="hp-ed-issue">
                     <b>{{ $i->title }}</b>
-                    <span class="hp-muted">{{ $i->slug }} · {{ $i->status === 'published' ? __('প্রকাশিত সংখ্যা') : __('আসছে') }}</span>
+                    <span class="hp-muted">{{ $i->slug }} · {{ $i->isLive() ? __('প্রকাশিত সংখ্যা') : ($i->status === 'published' ? $i->goesOutText() : __('আসছে')) }}</span>
                 </div>
                 <div>
                     <span class="hp-ed-chip hp-ed-{{ $state }}">{{ $state === 'scheduled' ? $post->goesOutText() : ['live' => __('সম্পাদকীয় প্রকাশিত'), 'draft' => __('খসড়া'), 'none' => __('এখনও লেখা হয়নি')][$state] }}</span>

@@ -40,7 +40,7 @@ final class IssueEbook
     public static function buildDue(): int
     {
         $n = 0;
-        foreach (Issue::where('status', 'published')->get() as $issue) {
+        foreach (Issue::live()->get() as $issue) {
             if (IssueBook::pieces($issue)->isEmpty() || ! $issue->liveEditorial() || $issue->ebook_hash === self::hash($issue)) {
                 continue;
             }

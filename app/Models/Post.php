@@ -117,6 +117,13 @@ class Post extends Model
             }
         });
         static::saving(function (self $post) {
+            // D272 (audit): the status follows the date. "Published" for a later date waits as "scheduled" (it showed as
+            // live and linked writers to a missing page); "scheduled" whose time has come is "published".
+            if ($post->published_at && $post->status === 'published' && $post->published_at->isFuture()) {
+                $post->status = 'scheduled';
+            } elseif ($post->published_at && $post->status === 'scheduled' && ! $post->published_at->isFuture()) {
+                $post->status = 'published';
+            }
             // D104 (owner): the old unanswered submissions are never published unless their writer said yes to the apology letter.
             if ($post->exists && $post->isDirty('status') && in_array($post->status, ['published', 'scheduled'], true)
                 && $post->isLegacyPending() && $post->relaunch_status !== 'yes' && ! self::$allowLegacyPublish) {

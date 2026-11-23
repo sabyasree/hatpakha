@@ -75,7 +75,7 @@ final class SerialReminders
             return false;   // all the planned episodes are out
         }
         $inHand = $serial->episodes()->where(fn ($q) => $q->whereIn('status', ['pending', 'confirm', 'changes'])
-            ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '>', $now)))->exists();
+            ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '>', $now->copy()->utc())))->exists();   // stored in UTC
         if ($inHand) {
             return false;
         }

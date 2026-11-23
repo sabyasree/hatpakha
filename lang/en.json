@@ -2942,5 +2942,15 @@
     "এটিকে এই সংখ্যার সম্পাদকীয় করবেন?": "Make this the editorial of this issue?",
     "এর সম্পাদকীয় করুন": ": make it the editorial",
     "যুক্ত হয়েছে": "Linked",
-    "কোনো আসন্ন সংখ্যার সম্পাদকীয় করতে পাশের বোতাম টিপুন।": "To make one the editorial of an upcoming issue, press the button beside it."
+    "কোনো আসন্ন সংখ্যার সম্পাদকীয় করতে পাশের বোতাম টিপুন।": "To make one the editorial of an upcoming issue, press the button beside it.",
+    "মাসিক সংখ্যা: বছর-মাস, যেমন 2026-10। বিশেষ সংখ্যা: ইংরেজি ছোট অক্ষরে একটি নাম, যেমন phire-asha। প্রকাশের পর বদলাবেন না।": "Monthly issue: year-month, e.g. 2026-10. Special issue: a name in small English letters, e.g. phire-asha. Do not change it after publishing.",
+    "সম্পাদকীয়র সময় ঠিক": "editorial scheduled",
+    "সম্পাদকীয় এখনও নেই": "no editorial yet",
+    "সংখ্যার দিন দেওয়া আছে। সময় ভারতের।": "The issue's day is filled in. Times are India time.",
+    "আপনি Google দিয়ে ঢুকেছেন, তাই পুরনো পাসওয়ার্ড লাগবে না। নতুন পাসওয়ার্ড দিলে ই-মেল আর পাসওয়ার্ড দিয়েও ঢুকতে পারবেন।": "You signed in with Google, so no old password is needed. Set a new one to also sign in with e-mail and password.",
+    "উত্তর লাগেনি": "No answer needed",
+    "শব্দ বদল ছাড়াই প্রকাশ": "Publish without the word changes",
+    "শব্দ বদল ছাড়াই প্রকাশ: ": "Publish without the word changes: ",
+    "লেখক উত্তর দেননি। লেখাটি লেখক যেমন পাঠিয়েছিলেন তেমনই (ছোট সংশোধনসহ) প্রকাশ হবে, প্রস্তাবিত শব্দ বদল বাদ যাবে। দিন: ঠিক করা দিন, সেটি পেরিয়ে গেলে পরের ঠিক দিন। লেখক \"মনোনীত\" ই-মেল পাবেন।": "The writer has not answered. The piece goes out as the writer sent it (with the small fixes); the proposed word changes are dropped. Day: the planned day, or the next right one if it has passed. The writer gets the \"selected\" e-mail.",
+    "মনোনীত হয়েছে": "Selected"
 }

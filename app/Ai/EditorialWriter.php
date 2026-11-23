@@ -60,7 +60,7 @@ final class EditorialWriter
             'format' => 'prose',
             'language' => 'bn',
             'status' => 'draft',
-            'slug' => $post->slug ?: 'sompadokiyo-'.$issue->slug,
+            'slug' => $post->slug ?: \App\Support\Review::uniqueSlug('sompadokiyo-'.$issue->slug, 0),
             'ai_drafted_at' => now(),
         ])->save();
         $post->authors()->sync([$author->id => ['position' => 0]]);

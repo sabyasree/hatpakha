@@ -116,7 +116,10 @@ class EditPost extends EditRecord
                     ? __('আগে লেখাটি নিজের ভাষায় বদলে "সংরক্ষণ" করুন আর নোটের তথ্যগুলো যাচাই করুন।')
                     : __('আগে লেখাটি পড়ে প্রয়োজনমতো বদলে "সংরক্ষণ" করুন। প্রকাশ হবে আপনার নামে।'))
                 ->schema(fn (Post $record) => array_filter([
-                    \Filament\Forms\Components\DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(now())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A'),
+                    \Filament\Forms\Components\DateTimePicker::make('at')->label(__('প্রকাশের সময়'))
+                        // D272 (audit): an issue's editorial goes out with its issue, not the moment it is approved
+                        ->default(fn (Post $record) => self::editorialDay($record) ?? now())
+                        ->helperText(fn (Post $record) => self::editorialDay($record) ? __('সংখ্যার দিন দেওয়া আছে। সময় ভারতের।') : __('সময় ভারতের।'))->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A'),
                     // D95: a desk draft is published under the house byline or the owner's own name, never anyone else's
                     $record->ai_note && $record->authors()->where('is_desk', true)->exists() ? \Filament\Forms\Components\Radio::make('byline')->label(__('কার নামে'))->required()->default('desk')
                         ->options(['desk' => __('হাতপাখা ডেস্ক'), 'me' => __('আমার নামে (নিজে লিখে নিয়েছি)')]) : null,
@@ -220,6 +223,18 @@ class EditPost extends EditRecord
         $data['tell_new_date'] = true;
 
         return $data;
+    }
+
+    /** The day its issue goes out, for an editorial whose issue is still ahead (D272). */
+    private static function editorialDay(Post $record): ?\Illuminate\Support\Carbon
+    {
+        $issue = $record->issue ?? \App\Models\Issue::where('editorial_post_id', $record->id)->first();
+        if (! $issue) {
+            return null;
+        }
+        $at = $issue->published_at ?? (preg_match('/^\d{4}-\d{2}$/', (string) $issue->slug) ? \App\Ai\IssuePlanner::publishAt($issue->slug) : null);
+
+        return $at && $at->isFuture() ? $at : null;
     }
 
     /** Marks the post as edited here, so a later WordPress re-import never overwrites it. */

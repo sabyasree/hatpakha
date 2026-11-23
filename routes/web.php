@@ -71,8 +71,8 @@ Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archiv
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 // Owner (2026-11-12): /sonkha/ is the page of all the issues, by year.
 Route::get('/sonkha', [ArchiveController::class, 'issues'])->name('issues');
-Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', '\d{4}-\d{2}')->name('issue');
-Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', '\d{4}-\d{2}')->name('issue.book');   // D68: book view, noindex
+Route::get('/sonkha/{slug}', [ArchiveController::class, 'issue'])->where('slug', \App\Models\Issue::SLUG)->name('issue');
+Route::get('/sonkha/{slug}/boi', [ArchiveController::class, 'issueBook'])->where('slug', \App\Models\Issue::SLUG)->name('issue.book');   // D68: book view, noindex
 // Owner (2026-11-12, later): readers read the issue on the site only; no e-book download for now (the EPUB stays in /desk).
 Route::get('/post-preview/{post}', [\App\Http\Controllers\PostController::class, 'preview'])->middleware('auth')->name('post.preview');   // D251: desk preview before publishing
 Route::get('/issue-preview/{issue}', [ArchiveController::class, 'issuePreview'])->middleware('auth')->name('issue.preview');   // desk preview before publishing (2026-11-12)

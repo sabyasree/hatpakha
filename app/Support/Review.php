@@ -71,7 +71,7 @@ final class Review
         self::finish($post, $editor, 'approved');
         // The SEO expert finishes the search & share details once the owner has approved (D46).
         $id = $post->id;
-        dispatch(fn () => ($p = Post::find($id)) ? \App\Ai\SeoExpert::run($p) : null)->afterResponse();
+        dispatch(fn () => ($p = Post::find($id)) ? \App\Ai\SeoExpert::run($p, onlyMissing: true) : null)->afterResponse();   // D272: never over what the editor typed
     }
 
     public static function requestChanges(Post $post, User $editor, string $note): void
@@ -85,6 +85,21 @@ final class Review
     {
         $post->forceFill(['status' => 'rejected', 'review_fixes' => null, 'review_note' => $note, 'reviewed_at' => now(), 'reviewed_by' => $editor->id])->save();
         self::finish($post, $editor, 'rejected');
+        self::dropLoneProposal($post);
+    }
+
+    /**
+     * D272 (audit): a serial proposal whose only episode was declined or deleted is closed ("dropped"), so the writer can
+     * propose a new serial (it stayed "proposed" for ever and blocked every new proposal).
+     */
+    public static function dropLoneProposal(Post $post): void
+    {
+        $serial = $post->serial_id ? \App\Models\Serial::find($post->serial_id) : null;
+        if ($serial && $serial->status === 'proposed' && $serial->user_id
+            && ! Post::where('serial_id', $serial->id)->whereNotIn('status', ['rejected'])->exists()) {
+            $serial->forceFill(['status' => 'dropped'])->save();
+            AuditLog::record('serial.dropped', null, ['serial' => $serial->id, 'post' => $post->id]);
+        }
     }
 
     public static function uniqueSlug(string $slug, int $ignoreId): string

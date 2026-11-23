@@ -52,6 +52,10 @@ final class GameTitles
             if ($r['hidden'] || $r['points'] < 1) {
                 continue;   // a player who hid their name is not on the board, so not on the roll either
             }
+            $who = User::find($r['user_id']);
+            if (! $who || ! $who->hasVerifiedEmail() || $who->spam_reason) {
+                continue;   // D272 (audit): scores come from the browser; a title (and its letter) needs a real, checked account
+            }
             if (++$place > 3) {
                 break;
             }

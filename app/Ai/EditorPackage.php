@@ -176,11 +176,33 @@ final class EditorPackage
         $owner = User::find($p['by'] ?? null) ?? $post->reviewedBy ?? User::where('role', 'admin')->firstOrFail();
         $at = \Illuminate\Support\Carbon::parse($p['at'] ?? now());
         $post->forceFill(['pending_edits' => null])->save();
-        Review::approve($post, $owner, $at->isPast() ? now() : $at, $p['slug'] ?? null, $p['note'] ?? null);
+        // D272 (audit): a planned day that has passed meanwhile moves to the next right day: a serial's next Saturday,
+        // the ফিরে আসা issue's day while it is ahead, else now
+        if ($at->isPast()) {
+            $at = $post->serial ? $post->serial->nextEpisodeAt($post->id) : (\App\Support\WriterInvites::forIssue($post) ? \App\Support\WriterInvites::issueAt() : now());
+        }
+        Review::approve($post, $owner, $at, $p['slug'] ?? null, $p['note'] ?? null);
     }
 
     /** How an objection is written in review_note; the desk's আজকের কাজ shows these first (D256). */
     public const OBJECTED = 'লেখকের আপত্তি: ';
+
+    /**
+     * D272 (audit): the writer has not answered about the word changes. The editor publishes it as the writer sent it
+     * (only the small fixes already in it), on the planned day or the next right one. The word changes are dropped.
+     */
+    public static function publishWithoutWords(Post $post, User $editor): void
+    {
+        abort_unless($post->status === 'confirm', 422);
+        $p = (array) $post->pending_edits;
+        $at = \Illuminate\Support\Carbon::parse($p['at'] ?? now());
+        if ($at->isPast()) {
+            $at = $post->serial ? $post->serial->nextEpisodeAt($post->id) : (\App\Support\WriterInvites::forIssue($post) ? \App\Support\WriterInvites::issueAt() : now());
+        }
+        $post->forceFill(['pending_edits' => null])->save();
+        Review::approve($post, $editor, $at, $p['slug'] ?? null, $p['note'] ?? null);
+        AuditLog::record('submission.published_without_words', $post, ['by' => $editor->id]);
+    }
 
     /** The writer objects: back to the owner's queue with the writer's words; nothing changed. */
     public static function writerObjects(Post $post, string $reason): void
@@ -314,8 +336,9 @@ final class EditorPackage
     public static function applyMetadata(Post $post, array $r): void
     {
         $post->forceFill(array_filter([
-            'seo_title' => mb_substr((string) ($r['seo_title'] ?? ''), 0, 70) ?: null,
-            'seo_description' => mb_substr((string) ($r['seo_description'] ?? ''), 0, 160) ?: null,
+            // D272: what the editor typed stays; the AI only fills what is empty
+            'seo_title' => $post->seo_title ?: (mb_substr((string) ($r['seo_title'] ?? ''), 0, 70) ?: null),
+            'seo_description' => $post->seo_description ?: (mb_substr((string) ($r['seo_description'] ?? ''), 0, 160) ?: null),
             'excerpt' => $post->excerpt ?: (($r['excerpt'] ?? '') ?: null),
         ]))->save();
         $ids = [];

@@ -38,8 +38,8 @@ class IssueForm
                         view('filament.issue-cover', ['issue' => $record])->render())),
                 ]),
             TextInput::make('title')->label(__('সংখ্যার নাম'))->required()->maxLength(120)->placeholder(__('যেমন: শারদীয়া ১৪৩৩')),
-            TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkha/')->suffix('/')->required()->regex('/^\d{4}-\d{2}$/')
-                ->unique(ignoreRecord: true)->helperText(__('বছর-মাস, যেমন 2026-10। প্রকাশের পর বদলাবেন না।'))
+            TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkha/')->suffix('/')->required()->regex('/^(?:'.\App\Models\Issue::SLUG.')$/')
+                ->unique(ignoreRecord: true)->helperText(__('মাসিক সংখ্যা: বছর-মাস, যেমন 2026-10। বিশেষ সংখ্যা: ইংরেজি ছোট অক্ষরে একটি নাম, যেমন phire-asha। প্রকাশের পর বদলাবেন না।'))
                 ->disabled(fn ($record) => $record?->status === 'published'),
             Select::make('kind')->label(__('ধরন'))->options(['festival' => __('উৎসব সংখ্যা'), 'monthly' => __('মাসিক সংখ্যা')])->required()->default('monthly'),
             Select::make('theme_key')->label(__('প্রচ্ছদের থিম'))->options(\App\Support\Lang::t(self::THEMES))->required(),

@@ -58,7 +58,7 @@ final class IssueNews
     /** Queue the notification to every phone that has notifications on (sent by the usual announcement sender). */
     public static function announce(Issue $issue, ?User $by): ?PushAnnouncement
     {
-        if ($issue->status !== 'published' || self::announced($issue) || ! WebPush::configured()) {
+        if (! $issue->isLive() || self::announced($issue) || ! WebPush::configured()) {   // D272: only once readers can open it
             return null;
         }
         $m = self::message($issue);
@@ -72,7 +72,7 @@ final class IssueNews
     /** Tell each writer in the issue, once: an e-mail (editable in ই-মেলের নমুনা) and their phones. Returns how many. */
     public static function tellWriters(Issue $issue, ?User $by): int
     {
-        if ($issue->status !== 'published' || self::writersTold($issue)) {
+        if (! $issue->isLive() || self::writersTold($issue)) {
             return 0;
         }
         $n = 0;

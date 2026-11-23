@@ -28,7 +28,12 @@ final class IssueWatch
     {
         $now = now('Asia/Kolkata');
 
-        return Issue::whereIn('slug', [$now->format('Y-m'), $now->copy()->addMonthNoOverflow()->format('Y-m')])->orderBy('slug')->get();
+        // D272 (audit): also a special issue (ফিরে আসা) that is not out yet, or came out within the month
+        $months = Issue::whereIn('slug', [$now->format('Y-m'), $now->copy()->addMonthNoOverflow()->format('Y-m')])->get();
+        $special = Issue::where(fn ($q) => $q->where('status', '!=', 'published')->orWhere('published_at', '>', now()->subMonth()))->get()
+            ->reject(fn (Issue $i) => (bool) preg_match('/^\d{4}-\d{2}$/', (string) $i->slug));
+
+        return $months->merge($special)->unique('id')->sortBy('slug')->values();
     }
 
     /** @return array{editorial: string, cover: string, post: ?Post, ready: bool} editorial: missing|draft|scheduled|live; cover: missing|proposed|set */
@@ -58,7 +63,7 @@ final class IssueWatch
                 default => null,
             },
             // Owner (2026-11-12): a live issue is news for readers and for its writers.
-            $issue->status === 'published' && ((! \App\Support\IssueNews::announced($issue) && \App\Support\WebPush::configured())
+            $issue->isLive() && ((! \App\Support\IssueNews::announced($issue) && \App\Support\WebPush::configured())
                 || (! \App\Support\IssueNews::writersTold($issue) && \App\Support\IssueNews::writers($issue)->isNotEmpty()))
                 ? __('পাঠক আর লেখকদের খবর দিন') : null,
         ]));

@@ -110,6 +110,7 @@ class SubmissionController extends Controller
         abort_unless($post->status === 'draft', 403);
         AuditLog::record('submission.draft_deleted', $post);
         $post->delete();
+        \App\Support\Review::dropLoneProposal($post);   // D272: its serial proposal goes with it
 
         return redirect(Url::to('/account'))->with('status', '"'.$post->title.'" খসড়াটি মুছে ফেলা হয়েছে।');
     }
@@ -275,28 +276,32 @@ class SubmissionController extends Controller
                 default => 'আপনি “ধারাবাহিক” বিভাগ বেছেছেন। “এটি কি ধারাবাহিকের পর্ব?” প্রশ্নে “হ্যাঁ, নতুন ধারাবাহিক শুরু করছি” বেছে তিনটি কথা জানান। একটাই লেখা হলে বিভাগ বদলে গল্প, কবিতা বা অন্য কিছু বেছে নিন।',
             }]);
         }
-        $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
-        // Contest entry (D53): only an open contest; one entry per writer per contest; never changed after judging starts.
-        $contestId = $data['contest_id'] ?? null;
-        if ($contestId && $contestId !== $post->contest_id) {
-            $open = \App\Models\Contest::openNow()->whereKey($contestId)->exists();
-            $already = Post::where('contest_id', $contestId)->where('submitted_by', $request->user()->id)->whereKeyNot($post->id)->exists();
-            if (! $open || $already) {
-                throw ValidationException::withMessages(['contest_id' => $already ? 'এই প্রতিযোগিতায় আপনার একটি লেখা আগেই জমা আছে।' : 'এই প্রতিযোগিতা এখন চলছে না।']);
+        // D272 (audit): saving, the contest check and the serial check stand or fall together; a refusal leaves no
+        // half-saved copy behind (pressing send again made a second draft).
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $post, $data) {
+            $this->fill($request, $post, $data['title'], $data['body'], (int) $data['section_id']);
+            // Contest entry (D53): only an open contest; one entry per writer per contest; never changed after judging starts.
+            $contestId = $data['contest_id'] ?? null;
+            if ($contestId && $contestId !== $post->contest_id) {
+                $open = \App\Models\Contest::openNow()->whereKey($contestId)->exists();
+                $already = Post::where('contest_id', $contestId)->where('submitted_by', $request->user()->id)->whereKeyNot($post->id)->exists();
+                if (! $open || $already) {
+                    throw ValidationException::withMessages(['contest_id' => $already ? 'এই প্রতিযোগিতায় আপনার একটি লেখা আগেই জমা আছে।' : 'এই প্রতিযোগিতা এখন চলছে না।']);
+                }
             }
-        }
-        if (! $post->contest_id || \App\Models\Contest::openNow()->whereKey($post->contest_id)->exists()) {
-            $post->forceFill(['contest_id' => $contestId ?: null])->save();
-        }
-        if (\App\Support\WriterInvites::open()) {   // the writer's own word; the desk can still change it
-            $issueId = \App\Support\WriterInvites::issue()->id;
-            if ($request->boolean('for_issue') && ! $post->issue_id) {
-                $post->forceFill(['issue_id' => $issueId])->saveQuietly();
-            } elseif (! $request->boolean('for_issue') && (int) $post->issue_id === $issueId) {
-                $post->forceFill(['issue_id' => null])->saveQuietly();
+            if (! $post->contest_id || \App\Models\Contest::openNow()->whereKey($post->contest_id)->exists()) {
+                $post->forceFill(['contest_id' => $contestId ?: null])->save();
             }
-        }
-        $this->serial($request, $post, $data);
+            if (\App\Support\WriterInvites::open()) {   // the writer's own word; the desk can still change it
+                $issueId = \App\Support\WriterInvites::issue()->id;
+                if ($request->boolean('for_issue') && ! $post->issue_id) {
+                    $post->forceFill(['issue_id' => $issueId])->saveQuietly();
+                } elseif (! $request->boolean('for_issue') && (int) $post->issue_id === $issueId) {
+                    $post->forceFill(['issue_id' => null])->saveQuietly();
+                }
+            }
+            $this->serial($request, $post, $data);
+        });
         if ($request->hasFile('cover')) {
             \App\Support\CoverImage::attach($post, $request->file('cover'));
         } elseif ($request->boolean('remove_cover')) {

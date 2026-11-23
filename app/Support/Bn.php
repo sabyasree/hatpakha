@@ -30,6 +30,8 @@ final class Bn
         if (! $d) {
             return '';
         }
+        // D272 (audit): the day as India sees it (stored times are UTC; 2am on the 5th in India is the 4th in UTC)
+        $d = \Illuminate\Support\Carbon::instance($d)->setTimezone('Asia/Kolkata');
 
         return self::$latin   // D169: English pages say "12 November 2026"
             ? $d->format('j F Y')

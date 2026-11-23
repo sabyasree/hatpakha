@@ -80,9 +80,9 @@
                         </li>
                         {{-- 3. The magazine --}}
                         <li class="hp-mz-step">
-                            <span class="hp-mz-dot {{ $i->status === 'published' && $s['editorial'] === 'live' ? 'hp-mz-ok' : 'hp-mz-wait' }}" aria-hidden="true">{{ $i->status === 'published' && $s['editorial'] === 'live' ? '✓' : '৩' }}</span>
+                            <span class="hp-mz-dot {{ $i->isLive() && $s['editorial'] === 'live' ? 'hp-mz-ok' : 'hp-mz-wait' }}" aria-hidden="true">{{ $i->isLive() && $s['editorial'] === 'live' ? '✓' : '৩' }}</span>
                             <div>
-                                <b>{{ __('পত্রিকা') }}: {{ $i->status === 'published' ? __('পাঠকেরা সাইটে পড়ছেন') : __('সংখ্যা অনুমোদনের পর সাইটে খুলবে') }}</b>
+                                <b>{{ __('পত্রিকা') }}: {{ $i->isLive() ? __('পাঠকেরা সাইটে পড়ছেন') : ($i->status === 'published' ? $i->goesOutText() : __('সংখ্যা অনুমোদনের পর সাইটে খুলবে')) }}</b>
                                 <div class="hp-mz-btns">
                                     @if ($i->status === 'published')
                                         <x-filament::button size="sm" color="gray" tag="a" :href="\App\Support\Url::to('/sonkha/'.$i->slug.'/boi')" target="_blank" icon="heroicon-o-book-open">{{ __('পত্রিকা দেখুন') }}</x-filament::button>
