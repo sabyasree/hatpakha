@@ -61,7 +61,8 @@ class AppAndPushTest extends TestCase
 
         $sw = $this->get('/sw.js')->assertOk();
         $this->assertStringStartsWith('application/javascript', $sw->headers->get('Content-Type'));
-        $this->assertStringContainsString('no-store', $sw->headers->get('Cache-Control'));
+        $this->assertStringContainsString('max-age=0', $sw->headers->get('Cache-Control'), 'Browsers never keep the worker');
+        $this->assertSame('max-age=600', $sw->headers->get('CDN-Cache-Control'), 'D263: Cloudflare may answer it for ten minutes');
         $this->assertSame([], $sw->headers->getCookies(), 'No session for the worker');
         $js = $sw->getContent();
         $this->assertMatchesRegularExpression("/^const VERSION = '[0-9a-f]{12}';/", $js);

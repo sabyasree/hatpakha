@@ -18,7 +18,11 @@ use Illuminate\Http\Request;
  */
 class AppController extends Controller
 {
-    /** The service worker, with this release's version on top so browsers pick up a new one after each deploy. Never cached. */
+    /**
+     * The service worker, with this release's version on top so browsers pick up a new one after each deploy.
+     * Browsers never keep it (max-age=0). D263: Cloudflare may answer it for ten minutes (it was ~900 server hits a day,
+     * the same file for everyone, no cookie); a new release reaches phones at most ten minutes later.
+     */
     public function serviceWorker()
     {
         $manifest = public_path('build/manifest.json');
@@ -27,7 +31,8 @@ class AppController extends Controller
 
         return response($js, 200, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
-            'Cache-Control' => 'no-store, max-age=0',
+            'Cache-Control' => 'public, max-age=0, must-revalidate',
+            'CDN-Cache-Control' => 'max-age=600',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }

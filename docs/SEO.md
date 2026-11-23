@@ -39,7 +39,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 ## 4. Indexing rules
 - **Indexed:** posts, sections, issues, author pages with **3 or more** published pieces, curated topic hubs.
 - **noindex, follow:** author pages with fewer than 3 pieces, tag pages with fewer than 5 posts, search results, paginated pages after page 1 (they canonical to themselves, not page 1).
-- **Disallowed in robots.txt:** `/admin`, `/desk`, `/submit`, `/account`, `/search`. **CSS and JS are never blocked** (the old site blocked them).
+- **Disallowed in robots.txt:** `/admin`, `/desk`, `/submit`, `/account`, `/search`, and (D263) the sign-in pages (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/email/`), the language switch `/language/` and `/csrf-token`. **CSS and JS are never blocked** (the old site blocked them).
 - Sitemap index `/sitemap.xml` → `sitemap-posts-{n}.xml` (≤ 5,000 URLs each, with `lastmod`; the index lists each file's `lastmod` too), `sitemap-sections.xml`, `sitemap-authors.xml`, `sitemap-issues.xml`, plus image entries. Regenerated on publish. ✅test
 - **AI agents (D126):** robots.txt says `Content-Signal: search=yes, ai-input=yes, ai-train=no` and shuts out training-only crawlers by name; `/llms.txt` describes the site; any public page comes as Markdown for `Accept: text/markdown` (never cached, canonical Link header); every public page sends `Link: </llms.txt>; rel="describedby"`. Never mark the Markdown response noindex (it shares the page's URL). ✅test
 - **IndexNow** ping (Bing, Yandex) on publish and update. Google is discovered through the sitemap and Search Console.

@@ -136,6 +136,9 @@
         .mag-contents h3 { font: 700 .8em 'Anek Bangla', sans-serif; color: #CB1B32; margin: .9em 0 .2em; }
         .mag-writers h3 { font: 700 1em 'Anek Bangla', sans-serif; margin: .8em 0 .1em; }
         .mag-writers p { font-size: .9em; color: #4D5A63; }
+        .mag-writer { display: flex; gap: .7em; align-items: flex-start; break-inside: avoid; }
+        .mag-writer h3 { margin-top: .8em; }
+        .mag-writer-photo { flex: none; width: 3.2em; height: 3.2em; margin-top: .7em; border-radius: 50%; object-fit: cover; border: 2px solid #13212C; }
         /* Without JavaScript: one long readable page */
         .mag-source { background: #FFFBF4; max-width: 720px; margin: 0 auto; padding: 1.5rem; height: calc(100% - 52px); overflow: auto; }
         .mag-ready .mag-source { display: none; }
@@ -240,8 +243,14 @@
                 <p class="mag-kicker">{{ $w['of'] }}</p>
                 <h2 class="mag-h">লেখকেরা</h2>
                 @foreach ($writers as $w)
-                    <h3>{{ $w->publicName() }}</h3>
-                    @if (filled($w->bio))<p>{{ \Illuminate\Support\Str::limit(strip_tags($w->bio), 220) }}</p>@endif
+                    {{-- D261 (owner): the writer's profile photo beside the name, only when they have set one --}}
+                    <div class="mag-writer">
+                        @if ($w->avatar_path)<img src="{{ $w->avatar_path }}" alt="" loading="lazy" class="mag-writer-photo">@endif
+                        <div>
+                            <h3>{{ $w->publicName() }}</h3>
+                            @if (filled($w->bio))<p>{{ \Illuminate\Support\Str::limit(strip_tags($w->bio), 220) }}</p>@endif
+                        </div>
+                    </div>
                 @endforeach
             </section>
         @endif

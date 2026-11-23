@@ -132,7 +132,9 @@ final class IssueBook
         $writers = $pieces->flatMap(fn (Post $p) => $p->authors->where('is_desk', false))->unique('id')->values();
         if ($writers->isNotEmpty()) {
             $zip->addFromString('OEBPS/writers.xhtml', $page('এই সংখ্যার লেখকেরা', '<section class="writers"><h2>এই সংখ্যার লেখকেরা</h2>'
-                .$writers->map(fn ($w) => '<h3>'.e($w->publicName()).'</h3>'.(filled($w->bio) ? '<p>'.e(Str::limit(strip_tags((string) $w->bio), 300)).'</p>' : ''))->implode('').'</section>'));
+                .$embed($writers->map(fn ($w) => '<div class="writer">'   // D261: the profile photo, only when set and on this server
+                    .($w->avatar_path && ! str_contains((string) $w->avatar_path, '..') && is_file(public_path(ltrim((string) parse_url((string) $w->avatar_path, PHP_URL_PATH), '/'))) ? '<img class="writer-photo" src="'.e($w->avatar_path).'" alt=""/>' : '')
+                    .'<h3>'.e($w->publicName()).'</h3>'.(filled($w->bio) ? '<p>'.e(Str::limit(strip_tags((string) $w->bio), 300)).'</p>' : '').'</div>')->implode('')).'</section>'));
             $manifest[] = '<item id="writers" href="writers.xhtml" media-type="application/xhtml+xml"/>';
             $spine[] = '<itemref idref="writers"/>';
             $navItems .= '<li><a href="writers.xhtml">এই সংখ্যার লেখকেরা</a></li>';
@@ -207,6 +209,7 @@ figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vig
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
 .writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
+.writer { overflow: hidden; page-break-inside: avoid; } .writer-photo { float: left; width: 3.4em; height: 3.4em; margin: 1.2em .8em .3em 0; border-radius: 50%; object-fit: cover; }
 CSS;
     }
 
