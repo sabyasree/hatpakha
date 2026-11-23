@@ -181,8 +181,10 @@ class PostsTable
                         ->visible(fn (Post $record) => $record->proposed_image_path && ! $record->featured_image_path),
                     Toggle::make('metadata')->label(__('এআই-এর ট্যাগ, এক লাইনের পরিচিতি আর গুগলের তথ্য বসান'))->default(true)
                         ->visible(fn (Post $record) => EditorPackage::report($record) !== null),
-                    DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(fn () => Schedule::nextSlot())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
-                        ->helperText(__('পরের খালি দিন (সোম/বুধ/শুক্র সকাল ৯টা) দেওয়া আছে। এখনই চাইলে আজকের সময় দিন।')),
+                    DateTimePicker::make('at')->label(__('প্রকাশের সময়'))->default(fn (Post $record) => \App\Support\WriterInvites::forIssue($record) ? \App\Support\WriterInvites::issueAt() : Schedule::nextSlot())->required()->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')
+                        ->helperText(fn (Post $record) => \App\Support\WriterInvites::forIssue($record)
+                            ? __('ফিরে আসা সংখ্যার লেখা: সংখ্যার দিন (১৪ ডিসেম্বর সকাল ৯টা) দেওয়া আছে। লেখক এখনই "মনোনীত" ই-মেল পাবেন, লেখা প্রকাশ হবে সেদিন।')
+                            : __('পরের খালি দিন (সোম/বুধ/শুক্র সকাল ৯টা) দেওয়া আছে। এখনই চাইলে আজকের সময় দিন।')),
                     TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/')->suffix('/')->maxLength(120)
                         ->default(fn (Post $record) => Transliterate::slug($record->title))
                         ->regex('/^[a-z0-9]+(-[a-z0-9]+)*$/')->helperText(__('ইংরেজি ছোট অক্ষর, সংখ্যা আর হাইফেন।')),
