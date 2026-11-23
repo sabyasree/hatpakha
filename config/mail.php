@@ -103,6 +103,13 @@ return [
             'transport' => 'array',
         ],
 
+        // D258: account mail (sign-up, password) goes by Hostinger first; if Hostinger refuses, Amazon SES takes it.
+        'account' => [
+            'transport' => 'failover',
+            'mailers' => array_values(array_unique(array_filter([env('MAIL_MAILER', 'log'), env('MAIL_BULK_HOST') ? 'bulk' : null]))),
+            'retry_after' => 60,
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [

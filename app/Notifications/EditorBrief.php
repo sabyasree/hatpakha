@@ -21,7 +21,7 @@ class EditorBrief extends Notification
     {
         $n = fn ($k) => Bn::num((int) ($this->b[$k] ?? 0));
 
-        return (new MailMessage)->subject('হাতপাখা: আজকের কাজ')
+        return \App\Support\BulkMail::road(new MailMessage)->subject('হাতপাখা: আজকের কাজ')   // D258
             ->greeting('নমস্কার, '.$notifiable->name)
             ->line("গত ২৪ ঘণ্টায় এআই সম্পাদক {$n('prepared')}টি লেখা তৈরি করেছে, {$n('pictures')}টি ছবি এঁকেছে, {$n('comments_screened')}টি মন্তব্য পড়েছে।")
             ->line("আপনার অপেক্ষায়: {$n('waiting_pieces')}টি লেখা, {$n('waiting_comments')}টি মন্তব্য, {$n('waiting_pictures')}টি ছবি"

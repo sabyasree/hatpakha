@@ -349,6 +349,11 @@ class BulkMailTest extends TestCase
         $this->assertNull((new \App\Notifications\FormReceived('submission', 'নদীর ধারে'))->toMail($writer)->mailer, 'No service set up: the site\'s own mailbox, as before');
         config(['mail.mailers.bulk.host' => 'email-smtp.ap-south-1.amazonaws.com']);
         $this->assertSame('bulk', (new \App\Notifications\FormReceived('submission', 'নদীর ধারে'))->toMail($writer)->mailer);
-        $this->assertNull((new \App\Notifications\FormReceived('contact'))->toMail($writer)->mailer, 'An address nobody verified stays off the mail service');
+        $this->assertSame('account', (new \App\Notifications\FormReceived('contact'))->toMail($writer)->mailer, 'An address nobody verified stays on Hostinger first (D233, D258)');
+        // D258: everything else goes by the chosen service; account mail by Hostinger, with the service behind it
+        $this->assertSame('bulk', (new \App\Notifications\TemplateMail('piece_live', ['{লেখা}' => 'ক']))->toMail($writer)->mailer);
+        $this->assertSame('bulk', (new \App\Notifications\WriterNote('ক', 'খ', 'https://hatpakha.com/account/'))->toMail($writer)->mailer);
+        $this->assertSame('account', (new \App\Notifications\VerifyEmailBn)->toMail($writer)->mailer);
+        $this->assertSame('account', (new \App\Notifications\ResetPasswordBn('t'))->toMail($writer)->mailer);
     }
 }

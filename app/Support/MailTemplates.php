@@ -194,6 +194,10 @@ final class MailTemplates
     }
 
     /** The e-mail, ready to send. $values: placeholder => value. */
+    /** D258: the account e-mails, the only ones Hostinger's mailbox still sends. */
+    public const ACCOUNT = ['verify_email', 'reset_password', 'account_exists',
+        'contact_received', 'advertise_received'];   // D233: an address anyone can type in stays off the mail service (its bounces count against us)
+
     public static function mail(string $key, array $values, ?string $url = null, ?MailMessage $m = null): MailMessage
     {
         $t = self::text($key);
@@ -235,7 +239,9 @@ final class MailTemplates
         }
         $m->viewData['reason'] = self::REASONS[$key] ?? null;
 
-        return $m;
+        // D258: account mail (sign-up, password, "already have an account") keeps Hostinger, with Amazon SES behind it
+        // if Hostinger fails; everything else goes by the road chosen in /desk.
+        return in_array($key, self::ACCOUNT, true) ? (blank($m->mailer) ? $m->mailer('account') : $m) : BulkMail::road($m);
     }
 
     /**

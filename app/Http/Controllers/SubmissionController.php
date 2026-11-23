@@ -180,7 +180,8 @@ class SubmissionController extends Controller
             if ($mine()->where('status', 'proposed')->where('id', '!=', (int) $post->serial_id)->exists()) {
                 throw ValidationException::withMessages(['serial' => 'আপনার একটি ধারাবাহিকের প্রস্তাব সম্পাদকের কাছে আছে। উত্তর এলে আর একটি পাঠাতে পারবেন।']);
             }
-            $fields = ['title' => strip_tags((string) $data['serial_title']), 'plan' => strip_tags((string) $data['serial_plan']), 'planned_count' => (int) $data['serial_count']];
+            $fields = ['title' => strip_tags((string) $data['serial_title']), 'logline' => trim(strip_tags((string) ($data['serial_logline'] ?? ''))) ?: null,
+                'plan' => strip_tags((string) $data['serial_plan']), 'planned_count' => (int) $data['serial_count']];
             $own = $post->serial_id ? $mine()->where('status', 'proposed')->find($post->serial_id) : null;
             if ($own) {
                 $own->forceFill($fields)->save();   // still a draft of the same proposal
@@ -210,6 +211,10 @@ class SubmissionController extends Controller
     private function save(Request $request, Post $post)
     {
         $submitting = $request->input('action') === 'submit';
+        // Owner, 2026-11-23 ("পর্বের সংখ্যা লেখা যাচ্ছে না"): a number box took only English digits; Bengali ones are read too.
+        if ($request->filled('serial_count')) {
+            $request->merge(['serial_count' => trim(strtr((string) $request->input('serial_count'), ['০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4', '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9']))]);
+        }
         $data = $request->validate([
             'title' => ['required', 'string', 'min:1', 'max:200'],
             'body' => ['required', 'string', 'min:30', 'max:200000'],
@@ -224,13 +229,18 @@ class SubmissionController extends Controller
             // D193: this piece is an episode of the writer's own serial ("new" proposes one)
             'serial' => ['nullable', 'string', 'max:12'],
             'serial_title' => ['required_if:serial,new', 'nullable', 'string', 'min:2', 'max:150'],
+            'serial_logline' => ['required_if:serial,new', 'nullable', 'string', 'min:15', 'max:400'],   // D259: what readers see
             'serial_plan' => ['required_if:serial,new', 'nullable', 'string', 'min:80', 'max:3000'],
             'serial_count' => ['required_if:serial,new', 'nullable', 'integer', 'min:2', 'max:60'],
         ], [
             'serial_title.required_if' => '১ নম্বরে পুরো ধারাবাহিকের নাম লিখুন।',
-            'serial_plan.required_if' => '২ নম্বরে পুরো গল্পটা কী নিয়ে, কোন দিকে যাবে, তিন-চার লাইনে লিখুন।',
+            'serial_logline.required_if' => '২ নম্বরে পাঠকদের জন্য এক-দুই লাইনে গল্পটা লিখুন।',
+            'serial_logline.min' => 'পাঠকদের জন্য গল্পের কথা আর একটু লিখুন (এক-দুই লাইন)।',
+            'serial_logline.max' => 'পাঠকদের জন্য কথাটা এক-দুই লাইনে রাখুন (৪০০ অক্ষরের মধ্যে)।',
+            'serial_plan.required_if' => '৩ নম্বরে পুরো গল্পটা কী নিয়ে, কোন দিকে যাবে, তিন-চার লাইনে লিখুন।',
             'serial_plan.min' => 'গল্পের পরিকল্পনা আর একটু খুলে লিখুন (অন্তত দু-তিন লাইন)।',
-            'serial_count.required_if' => 'আনুমানিক কত পর্ব হবে, লিখুন।',
+            'serial_count.required_if' => '৪ নম্বরে আনুমানিক কত পর্ব হবে, লিখুন।',
+            'serial_count.integer' => 'কত পর্ব হবে, শুধু সংখ্যায় লিখুন (যেমন: ৮)।',
             'serial_count.min' => 'ধারাবাহিকে অন্তত দুটি পর্ব লাগে।',
             'serial_count.max' => 'পর্বের সংখ্যা ৬০-এর মধ্যে রাখুন।',
             'writer_note.max' => 'সম্পাদককে লেখা কথা ২০০০ অক্ষরের মধ্যে রাখুন।',
