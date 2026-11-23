@@ -257,4 +257,11 @@ class MagazineTest extends TestCase
                 return $c->isVisible();
             });
     }
+
+    /** D267: December's বর্ষসেরা comes out on the 27th, other monthly issues on the 1st (9am India time). */
+    public function test_the_december_issue_is_suggested_for_the_27th(): void
+    {
+        $this->assertSame('2026-12-27 03:30:00', \App\Ai\IssuePlanner::publishAt('2026-12')->toDateTimeString());
+        $this->assertSame('2027-01-01 03:30:00', \App\Ai\IssuePlanner::publishAt('2027-01')->toDateTimeString());
+    }
 }

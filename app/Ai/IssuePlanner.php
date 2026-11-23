@@ -21,6 +21,17 @@ final class IssuePlanner
         7 => ['barsha'], 8 => ['srabon'], 9 => ['puja'], 10 => ['puja', 'dipaboli'], 11 => ['dipaboli', 'hemonto'], 12 => ['borshosera'],
     ];
 
+    /** D267 (owner, 2026-11-23): a monthly issue that does not come out on the 1st: December's বর্ষসেরা on the last Sunday before the year ends. */
+    public const DAY = [12 => 27];
+
+    /** The day and time (9am India time) a month's issue goes out, as the desk suggests it when approving. */
+    public static function publishAt(string $slug): \Illuminate\Support\Carbon
+    {
+        $day = self::DAY[(int) substr($slug, 5, 2)] ?? 1;
+
+        return \Illuminate\Support\Carbon::parse($slug.'-'.str_pad((string) $day, 2, '0', STR_PAD_LEFT).' 09:00', 'Asia/Kolkata')->utc();
+    }
+
     public const FESTIVAL = ['boi', 'basanta', 'noboborsho', 'robindro', 'puja', 'dipaboli'];
 
     /** The month to plan: next month from the 20th on, otherwise this month (if it has no issue yet). */

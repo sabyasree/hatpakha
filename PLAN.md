@@ -317,7 +317,7 @@ AI-assisted pass over all 1,393 posts, each labelled **Keep / Improve / Merge / 
 | Sept / Oct | **শারদীয়া (পূজাবার্ষিকী)** | Festival · **flagship** | Mahalaya | Biggest issue: contest winners, sponsors, **print-on-demand copies** |
 | Oct / Nov | **দীপাবলি সংখ্যা** | Festival | Kali Puja | Ghost and thriller stories |
 | November | **হেমন্ত সংখ্যা** | Regular | 1 Nov (or merged with Dipaboli when they fall in the same month) | Nabanna, harvest |
-| December | **বর্ষসেরা সংখ্যা** | Regular | 15 Dec | Best of the year chosen by readers' votes + editors; awards |
+| December | **বর্ষসেরা সংখ্যা** | Regular | 27 Dec (D267; 2026: Sunday, two weeks after the ফিরে আসা সংখ্যা on 14 Dec) | Best of the year chosen by readers' votes + editors; awards |
 
 - **Festival specials:** gold-foil folk-art cover, the full e-book, sponsors and a big social push.
 - **Regular monthly issues:** use a simpler **standard monthly cover template** (theme photo or illustration + title), so they take little design work.

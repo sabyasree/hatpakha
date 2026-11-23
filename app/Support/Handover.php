@@ -528,18 +528,7 @@ final class Handover
 
     private static function episodeDay(\App\Models\Serial $case): \Illuminate\Support\Carbon
     {
-        $tz = 'Asia/Kolkata';
-        $from = now($tz)->addHour();
-        $before = $case->episodes()->whereIn('status', ['published', 'scheduled'])->max('published_at');
-        if ($before) {
-            $from = $from->max(\Illuminate\Support\Carbon::parse($before)->timezone($tz)->addDays(6)->startOfDay());
-        }
-        $day = $from->copy()->setTime(9, 0);
-        while ($day->dayOfWeek !== (int) $case->day || $day->lt($from)) {
-            $day->addDay()->setTime(9, 0);
-        }
-
-        return $day->utc();
+        return $case->nextEpisodeAt();   // D269: one rule for every serial
     }
 
     /** The owner: "not this one by itself". */

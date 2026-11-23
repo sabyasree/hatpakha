@@ -70,8 +70,8 @@ class EditIssue extends EditRecord
                         ->options(fn (Issue $record) => \App\Models\Post::whereIn('id', (array) ($record->ai_plan['post_ids'] ?? []))->pluck('title', 'id')->all())
                         ->default(fn (Issue $record) => (array) ($record->ai_plan['post_ids'] ?? []))->columns(1)->bulkToggleable(),
                     DateTimePicker::make('at')->label(__('প্রকাশের দিন'))->seconds(false)->native(false)->displayFormat('d/m/Y, h:i A')->required()
-                        ->default(fn (Issue $record) => max(now(), Carbon::parse($record->slug.'-01 09:00', 'Asia/Kolkata')->utc()))
-                        ->helperText(__('উৎসব সংখ্যা উৎসবের দিনে, অন্য সংখ্যা মাসের ১ তারিখে (PLAN.md)।')),
+                        ->default(fn (Issue $record) => preg_match('/^\d{4}-\d{2}$/', (string) $record->slug) ? max(now(), \App\Ai\IssuePlanner::publishAt($record->slug)) : now())
+                        ->helperText(__('উৎসব সংখ্যা উৎসবের দিনে, অন্য সংখ্যা মাসের ১ তারিখে; ডিসেম্বরের বর্ষসেরা ২৭ তারিখে (PLAN.md)।')),
                 ])
                 ->action(function (Issue $record, array $data) {
                     IssuePlanner::approve($record, auth()->user(), Carbon::parse($data['at']), array_map('intval', (array) $data['posts']));

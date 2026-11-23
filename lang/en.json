@@ -236,7 +236,6 @@
     "উন্নত করুন": "Improve",
     "উৎসব": "Festival",
     "উৎসব সংখ্যা": "Festival issue",
-    "উৎসব সংখ্যা উৎসবের দিনে, অন্য সংখ্যা মাসের ১ তারিখে (PLAN.md)।": "Festival issues on the festival day, others on the 1st of the month (PLAN.md).",
     "এআই": "AI",
     "এআই আগেই পড়ে রেখেছে। \"ঠিক আছে\" চিহ্নিতগুলো একসঙ্গে প্রকাশ করতে পারেন।": "The AI has read them already. You can publish all the ones marked \"fine\" at once.",
     "এআই আবার চালু": "AI back on",
@@ -2933,5 +2932,11 @@
     "এখনও কোনো প্রশ্ন আসেনি": "No questions yet",
     "প্রশ্ন": "Question",
     "ফাঁকা থাকলে ধারাবাহিকের পাতায় আর প্রথম পাতায় নামের নিচে কিছু দেখা যায় না। লেখকেরা এখন জমা দেওয়ার সময়েই এটি লেখেন।": "If empty, nothing shows under the name on the serial page and the home page. Writers now write this when they submit.",
-    "সম্মতির অপেক্ষায়": "Waiting for agreement"
+    "সম্মতির অপেক্ষায়": "Waiting for agreement",
+    "উৎসব সংখ্যা উৎসবের দিনে, অন্য সংখ্যা মাসের ১ তারিখে; ডিসেম্বরের বর্ষসেরা ২৭ তারিখে (PLAN.md)।": "Festival issues on the festival day, other issues on the 1st; December's best-of-the-year issue on the 27th (PLAN.md).",
+    "প্রকাশ হবে": "goes out",
+    "সম্পাদকীয় বেছে নিলে এটি ফাঁকা রাখুন: তখন সংখ্যার শুরুতে সম্পাদকীয়টিই ছাপা হয়। সম্পাদকীয় না থাকলে এই কথাগুলো ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → \"সংখ্যা\" বেছে নিন।": "Leave this empty when an editorial is chosen: the editorial opens the issue. Without an editorial, these words open it. To add pieces: Pieces → open → choose \"Issue\".",
+    "ধারাবাহিকের পর্ব: শুধু শনিবার প্রকাশ হয়। পরের খালি শনিবার সকাল ৯টা দেওয়া আছে।": "Serial episode: published on Saturdays only. The next free Saturday, 9am, is filled in.",
+    "ধারাবাহিকের পর্ব: শুধু শনিবার। সময় ভারতের।": "Serial episode: Saturdays only. Times are India time.",
+    "সময় ভারতের।": "Times are India time."
 }

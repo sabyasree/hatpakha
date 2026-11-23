@@ -18,6 +18,12 @@ class Serial extends Model
         return ['bible' => 'array', 'started_at' => 'datetime'];
     }
 
+    /** The writer whose serial it is (null: the desk's own, D193). */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function episodes(): HasMany
     {
         return $this->hasMany(Post::class)->orderBy('episode_no');
@@ -51,6 +57,32 @@ class Serial extends Model
     public function plannedEpisodes(): int
     {
         return max(1, count((array) ($this->bible['episodes'] ?? [])));
+    }
+
+    /**
+     * D269 (owner: "episodes can only publish on Saturday"): the serial's day (Saturday) at 9am India time, the next one
+     * an hour or more ahead and at least six days after the last episode out or set; an episode's own date is ignored.
+     */
+    public function nextEpisodeAt(?int $exceptPostId = null): \Illuminate\Support\Carbon
+    {
+        $tz = 'Asia/Kolkata';
+        $from = now($tz)->addHour();
+        $before = $this->episodes()->whereIn('status', ['published', 'scheduled'])->when($exceptPostId, fn ($q) => $q->whereKeyNot($exceptPostId))->max('published_at');
+        if ($before) {
+            $from = $from->max(\Illuminate\Support\Carbon::parse($before)->timezone($tz)->addDays(6)->startOfDay());
+        }
+        $day = $from->copy()->setTime(9, 0);
+        while ($day->dayOfWeek !== (int) ($this->day ?? 6) || $day->lt($from)) {
+            $day->addDay()->setTime(9, 0);
+        }
+
+        return $day->utc();
+    }
+
+    /** Whether a time falls on the serial's day (Saturday), India time. */
+    public function isEpisodeDay(\DateTimeInterface $at): bool
+    {
+        return \Illuminate\Support\Carbon::instance($at)->timezone('Asia/Kolkata')->dayOfWeek === (int) ($this->day ?? 6);
     }
 
     public function nextEpisodeNo(): int

@@ -18,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // D269: the desk's date-and-time boxes speak India time. They showed UTC (the server's clock), so "10:00 AM" meant
+        // 3:30pm in India. Times are still stored in UTC; only what the editor sees and types is India time.
+        \Filament\Support\Facades\FilamentTimezone::set('Asia/Kolkata');
         // D250 (owner: "in desk the header is not sticky; difficult for a long writing"): every desk editor keeps its toolbar in view.
         \Filament\Forms\Components\RichEditor::configureUsing(fn (\Filament\Forms\Components\RichEditor $editor) => $editor->stickyToolbar());
         // D264: a call to an outside service does not hold a database connection while it waits.
