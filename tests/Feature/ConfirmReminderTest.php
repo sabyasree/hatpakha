@@ -35,6 +35,11 @@ class ConfirmReminderTest extends TestCase
         Notification::assertSentToTimes($writer, TemplateMail::class, 1);
         Notification::assertSentTo($writer, TemplateMail::class, fn ($n) => $n->key === 'confirm_reminder' && str_ends_with((string) $n->url, '/submit/'.$post->id.'/'));
         $this->assertSame('confirm', $post->fresh()->status, 'A reminder changes nothing');
+
+        // D260: the desk has a tab for these
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        $this->actingAs(User::factory()->create(['role' => Role::Editor]));
+        Livewire::withQueryParams(['tab' => 'confirm'])->test(\App\Filament\Resources\Posts\Pages\ListPosts::class)->assertOk()->assertCanSeeTableRecords([$post]);
     }
 
     public function test_an_objection_comes_first_on_the_desk_and_is_never_selected_by_itself(): void

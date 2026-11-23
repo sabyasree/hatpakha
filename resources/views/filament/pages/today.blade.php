@@ -123,8 +123,8 @@
                 @if ($t['backlogReady'] || $t['confirms'] || $t['withWriter'])
                     <div class="hp-muted" style="margin-top:.75rem;line-height:1.9">
                         @if ($t['backlogReady'])<div>{{ __('ওয়ার্ডপ্রেসের পুরনো জমা:') }} {{ Bn::num($t['backlogReady']) }}{{ __('টি তৈরি (') }}{{ Bn::num($t['backlog']) }}{{ __('টির মধ্যে)।') }} <a href="{{ $posts::getUrl('index', ['tab' => 'backlog']) }}" style="text-decoration:underline">{{ __('সময় পেলে দেখুন') }}</a></div>@endif
-                        @if ($t['confirms'])<div>{{ __('লেখকের সম্মতির অপেক্ষায়:') }} {{ Bn::num($t['confirms']) }}{{ __('টি') }}</div>@endif
-                        @if ($t['withWriter'])<div>{{ __('বদল চেয়ে লেখকের কাছে:') }} {{ Bn::num($t['withWriter']) }}{{ __('টি') }}</div>@endif
+                        @if ($t['confirms'])<div><a class="underline" href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'confirm']) }}">{{ __('লেখকের সম্মতির অপেক্ষায়:') }} {{ Bn::num($t['confirms']) }}{{ __('টি') }}</a></div>@endif
+                        @if ($t['withWriter'])<div><a class="underline" href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'changes']) }}">{{ __('বদল চেয়ে লেখকের কাছে:') }} {{ Bn::num($t['withWriter']) }}{{ __('টি') }}</a></div>@endif
                     </div>
                 @endif
             </x-filament::section>

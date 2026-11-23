@@ -46,6 +46,10 @@ class ListPosts extends ListRecords
             // Owner (2026-11-12): the editorials, apart (they are also listed per issue in /desk → সম্পাদকীয়).
             'editorial' => Tab::make(__('সম্পাদকীয়'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('section', fn ($s) => $s->where('slug', 'editorial'))->reorder()->orderByDesc('updated_at')),
+            // D260 (owner: "লেখকের সম্মতির অপেক্ষায়: there is no separate section to see those"): asked first on top.
+            'confirm' => Tab::make(__('সম্মতির অপেক্ষায়'))
+                ->badge(fn () => Post::where('status', 'confirm')->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'confirm')->reorder()->orderBy('reviewed_at')),
             'changes' => Tab::make(__('বদল চাওয়া'))->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'changes')),
             // Owner (2026-11-14: "there is no section for scheduled ones"): pieces with a publishing time set, the next one first.
             'scheduled' => Tab::make(__('সময় ঠিক করা'))

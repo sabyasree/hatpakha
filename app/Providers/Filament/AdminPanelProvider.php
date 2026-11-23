@@ -94,6 +94,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->middleware([\App\Http\Middleware\DeskLocale::class], isPersistent: true)
             // Bengali calendar names + Bengali digits on screen (public/js/desk-bn.js).
+            // D260 (owner: "these action links take a long row; make them a vertical list"): a row with four or more
+            // buttons shows them one under another, so the table keeps its width for the title and the writer.
+            ->renderHook(\Filament\View\PanelsRenderHook::STYLES_AFTER, fn () => new \Illuminate\Support\HtmlString(
+                '<style>.fi-ta-row td .fi-ta-actions:has(> :nth-child(4)){flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:.45rem;min-width:11rem}</style>'))
             ->renderHook(\Filament\View\PanelsRenderHook::BODY_END, fn () => app()->getLocale() === 'bn' ? new \Illuminate\Support\HtmlString('<script src="'.asset('js/desk-bn.js').'?v=3"></script>') : '')
             ->authMiddleware([Authenticate::class])
             ->loginRouteSlug('login')
