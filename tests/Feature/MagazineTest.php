@@ -74,6 +74,10 @@ class MagazineTest extends TestCase
     {
         Storage::fake('local');
         $issue = $this->issue();
+        // D261: a writer with a profile photo has it on the "লেখকেরা" page (web magazine and e-book); one without, just the name
+        $writer = \App\Support\IssueBook::pieces($issue)->flatMap->authors->where('is_desk', false)->first();
+        $writer->forceFill(['avatar_path' => '/images/logo.png', 'bio' => 'হাওড়ায় থাকি।'])->save();
+        $this->get('/sonkha/2026-11/boi/')->assertOk()->assertSee('class="mag-writer-photo"', false)->assertSee('src="/images/logo.png"', false);
         $this->assertSame(0, IssueEbook::buildDue(), 'No editorial yet: no e-book');
         $editorial = $this->editorial($issue, 'draft');
         $this->assertSame(0, IssueEbook::buildDue(), 'Editorial still a draft: no e-book');
@@ -94,6 +98,7 @@ class MagazineTest extends TestCase
         foreach (['OEBPS/writers.xhtml', 'OEBPS/back.xhtml', 'OEBPS/cover.xhtml', 'OEBPS/images/cover.svg'] as $f) {
             $this->assertNotFalse($zip->locateName($f), $f);
         }
+        $this->assertMatchesRegularExpression('#<img class="writer-photo" src="images/p\d+\.png"#', (string) $zip->getFromName('OEBPS/writers.xhtml'), 'The photo travels inside the e-book');
         $cover = $zip->getFromName('OEBPS/images/cover.svg');
         $this->assertStringContainsString('অগ্রহায়ণ সংখ্যা', $cover);
         $this->assertStringContainsString('হাতপাখা', $cover);
