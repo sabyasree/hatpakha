@@ -2924,5 +2924,14 @@
     "সংরক্ষণ করলে লেখক আগের আর নতুন তারিখ দিয়ে একটি ছোট ই-মেল পাবেন।": "When you save, the writer gets a short e-mail with the old and the new date.",
     "লেখককে নতুন তারিখ জানানো হয়েছে": "The writer has been told the new date",
     "লেখক বদলে আপত্তি করেছেন": "The writer objected to the changes",
-    "লেখক বদলে আপত্তি করেছেন: আপনি দেখবেন": "The writer objected to the changes: you decide"
+    "লেখক বদলে আপত্তি করেছেন: আপনি দেখবেন": "The writer objected to the changes: you decide",
+    "লেখকদের প্রশ্ন": "Writers' questions",
+    "চ্যাটে লেখকেরা যা জিজ্ঞেস করেছেন আর সহায়ক উত্তর দিতে পারেনি। উত্তর লিখে “পাঠান” টিপলে লেখক ই-মেলে পাবেন।": "What writers asked in the chat that the helper could not answer. Write an answer and press “Send”: the writer gets it by e-mail.",
+    "উত্তর বাকি": "Waiting for an answer",
+    "উত্তর লাগবে না": "No answer needed",
+    "প্রশ্নটি তালিকায় থাকবে, লেখক কোনো ই-মেল পাবেন না।": "The question stays in the list; the writer gets no e-mail.",
+    "এখনও কোনো প্রশ্ন আসেনি": "No questions yet",
+    "প্রশ্ন": "Question",
+    "ফাঁকা থাকলে ধারাবাহিকের পাতায় আর প্রথম পাতায় নামের নিচে কিছু দেখা যায় না। লেখকেরা এখন জমা দেওয়ার সময়েই এটি লেখেন।": "If empty, nothing shows under the name on the serial page and the home page. Writers now write this when they submit.",
+    "সম্মতির অপেক্ষায়": "Waiting for agreement"
 }

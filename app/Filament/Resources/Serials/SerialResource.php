@@ -64,7 +64,8 @@ class SerialResource extends Resource
     {
         return $schema->columns(1)->components([
             TextInput::make('title')->label(__('নাম'))->required()->maxLength(150),
-            Textarea::make('logline')->label(__('এক-দুই লাইনে গল্প (পাঠক দেখবেন)'))->rows(2)->maxLength(400),
+            Textarea::make('logline')->label(__('এক-দুই লাইনে গল্প (পাঠক দেখবেন)'))->rows(2)->maxLength(400)
+                ->helperText(__('ফাঁকা থাকলে ধারাবাহিকের পাতায় আর প্রথম পাতায় নামের নিচে কিছু দেখা যায় না। লেখকেরা এখন জমা দেওয়ার সময়েই এটি লেখেন।')),
             Select::make('day')->label(__('নতুন পর্ব কোন দিন'))->options(\App\Support\Lang::t(Serial::DAYS))->required(),
             // D193: a writer's own serial: who proposed it and their plan for the whole story
             Section::make(__('লেখকের প্রস্তাব'))->visible(fn (?Serial $record) => (bool) $record?->user_id)->schema([

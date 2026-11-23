@@ -168,13 +168,7 @@ class Dashboard extends BaseDashboard
             ])
             ->modalSubmitActionLabel(__('পাঠান'))
             ->action(function (array $data, array $arguments) {
-                $task = $this->task($arguments);
-                $writer = $task->subject;
-                abort_unless($writer instanceof \App\Models\User, 404);
-                $writer->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার প্রশ্নের উত্তর', $data['message'], \App\Support\Url::to('/account')));
-                // D224: the answer is kept with the question, so it can be read (and sent again) afterwards
-                $task->forceFill(['payload' => ['reply' => $data['message'], 'replied_at' => now()->toIso8601String(), 'replied_by' => auth()->id()] + (array) $task->payload])->save();
-                $task->close();
+                \App\Support\WriterAnswer::send($this->task($arguments), $data['message']);   // D224, D257
                 Notification::make()->title(__('পাঠানো হয়েছে'))->success()->send();
             });
     }
@@ -200,11 +194,7 @@ class Dashboard extends BaseDashboard
             ])
             ->modalSubmitActionLabel(__('পাঠান'))
             ->action(function (array $data, array $arguments) use ($find) {
-                $task = $find($arguments);
-                abort_unless($task->subject instanceof \App\Models\User, 404);
-                $task->subject->notify(new \App\Notifications\WriterNote('হাতপাখা: আপনার প্রশ্নের উত্তর', $data['message'], \App\Support\Url::to('/account')));
-                $task->forceFill(['payload' => ['reply' => $data['message'], 'replied_at' => now()->toIso8601String(), 'replied_by' => auth()->id()] + (array) $task->payload])->save();
-                \App\Models\AuditLog::record('task.question.resent', $task->subject, ['task' => $task->id]);
+                \App\Support\WriterAnswer::send($find($arguments), $data['message']);
                 Notification::make()->title(__('আবার পাঠানো হয়েছে'))->success()->send();
             });
     }

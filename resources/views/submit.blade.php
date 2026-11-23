@@ -178,7 +178,7 @@
                             <p data-serial-next @if ($serialNow === '' || $serialNow === 'new') hidden @endif class="mt-3 rounded-xl bg-white p-3 text-sm">ঠিক আছে। নিচে “শিরোনাম”-এ শুধু <strong>এই পর্বের নাম</strong> লিখুন (ধারাবাহিকের নাম আবার লিখতে হবে না), তারপর পর্বের লেখা। পর্বের নম্বর নিজে থেকেই বসবে।</p>
                         @endif
                         <div data-serial-new @if ($serialNow !== 'new') hidden @endif class="mt-4 space-y-4 rounded-xl bg-white p-4">
-                            <p class="font-bold">নতুন ধারাবাহিকের জন্য তিনটি কথা জানান। তারপর নিচে প্রথম পর্বটা লিখুন।</p>
+                            <p class="font-bold">নতুন ধারাবাহিকের জন্য চারটি কথা জানান। তারপর নিচে প্রথম পর্বটা লিখুন।</p>
                             <div>
                                 <label class="block font-bold" for="serial_title">১. পুরো ধারাবাহিকের নাম</label>
                                 <input id="serial_title" name="serial_title" maxlength="150" value="{{ old('serial_title', $proposal?->title) }}" placeholder="যেমন: নদীর ওপারে" class="mt-1 block h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg" autocomplete="off">
@@ -186,15 +186,21 @@
                                 @error('serial_title')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                             <div>
-                                <label class="block font-bold" for="serial_plan">২. পুরো গল্পটা কী নিয়ে, কোন দিকে যাবে</label>
+                                <label class="block font-bold" for="serial_logline">২. পাঠকদের জন্য এক-দুই লাইনে গল্প</label>
+                                <textarea id="serial_logline" name="serial_logline" rows="2" maxlength="400" placeholder="যেমন: কুড়ি বছর পরে গ্রামে ফিরে এক মাস্টারমশাই খুঁজতে বেরোন হারিয়ে যাওয়া স্কুলবাড়ির গল্প।" class="mt-1 block w-full rounded-xl border-2 border-navy bg-white p-3 text-lg">{{ old('serial_logline', $proposal?->logline) }}</textarea>
+                                <p class="mt-1 text-sm text-ink2">ধারাবাহিকের পাতায় আর প্রথম পাতায় নামের নিচে পাঠকেরা এটি দেখবেন। গল্পের শেষটা বলে দেবেন না।</p>
+                                @error('serial_logline')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block font-bold" for="serial_plan">৩. পুরো গল্পটা কী নিয়ে, কোন দিকে যাবে</label>
                                 <textarea id="serial_plan" name="serial_plan" rows="5" maxlength="3000" placeholder="যেমন: কুড়ি বছর পরে গ্রামে ফেরা এক মাস্টারমশাইয়ের গল্প। প্রথম দিকে ছেলেবেলার বন্ধুদের খোঁজ, মাঝে হারানো স্কুলবাড়ির রহস্য, শেষে তিনি থেকে যাবেন কি না সেই সিদ্ধান্ত।" class="mt-1 block w-full rounded-xl border-2 border-navy bg-white p-3 text-lg leading-relaxed">{{ old('serial_plan', $proposal?->plan) }}</textarea>
                                 <p class="mt-1 text-sm text-ink2">তিন-চার লাইনে নিজের মতো করে লিখুন: কাদের নিয়ে, কোথায়, শেষে কোথায় পৌঁছবে। এটা শুধু সম্পাদক পড়বেন, পাঠকেরা দেখবেন না।</p>
                                 @error('serial_plan')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                             <div>
-                                <label class="block font-bold" for="serial_count">৩. মোটামুটি কত পর্ব হবে</label>
-                                <input id="serial_count" name="serial_count" type="number" inputmode="numeric" min="2" max="60" value="{{ old('serial_count', $proposal?->planned_count) }}" placeholder="যেমন: 8" class="mt-1 block h-12 w-32 rounded-xl border-2 border-navy bg-white px-3 text-lg">
-                                <p class="mt-1 text-sm text-ink2">আন্দাজে লিখুন (২ থেকে ৬০)। পরে কমবেশি হলে ক্ষতি নেই।</p>
+                                <label class="block font-bold" for="serial_count">৪. মোটামুটি কত পর্ব হবে</label>
+                                <input id="serial_count" name="serial_count" type="text" inputmode="numeric" maxlength="3" autocomplete="off" value="{{ old('serial_count', $proposal?->planned_count) }}" placeholder="যেমন: ৮" class="mt-1 block h-12 w-32 rounded-xl border-2 border-navy bg-white px-3 text-lg">
+                                <p class="mt-1 text-sm text-ink2">আন্দাজে লিখুন (২ থেকে ৬০), বাংলা বা ইংরেজি অঙ্কে। পরে কমবেশি হলে ক্ষতি নেই।</p>
                                 @error('serial_count')<p class="mt-1 text-sm font-bold text-red" role="alert">{{ $message }}</p>@enderror
                             </div>
                             <div class="rounded-xl bg-peach-light p-3 text-sm">

@@ -218,6 +218,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: check the AI's list and the letter text (/desk → পুরনো লেখকদের চিঠি), then approve
 - [x] D188: the regular writers (3+ pieces, or rated 8+, any year) get a personal letter written and sent by the team for the ফিরে আসা সংখ্যা (pieces by 7 Dec, issue 14 Dec); answers, one reminder and received pieces tracked in /desk → লেখকদের আমন্ত্রণ
 - [ ] Owner: read the first letters in /desk → লেখকদের আমন্ত্রণ during their 12-hour wait (the wording could not be tried with the real AI before release); set the signer's name in /desk → শংসাপত্র if the letters should carry it
+- [x] D260: desk row buttons stacked; লেখা → সম্মতির অপেক্ষায় tab
+- [x] D257: /desk → লেখকদের প্রশ্ন, all chat questions answered from one place
+- [x] D258: Amazon SES for all mail but account mail (Hostinger with SES behind it)
+- [x] D259: writers give the serial's one-line story; episode count takes Bengali digits
 - [x] D256: one reminder after 3 silent days to a writer asked to agree; objections first in আজকের কাজ
 - [x] D255: moving a scheduled piece's date can tell the writer by e-mail (tick box on the desk)
 - [x] D254: pieces marked for the ফিরে আসা সংখ্যা wait for 14 Dec (never auto-selected; মনোনীত fills in the issue day)

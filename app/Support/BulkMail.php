@@ -52,6 +52,20 @@ final class BulkMail
     }
 
     /** Whether bulk mail really leaves the server (not the "log" or "array" test mailers). */
+    /**
+     * D258 (owner, 2026-11-23: "use Amazon SES for e-mail sending; only account sign-in / sign-up / password keep
+     * Hostinger"): every e-mail that has not chosen a road goes by the one chosen in /desk → চিঠি → পাঠানোর পথ.
+     * Hostinger's mailbox server closed connections ("Connection … closed unexpectedly", 23 Nov).
+     */
+    public static function road(\Illuminate\Notifications\Messages\MailMessage $m): \Illuminate\Notifications\Messages\MailMessage
+    {
+        if (blank($m->mailer) && self::provider()) {
+            $m->mailer(self::mailer());
+        }
+
+        return $m;
+    }
+
     public static function real(): bool
     {
         return MailGuard::live() && ! in_array(self::mailer(), ['log', 'array'], true);   // never on staging
