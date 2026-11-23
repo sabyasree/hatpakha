@@ -328,6 +328,8 @@ final class Illustrator
     public static function candidates()
     {
         return Post::whereIn('status', ['pending', 'published', 'scheduled'])
+            // D273 (AI-spend audit): an old WordPress submission gets a picture only once its writer said yes (D104)
+            ->where(fn ($q) => $q->where('status', '!=', 'pending')->orWhereNotNull('submitted_by')->orWhere('relaunch_status', 'yes'))
             ->whereNull('proposed_image_path')
             ->where(fn ($q) => $q->whereNull('featured_image_path')->orWhere('featured_image_width', '<', 600));
     }

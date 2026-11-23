@@ -64,7 +64,10 @@ class AiShift extends Command
     {
         // New submissions the after-submit job missed (e.g. AI was paused then).
         $done = AiReview::where('status', 'done')->whereNull('blind_run')->where('report', 'like', '%"edits"%')->select('post_id');
-        foreach (Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNotIn('id', $done)->oldest('submitted_at')->limit(5)->get() as $p) {
+        // D273 (AI-spend audit): a piece whose review failed twice today waits a day (it was retried every ten minutes)
+        $tried = AiReview::whereIn('status', ['failed', 'skipped'])->where('created_at', '>=', now()->subDay())
+            ->groupBy('post_id')->havingRaw('COUNT(*) >= 2')->select('post_id');
+        foreach (Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNotIn('id', $done)->whereNotIn('id', $tried)->oldest('submitted_at')->limit(5)->get() as $p) {
             $service->run($p, null, 'editor');
         }
         // Proofreader and plagiarism checker on new submissions they missed (D50).
@@ -116,7 +119,8 @@ class AiShift extends Command
         // D104: read the old submissions once (worth asking the writer, or too weak), 25 an hour until all are read.
         \App\Ai\BacklogScreen::backlog(25);
         // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
-        foreach (Post::published()->whereNull('seo_done_at')->orderByDesc('published_at')->limit(10)->get() as $p) {
+        foreach (Post::published()->whereNull('seo_done_at')->when(! \App\Ai\SeoExpert::automatic(), fn ($q) => $q->whereNull('seo_proposal'))   // D273: a waiting proposal is not redone hourly
+            ->orderByDesc('published_at')->limit(10)->get() as $p) {
             \App\Ai\SeoExpert::run($p, onlyMissing: true);
         }
         if (! Illustrator::blocked()) {

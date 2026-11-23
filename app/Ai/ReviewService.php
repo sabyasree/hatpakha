@@ -52,6 +52,9 @@ final class ReviewService
         if (AiSwitch::paused()) {
             return 'AI is paused by an admin';
         }
+        if (app()->environment('production') && ! \App\Support\RelaunchLetters::onLiveSite() && ! config('ai.allow_off_live')) {
+            return 'Not the live site: AI spends nothing here';   // D273
+        }
         if (Team::paused('editor')) {
             return 'AI editor is paused';
         }

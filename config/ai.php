@@ -7,6 +7,9 @@
 return [
     // Off unless explicitly enabled; nothing is sent anywhere without a key and this flag.
     'enabled' => (bool) env('AI_ENABLED', false),
+    // D273 (AI-spend audit): a copy of the site that is not hatpakha.com (staging loaded from a backup) spends nothing on
+    // AI unless this is set on purpose
+    'allow_off_live' => (bool) env('AI_ALLOW_OFF_LIVE', false),
     'provider' => env('AI_PROVIDER', 'anthropic'),   // decided by the blind test (3e)
 
     'anthropic' => [
@@ -27,7 +30,7 @@ return [
         'image_model' => env('OPENAI_IMAGE_MODEL'),
         'image_size' => env('OPENAI_IMAGE_SIZE', '1536x1024'),
         'image_quality' => env('OPENAI_IMAGE_QUALITY', 'medium'),
-        'image_price_usd' => (float) env('OPENAI_IMAGE_PRICE', 0),   // per image, for the spend log
+        'image_price_usd' => (float) (env('OPENAI_IMAGE_PRICE') ?: 0.06),   // per image, for the spend log; D273: about $0.06 (medium, 1536x1024) unless set, never $0
         // D101: the narrator's AI voice (text to speech) for ছোটদের হাতপাখা
         'tts_model' => env('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts'),
         'tts_voice' => env('OPENAI_TTS_VOICE', 'coral'),

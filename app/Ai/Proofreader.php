@@ -28,6 +28,8 @@ TXT;
         }
         $text = trim(html_entity_decode(strip_tags(preg_replace(['~<br\s*/?>~i', '~</p>~i'], ["\n", "\n\n"], (string) $post->body_html))));
         if (mb_strlen($text) < 20) {
+            $post->forceFill(['proof_at' => now()])->saveQuietly();   // D273: nothing to proofread; it no longer holds a place in the queue
+
             return 'too short';
         }
         [$d, $err] = Claude::json('proof',
@@ -43,6 +45,13 @@ TXT;
                 'note' => ['type' => 'string'],
             ]], null, 8000, $post->id);
         if (! $d) {
+            // D273 (AI-spend audit): it was retried every ten minutes for ever; after three tries it stops by itself
+            // (the editor can still ask again), as the plagiarism check does
+            if (! Claude::blocked()) {
+                $tries = (int) ($post->proof['tries'] ?? 0) + 1;
+                $post->forceFill(['proof' => ['tries' => $tries, 'why' => mb_substr((string) ($err ?? 'no answer'), 0, 200)], 'proof_at' => $tries >= 3 ? now() : null])->saveQuietly();
+            }
+
             return $err ?? 'no answer';
         }
         $edits = ReviewSchema::normalise(['edits' => $d['edits'] ?? []])['edits'];
