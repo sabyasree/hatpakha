@@ -2922,5 +2922,7 @@
     "ফিরে আসা সংখ্যার লেখা: সংখ্যার দিন (১৪ ডিসেম্বর সকাল ৯টা) দেওয়া আছে। লেখক এখনই \"মনোনীত\" ই-মেল পাবেন, লেখা প্রকাশ হবে সেদিন।": "For the ফিরে আসা issue: the issue day (14 December, 9am) is filled in. The writer gets the \"selected\" e-mail now; the piece goes live that day.",
     "লেখককে নতুন তারিখ জানান (ই-মেলে)": "Tell the writer the new date (by e-mail)",
     "সংরক্ষণ করলে লেখক আগের আর নতুন তারিখ দিয়ে একটি ছোট ই-মেল পাবেন।": "When you save, the writer gets a short e-mail with the old and the new date.",
-    "লেখককে নতুন তারিখ জানানো হয়েছে": "The writer has been told the new date"
+    "লেখককে নতুন তারিখ জানানো হয়েছে": "The writer has been told the new date",
+    "লেখক বদলে আপত্তি করেছেন": "The writer objected to the changes",
+    "লেখক বদলে আপত্তি করেছেন: আপনি দেখবেন": "The writer objected to the changes: you decide"
 }

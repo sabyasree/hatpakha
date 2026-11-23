@@ -179,10 +179,13 @@ final class EditorPackage
         Review::approve($post, $owner, $at->isPast() ? now() : $at, $p['slug'] ?? null, $p['note'] ?? null);
     }
 
+    /** How an objection is written in review_note; the desk's আজকের কাজ shows these first (D256). */
+    public const OBJECTED = 'লেখকের আপত্তি: ';
+
     /** The writer objects: back to the owner's queue with the writer's words; nothing changed. */
     public static function writerObjects(Post $post, string $reason): void
     {
-        $post->forceFill(['status' => 'pending', 'pending_edits' => null, 'review_note' => 'লেখকের আপত্তি: '.$reason])->save();
+        $post->forceFill(['status' => 'pending', 'pending_edits' => null, 'review_note' => self::OBJECTED.$reason])->save();
         AuditLog::record('submission.writer_objected', $post);
     }
 

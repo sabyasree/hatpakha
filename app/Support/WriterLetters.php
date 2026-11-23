@@ -21,7 +21,7 @@ final class WriterLetters
 
     /** Plain names for the kinds of letter. */
     public const KINDS = [
-        'decision_approved' => 'মনোনীত', 'decision_changes' => 'বদল চাওয়া', 'decision_confirm' => 'সম্মতি চাওয়া', 'decision_declined' => 'এবার নয়', 'date_changed' => 'তারিখ বদল',
+        'decision_approved' => 'মনোনীত', 'decision_changes' => 'বদল চাওয়া', 'decision_confirm' => 'সম্মতি চাওয়া', 'decision_declined' => 'এবার নয়', 'date_changed' => 'তারিখ বদল', 'confirm_reminder' => 'সম্মতির কথা মনে করানো',
         'writer_note' => 'সম্পাদকের চিঠি', 'certificate_ready' => 'শংসাপত্র', 'honour' => 'সম্মান', 'issue_piece' => 'সংখ্যায় লেখা', 'anthology_piece' => 'সংকলনে লেখা',
     ];
 

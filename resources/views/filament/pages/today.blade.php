@@ -98,6 +98,10 @@
                         @endif
                         <div style="min-width:0;flex:1 1 14rem">
                             <div style="font-weight:700">{{ $p->title }}</div>
+                            @if (str_starts_with((string) $p->review_note, \App\Ai\EditorPackage::OBJECTED))
+                                {{-- D256: the writer said no to the word changes; their words, then the editor decides again --}}
+                                <div style="margin:.35rem 0;border-left:4px solid #CB1B32;padding:.35rem .6rem;background:rgba(203,27,50,.08)"><strong>{{ __('লেখক বদলে আপত্তি করেছেন') }}:</strong> {{ \Illuminate\Support\Str::after($p->review_note, \App\Ai\EditorPackage::OBJECTED) }}</div>
+                            @endif
                             <div class="hp-muted">{{ $p->authors->first()?->publicName() ?? '—' }} · {{ $p->section?->name_bn }} · {{ Bn::num($words($p)) }} {{ __('শব্দ · জমা') }} {{ Bn::num((string) $p->submitted_at?->locale(app()->getLocale())->diffForHumans()) }}</div>
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center">
