@@ -65,6 +65,7 @@ final class Claude
             return self::jsonStreamed($purpose, $blocks, $user, $schema, $model, $maxTokens, $postId);
         }
         try {
+            \App\Support\DbRelease::now();   // D264: no database connection held while Claude answers
             $message = (new Client(apiKey: (string) config('ai.anthropic.key')))->beta->messages->create(
                 model: $model,
                 maxTokens: $maxTokens,
@@ -103,6 +104,7 @@ final class Claude
         $stop = null;
         $in = $out = $cacheRead = $cacheWrite = 0;
         try {
+            \App\Support\DbRelease::now();   // D264: no database connection held while Claude answers
             $stream = (new Client(apiKey: (string) config('ai.anthropic.key')))->beta->messages->createStream(
                 model: $model,
                 maxTokens: $maxTokens,
@@ -161,6 +163,7 @@ final class Claude
         try {
             $client = new Client(apiKey: (string) config('ai.anthropic.key'));
             for ($round = 0; $round < 2; $round++) {
+                \App\Support\DbRelease::now();   // D264: no database connection held while Claude answers
                 $message = $client->beta->messages->create(
                     model: $model,
                     maxTokens: 8000,

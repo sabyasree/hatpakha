@@ -27,6 +27,7 @@ final class AnthropicReviewer implements Reviewer
         $client = $this->client ?? new Client(apiKey: (string) config('ai.anthropic.key'));
 
         try {
+            \App\Support\DbRelease::now();   // D264
             $message = $client->beta->messages->create(
                 model: $this->model(),
                 maxTokens: 16000,
