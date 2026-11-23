@@ -21,5 +21,25 @@ class ReaderEntry extends Model
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
 
+    /**
+     * D266 (UX review: long letters): the first few lines shown at once, the rest behind "পুরোটা পড়ুন" (still in the
+     * page for search engines and screen readers). @return array{0: string, 1: ?string}
+     */
+    public function parts(int $lines = 6, int $chars = 360): array
+    {
+        $body = trim((string) $this->body);
+        $all = preg_split('/\R/u', $body);
+        if (count($all) > $lines + 1) {
+            return [rtrim(implode("\n", array_slice($all, 0, $lines))), ltrim(implode("\n", array_slice($all, $lines)))];
+        }
+        if (mb_strlen($body) > $chars + 80) {
+            $cut = mb_strrpos(mb_substr($body, 0, $chars), '।') ?: mb_strrpos(mb_substr($body, 0, $chars), ' ') ?: $chars;
+
+            return [rtrim(mb_substr($body, 0, $cut + 1)), ltrim(mb_substr($body, $cut + 1))];
+        }
+
+        return [$body, null];
+    }
+
     public function shownName(): string { return $this->anonymous ? 'নাম প্রকাশে অনিচ্ছুক' : $this->name; }
 }

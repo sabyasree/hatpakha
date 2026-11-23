@@ -51,13 +51,32 @@
         </a>
     </section>
 
-    {{-- D175: পাঠকের কলম, this week's theme: anyone can write in a minute --}}
-    @if ($kolom = \App\Models\ReaderPrompt::current())
-    <section class="border-b-2 border-navy">
-        <a href="{{ \App\Support\Url::to('/kolom') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 hover:bg-peach-light sm:flex-nowrap">
-            <span class="font-hand text-2xl text-red">পাঠকের কলম</span>
-            <span class="order-last min-w-0 basis-full text-lg sm:order-none sm:flex-1 sm:basis-0"><strong class="font-serif">“{{ $kolom->title }}”</strong> <span class="text-ink2">এ সপ্তাহের বিষয়। এক মিনিটে লিখুন, সেরা দশটি রবিবার ছাপা হবে।</span></span>
-            <span class="flex h-11 flex-none items-center rounded-full border-2 border-navy bg-white px-5 font-bold">লিখুন →</span>
+    {{-- D175: পাঠকের কলম. D266 (UX reviews): two states. While the week's picks are fresh (Sunday 8am to Monday
+         afternoon) the best one is quoted with "দশটি লেখা পড়ুন"; the rest of the week the theme invites with its deadline. --}}
+    @php
+        $kolom = \App\Models\ReaderPrompt::current();
+        $kolomLast = \App\Models\ReaderPrompt::where('status', 'published')->where('published_at', '>', now()->subHours(30))->latest('published_at')->first();
+        $kolomTop = $kolomLast?->picked()->first();
+    @endphp
+    @if ($kolomTop)
+    <section class="border-b-2 border-navy bg-sky-tint">
+        <a href="{{ $kolomLast->url() }}" class="mx-auto block max-w-[1320px] px-5 py-5 hover:bg-white">
+            <span class="font-hand text-2xl text-red">পাঠকের কলম · এ সপ্তাহের সেরা</span>
+            <span class="mt-2 block font-serif text-xl leading-relaxed sm:text-2xl">“{{ \Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', $kolomTop->body), 70) }}”</span>
+            <span class="mt-1 block text-base font-bold">— {{ $kolomTop->shownName() }}</span>
+            <span class="mt-3 inline-flex h-12 items-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">দশটি লেখা পড়ুন →</span>
+        </a>
+    </section>
+    @elseif ($kolom && $kolom->isOpen())
+    <section class="border-b-2 border-navy bg-peach-light">
+        <a href="{{ \App\Support\Url::to('/kolom') }}#form" class="mx-auto block max-w-[1320px] px-5 py-5 hover:bg-peach">
+            <span class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-hand text-2xl text-red">পাঠকের কলম</span>
+                @if ($kolom->closes_at)<span class="rounded-full bg-navy px-3 py-1 text-sm font-bold text-white">শেষ {{ \App\Support\Bn::date($kolom->closes_at->copy()->setTimezone('Asia/Kolkata')) }}, সন্ধ্যা ৬টা</span>@endif
+            </span>
+            <span class="mt-1 block font-serif text-3xl font-extrabold leading-tight">“{{ $kolom->title }}”</span>
+            <span class="mt-1 block text-lg text-navy">{{ \App\Models\ReaderPrompt::KINDS[$kolom->kind] }}। এ সপ্তাহের বিষয়ে এক মিনিটে লিখুন, সেরা দশটি রবিবার ছাপা হবে।</span>
+            <span class="mt-3 inline-flex h-12 items-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">এক মিনিটে লিখুন →</span>
         </a>
     </section>
     @endif

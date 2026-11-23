@@ -54,8 +54,9 @@ class KolomController extends Controller
 
         return [
             'leftText' => $left ? ($left->days ? \App\Support\Bn::num((string) $left->days).' দিন '.\App\Support\Bn::num((string) $left->h).' ঘণ্টা' : ($left->h ? \App\Support\Bn::num((string) $left->h).' ঘণ্টা' : \App\Support\Bn::num((string) max(1, $left->i)).' মিনিট')) : null,
-            'writers' => $writers >= 10 ? $writers : null,
+            'writers' => $writers >= 20 ? $writers : null,   // a small number on Monday looks sad (UX review)
             'next' => Kolom::nextTheme(),
+            'judging' => ReaderPrompt::where('status', 'closed')->exists(),   // Saturday evening to Sunday morning
         ];
     }
 
@@ -66,7 +67,7 @@ class KolomController extends Controller
             throw ValidationException::withMessages(['body' => 'এ সপ্তাহের লেখা নেওয়া শেষ। সোমবার নতুন বিষয় আসবে।']);
         }
         if (filled($request->input('website'))) {   // a field people never see: only robots fill it
-            return redirect(Url::to('/kolom').'#form')->with('kolom_sent', true);
+            return redirect(Url::to('/kolom').'#sent')->with('kolom_sent', ['body' => '', 'left' => 0]);
         }
         $data = $request->validate([
             'name' => [$request->user() ? 'nullable' : 'required', 'string', 'max:80'],
@@ -108,6 +109,9 @@ class KolomController extends Controller
             'anonymous' => $request->boolean('anonymous'), 'body' => $body, 'sender_hash' => $hash,
         ]);
 
-        return redirect(Url::to('/kolom').'#form')->with('kolom_sent', true);
+        // D266: the after-send card shows the reader's own words back, and how many more they may send this week
+        $left = max(0, Kolom::PER_PERSON - ReaderEntry::where('reader_prompt_id', $prompt->id)->where('sender_hash', $hash)->count());
+
+        return redirect(Url::to('/kolom').'#sent')->with('kolom_sent', ['body' => $body, 'left' => $left]);
     }
 }

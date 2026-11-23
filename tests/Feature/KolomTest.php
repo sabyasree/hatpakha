@@ -51,10 +51,12 @@ class KolomTest extends TestCase
     {
         $this->withoutMiddleware(\App\Http\Middleware\PerRouteThrottle::class);   // the 6-a-minute limit is not what this checks
         $p = Kolom::openWeek();
-        $this->post('/kolom/', $this->entry())->assertRedirect(url('/kolom').'/#form')->assertSessionHas('kolom_sent');
+        $this->post('/kolom/', $this->entry())->assertRedirect(url('/kolom').'/#sent')->assertSessionHas('kolom_sent');
         $e = ReaderEntry::sole();
         $this->assertSame(['মিতা সেন', 'new', null], [$e->name, $e->status, $e->user_id]);
-        $this->get('/kolom/')->assertDontSee('আমি ফিরিনি');
+        $this->get('/kolom/')->assertSee('আপনার লেখা পৌঁছেছে')->assertSee('আমি ফিরিনি');   // D266: the sender sees their own words back
+        $this->flushSession();
+        $this->get('/kolom/')->assertDontSee('আমি ফিরিনি');   // nobody else does
 
         $this->post('/kolom/', $this->entry(['name' => '']))->assertSessionHasErrors('name');
         $this->post('/kolom/', $this->entry(['agree' => null]))->assertSessionHasErrors('agree');
@@ -127,7 +129,7 @@ class KolomTest extends TestCase
         \Illuminate\Support\Facades\Notification::fake();
         config(['ai.enabled' => false]);
         $p = Kolom::openWeek();
-        $this->get('/kolom/')->assertSee('বাছাই হওয়ার খবর ই-মেলে পাবেন', false);
+        $this->get('/kolom/')->assertSee('বাছাই হওয়ার খবর ই-মেলে পাবেন', false)->assertSee('সাইন ইন করে লিখলে');
         $reader = User::factory()->create(['email_verified_at' => now()]);
         $this->actingAs($reader)->get('/kolom/')->assertSee('বাছাই হলে রবিবার আপনাকে ই-মেলে জানিয়ে দেব');
         auth()->logout();
