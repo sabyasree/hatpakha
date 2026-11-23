@@ -18,6 +18,12 @@ class Serial extends Model
         return ['bible' => 'array', 'started_at' => 'datetime'];
     }
 
+    /** The writer whose serial it is (null: the desk's own, D193). */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function episodes(): HasMany
     {
         return $this->hasMany(Post::class)->orderBy('episode_no');
