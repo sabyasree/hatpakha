@@ -120,4 +120,24 @@ class KolomTest extends TestCase
         auth()->logout();
         $this->get('/kolom/')->assertSee('প্রথম লেখা এখানে')->assertDontSee('দ্বিতীয় লেখা এখানে');
     }
+
+    /** D265: a signed-in writer hears by e-mail that their words were chosen; a guest is offered that on the form. */
+    public function test_a_chosen_signed_in_writer_is_told_by_email_once(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        config(['ai.enabled' => false]);
+        $p = Kolom::openWeek();
+        $this->get('/kolom/')->assertSee('বাছাই হওয়ার খবর ই-মেলে পাবেন', false);
+        $reader = User::factory()->create(['email_verified_at' => now()]);
+        $this->actingAs($reader)->get('/kolom/')->assertSee('বাছাই হলে রবিবার আপনাকে ই-মেলে জানিয়ে দেব');
+        auth()->logout();
+        $mine = ReaderEntry::create(['reader_prompt_id' => $p->id, 'user_id' => $reader->id, 'name' => 'ক', 'body' => 'আমার ছোট্ট লেখা', 'sender_hash' => 'a']);
+        ReaderEntry::create(['reader_prompt_id' => $p->id, 'name' => 'খ', 'body' => 'অতিথির লেখা', 'sender_hash' => 'b']);
+        Kolom::pickWeek();
+        $this->assertTrue(Kolom::publish($p->fresh()));
+        $this->assertFalse(Kolom::publish($p->fresh()), 'Published once');
+        \Illuminate\Support\Facades\Notification::assertSentToTimes($reader, \App\Notifications\TemplateMail::class, 1);
+        \Illuminate\Support\Facades\Notification::assertSentTo($reader, \App\Notifications\TemplateMail::class,
+            fn ($n) => $n->key === 'kolom_picked' && $n->url === $p->url().'#e'.$mine->id && str_contains($n->values['{লেখা}'], 'আমার ছোট্ট লেখা'));
+    }
 }

@@ -36,6 +36,12 @@
                     <div class="hidden" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
                     <label class="mt-4 flex min-h-11 items-center gap-3"><input type="checkbox" name="anonymous" value="1" class="h-6 w-6 flex-none" @checked(old('anonymous'))> <span>ছাপার সময় আমার নাম দেখাবেন না</span></label>
                     <label class="mt-1 flex min-h-11 items-start gap-3"><input type="checkbox" name="agree" value="1" required class="mt-1 h-6 w-6 flex-none" @checked(old('agree'))> <span>লেখাটি আমার নিজের। হাতপাখা এটি ছাপতে ও শেয়ার করতে পারে।</span></label>
+                    {{-- D265: a signed-in writer is told by e-mail when chosen; a guest is offered that --}}
+                    @auth
+                        <p class="mt-3 rounded-xl bg-sky-tint p-3 text-sm">বাছাই হলে রবিবার আপনাকে ই-মেলে জানিয়ে দেব।</p>
+                    @else
+                        <p class="mt-3 rounded-xl bg-sky-tint p-3 text-sm"><a href="{{ Url::to('/login').'?next='.rawurlencode('/kolom#form') }}" class="font-bold underline">লগইন করে লিখলে</a> বাছাই হওয়ার খবর ই-মেলে পাবেন। না করলেও লেখা যায়।</p>
+                    @endauth
                     <x-turnstile action="kolom" class="mt-3" appearance="interaction-only" />
                     <button class="mt-4 h-12 w-full rounded-full bg-red px-8 text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto">পাঠান</button>
                 </form>
