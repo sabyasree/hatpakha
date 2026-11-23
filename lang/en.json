@@ -2903,5 +2903,19 @@
     "ফোনে ই-মেল খুলুন (Gmail হলে লাল খামের ছবি দেওয়া অ্যাপ)। “হাতপাখা” থেকে আসা চিঠিটা খুলে বোতামটা টিপুন।": "Open your e-mail on your phone (for Gmail, the app with the red envelope). Open the letter from Hatpakha and tap its button.",
     "চিঠি না দেখলে কয়েক মিনিট অপেক্ষা করুন, তারপর “স্প্যাম” খুলে দেখুন।": "If you do not see it, wait a few minutes, then look in Spam.",
     "অনেক দেরি হয়ে গেলে বোতাম আর কাজ না-ও করতে পারে। তখন নিচের বোতাম টিপে ই-মেল আর পাসওয়ার্ড দিয়ে ঢুকুন; নতুন চিঠি চাওয়ার বোতাম পাবেন।": "If it is very late the button may no longer work. Then tap the button below and sign in with your e-mail and password; you will find a button to ask for a new letter.",
-    "কেমন দেখাবে": "Preview"
+    "কেমন দেখাবে": "Preview",
+    "ছবিটি ফেসবুক বা হোয়াটসঅ্যাপ স্ট্যাটাসে দিন, সঙ্গে লেখার লিংকটিও দিন (“লিংক কপি” টিপলেই কপি হয়ে যাবে)।": "Put the picture on Facebook or WhatsApp Status, with the link to the piece (\"লিংক কপি\" copies it).",
+    "নতুন মতামত ও উত্তর": "New comments and replies",
+    "পড়ুন, এখান থেকেই উত্তর দিন": "Read them and reply from here",
+    "হিসেবে লিখছেন": "writing as",
+    "পাঠকেরা যা লিখেছেন, আর আপনার মতামতের উত্তর। এখান থেকেই উত্তর দিতে পারেন।": "What readers wrote, and replies to your comments. You can reply from here.",
+    "উত্তর পাঠান": "Send reply",
+    "আপনার মতামতের উত্তর": "Replies to your comments",
+    "এখনও কেউ আপনার লেখায় মতামত লেখেননি। লেখা প্রকাশিত হলে বন্ধুদের পাঠান: যত পাঠক, তত মতামত।": "Nobody has commented on your writing yet. When a piece is published, send it to friends: more readers, more comments.",
+    "মতামত ও উত্তর": "Comments and replies",
+    "আপনার লেখায় পাঠকের মতামত": "Readers' comments on your writing",
+    "আপনার উত্তর": "Your reply",
+    "আপনার কোনো মতামতের উত্তর এখনও আসেনি। কোনো লেখা পড়ে মতামত লিখলে, কেউ উত্তর দিলে এখানে দেখতে পাবেন।": "No replies to your comments yet. When you comment on a piece and someone replies, you will see it here.",
+    "মতামত ও উত্তর দেখুন": "See comments and replies",
+    "এখনও উত্তর দেননি": "Not answered yet"
 }

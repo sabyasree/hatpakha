@@ -35,8 +35,8 @@
     <h2 id="reactions-h" class="text-center font-hand text-3xl font-normal text-red">পড়ে কেমন লাগল?</h2>
     <div class="mt-3 flex flex-wrap items-center justify-center gap-2" data-feelings>
         @foreach (Feelings::LIST as $key => [$label])
-            {{-- A guest's tap is remembered through the login (POST /feel), so it is not lost on the way. --}}
-            <form method="POST" action="{{ auth()->check() ? route('like', $post) : Url::to('/feel/'.$post->id) }}" @auth data-toggle="feel" @endauth>@csrf<input type="hidden" name="feeling" value="{{ $key }}">
+            {{-- D252: a reader without an account taps too, no sign-in (POST /feel, once a phone); the phone remembers which --}}
+            <form method="POST" action="{{ auth()->check() ? route('like', $post) : Url::to('/feel/'.$post->id) }}" data-toggle="feel" @guest data-guest="{{ $post->id }}" @endguest>@csrf<input type="hidden" name="feeling" value="{{ $key }}">
                 <button data-feeling="{{ $key }}" class="flex min-h-12 items-center gap-2 rounded-full border-2 px-4 font-bold {{ $mine === $key ? 'border-red bg-red text-white' : 'border-navy bg-white' }}" aria-pressed="{{ $mine === $key ? 'true' : 'false' }}">
                     <span>{{ $label }}</span> <span data-count class="tabular-nums" @if ($feel[$key]) title="{{ Bn::num((string) $feel[$key]) }} জন" @endif>{{ $feel[$key] ? Bn::num((string) $feel[$key]) : '' }}</span></button>
             </form>
@@ -44,7 +44,7 @@
     </div>
     <p class="mt-2 text-center text-sm text-ink2">
         @if ($post->likes_count){{ Bn::num((string) $post->likes_count) }} জন পাঠক জানিয়েছেন। @endif
-        @auth একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়। @else বোতাম টিপতে একবার লগ ইন লাগে{{ \App\Auth\GoogleSignIn::ready() ? ' (Google দিয়ে এক টিপেই হয়)' : '' }}; তারপর এই লেখাতেই ফিরবেন। @endauth
+        একটি বেছে নিন; আবার টিপলে ফিরিয়ে নেওয়া যায়।
     </p>
 
     @unless ($kids)
@@ -62,9 +62,9 @@
             <label class="block">
                 <span class="mb-1 block text-lg font-bold">লেখককে দু লাইন লিখুন</span>
                 <textarea name="body" rows="2" enterkeyhint="send" required minlength="2" maxlength="3000" placeholder="লেখাটি পড়ে কেমন লাগল? এখানে লিখুন…"
-                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('body') }}</textarea>
+                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ old('parent_id') ? '' : old('body') }}</textarea>
             </label>
-            @error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror
+            @if (! old('parent_id'))@error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror @endif
             @auth
                 <p class="mt-2 text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong> হিসেবে লিখছেন</p>
             @else
@@ -96,7 +96,7 @@
                     @php [$isWriter, $isDesk] = $who($c); @endphp
                     <p class="mt-1 break-words leading-relaxed"><strong>{{ $c->author_name }}</strong>@if ($isWriter) <span class="rounded-full bg-red px-2 py-0.5 text-xs font-bold text-white">লেখক</span>@elseif ($isDesk) <span class="rounded-full bg-navy px-2 py-0.5 text-xs font-bold text-white">হাতপাখা</span>@endif<strong>:</strong> {{ \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', (string) $c->body)), 140) }}</p>
                 @endforeach
-                <a href="#comments" class="mt-1 inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ Bn::num((string) $comments->count()) }} জন মতামত লিখেছেন, সব পড়ুন ↓</a>
+                <a href="#comments" class="mt-1 inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ Bn::num((string) ($comments->count() + $comments->sum(fn ($c) => $c->replies->count()))) }}টি মতামত ও উত্তর, সব পড়ুন ↓</a>
             @endif
         </div>
     @endunless
@@ -160,27 +160,67 @@
     </section>
 @endif
 
-{{-- 6. Every comment (D39, D74): who, when, what. Plain text, always escaped. --}}
+{{-- 6. Every comment (D39, D74): who, when, what. Plain text, always escaped.
+     D252: each with its published replies under it, and "উত্তর দিন" (a fold-out box: works without JavaScript). --}}
 @if (! $kids && $comments->isNotEmpty())
+    @php
+        $total = $comments->count() + $comments->sum(fn ($c) => $c->replies->count());
+        $replied = session('reply_status');
+    @endphp
     <section id="comments" class="mt-10 scroll-mt-24" aria-labelledby="comments-h">
         <div class="flex items-baseline justify-between gap-3 border-b-2 border-navy pb-3">
-            <h2 id="comments-h" class="font-display text-3xl font-extrabold">পাঠকের মতামত <span class="text-ink2">({{ Bn::num((string) $comments->count()) }})</span></h2>
+            <h2 id="comments-h" class="font-display text-3xl font-extrabold">পাঠকের মতামত <span class="text-ink2">({{ Bn::num((string) $total) }})</span></h2>
             <a href="#comment-form" class="inline-flex min-h-11 flex-none items-center font-bold text-sky-night underline">মতামত লিখুন ↑</a>
         </div>
         <ol class="mt-2">
             @foreach ($comments as $c)
                 @php [$isWriter, $isDesk] = $who($c); @endphp
-                <li id="comment-{{ $c->id }}" class="flex gap-3 border-b border-rule py-5 last:border-0">
-                    <span class="flex h-10 w-10 flex-none items-center justify-center rounded-full font-extrabold {{ $isWriter ? 'bg-red text-white' : ($isDesk ? 'bg-navy text-white' : 'bg-peach-light text-red-dark') }}" aria-hidden="true">{{ mb_substr(trim((string) $c->author_name) ?: '?', 0, 1) }}</span>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-baseline gap-x-2">
-                            <span class="font-bold">{{ $c->author_name }}</span>
-                            @if ($isWriter)<span class="rounded-full bg-red px-2 py-0.5 text-xs font-bold text-white">লেখক</span>@endif
-                            @if ($isDesk)<span class="rounded-full bg-navy px-2 py-0.5 text-xs font-bold text-white">হাতপাখা</span>@endif
-                            <span class="text-sm text-ink2">{{ Bn::date($c->created_at) }}</span>
-                        </div>
-                        <p class="mt-1 whitespace-pre-line break-words leading-relaxed">{{ $c->body }}</p>
-                    </div>
+                <li id="comment-{{ $c->id }}" class="scroll-mt-24 border-b border-rule py-5 last:border-0 target:rounded-xl target:border-l-4 target:border-navy target:bg-sky-tint target:px-3">
+                    @include('partials.comment-one', ['c' => $c, 'isWriter' => $isWriter, 'isDesk' => $isDesk, 'small' => false])
+                    @if ($c->replies->isNotEmpty())
+                        <ol class="ml-6 mt-3 border-l-4 border-peach pl-4" aria-label="উত্তর">
+                            @foreach ($c->replies as $r)
+                                @php [$rWriter, $rDesk] = $who($r); @endphp
+                                <li id="comment-{{ $r->id }}" class="scroll-mt-24 py-2 target:rounded-xl target:border-l-4 target:border-navy target:bg-sky-tint target:px-3">
+                                    @include('partials.comment-one', ['c' => $r, 'isWriter' => $rWriter, 'isDesk' => $rDesk, 'small' => true])
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endif
+                    @if (is_array($replied) && (int) ($replied['to'] ?? 0) === $c->id)
+                        <p class="ml-6 mt-3 rounded-xl bg-sky-tint p-3 font-semibold" role="status">{{ $replied['text'] }}</p>
+                    @endif
+                    {{-- reply box --}}
+                    @php($mineFailed = (int) old('parent_id') === $c->id && $errors->any())
+                    <details class="ml-6 mt-2 group" @if ($mineFailed) open @endif>
+                        <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">উত্তর দিন</summary>
+                        <form method="POST" action="{{ route('comment.store', $post) }}" class="mt-3">
+                            @csrf
+                            <input type="hidden" name="parent_id" value="{{ $c->id }}">
+                            <input type="hidden" name="started" value="{{ \App\Http\Controllers\CommentController::startedToken() }}">
+                            <div aria-hidden="true" class="absolute -left-[9999px] h-px w-px overflow-hidden"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+                            @if (! $me && $writerUsers)
+                                <p class="mb-2 rounded-xl bg-peach-light p-3 text-sm">লেখক? লেখক হিসেবে উত্তর দিতে আগে <a href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#comment-'.$c->id) }}" class="font-bold text-sky-night underline">লগ-ইন করুন</a>।</p>
+                            @endif
+                            @auth<p class="mb-2 text-sm text-ink2"><strong class="text-navy">{{ $me->name }}</strong>@if (in_array($me->id, $writerUsers, true)) (লেখক)@endif হিসেবে লিখছেন</p>@endauth
+                            <label class="block"><span class="sr-only">আপনার উত্তর</span>
+                                <textarea name="body" rows="2" required minlength="2" maxlength="3000" placeholder="{{ $c->author_name }}-কে উত্তর লিখুন…"
+                                    class="block w-full rounded-xl border-2 border-navy bg-paper p-3 text-lg leading-relaxed focus:border-sky-deep focus:bg-white">{{ $mineFailed ? old('body') : '' }}</textarea>
+                            </label>
+                            @if ($mineFailed)@error('body')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror @endif
+                            @guest
+                                <label class="mt-2 block"><span class="sr-only">আপনার নাম</span>
+                                    <input name="name" type="text" required minlength="2" maxlength="80" autocomplete="name" placeholder="আপনার নাম" class="block h-12 w-full rounded-xl border-2 border-navy bg-paper px-4 text-lg focus:border-sky-deep focus:bg-white">
+                                </label>
+                                <x-turnstile action="comment" class="mt-2" :lazy="true" appearance="interaction-only" />
+                            @endguest
+                            <div class="mt-2 flex flex-wrap items-center gap-3">
+                                <button class="flex h-12 flex-1 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:flex-none">উত্তর পাঠান</button>
+                                <button type="button" data-close-details class="flex h-12 items-center px-3 font-bold text-ink2 underline">বাতিল</button>
+                            </div>
+                            <p class="mt-2 text-xs text-ink2">@guest সম্পাদক দেখে প্রকাশ করেন। কেউ উত্তর দিলে ই-মেলে খবর পেতে চান? আগে <a class="font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#comment-'.$c->id) }}">লগ-ইন করে</a> লিখুন। @else কেউ আপনার উত্তরের পরে লিখলে ই-মেলে খবর পাবেন। @endguest</p>
+                        </form>
+                    </details>
                 </li>
             @endforeach
         </ol>

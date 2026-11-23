@@ -179,6 +179,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D249: how-to box, film and PDF redone with Google first, in plain words
 - [x] D250: desk editor toolbar stays in view
 - [x] D251: "কেমন দেখাবে" preview of an unpublished piece from the desk
+- [x] D252: publication-day note with WhatsApp and picture card; guests react without an account; replies; comment and reply e-mails that open the comment
+- [x] D253: last week's comments told once; "মতামত ও উত্তর" page in the account with replies (UX review applied: grouped by piece, unanswered note, failed reply keeps its text)
 - [ ] Owner: run PageSpeed on hatpakha.com again after D246 is live, and compare AdSense earnings a week later
 - [ ] Owner or a Bengali reader: read through the new word, riddle and proverb lists (database/content/*-2.php, riddles-hard.php, proverbs.php)
 - [ ] 1 January 2027: check that December's মাসের সেরা were written to the সম্মান-ফলক by themselves

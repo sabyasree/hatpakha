@@ -16,6 +16,11 @@ class Comment extends Model
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
 
+    /** D252: a reply answers one comment; replies to a reply join the same thread (one level). */
+    public function parent(): BelongsTo { return $this->belongsTo(Comment::class, 'parent_id'); }
+
+    public function replies(): \Illuminate\Database\Eloquent\Relations\HasMany { return $this->hasMany(Comment::class, 'parent_id'); }
+
     /**
      * D75: no links in comments (owner). Catches plain and disguised addresses: http(s)://, www.,
      * "site.com", "site dot com", "site[.]com", "ডট কম", and e-mail addresses. Old comments are kept as they were.

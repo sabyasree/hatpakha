@@ -109,6 +109,7 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 Route::get('/pashe-thakun', [\App\Http\Controllers\FeelingsController::class, 'support']);   // D237
 Route::post('/feel/{post}', [\App\Http\Controllers\FeelingsController::class, 'later'])->whereNumber('post')->middleware('throttle:20,1');   // D241
 Route::get('/pathoker-pochhondo', [\App\Http\Controllers\FeelingsController::class, 'index']);   // D232
+Route::get('/chhobi/{post}', [\App\Http\Controllers\FeelingsController::class, 'card'])->whereNumber('post');   // D252: a piece's picture card
 Route::get('/dharabahik', [\App\Http\Controllers\SerialController::class, 'index']);
 Route::get('/dharabahik/{slug}', [\App\Http\Controllers\SerialController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::post('/dharabahik/{serial}/follow', [\App\Http\Controllers\SerialController::class, 'follow'])->middleware(['auth', 'throttle:20,1'])->name('serial.follow');
@@ -163,6 +164,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/review/{review}', [\App\Http\Controllers\ReviewController::class, 'submit'])->whereNumber('review')->middleware('throttle:10,1');
     Route::post('/account/review/{review}/after-ai', [\App\Http\Controllers\ReviewController::class, 'afterAi'])->whereNumber('review')->middleware('throttle:10,1');
     Route::get('/account/stats', [\App\Http\Controllers\AccountController::class, 'stats'])->name('account.stats');   // "আমার পাঠক"
+    Route::get('/account/comments', [\App\Http\Controllers\AccountController::class, 'comments'])->name('account.comments');   // D253: মতামত ও উত্তর
     Route::get('/account/settings', [\App\Http\Controllers\AccountController::class, 'settings'])->name('account.settings');
     Route::post('/view-as/stop', function (\Illuminate\Http\Request $request) {
         $request->session()->forget('view_as');

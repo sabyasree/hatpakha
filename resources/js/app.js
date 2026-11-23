@@ -112,6 +112,20 @@ document.querySelectorAll('.cf-turnstile-lazy').forEach((box) => {
     });
 });
 
+// D252: "বাতিল" folds a reply box away again
+document.addEventListener('click', (e) => { const b = e.target.closest?.('[data-close-details]'); if (b) { const d = b.closest('details'); if (d) d.open = false; } });
+
+// D252: a reader without an account sees the answer they gave on this phone (the page itself may come from the cache)
+document.querySelectorAll('form[data-guest]').forEach((form) => {
+    let mine = null;
+    try { mine = localStorage.getItem('hp-feel-' + form.dataset.guest); } catch (x) { /* private window */ }
+    const b = form.querySelector('button[data-feeling]');
+    if (!mine || !b || b.dataset.feeling !== mine) return;
+    b.setAttribute('aria-pressed', 'true');
+    ['bg-red', 'text-white', 'border-red'].forEach((c) => b.classList.add(c));
+    ['bg-white', 'border-navy'].forEach((c) => b.classList.remove(c));
+});
+
 // Like / save / follow without a page reload (D64). Without JavaScript the forms post normally.
 document.querySelectorAll('form[data-toggle]').forEach((form) => {
     form.addEventListener('submit', async (e) => {
@@ -119,9 +133,17 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
         const btn = form.querySelector('button');
         btn.disabled = true;
         try {
-            const r = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': form.querySelector('[name=_token]').value }, body: form.dataset.toggle === 'feel' ? new FormData(form) : undefined });
+            const tok = (await hpFreshToken()) || form.querySelector('[name=_token]').value;   // a cached guest page carries no token of its own
+            const r = await fetch(form.action, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': tok }, body: form.dataset.toggle === 'feel' ? new FormData(form) : undefined });
+            if (r.status === 429 && form.dataset.guest) {   // D252: too many answers from one network today
+                const j = await r.json().catch(() => ({}));
+                const t = document.querySelector('[data-feel-thanks]');
+                if (t) { t.textContent = j.message || ''; t.hidden = false; }
+                return;
+            }
             if (!r.ok) { form.submit(); return; }
             const d = await r.json();
+            if (form.dataset.guest) { try { d.feeling ? localStorage.setItem('hp-feel-' + form.dataset.guest, d.feeling) : localStorage.removeItem('hp-feel-' + form.dataset.guest); } catch (x) { /* private window */ } }
             if (form.dataset.toggle !== 'feel') btn.setAttribute('aria-pressed', d.on ? 'true' : 'false');
             const kind = form.dataset.toggle;
             if (kind === 'feel') {   // D231: one of five; the others in the row are switched off and every count refreshed

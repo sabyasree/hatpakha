@@ -80,7 +80,7 @@
         const a = document.createElement('a');
         a.href = URL.createObjectURL(await blob()); a.download = 'hatpakha-' + (current.title || 'lekha').slice(0, 30) + '.png';
         a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-        msg.textContent = 'ছবি নামানো হল।';
+        msg.textContent = 'ছবিটি ফোনের গ্যালারি বা ডাউনলোড ফোল্ডারে রাখা হয়েছে।';
     });
     dlg.querySelector('[data-card-copy]').addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(current.url); msg.textContent = 'লিংক কপি হয়েছে।'; } catch (e) { msg.textContent = current.url; }
@@ -91,4 +91,7 @@
             await navigator.share({ files: [f], text: current.title + ' — ' + current.by + '\n' + current.url });
         } catch (e) { /* the writer closed the share sheet */ }
     });
+    // D252: the card page opens the card at once (the writer came from the "your piece is live" e-mail)
+    const now = document.querySelector('[data-share-card][data-open-now]');
+    if (now) now.click();
 })();
