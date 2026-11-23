@@ -73,7 +73,7 @@ class CommentsAndSharingTest extends TestCase
         Notification::assertSentTo($this->writer, TemplateMail::class, fn ($n) => $n->key === 'new_comments' && $n->url === $this->post->url().'#comment-'.$c->id);
         Comment::create(['post_id' => $this->post->id, 'author_name' => 'Tapas', 'body' => 'আবার পড়লাম।', 'status' => 'approved']);
         $this->assertSame(0, CommentNews::send(), 'Within the hour: it waits');
-        Cache::flush();
+        $this->travel(61)->minutes();
         $this->assertSame(1, CommentNews::send(), 'An hour later it goes');
     }
 
@@ -161,5 +161,26 @@ class CommentsAndSharingTest extends TestCase
         $this->assertNull($later->fresh()->writer_live_told_at, 'Not before it is out');
         $this->get('/chhobi/'.$new->id.'/')->assertOk()->assertSee('data-share-card', false)->assertSee('নতুন কবিতা')->assertSee('noindex', false);
         $this->get('/chhobi/'.$later->id.'/')->assertNotFound();
+    }
+
+    /** D271 (audit): a comment on a piece with two writers reaches both once, and is never mailed round again. */
+    public function test_co_writers_each_get_a_comment_once(): void
+    {
+        $second = User::factory()->create(['email' => 'rana@example.com', 'email_verified_at' => now()]);
+        $b = Author::create(['slug' => 'rana', 'display_name' => 'রানা', 'user_id' => $second->id]);
+        $this->post->authors()->attach($b->id, ['position' => 1]);
+        $other = $this->makePost(['slug' => 'onno', 'title' => 'অন্য', 'status' => 'published', 'published_at' => '2026-11-21 09:00:00', 'writer_live_told_at' => now()],
+            Author::where('user_id', $this->writer->id)->first());
+        Comment::create(['post_id' => $other->id, 'author_name' => 'ক', 'body' => 'আগের মতামত', 'status' => 'approved']);
+        $this->assertSame(1, CommentNews::send(), 'Megha is told about her other piece: she rests for an hour');
+        Comment::create(['post_id' => $this->post->id, 'author_name' => 'খ', 'body' => 'দুজনের লেখায় মতামত', 'status' => 'approved']);
+        $this->assertSame(0, CommentNews::send(), 'Waits whole while one co-writer rests');
+        $this->travel(61)->minutes();
+        $this->assertSame(2, CommentNews::send(), 'Then both are told together');
+        foreach (range(1, 4) as $hour) {
+            $this->travel(61)->minutes();
+            $this->assertSame(0, CommentNews::send(), 'and never again');
+        }
+        Notification::assertSentToTimes($second, TemplateMail::class, 1);
     }
 }

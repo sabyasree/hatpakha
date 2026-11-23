@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
+// D271 (audit): the "already running" locks live in the database, not the file cache that every release empties;
+// a job still running during a release could otherwise start twice (a letter batch, a post, a paid AI call).
+Schedule::useCache('database');
+
 /*
  * The AI team's routine (D44). Needs one server cron line (docs/DEPLOYMENT.md):
  *   * * * * * /usr/bin/php /path/to/app/artisan schedule:run >> /path/to/app/storage/logs/cron.log 2>&1
@@ -58,7 +62,7 @@ Schedule::call(function () {
 
 // D92: nightly database backup (plain PHP, no child process), kept 7 nights in storage/app/private/backups.
 Schedule::call(fn () => \Illuminate\Support\Facades\Artisan::call('hatpakha:backup-db', ['--label' => 'nightly', '--keep' => 7]))
-    ->name('nightly db backup')->dailyAt('02:40')->withoutOverlapping(60);
+    ->name('nightly db backup')->dailyAt('02:40')->timezone('Asia/Kolkata')->withoutOverlapping(60);
 
 // Facebook Page (owner, 2026-11-12): posts the owner timed, every 5 minutes; automatic mode (a desk switch, off by default)
 // posts one ready post at 10:05 and 19:35, good reading times in Bengal. Live site only (App\Support\FacebookPage::ready).
@@ -111,4 +115,8 @@ Schedule::call(function () {
 })->name('handed-over jobs')->everyTenMinutes()->withoutOverlapping(20);
 
 // D217 (owner: "yes, add daily comment email for writers"): one e-mail a day to a writer whose pieces got new comments.
-Schedule::call(function () { \App\Support\CommentNews::send(); \App\Support\CommentNews::replies(); \App\Support\PieceLive::send(); \App\Support\ConfirmReminder::send(); \App\Support\SerialReminders::send(); })->name('comments told to writers')->everyTenMinutes()->withoutOverlapping(10);   // D217, D252: comments, replies, a piece going live
+Schedule::call(function () {   // D271: one failing job never stops the others
+    foreach ([[\App\Support\CommentNews::class, 'send'], [\App\Support\CommentNews::class, 'replies'], [\App\Support\PieceLive::class, 'send'], [\App\Support\ConfirmReminder::class, 'send'], [\App\Support\SerialReminders::class, 'send']] as $job) {
+        rescue(fn () => $job(), null, true);
+    }
+})->name('comments told to writers')->everyTenMinutes()->withoutOverlapping(10);   // D217, D252: comments, replies, a piece going live

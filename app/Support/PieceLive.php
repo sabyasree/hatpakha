@@ -15,6 +15,9 @@ final class PieceLive
 {
     public static function send(): int
     {
+        if (! BulkMail::real()) {
+            return 0;   // D271: wait for real mail (a piece was marked told while mail was off, and the note was lost)
+        }
         $sent = 0;
         $due = Post::published()->with('authors.user')->whereNull('writer_live_told_at')->where('published_at', '>=', now()->subDays(3))->limit(50)->get();
         foreach ($due as $post) {

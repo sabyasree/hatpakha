@@ -33,7 +33,7 @@ final class FollowNotifier
             // D108: readers who follow this serial hear about the new episode (once, even if they also follow the writer).
             if ($post->serial_id && $post->serial) {
                 $ids = DB::table('serial_follows')->where('serial_id', $post->serial_id)->limit(2000)->pluck('user_id');
-                foreach (User::whereIn('id', $ids)->whereNotNull('email_verified_at')->get() as $u) {
+                foreach (User::whereIn('id', $ids)->whereNotNull('email_verified_at')->where('mail_opt_out', false)->whereNull('spam_reason')->get() as $u) {   // D271: never to bounced, opted-out or bot addresses
                     rescue(fn () => $u->notify(new \App\Notifications\NewEpisode($post, URL::signedRoute('serial.unfollow', ['serial' => $post->serial_id, 'user' => $u->id]))), null, false);
                     $told[$u->id] = true;
                     $sent++;
@@ -41,7 +41,7 @@ final class FollowNotifier
             }
             foreach ($post->authors as $author) {
                 $ids = DB::table('follows')->where('author_id', $author->id)->limit(500)->pluck('user_id');
-                foreach (User::whereIn('id', $ids)->whereNotIn('id', array_keys($told))->whereNotNull('email_verified_at')->get() as $u) {
+                foreach (User::whereIn('id', $ids)->whereNotIn('id', array_keys($told))->whereNotNull('email_verified_at')->where('mail_opt_out', false)->whereNull('spam_reason')->get() as $u) {   // D271: never to bounced, opted-out or bot addresses
                     rescue(fn () => $u->notify(new NewFromWriter($post, $author, URL::signedRoute('unfollow', ['author' => $author->id, 'user' => $u->id]))), null, false);
                     $told[$u->id] = true;
                     $sent++;
