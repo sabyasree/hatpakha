@@ -65,9 +65,9 @@
                         </li>
                         {{-- 2. Editorial --}}
                         <li class="hp-mz-step">
-                            <span class="hp-mz-dot {{ ['live' => 'hp-mz-ok', 'draft' => 'hp-mz-wait', 'missing' => 'hp-mz-no'][$s['editorial']] }}" aria-hidden="true">{{ $s['editorial'] === 'live' ? '✓' : '২' }}</span>
+                            <span class="hp-mz-dot {{ ['live' => 'hp-mz-ok', 'scheduled' => 'hp-mz-ok', 'draft' => 'hp-mz-wait', 'missing' => 'hp-mz-no'][$s['editorial']] }}" aria-hidden="true">{{ in_array($s['editorial'], ['live', 'scheduled'], true) ? '✓' : '২' }}</span>
                             <div>
-                                <b>{{ __('সম্পাদকীয়') }}: {{ ['live' => __('প্রকাশিত'), 'draft' => __('খসড়া তৈরি; পড়ে, দরকারে বদলে প্রকাশ করুন'), 'missing' => __('এখনও লেখা হয়নি')][$s['editorial']] }}</b>
+                                <b>{{ __('সম্পাদকীয়') }}: {{ $s['editorial'] === 'scheduled' ? $s['post']->goesOutText() : ['live' => __('প্রকাশিত'), 'draft' => __('খসড়া তৈরি; পড়ে, দরকারে বদলে প্রকাশ করুন'), 'missing' => __('এখনও লেখা হয়নি')][$s['editorial']] }}</b>
                                 @if ($s['post'])<span class="hp-muted">{{ $s['post']->title }}</span>@endif
                                 <div class="hp-mz-btns">
                                     @if ($s['post'])

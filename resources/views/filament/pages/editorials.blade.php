@@ -11,7 +11,7 @@
         @media (max-width: 760px) { .hp-ed-row { grid-template-columns: 1fr; } }
         .hp-ed-issue b { display: block; }
         .hp-ed-chip { display: inline-block; font-size: .75rem; font-weight: 700; padding: .05rem .55rem; border-radius: 999px; margin-top: .2rem; }
-        .hp-ed-live { background: #13212C; color: #FFFBF4; } .hp-ed-draft { background: #EFC08D; color: #13212C; } .hp-ed-none { background: #CB1B32; color: #fff; }
+        .hp-ed-live { background: #13212C; color: #FFFBF4; } .hp-ed-draft { background: #EFC08D; color: #13212C; } .hp-ed-none { background: #CB1B32; color: #fff; } .hp-ed-scheduled { background: #DDF1FA; color: #13212C; border: 1px solid #2DAAE2; }
         .hp-ed-btns { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
         .hp-muted { font-size: .85rem; opacity: .75; }
     </style>
@@ -23,14 +23,14 @@
     <div class="hp-ed">
         @forelse ($issues as $i)
             @php($post = $i->editorialPost())
-            @php($state = ! $post ? 'none' : ($post->isLive() ? 'live' : 'draft'))
+            @php($state = ! $post ? 'none' : $post->publishState())
             <div class="hp-ed-row">
                 <div class="hp-ed-issue">
                     <b>{{ $i->title }}</b>
                     <span class="hp-muted">{{ $i->slug }} · {{ $i->status === 'published' ? __('প্রকাশিত সংখ্যা') : __('আসছে') }}</span>
                 </div>
                 <div>
-                    <span class="hp-ed-chip hp-ed-{{ $state }}">{{ ['live' => __('সম্পাদকীয় প্রকাশিত'), 'draft' => __('খসড়া'), 'none' => __('এখনও লেখা হয়নি')][$state] }}</span>
+                    <span class="hp-ed-chip hp-ed-{{ $state }}">{{ $state === 'scheduled' ? $post->goesOutText() : ['live' => __('সম্পাদকীয় প্রকাশিত'), 'draft' => __('খসড়া'), 'none' => __('এখনও লেখা হয়নি')][$state] }}</span>
                     @if ($post)
                         <div style="font-weight:700;margin-top:.2rem">{{ $post->title }}</div>
                         <div class="hp-muted">{{ $post->authors->map->publicName()->implode(', ') }}@if ($post->published_at && $state === 'live') · {{ Bn::date($post->published_at) }}@endif</div>
@@ -55,13 +55,18 @@
 
     @if ($others->isNotEmpty())
         <h3 style="font-weight:800;margin-top:.5rem">{{ __('অন্য সম্পাদকীয় (কোনো সংখ্যার সঙ্গে যুক্ত নয়)') }}</h3>
-        <p class="hp-muted">{{ __('কোনো সংখ্যায় যুক্ত করতে: সংখ্যা → খুলুন → “সম্পাদকীয়” ঘরে বেছে নিন।') }}</p>
+        <p class="hp-muted">{{ __('কোনো আসন্ন সংখ্যার সম্পাদকীয় করতে পাশের বোতাম টিপুন।') }}</p>
         <div class="hp-ed">
             @foreach ($others as $post)
                 <div class="hp-ed-row">
                     <div class="hp-ed-issue"><b>{{ $post->title }}</b><span class="hp-muted">{{ $post->issue?->title ?? __('কোনো সংখ্যা নেই') }}</span></div>
-                    <div><span class="hp-ed-chip hp-ed-{{ $post->isLive() ? 'live' : 'draft' }}">{{ $post->isLive() ? __('প্রকাশিত') : __('খসড়া') }}</span></div>
-                    <div class="hp-ed-btns"><x-filament::button size="sm" color="gray" tag="a" :href="PostResource::getUrl('edit', ['record' => $post])" icon="heroicon-o-pencil-square">{{ __('খুলুন') }}</x-filament::button></div>
+                    <div><span class="hp-ed-chip hp-ed-{{ $post->publishState() }}">{{ ['live' => __('প্রকাশিত'), 'scheduled' => $post->goesOutText(), 'draft' => __('খসড়া')][$post->publishState()] }}</span></div>
+                    <div class="hp-ed-btns"><x-filament::button size="sm" color="gray" tag="a" :href="PostResource::getUrl('edit', ['record' => $post])" icon="heroicon-o-pencil-square">{{ __('খুলুন') }}</x-filament::button>
+                        {{-- D270: one click makes it an upcoming issue's editorial (the issue's earlier choice stays in this list) --}}
+                        @foreach ($upcoming as $u)
+                            <x-filament::button size="sm" color="primary" icon="heroicon-o-link" wire:click="useFor({{ $post->id }}, {{ $u->id }})" wire:confirm="{{ __('এটিকে এই সংখ্যার সম্পাদকীয় করবেন?') }}">{{ $u->title }}-{{ __('এর সম্পাদকীয় করুন') }}</x-filament::button>
+                        @endforeach
+                    </div>
                 </div>
             @endforeach
         </div>

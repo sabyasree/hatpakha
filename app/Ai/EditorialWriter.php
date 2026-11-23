@@ -16,6 +16,12 @@ final class EditorialWriter
 {
     public static function draft(Issue $issue, User $owner): ?Post
     {
+        // D270 (owner: "I have the editorial scheduled, but it is showing draft"): a new AI draft only replaces the AI's own
+        // untouched draft. An editorial the owner wrote, edited, approved or scheduled is never overwritten or unlinked.
+        $current = $issue->editorialPost();
+        if ($current && ! self::replaceable($current)) {
+            return null;
+        }
         $section = Section::where('slug', 'editorial')->first();
         if (! $section) {
             return null;
@@ -46,7 +52,7 @@ final class EditorialWriter
             'user_id' => $owner->id, 'display_name' => $owner->name, 'slug' => 'editor-'.$owner->id,
         ]);
         $html = collect((array) $data['paragraphs'])->map(fn ($p) => '<p>'.e(trim((string) $p)).'</p>')->implode('');
-        $post = $issue->editorial ?? new Post();
+        $post = $current ?? new Post();
         $post->forceFill([
             'title' => mb_substr(trim((string) $data['title']), 0, 200) ?: 'সম্পাদকীয়: '.$issue->title,
             'body_html' => $html,
@@ -66,5 +72,12 @@ final class EditorialWriter
         }
 
         return $post;
+    }
+
+    /** Only the AI's own draft that nobody has edited, approved or scheduled. */
+    public static function replaceable(Post $post): bool
+    {
+        return $post->status === 'draft' && $post->ai_drafted_at !== null
+            && ($post->edited_in_desk_at === null || $post->edited_in_desk_at->lte($post->ai_drafted_at->copy()->addMinute()));
     }
 }

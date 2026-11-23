@@ -183,6 +183,20 @@ class Post extends Model
     public function comments(): HasMany { return $this->hasMany(Comment::class); }
 
     /** Same rule as scopePublished, for one loaded post. */
+    /** D270: live, scheduled (approved, waiting for its day) or draft. A scheduled piece is never called a draft. */
+    public function publishState(): string
+    {
+        return $this->isLive() ? 'live' : (in_array($this->status, ['published', 'scheduled'], true) && $this->published_at ? 'scheduled' : 'draft');
+    }
+
+    /** "প্রকাশ হবে ২৭ ডিসেম্বর ২০২৬, সকাল ১০:০০" for a scheduled piece (India time). */
+    public function goesOutText(): string
+    {
+        $at = $this->published_at?->copy()->setTimezone('Asia/Kolkata');
+
+        return $at ? 'প্রকাশ হবে '.\App\Support\Bn::date($at).', '.($at->hour < 12 ? 'সকাল' : ($at->hour < 17 ? 'দুপুর' : 'সন্ধ্যা')).' '.\App\Support\Bn::num($at->format('g:i')) : '';
+    }
+
     public function isLive(): bool
     {
         return in_array($this->status, ['published', 'scheduled'], true) && $this->published_at !== null && $this->published_at->lte(now());

@@ -97,4 +97,12 @@ class EditIssue extends EditRecord
             \App\Filament\Support\Deleting::page(static::$resource),
         ];
     }
+
+    /** D270: the editorial chosen here belongs to this issue (so nothing can drift it away again). */
+    protected function afterSave(): void
+    {
+        if ($this->record->editorial_post_id) {
+            \App\Models\Post::whereKey($this->record->editorial_post_id)->update(['issue_id' => $this->record->id]);
+        }
+    }
 }

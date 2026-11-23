@@ -2938,5 +2938,9 @@
     "সম্পাদকীয় বেছে নিলে এটি ফাঁকা রাখুন: তখন সংখ্যার শুরুতে সম্পাদকীয়টিই ছাপা হয়। সম্পাদকীয় না থাকলে এই কথাগুলো ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → \"সংখ্যা\" বেছে নিন।": "Leave this empty when an editorial is chosen: the editorial opens the issue. Without an editorial, these words open it. To add pieces: Pieces → open → choose \"Issue\".",
     "ধারাবাহিকের পর্ব: শুধু শনিবার প্রকাশ হয়। পরের খালি শনিবার সকাল ৯টা দেওয়া আছে।": "Serial episode: published on Saturdays only. The next free Saturday, 9am, is filled in.",
     "ধারাবাহিকের পর্ব: শুধু শনিবার। সময় ভারতের।": "Serial episode: Saturdays only. Times are India time.",
-    "সময় ভারতের।": "Times are India time."
+    "সময় ভারতের।": "Times are India time.",
+    "এটিকে এই সংখ্যার সম্পাদকীয় করবেন?": "Make this the editorial of this issue?",
+    "এর সম্পাদকীয় করুন": ": make it the editorial",
+    "যুক্ত হয়েছে": "Linked",
+    "কোনো আসন্ন সংখ্যার সম্পাদকীয় করতে পাশের বোতাম টিপুন।": "To make one the editorial of an upcoming issue, press the button beside it."
 }

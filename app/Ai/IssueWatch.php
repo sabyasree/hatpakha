@@ -31,11 +31,11 @@ final class IssueWatch
         return Issue::whereIn('slug', [$now->format('Y-m'), $now->copy()->addMonthNoOverflow()->format('Y-m')])->orderBy('slug')->get();
     }
 
-    /** @return array{editorial: string, cover: string, post: ?Post, ready: bool} editorial: missing|draft|live; cover: missing|proposed|set */
+    /** @return array{editorial: string, cover: string, post: ?Post, ready: bool} editorial: missing|draft|scheduled|live; cover: missing|proposed|set */
     public static function status(Issue $issue): array
     {
         $post = $issue->editorialPost();
-        $editorial = ! $post ? 'missing' : ($post->isLive() ? 'live' : 'draft');
+        $editorial = ! $post ? 'missing' : $post->publishState();   // D270: live | scheduled | draft
         $cover = $issue->cover_path ? 'set' : ($issue->proposed_cover_path ? 'proposed' : 'missing');
 
         return ['editorial' => $editorial, 'cover' => $cover, 'post' => $post, 'ready' => $editorial === 'live' && $cover === 'set'];
