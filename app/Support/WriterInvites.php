@@ -123,7 +123,14 @@ final class WriterInvites
             $people[$author->user_id] = true;
             $letter = self::write($author);
             if (! $letter) {
-                break;   // the AI is resting or over budget: try again later, same writers
+                if (\App\Ai\Claude::blocked()) {
+                    break;   // the AI is resting or switched off: try again later, same writers
+                }
+                // D273 (AI-spend audit): a letter that cannot be written (no piece to mention, or it failed the checks
+                // twice) is set aside, not retried every ten minutes on the costliest model, blocking everyone after it.
+                WriterInvite::create(['author_id' => $author->id, 'user_id' => $author->user_id, 'subject' => '', 'body' => '', 'status' => 'failed']);
+
+                continue;
             }
             WriterInvite::create(['author_id' => $author->id, 'user_id' => $author->user_id, 'post_id' => $letter['post_id'], 'subject' => $letter['subject'], 'body' => $letter['body'],
                 'status' => 'drafted', 'send_after' => now()->addHours(self::DELAY_HOURS)]);

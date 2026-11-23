@@ -29,25 +29,30 @@ final class CommentNews
         if (! BulkMail::real()) {
             return 0;   // only the live site with real mail; the comments wait
         }
-        $new = Comment::with(['post.authors.user'])->where('status', 'approved')->whereNull('writer_told_at')->oldest('id')->limit(400)->get();
+        $new = Comment::with(['post.authors.user', 'parent'])->where('status', 'approved')->whereNull('writer_told_at')->oldest('id')->limit(400)->get();
+        // D271 (audit): a comment waits whole. If any writer of its piece was told within the hour, none of them is told
+        // this round, so the comment is marked once, after all its writers had it (it went round co-writers hourly before).
+        $resting = fn ($userId) => \Illuminate\Support\Facades\Cache::store('database')->has('hp.cnews.'.$userId);
+        $mailable = fn ($a) => ! $a->is_desk && $a->user && filled($a->user->email) && ! $a->user->mail_opt_out && ! $a->user->spam_reason;
+        $held = $new->filter(fn ($c) => collect($c->post?->authors ?? [])->contains(fn ($a) => $mailable($a) && $resting($a->user_id)))->pluck('id')->all();
         $byWriter = [];
         foreach ($new as $c) {
+            if (in_array($c->id, $held, true)) {
+                continue;
+            }
             foreach ($c->post?->authors ?? [] as $a) {
-                if (! $a->is_desk && $a->user && $c->post->status === 'published' && (int) $c->user_id !== (int) $a->user_id) {
+                // a reply to the writer's own comment reaches them as "a reply to you" (replies()), not twice
+                $replyToThem = $c->parent && (int) $c->parent->user_id === (int) $a->user_id;
+                if (! $a->is_desk && $a->user && $c->post->status === 'published' && (int) $c->user_id !== (int) $a->user_id && ! $replyToThem) {
                     $byWriter[$a->user_id]['user'] = $a->user;
                     $byWriter[$a->user_id]['comments'][] = $c;
                 }
             }
         }
         $sent = 0;
-        $held = [];
         foreach ($byWriter as $w) {
             $user = $w['user'];
             if (blank($user->email) || $user->mail_opt_out || $user->spam_reason) {
-                continue;
-            }
-            if (\Illuminate\Support\Facades\Cache::has('hp.cnews.'.$user->id)) {   // told within the hour: these wait
-                $held = array_merge($held, array_map(fn ($c) => $c->id, $w['comments']));
                 continue;
             }
             $list = collect($w['comments']);
@@ -62,7 +67,7 @@ final class CommentNews
                     '{আরও}' => $more > 0 ? 'আরও '.Bn::num((string) $more).'টি মন্তব্য লেখার পাতায় আছে।' : '',
                 ], $url));
 
-                \Illuminate\Support\Facades\Cache::put('hp.cnews.'.$user->id, true, now()->addMinutes(self::GAP_MINUTES));
+                \Illuminate\Support\Facades\Cache::store('database')->put('hp.cnews.'.$user->id, true, now()->addMinutes(self::GAP_MINUTES));   // survives a release (D271)
 
                 return true;
             }, false, true);

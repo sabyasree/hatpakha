@@ -249,7 +249,7 @@ class ArchiveController extends Controller
 
     public function issue(Request $request, string $slug)
     {
-        $issue = Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();
+        $issue = Issue::where('slug', $slug)->live()->firstOrFail();   // D272: from its day only
         $posts = $issue->posts()->published()->with(['authors', 'section'])->orderBy('section_id')->get();
         $seo = new Seo(title: $issue->title, description: $issue->editor_note ?? $issue->title, canonical: $issue->url(), jsonLd: [JsonLd::issue($issue)]);
 
@@ -300,7 +300,7 @@ class ArchiveController extends Controller
     /** The issue as a book (D68). Same text as the pieces' own pages, so noindex with the issue as canonical. */
     public function issueBook(string $slug)
     {
-        $issue = Issue::where('slug', $slug)->where('status', 'published')->firstOrFail();
+        $issue = Issue::where('slug', $slug)->live()->firstOrFail();   // D272: from its day only
         $pieces = \App\Support\IssueBook::pieces($issue);
         abort_if($pieces->isEmpty(), 404);
         // Owner (2026-11-12): the issue as a real magazine, full screen, pages that turn in 3D.

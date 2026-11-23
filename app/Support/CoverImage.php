@@ -77,7 +77,9 @@ final class CoverImage
     {
         if ($post->proposed_image_path) {
             $spare = ['path' => $post->proposed_image_path, 'width' => $post->proposed_image_width, 'height' => $post->proposed_image_height, 'ai' => true, 'kind' => 'dropped'];
-            $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null])->save();
+            // D273 (AI-spend audit): a picture the editor turned down is not drawn again by itself within the hour;
+            // "নতুন ছবি আঁকান" still draws one when asked
+            $post->forceFill(['proposed_image_path' => null, 'proposed_image_width' => null, 'proposed_image_height' => null, 'proposed_image_error' => 'discarded'])->save();
             self::keepSpare($post, $spare);
         }
     }

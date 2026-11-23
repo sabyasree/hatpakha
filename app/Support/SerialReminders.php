@@ -25,24 +25,27 @@ final class SerialReminders
     public static function send(?Carbon $now = null): int
     {
         $now = ($now ?? now())->copy()->setTimezone(self::TZ);
-        $stage = self::stage($now);
-        if (! $stage) {
-            return 0;
-        }
         $sent = 0;
         foreach (Serial::where('status', 'active')->whereNotNull('user_id')->whereNull('writer')->with('user')->get() as $serial) {
-            $sent += (int) self::remind($serial, $now, $stage);
+            if ($stage = self::stage($now, (int) ($serial->day ?? 6))) {   // D271: counted from the serial's own day
+                $sent += (int) self::remind($serial, $now, $stage);
+            }
         }
 
         return $sent;
     }
 
-    /** 1 on the serial day from 6pm or the day after; 2 on Wednesday from 10am or Thursday; else nothing. */
-    private static function stage(Carbon $now): ?int
+    /**
+     * 1 on the serial's day from 6pm, or the day after; 2 three days before the next one from 10am, or two days before
+     * (Saturday serials: Wednesday, Thursday); else nothing. D271: worked out from the serial's own day.
+     */
+    private static function stage(Carbon $now, int $day): ?int
     {
+        $ahead = ($day - $now->dayOfWeek + 7) % 7;   // days until the serial's day (0: today)
+
         return match (true) {
-            $now->isSaturday() && $now->hour >= 18, $now->isSunday() => 1,
-            $now->isWednesday() && $now->hour >= 10, $now->isThursday() => 2,
+            $ahead === 0 && $now->hour >= 18, $ahead === 6 => 1,
+            $ahead === 3 && $now->hour >= 10, $ahead === 2 => 2,
             default => null,
         };
     }
@@ -72,7 +75,7 @@ final class SerialReminders
             return false;   // all the planned episodes are out
         }
         $inHand = $serial->episodes()->where(fn ($q) => $q->whereIn('status', ['pending', 'confirm', 'changes'])
-            ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '>', $now)))->exists();
+            ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '>', $now->copy()->utc())))->exists();   // stored in UTC
         if ($inHand) {
             return false;
         }

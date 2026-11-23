@@ -361,7 +361,9 @@ class SubmissionTest extends TestCase
         $this->assertFalse($serial->isPublic(), 'Nothing is public until the editor takes the first episode');
 
         // One proposal at a time.
+        $before = \App\Models\Post::withTrashed()->count();
         $this->post('/submit/', $this->poem(['title' => 'আর একটা', 'serial' => 'new', 'serial_title' => 'অন্য গল্প', 'serial_logline' => 'কুড়ি বছর পরে গ্রামে ফেরা এক মাস্টারমশাইয়ের গল্প।', 'serial_plan' => $plan, 'serial_count' => 5]))->assertSessionHasErrors('serial');
+        $this->assertSame($before, \App\Models\Post::withTrashed()->count(), 'D272: a refused send leaves no half-saved draft');
 
         // The editor approves the first episode: the serial starts.
         \App\Support\Review::approve($first->fresh(), User::factory()->create(['role' => Role::Admin]));

@@ -156,6 +156,15 @@ class PostsTable
     {
         return [
             // Review decisions (3c): a person always decides; the writer gets one kind email.
+            // D272 (audit): a piece waiting for the writer's agreement had no button at all
+            Action::make('withoutWords')->label(__('শব্দ বদল ছাড়াই প্রকাশ'))->icon('heroicon-o-check')->color('gray')
+                ->visible(fn (Post $record) => $record->status === 'confirm')
+                ->requiresConfirmation()->modalHeading(fn (Post $record) => __('শব্দ বদল ছাড়াই প্রকাশ: ').$record->title)
+                ->modalDescription(__('লেখক উত্তর দেননি। লেখাটি লেখক যেমন পাঠিয়েছিলেন তেমনই (ছোট সংশোধনসহ) প্রকাশ হবে, প্রস্তাবিত শব্দ বদল বাদ যাবে। দিন: ঠিক করা দিন, সেটি পেরিয়ে গেলে পরের ঠিক দিন। লেখক "মনোনীত" ই-মেল পাবেন।'))
+                ->action(function (Post $record) {
+                    EditorPackage::publishWithoutWords($record, auth()->user());
+                    Notification::make()->title(__('মনোনীত হয়েছে'))->success()->send();
+                }),
             Action::make('approve')->label(__('মনোনীত'))->icon('heroicon-o-check-badge')->color('success')
                 ->visible(fn (Post $record) => $record->status === 'pending')
                 ->modalHeading(fn (Post $record) => __('মনোনীত: ').$record->title)->modalSubmitActionLabel(__('মনোনীত করুন'))
@@ -340,6 +349,12 @@ class PostsTable
                     $copy->published_at = rescue(fn () => \Illuminate\Support\Carbon::parse($get('at')), now(), false);
                 }
                 // A preview that cannot be drawn must never stop the editor from deciding: it says so, and is logged.
+                // D272 (audit): a ticked word change sends the "agree?" letter, not the "selected" one: show that one
+                $edits = EditorPackage::edits($record);
+                if ($decision === 'approved' && collect((array) ($get('edits') ?? []))->contains(fn ($i) => ($edits[(int) $i]['kind'] ?? null) === 'word')) {
+                    $decision = 'confirm';
+                }
+
                 return rescue(function () use ($copy, $decision, $record) {
                     $mail = (new \App\Notifications\SubmissionDecision($copy, $decision))->toMail($record->submittedBy);
 

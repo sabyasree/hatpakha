@@ -33,7 +33,7 @@ final class BacklogScreen
                 'decision' => ['type' => 'string', 'enum' => ['ask', 'skip']],
                 'score' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5],
                 'reason' => ['type' => 'string'],
-            ]], config('ai.anthropic.review_model'), 400, $post->id);
+            ]], config('ai.anthropic.review_model'), 2000, $post->id);   // D273: 400 was cut off by thinking, then paid for twice
         if (! is_array($d)) {
             return $err ?: 'উত্তর পাওয়া যায়নি।';
         }

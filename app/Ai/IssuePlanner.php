@@ -70,8 +70,8 @@ final class IssuePlanner
         $editorial = Section::where('slug', 'editorial')->value('id');
         $candidates = Post::with(['authors', 'section', 'latestAiReview'])
             ->whereNull('issue_id')->where('section_id', '!=', $editorial)
-            ->where(fn ($q) => $q->where(fn ($q) => $q->where('status', 'published')->where('published_at', '>=', $month->copy()->subDays(75)))
-                ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '<=', $month->copy()->endOfMonth())))
+            ->where(fn ($q) => $q->where(fn ($q) => $q->where('status', 'published')->where('published_at', '>=', $month->copy()->subDays(75)->utc()))
+                ->orWhere(fn ($q) => $q->where('status', 'scheduled')->where('published_at', '<=', $month->copy()->endOfMonth()->utc())))   // stored in UTC (D272)
             ->orderByDesc('published_at')->limit(60)->get();
         if ($candidates->count() < 3) {
             return [null, __('সংখ্যার জন্য যথেষ্ট নতুন লেখা নেই (অন্তত ৩টি দরকার)')];

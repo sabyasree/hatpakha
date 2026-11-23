@@ -51,10 +51,15 @@ class ReaderFeaturesTest extends TestCase
         Notification::fake();
         $post = $this->makePost(['status' => 'published', 'slug' => 'new', 'published_at' => now()->subMinute()]);
         $fan = User::factory()->create();
-        \Illuminate\Support\Facades\DB::table('follows')->insert(['user_id' => $fan->id, 'author_id' => $post->authors->first()->id]);
+        $bounced = User::factory()->create(['mail_opt_out' => true]);   // D271: an address that bounced or switched letters off
+        $bot = User::factory()->create(['spam_reason' => 'bot']);
+        foreach ([$fan, $bounced, $bot] as $u) {
+            \Illuminate\Support\Facades\DB::table('follows')->insert(['user_id' => $u->id, 'author_id' => $post->authors->first()->id]);
+        }
         FollowNotifier::run();
         FollowNotifier::run();
         Notification::assertSentToTimes($fan, NewFromWriter::class, 1);
+        Notification::assertNotSentTo([$bounced, $bot], NewFromWriter::class);
     }
 
     public function test_writer_box_shows_under_the_piece(): void

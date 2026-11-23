@@ -75,7 +75,7 @@ class EditIssue extends EditRecord
                 ])
                 ->action(function (Issue $record, array $data) {
                     IssuePlanner::approve($record, auth()->user(), Carbon::parse($data['at']), array_map('intval', (array) $data['posts']));
-                    $draft = $record->editorial && $record->editorial->status !== 'published';
+                    $draft = $record->editorialPost()?->publishState() === 'draft';   // D272: a scheduled editorial is not a draft
                     Notification::make()->title(__('সংখ্যা অনুমোদিত'))->body($draft ? __('সম্পাদকীয়টি এখনও খসড়া: সম্পাদনা করে প্রকাশ করুন।') : null)->success()->send();
                     $this->refreshFormData(['status']);
                 }),
@@ -86,7 +86,7 @@ class EditIssue extends EditRecord
                 ->visible(fn (Issue $record) => $record->editorial_post_id !== null)
                 ->url(fn (Issue $record) => PostResource::getUrl('edit', ['record' => $record->editorial_post_id])),
             Action::make('rePropose')->label(__('নতুন প্রস্তাব'))->icon('heroicon-o-arrow-path')->color('gray')
-                ->visible(fn (Issue $record) => $isAdmin() && $record->status === 'proposed')
+                ->visible(fn (Issue $record) => $isAdmin() && $record->status === 'proposed' && preg_match('/^\d{4}-\d{2}$/', (string) $record->slug))   // monthly issues only (D272)
                 ->requiresConfirmation()->modalDescription(__('এআই সম্পাদক আবার বেছে নেবে (সম্পাদকীয় খসড়াও নতুন হবে)।'))
                 ->action(function (Issue $record) {
                     [$issue, $err] = IssuePlanner::propose(auth()->user(), Carbon::parse($record->slug.'-01'));
@@ -96,5 +96,13 @@ class EditIssue extends EditRecord
                 }),
             \App\Filament\Support\Deleting::page(static::$resource),
         ];
+    }
+
+    /** D270: the editorial chosen here belongs to this issue (so nothing can drift it away again). */
+    protected function afterSave(): void
+    {
+        if ($this->record->editorial_post_id) {
+            \App\Models\Post::whereKey($this->record->editorial_post_id)->update(['issue_id' => $this->record->id]);
+        }
     }
 }

@@ -333,10 +333,24 @@ class AccountController extends Controller
         return redirect(Url::to('/account/settings').'#reading')->with('status', __('পড়ার হিস্টরি মুছে দেওয়া হয়েছে। সেভ করা লেখা, লাইক করা লেখা আর আপনার লেখা যেমন ছিল আছে।'));
     }
 
+    /**
+     * D272 (audit): someone who signed in with Google this time never had a password of their own (the account was given a
+     * random one), so they could neither set a password nor switch 2FA off. Signing in with Google is the proof then.
+     */
+    public static function viaGoogle(Request $request): bool
+    {
+        return $request->session()->get('signed_in_via') === 'google' && filled($request->user()?->google_id);
+    }
+
+    private static function proofRule(Request $request): array
+    {
+        return self::viaGoogle($request) ? ['nullable'] : ['required', 'current_password'];
+    }
+
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => self::proofRule($request),
             'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()->uncompromised()],
         ], ['current_password.current_password' => __('এখনকার পাসওয়ার্ড মিলছে না।'), 'password.confirmed' => __('দুটি পাসওয়ার্ড মেলেনি।'),
             'password.uncompromised' => __('এই পাসওয়ার্ডটি অন্য কোনো সাইট থেকে ফাঁস হয়ে গেছে। অন্য একটি পাসওয়ার্ড দিন।')]);
@@ -375,7 +389,7 @@ class AccountController extends Controller
     public function twoFactorDisable(Request $request)
     {
         abort_if($request->user()->hasRole(\App\Enums\Role::Editor), 403);   // desk accounts must keep 2FA (docs/SECURITY.md)
-        $request->validate(['current_password' => ['required', 'current_password']], ['current_password.current_password' => __('পাসওয়ার্ড মিলছে না।')]);
+        $request->validate(['current_password' => self::proofRule($request)], ['current_password.current_password' => __('পাসওয়ার্ড মিলছে না।')]);
         $request->user()->forceFill(['app_authentication_secret' => null, 'app_authentication_recovery_codes' => null])->save();
         \App\Models\AuditLog::record('user.2fa_disabled', $request->user());
 

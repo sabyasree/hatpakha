@@ -95,7 +95,7 @@ final class Rewriter
             return;
         }
         $old = ['html' => $post->body_html, 'title' => $post->title];
-        $post->forceFill(['body_html' => $post->rewrite_html, 'title' => $post->rewrite_title ?: $post->title])->save();   // sanitised on save
+        $post->forceFill(['body_html' => $post->rewrite_html, 'title' => $post->rewrite_title ?: $post->title, 'edited_in_desk_at' => now()])->save();   // sanitised on save; the owner chose it (D270)
         $post->forceFill(['rewrite_html' => $old['html'], 'rewrite_title' => $post->rewrite_title ? $old['title'] : null,
             'rewrite_kind' => $post->rewrite_kind === 'proposed' ? 'previous' : 'proposed'])->saveQuietly();
         EditorTask::open('rewrite')->where('subject_type', $post->getMorphClass())->where('subject_id', $post->id)->get()->each->close();

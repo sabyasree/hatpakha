@@ -18,7 +18,9 @@ final class ConfirmReminder
     {
         $sent = 0;
         $due = Post::with('submittedBy')->where('status', 'confirm')->whereNotNull('submitted_by')
-            ->where('reviewed_at', '<=', now()->subDays(self::AFTER_DAYS))->limit(30)->get();
+            ->where('reviewed_at', '<=', now()->subDays(self::AFTER_DAYS))
+            ->where(fn ($q) => $q->whereNull('pending_edits')->orWhere('pending_edits', 'not like', '%reminded_at%'))   // D272: never stuck on the same 30
+            ->limit(30)->get();
         foreach ($due as $post) {
             $p = (array) $post->pending_edits;
             if (! $p || isset($p['reminded_at'])) {

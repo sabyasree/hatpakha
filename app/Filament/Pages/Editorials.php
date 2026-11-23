@@ -63,7 +63,19 @@ class Editorials extends Page
         $others = Post::with('issue')->whereHas('section', fn ($q) => $q->where('slug', 'editorial'))
             ->whereNotIn('id', $linked->merge($shown))->latest('updated_at')->limit(30)->get();
 
-        return ['issues' => $issues, 'others' => $others];
+        return ['issues' => $issues, 'others' => $others, 'upcoming' => $issues->where('status', '!=', 'published')->values()];
+    }
+
+    /** D270: make this editorial the upcoming issue's own (an admin's click); the earlier one stays, unlinked. */
+    public function useFor(int $postId, int $issueId): void
+    {
+        abort_unless(auth()->user()?->hasRole(Role::Admin), 403);
+        $issue = Issue::where('status', '!=', 'published')->findOrFail($issueId);
+        $post = Post::whereHas('section', fn ($q) => $q->where('slug', 'editorial'))->findOrFail($postId);
+        $issue->forceFill(['editorial_post_id' => $post->id])->save();
+        $post->forceFill(['issue_id' => $issue->id])->saveQuietly();
+        \App\Models\AuditLog::record('editorial.linked', $post, ['issue' => $issue->slug, 'by' => auth()->id()]);
+        Notification::make()->title(__('যুক্ত হয়েছে'))->body($post->title.' → '.$issue->title)->success()->send();
     }
 
     /** "Write it myself": an empty draft in the editorial section, under my name, tied to the issue; opens for writing. */
@@ -84,7 +96,7 @@ class Editorials extends Page
             ?? Author::create(['user_id' => $user->id, 'display_name' => $user->name, 'slug' => 'editor-'.$user->id]);
         $post = Post::create([
             'title' => 'সম্পাদকীয়: '.$issue->title, 'body_html' => '', 'section_id' => $section->id, 'format' => 'prose', 'language' => 'bn',
-            'status' => 'draft', 'slug' => 'sompadokiyo-'.$issue->slug, 'issue_id' => $issue->id,
+            'status' => 'draft', 'slug' => \App\Support\Review::uniqueSlug('sompadokiyo-'.$issue->slug, 0), 'issue_id' => $issue->id,   // D272: an old one may hold the name
         ]);
         $post->authors()->sync([$author->id => ['position' => 0]]);
         $issue->forceFill(['editorial_post_id' => $post->id])->save();

@@ -264,4 +264,37 @@ class MagazineTest extends TestCase
         $this->assertSame('2026-12-27 03:30:00', \App\Ai\IssuePlanner::publishAt('2026-12')->toDateTimeString());
         $this->assertSame('2027-01-01 03:30:00', \App\Ai\IssuePlanner::publishAt('2027-01')->toDateTimeString());
     }
+
+    /** D270 (owner: "I have the editorial scheduled, but it is showing draft"): never overwritten, never called a draft. */
+    public function test_a_scheduled_editorial_is_never_overwritten_or_called_a_draft(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-24 10:00:00', 'UTC'));
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        \App\Ai\Claude::$fake = fn ($purpose, $user, $schema) => ['title' => 'কম্বলটা হাতে হাতে', 'paragraphs' => ['এআই-এর লেখা']];
+        $owner = User::factory()->create(['role' => Role::Admin]);
+        $issue = Issue::create(['slug' => '2026-12', 'title' => 'বর্ষসেরা সংখ্যা ১৪৩৩', 'status' => 'proposed', 'kind' => 'monthly']);
+        $mine = $this->editorial($issue, 'scheduled');
+        $mine->forceFill(['title' => 'শীতেও হাতপাখা', 'body_html' => '<p>শীতকালে হাতপাখার কী কাজ?</p>', 'published_at' => '2026-12-27 04:30:00'])->save();
+
+        $this->assertSame('scheduled', \App\Ai\IssueWatch::status($issue->fresh())['editorial']);
+        $this->assertSame([], array_values(array_filter(\App\Ai\IssueWatch::needs($issue->fresh()), fn ($n) => str_contains($n, 'সম্পাদকীয়'))), 'No reminder to publish a scheduled editorial');
+        $this->assertStringContainsString('প্রকাশ হবে ২৭ ডিসেম্বর', $mine->fresh()->goesOutText());
+
+        $this->assertNull(\App\Ai\EditorialWriter::draft($issue->fresh(), $owner), 'A new AI draft does not replace it');
+        $this->assertSame(['শীতেও হাতপাখা', 'scheduled', $mine->id], [$mine->fresh()->title, $mine->fresh()->status, $issue->fresh()->editorial_post_id]);
+
+        // The AI's own untouched draft may be redrawn; once the owner edits it, it is theirs
+        $mine->forceFill(['status' => 'draft', 'published_at' => null, 'ai_drafted_at' => now()])->save();
+        $this->assertNotNull(\App\Ai\EditorialWriter::draft($issue->fresh(), $owner));
+        $mine->forceFill(['edited_in_desk_at' => now()->addHour()])->save();
+        $this->assertNull(\App\Ai\EditorialWriter::draft($issue->fresh(), $owner));
+
+        // One click makes another editorial the issue's own
+        $other = $this->makePost(['status' => 'scheduled', 'slug' => 'onno', 'title' => 'অন্য সম্পাদকীয়', 'section_id' => $mine->section_id, 'published_at' => '2026-12-27 04:30:00']);
+        $this->actingAs($owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
+        \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('প্রকাশ হবে ২৭ ডিসেম্বর')->call('useFor', $other->id, $issue->id);
+        $this->assertSame([$other->id, $issue->id], [$issue->fresh()->editorial_post_id, $other->fresh()->issue_id]);
+        \App\Ai\Claude::$fake = null;
+    }
 }

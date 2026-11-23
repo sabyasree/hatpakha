@@ -20,6 +20,7 @@ class AiBlindTest extends Command
 
     public function handle(ReviewService $service): int
     {
+        config(['ai.allow_off_live' => true]);   // D273: the owner runs this on staging on purpose, with its own money cap
         foreach (['anthropic', 'openai'] as $p) {
             if ($why = $service->blockedReason(new Post(['body_html' => str_repeat('শব্দ ', 100)]), $p)) {
                 $this->error("Cannot run: {$why}.");

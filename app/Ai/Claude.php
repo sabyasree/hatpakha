@@ -23,6 +23,9 @@ final class Claude
         if (AiSwitch::paused()) {
             return 'AI is paused by an admin';
         }
+        if (app()->environment('production') && ! \App\Support\RelaunchLetters::onLiveSite() && ! config('ai.allow_off_live')) {
+            return 'Not the live site: AI spends nothing here';   // D273: staging never repeats the live site's paid work
+        }
 
         return blank(config('ai.anthropic.key')) ? 'No API key for anthropic' : null;
     }

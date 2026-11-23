@@ -35,6 +35,28 @@ class Issue extends Model
     }
 
     /** The newest published issue with pieces (home page and menu: the way into the month's magazine). Only the id is cached (D18). */
+    /** D272 (audit): readers see an issue only from its day; approved for a later date, it waits (desk preview stays). */
+    public function isLive(): bool
+    {
+        return $this->status === 'published' && (! $this->published_at || $this->published_at->lte(now()));
+    }
+
+    public function scopeLive($query)
+    {
+        return $query->where('status', 'published')->where(fn ($q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()));
+    }
+
+    /** "<date>, সকাল ৯:০০" in India time, for an approved issue still waiting for its day. */
+    public function goesOutText(): string
+    {
+        $at = $this->published_at?->copy()->setTimezone('Asia/Kolkata');
+
+        return $at ? 'প্রকাশ হবে '.\App\Support\Bn::date($at).', '.($at->hour < 12 ? 'সকাল' : ($at->hour < 17 ? 'দুপুর' : 'সন্ধ্যা')).' '.\App\Support\Bn::num($at->format('g:i')) : '';
+    }
+
+    /** Monthly issues have a year-month address; a special issue (ফিরে আসা) has a word: both are fine. */
+    public const SLUG = '\d{4}-\d{2}|[a-z][a-z0-9-]{2,40}';
+
     public static function latestLive(): ?self
     {
         $id = cache()->remember('issue.latest', 600, fn () => static::where('status', 'published')->where('published_at', '<=', now())

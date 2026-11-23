@@ -92,7 +92,11 @@
         <details class="group mt-3 rounded-2xl border-2 border-navy bg-white" @if ($errors->hasAny(['current_password', 'password'])) open @endif>
             <summary class="{{ $more }}"><span>{{ __('পাসওয়ার্ড বদলান') }}</span><span class="transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
             <form method="POST" action="{{ Url::to('/account/password') }}" class="border-t-2 border-rule p-4">@csrf
-                <x-field name="current_password" type="password" :label="__('এখনকার পাসওয়ার্ড')" autocomplete="current-password" required />
+                @if (\App\Http\Controllers\AccountController::viaGoogle(request()))
+                    <p class="text-base text-ink2">{{ __('আপনি Google দিয়ে ঢুকেছেন, তাই পুরনো পাসওয়ার্ড লাগবে না। নতুন পাসওয়ার্ড দিলে ই-মেল আর পাসওয়ার্ড দিয়েও ঢুকতে পারবেন।') }}</p>
+                @else
+                    <x-field name="current_password" type="password" :label="__('এখনকার পাসওয়ার্ড')" autocomplete="current-password" required />
+                @endif
                 <x-field name="password" type="password" :label="__('নতুন পাসওয়ার্ড')" autocomplete="new-password" required :hint="__('অন্তত :count অক্ষর, অক্ষর আর সংখ্যা দুই-ই।', ['count' => \App\Support\Bn::num('10')])" />
                 <x-field name="password_confirmation" type="password" :label="__('নতুন পাসওয়ার্ড আবার')" autocomplete="new-password" required />
                 <button class="h-12 rounded-full bg-red px-8 font-bold text-white">{{ __('বদলান') }}</button>
@@ -113,7 +117,7 @@
                     @endif
                     @unless ($user->hasRole(\App\Enums\Role::Editor))
                         <form method="POST" action="{{ Url::to('/account/2fa/disable') }}" class="mt-4">@csrf
-                            <x-field name="current_password" type="password" :label="__('বন্ধ করতে পাসওয়ার্ড দিন')" autocomplete="current-password" required />
+                            @unless (\App\Http\Controllers\AccountController::viaGoogle(request()))<x-field name="current_password" type="password" :label="__('বন্ধ করতে পাসওয়ার্ড দিন')" autocomplete="current-password" required />@endunless
                             <button class="h-11 rounded-full border-2 border-navy px-5 font-bold">{{ __('বন্ধ করুন') }}</button>
                         </form>
                     @endunless

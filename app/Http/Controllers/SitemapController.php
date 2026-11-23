@@ -105,7 +105,7 @@ class SitemapController extends Controller
             ->merge([
                 ['sitemap-sections.xml', $max(Section::where('is_active', true)->max('updated_at'), Post::published()->max('published_at'))],
                 ['sitemap-authors.xml', $max(Author::where('published_count', '>=', 3)->max('updated_at'))],
-                ['sitemap-issues.xml', $max(Issue::where('status', 'published')->max('updated_at'))],
+                ['sitemap-issues.xml', $max(Issue::live()->max('updated_at'))],
                 ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'))],
             ]);
 
@@ -135,7 +135,7 @@ class SitemapController extends Controller
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
                 ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null]))
                 ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null]),   // D128
-            $type === 'issues' => Issue::where('status', 'published')->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
+            $type === 'issues' => Issue::live()->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 
         return response()->view('sitemap.urls', ['urls' => $urls])->header('Content-Type', 'application/xml; charset=UTF-8');

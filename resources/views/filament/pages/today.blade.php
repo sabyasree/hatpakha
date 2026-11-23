@@ -73,7 +73,7 @@
                     <div class="hp-row">
                         <div style="min-width:0;flex:1 1 16rem">
                             <div style="font-weight:700">{{ __('সংখ্যার প্রস্তাব:') }} {{ $t['issue']->title }}</div>
-                            <div class="hp-muted">{{ __(\App\Filament\Resources\Issues\Schemas\IssueForm::THEMES[$t['issue']->theme_key] ?? '') }} · {{ Bn::num(count((array) ($t['issue']->ai_plan['post_ids'] ?? []))) }}{{ __('টি লেখা · প্রচ্ছদ ও সম্পাদকীয় খসড়া তৈরি') }}</div>
+                            <div class="hp-muted">{{ __(\App\Filament\Resources\Issues\Schemas\IssueForm::THEMES[$t['issue']->theme_key] ?? '') }} · {{ Bn::num(count((array) ($t['issue']->ai_plan['post_ids'] ?? []))) }}{{ __('টি লেখা') }} · {{ ['live' => __('সম্পাদকীয় প্রকাশিত'), 'scheduled' => __('সম্পাদকীয়র সময় ঠিক'), 'draft' => __('সম্পাদকীয় খসড়া'), 'missing' => __('সম্পাদকীয় এখনও নেই')][\App\Ai\IssueWatch::status($t['issue'])['editorial']] }}</div>
                         </div>
                         <x-filament::button tag="a" :href="$issues::getUrl('edit', ['record' => $t['issue']])" icon="heroicon-o-book-open">{{ __('সংখ্যা দেখুন') }}</x-filament::button>
                     </div>

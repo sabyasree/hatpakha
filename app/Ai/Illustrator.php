@@ -234,7 +234,9 @@ final class Illustrator
         }
         $ids = (array) ($issue->ai_plan['post_ids'] ?? []);   // a proposed issue's pieces are not attached yet
         $titles = Post::where(fn ($q) => $q->where('issue_id', $issue->id)->orWhereIn('id', $ids))->limit(12)->pluck('title')->implode(' / ');
-        $month = \Illuminate\Support\Carbon::createFromFormat('Y-m', $issue->slug)->format('F');
+        // a special issue (ফিরে আসা) has no month in its address: its own date, else this month (D272)
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) $issue->slug) ? \Illuminate\Support\Carbon::createFromFormat('Y-m', $issue->slug)->format('F')
+            : ($issue->published_at ?? now())->copy()->setTimezone('Asia/Kolkata')->format('F');
         $past = \App\Models\Issue::whereNotNull('ai_plan')->where('id', '!=', $issue->id)->latest('id')->limit(3)->get()
             ->map(fn ($i) => (string) ($i->ai_plan['cover_scene'] ?? ''))->filter()->implode(' | ');
         // Owner (2026-11-12): "the designer / UX expert designs a proper cover every month". A magazine cover, not a
@@ -326,6 +328,8 @@ final class Illustrator
     public static function candidates()
     {
         return Post::whereIn('status', ['pending', 'published', 'scheduled'])
+            // D273 (AI-spend audit): an old WordPress submission gets a picture only once its writer said yes (D104)
+            ->where(fn ($q) => $q->where('status', '!=', 'pending')->orWhereNotNull('submitted_by')->orWhere('relaunch_status', 'yes'))
             ->whereNull('proposed_image_path')
             ->where(fn ($q) => $q->whereNull('featured_image_path')->orWhere('featured_image_width', '<', 600));
     }
