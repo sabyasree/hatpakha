@@ -47,11 +47,13 @@ class IssueForm
             DateTimePicker::make('published_at')->label(__('প্রকাশের তারিখ'))->seconds(false),
             // Owner (2026-11-12): the issue's editorial, chosen here (or written from /desk → সম্পাদকীয়).
             Select::make('editorial_post_id')->label(__('সম্পাদকীয়'))->searchable()->nullable()
-                ->options(fn () => \App\Models\Post::whereHas('section', fn ($q) => $q->where('slug', 'editorial'))->latest('updated_at')->limit(200)->get(['id', 'title', 'status'])
-                    ->mapWithKeys(fn ($p) => [$p->id => $p->title.' ('.(in_array($p->status, ['published', 'scheduled'], true) ? __('প্রকাশিত') : __('খসড়া')).')'])->all())
+                ->options(fn () => \App\Models\Post::whereHas('section', fn ($q) => $q->where('slug', 'editorial'))->latest('updated_at')->limit(200)->get(['id', 'title', 'status', 'published_at'])
+                    // Owner, 2026-11-23: an editorial waiting for its day read "প্রকাশিত"; now it says when it goes out
+                    ->mapWithKeys(fn ($p) => [$p->id => $p->title.' ('.($p->isLive() ? __('প্রকাশিত')
+                        : (in_array($p->status, ['published', 'scheduled'], true) && $p->published_at ? __('প্রকাশ হবে').' '.\App\Support\Bn::date($p->published_at->copy()->setTimezone('Asia/Kolkata')).', '.\App\Support\Bn::num($p->published_at->copy()->setTimezone('Asia/Kolkata')->format('g:i')) : __('খসড়া'))).')'])->all())
                 ->helperText(__('সম্পাদকীয় বিভাগের একটি লেখা বেছে নিন। নতুন লিখতে: বাঁ দিকের মেনু → সম্পাদকীয়।'))->columnSpanFull(),
             Textarea::make('editor_note')->label(__('সম্পাদকের কথা'))->rows(6)->maxLength(5000)->columnSpanFull()
-                ->helperText(__('সংখ্যার শুরুতে ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।')),
+                ->helperText(__('সম্পাদকীয় বেছে নিলে এটি ফাঁকা রাখুন: তখন সংখ্যার শুরুতে সম্পাদকীয়টিই ছাপা হয়। সম্পাদকীয় না থাকলে এই কথাগুলো ছাপা হয়। লেখা যোগ করতে: লেখা → খুলুন → "সংখ্যা" বেছে নিন।')),
         ]);
     }
 }
