@@ -14,7 +14,7 @@ class Author extends Model
 
     protected function casts(): array
     {
-        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime', 'honoured_at' => 'datetime', 'quality_at' => 'datetime', 'quality_score' => 'float', 'relaunch_letter_at' => 'datetime'];
+        return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime', 'honoured_at' => 'datetime', 'quality_at' => 'datetime', 'quality_score' => 'float', 'relaunch_letter_at' => 'datetime', 'pinned_post_ids' => 'array'];
     }
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
@@ -58,6 +58,25 @@ class Author extends Model
     public function url(): string
     {
         return \App\Support\Url::to('/author/'.rawurlencode($this->slug));
+    }
+
+    /** Up to this many pieces a writer may pin on their page ("নির্বাচিত লেখা", 2026-11-24). */
+    public const PINS = 3;
+
+    /**
+     * The writer's pinned pieces, in the order they chose, that are still theirs and live for readers.
+     *
+     * @return \Illuminate\Support\Collection<int, Post>
+     */
+    public function pinnedPosts(): \Illuminate\Support\Collection
+    {
+        $ids = array_slice(array_values(array_unique(array_map('intval', (array) $this->pinned_post_ids))), 0, self::PINS);
+        if (! $ids) {
+            return collect();
+        }
+        $posts = Post::published()->whereIn('id', $ids)->whereHas('authors', fn ($q) => $q->whereKey($this->id))->with(['authors', 'section'])->get()->keyBy('id');
+
+        return collect($ids)->map(fn ($id) => $posts->get($id))->filter()->values();
     }
 
     /** Keeps published_count right (it decides full vs compact profile and indexing). */

@@ -76,7 +76,10 @@ class ArchiveController extends Controller
             \App\Support\Ads::allow();   // D111
         }
 
-        return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner'));
+        // 2026-11-24: up to three pieces the writer pinned, shown first (page 1 only)
+        $pinned = $posts->currentPage() === 1 ? $author->pinnedPosts() : collect();
+
+        return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner', 'pinned'));
     }
 
     /**

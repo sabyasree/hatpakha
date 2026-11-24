@@ -19,6 +19,13 @@ class EditPost extends EditRecord
         return $this->record->title;
     }
 
+    /** The writer's tracker says "সম্পাদক পড়ছেন" from the first time an editor opens a sent piece here (2026-11-24). */
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+        rescue(fn () => \App\Support\WriterJourney::markOpened($this->record, auth()->user()), null, false);
+    }
+
     /** D210: take one small fix back, from the piece's history. */
     public function revertFix(int $version, int $index): void
     {

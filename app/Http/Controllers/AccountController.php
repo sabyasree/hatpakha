@@ -246,6 +246,24 @@ class AccountController extends Controller
         return redirect(Url::to('/account/profile'))->with('status', \App\Support\AccountMenu::for($user)['writer'] ? __('সেভ হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।') : __('সেভ হয়েছে। এখন থেকে আপনার নাম “:name”।', ['name' => strip_tags($data['name'])]));
     }
 
+    /**
+     * 2026-11-24: the writer pins up to three of their own published pieces as "নির্বাচিত লেখা" on their page. Only ids
+     * of pieces that are live and carry this writer's byline are kept; anything else is dropped without a word.
+     */
+    public function updatePins(Request $request)
+    {
+        $data = $request->validate(['pins' => ['nullable', 'array', 'max:'.\App\Models\Author::PINS], 'pins.*' => ['integer']],
+            ['pins.max' => __('তিনটির বেশি লেখা বাছা যায় না।')]);
+        $author = \App\Models\Author::where('user_id', $request->user()->id)->where('is_desk', false)->first();
+        abort_unless($author, 403);
+        $wanted = array_values(array_unique(array_map('intval', (array) ($data['pins'] ?? []))));
+        $own = Post::published()->whereIn('id', $wanted)->whereHas('authors', fn ($q) => $q->whereKey($author->id))->pluck('id')->all();
+        $keep = array_values(array_filter($wanted, fn ($id) => in_array($id, $own, true)));
+        $author->forceFill(['pinned_post_ids' => $keep ?: null])->save();
+
+        return redirect(Url::to('/account/profile').'#pins')->with('status', $keep ? __('সেভ হয়েছে। লেখক-পাতায় এই লেখাগুলো সবার আগে দেখা যাবে।') : __('সেভ হয়েছে। কোনো লেখা বাছা নেই।'));
+    }
+
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
     public function audio(Request $request, Post $post)
     {

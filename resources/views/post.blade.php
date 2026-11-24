@@ -27,6 +27,7 @@
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
             @if ($post->readers_choice)<a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="rounded-full bg-navy px-3 py-1 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</a>@endif
             @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
+            @if (\App\Support\Debut::is($post))<span class="rounded-full border-2 border-red bg-peach-light px-3 py-0.5 font-bold text-red-dark" data-debut title="হাতপাখায় এই লেখকের প্রথম লেখা">নতুন কলম</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
         <div class="mt-5 flex items-center gap-3">

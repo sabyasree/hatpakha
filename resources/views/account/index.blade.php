@@ -22,6 +22,8 @@
             <div class="mb-5 rounded-2xl border-2 border-navy bg-sky-tint p-4 text-lg"><p class="font-bold">{{ __('আপনি এখন হাতপাখার সদস্য।') }}</p><p>{{ __('নিচের লাল বোতাম টিপে আপনার প্রথম লেখা পাঠান।') }}</p></div>
         @endif
         <a href="{{ Url::to('/submit') }}" class="flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[3px_3px_0_#13212C] sm:w-auto sm:px-10">+ {{ __('নতুন লেখা পাঠান') }}</a>
+        <a href="{{ Url::to('/lekhar-dak') }}" class="mt-3 flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 border-navy bg-white px-4 py-2 font-bold hover:bg-peach-light sm:max-w-md" data-calls-link>
+            <span>{{ __('লেখার ডাক') }}<span class="block text-sm font-medium text-ink2">{{ __('সামনের সংখ্যা, প্রতিযোগিতা আর সম্পাদক যা খুঁজছেন') }}</span></span><span aria-hidden="true">›</span></a>
 
         @if ($act->isNotEmpty())
             <h2 class="mt-8 font-display text-2xl font-extrabold">{{ __('আপনাকে দেখতে হবে') }}</h2>
@@ -57,16 +59,9 @@
         @if ($review->isNotEmpty())
             <h2 class="mt-8 font-display text-2xl font-extrabold">{{ __('সম্পাদকের কাছে') }}</h2>
             @foreach ($review as $p)
-                @php($step = ['pending' => 2, 'scheduled' => 3][$p->status] ?? 1)
                 <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
                     <div class="font-serif text-lg font-bold leading-snug">{{ $p->title }}</div>
-                    <ol class="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-sm font-bold" aria-label="{{ __('অবস্থা') }}">
-                        @foreach (['পাঠানো', 'পড়া হচ্ছে', 'বাছাই হয়েছে', 'প্রকাশিত'] as $i => $stage)
-                            <li class="flex items-center gap-1 {{ $i + 1 <= $step ? 'text-sky-night' : 'font-medium text-ink2' }}" @if ($i + 1 === $step) aria-current="step" @endif>
-                                <span class="inline-block h-3 w-3 rounded-full {{ $i + 1 <= $step ? 'bg-sky-deep' : 'bg-rule' }}"></span>{{ __($stage) }}@if (! $loop->last)<span class="mx-0.5 text-ink2">—</span>@endif
-                            </li>
-                        @endforeach
-                    </ol>
+                    @include('account.partials.tracker', ['p' => $p])
                     <p class="mt-2 text-sm text-ink2">{{ $p->status === 'scheduled' ? __('প্রকাশের দিন ঠিক হয়েছে: :date', ['date' => Bn::date($p->published_at)]) : __('সিদ্ধান্ত হলে ই-মেলে জানাব।') }}</p>
                     <a href="{{ Url::to('/submit/'.$p->id) }}" class="mt-2 inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 text-sm font-bold">{{ __('বদলান বা তুলে নিন') }}</a>
                 </div>
@@ -117,6 +112,10 @@
                 <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($writerPage) }}" target="_blank" rel="noopener" class="{{ $chip }}">{{ __('ফেসবুকে শেয়ার') }}</a>
                 <a href="{{ $writerPage }}" class="{{ $chip }}">{{ __('পাতাটি দেখুন') }}</a>
                 <a href="{{ Url::to('/account/profile') }}" class="{{ $chip }}">{{ __('ছবি ও নাম বদলান') }}</a>
+                @if ($author && ! $author->is_desk)
+                    <a href="{{ Url::to('/account/profile') }}#pins" class="{{ $chip }}">{{ __('নির্বাচিত লেখা বাছুন') }}</a>
+                    <a href="{{ Url::to('/lekhok-porichiti/'.rawurlencode($author->slug)) }}" class="{{ $chip }}">{{ __('লেখক-পরিচিতি (PDF)') }}</a>
+                @endif
             </div>
         @endif
     </x-account-shell>

@@ -392,6 +392,7 @@
         </div>
     </section>
     @endif
+    @include('partials.debut-strip')
     {{-- D111: the second home ad, after the travel stamps, before the footer --}}
     <x-ad-slot spot="home_2" :height="250" class="mx-auto max-w-[1100px] px-5" />
 </x-layouts.app>

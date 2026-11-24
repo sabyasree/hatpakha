@@ -134,7 +134,8 @@ class SitemapController extends Controller
                 // D97: collection pages live with the pages
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
                 ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null]))
-                ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null]),   // D128
+                ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null])   // D128
+                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null]),   // লেখার ডাক (2026-11-24)
             $type === 'issues' => Issue::live()->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 

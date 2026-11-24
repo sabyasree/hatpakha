@@ -124,6 +124,21 @@
             @endif
         </div>
 
+        @if (($pinned ?? collect())->isNotEmpty())
+            {{-- 2026-11-24: the writer's own choice of up to three pieces, first --}}
+            <section class="mt-12 border-t-2 border-navy pt-6" aria-labelledby="pinned-h" data-pinned>
+                <h2 id="pinned-h" class="font-display text-3xl font-extrabold">নির্বাচিত লেখা</h2>
+                <p class="mt-1 text-ink2">লেখক নিজে বেছে রেখেছেন</p>
+                <div class="mt-4 grid gap-6 sm:grid-cols-3">
+                    @foreach ($pinned as $p)
+                        <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-lg font-bold leading-snug">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->section?->name_bn }} · {{ Bn::date($p->published_at) }}</span></a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+        @if (! $author->is_desk && $posts->total() > 0)
+            <p class="mt-8"><a href="{{ \App\Support\Url::to('/lekhok-porichiti/'.rawurlencode($author->slug)) }}" class="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-navy bg-white px-5 font-bold hover:bg-peach-light" data-porichiti>লেখক-পরিচিতি (PDF)</a></p>
+        @endif
         <h2 class="mt-12 border-t-2 border-navy pt-6 font-display text-3xl font-extrabold">লেখা</h2>
         <ul class="mt-4 divide-y divide-rule border-y border-rule sm:hidden">
             @foreach ($posts as $p)

@@ -39,6 +39,7 @@ class Post extends Model
             'audit_decided_at' => 'datetime',
             'edited_in_desk_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'desk_opened_at' => 'datetime',   // first time an editor opened the sent piece in the desk
             'originality_confirmed_at' => 'datetime',
             'pending_edits' => 'array',
             'auto_publish_at' => 'datetime', 'auto_stopped' => 'boolean',   // D208

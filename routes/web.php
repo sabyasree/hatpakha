@@ -107,6 +107,9 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
 // D108: serial stories
 Route::get('/pashe-thakun', [\App\Http\Controllers\FeelingsController::class, 'support']);   // D237
+// Writer features (2026-11-24): the calls page and a writer's printable portfolio (noindex)
+Route::get('/lekhar-dak', [\App\Http\Controllers\WriterPagesController::class, 'calls'])->name('calls');
+Route::get('/lekhok-porichiti/{slug}', [\App\Http\Controllers\WriterPagesController::class, 'profile'])->where('slug', '[^/]+')->middleware('throttle:30,1')->name('author.porichiti');
 Route::post('/feel/{post}', [\App\Http\Controllers\FeelingsController::class, 'later'])->whereNumber('post')->middleware('throttle:20,1');   // D241
 Route::get('/pathoker-pochhondo', [\App\Http\Controllers\FeelingsController::class, 'index']);   // D232
 Route::get('/chhobi/{post}', [\App\Http\Controllers\FeelingsController::class, 'card'])->whereNumber('post');   // D252: a piece's picture card
@@ -174,6 +177,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account/profile', [\App\Http\Controllers\AccountController::class, 'profile'])->name('account.profile');
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
     Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');
+    Route::post('/account/pins', [\App\Http\Controllers\AccountController::class, 'updatePins'])->middleware('throttle:10,1');   // নির্বাচিত লেখা (2026-11-24)
     Route::post('/account/audio/{post}', [\App\Http\Controllers\AccountController::class, 'audio'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/change/{post}', [\App\Http\Controllers\AccountController::class, 'requestChange'])->whereNumber('post')->middleware('throttle:10,1');   // D94
     Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
