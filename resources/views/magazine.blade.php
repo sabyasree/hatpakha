@@ -9,6 +9,7 @@
     $coverLines = $rest->take(3);
     // D275: the last episode of each serial in this issue closes with where the rest of the story is
     $runEnds = $rest->whereNotNull('serial_id')->groupBy('serial_id')->map(fn ($g) => $g->last()->id)->values()->all();
+    $runStarts = $rest->whereNotNull('serial_id')->groupBy('serial_id')->map(fn ($g) => $g->first()->id)->values()->all();
 @endphp
 <!doctype html>
 <html lang="bn">
@@ -104,6 +105,7 @@
         .mag-feature-by { font-family: 'Anek Bangla', sans-serif; color: #EFC08D; margin: .2em 0 0 !important; }
         .mag-feature-panel .mag-credit { color: #EFC08D; text-align: left; }
         .mag-serial-end { margin: 1.6em 0 0; padding: .8em 1em; border: 2px solid #13212C; background: #FBEBD8; font-family: 'Anek Bangla', sans-serif; text-indent: 0 !important; }
+        .mag-serial-start { font: italic .85em 'Anek Bangla', sans-serif; color: #4D5A63; margin: -.6em 0 1em !important; } .mag-serial-start a { color: inherit; }
         .mag-serial-end b { color: #CB1B32; font-size: 1.15em; margin-right: .3em; } .mag-serial-end a { color: #13212C; font-weight: 700; word-break: break-all; }
         .mag-poem .mag-by::after { margin-left: auto; margin-right: auto; }
 
@@ -239,7 +241,7 @@
         @foreach ($bySection as $sec => $list)
             <section data-kind="opener" data-head="none"><div class="mag-opener-in"><p>{{ $issue->title }}</p><h2>{{ $sec }}</h2><div class="mag-mark" style="left:auto;right:9%;top:6%;bottom:auto"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div></div></section>
             @foreach ($list as $p)
-                @include('partials.magazine-piece', ['p' => $p, 'sec' => $sec, 'end' => in_array($p->id, $runEnds, true) ? \App\Support\IssueBook::serialEnd($p) : null])
+                @include('partials.magazine-piece', ['p' => $p, 'sec' => $sec, 'end' => in_array($p->id, $runEnds, true) ? \App\Support\IssueBook::serialEnd($p, $issue) : null, 'start' => in_array($p->id, $runStarts, true) ? \App\Support\IssueBook::serialStart($p) : null])
             @endforeach
         @endforeach
         @if ($writers)

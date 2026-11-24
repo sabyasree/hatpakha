@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cover directions</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--red:#CB1B32;--red-d:#A3152A;--navy:#13212C;--paper:#FFFBF4;--peach:#EFC08D;--peach-l:#FBEBD8;--peach-d:#E39A6A;--pink:#F08D90;--night:#1D3A4F;--sky:#E3EEF5;--ink2:#4D5A63}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F3E6D6;background:var(--peach-l);font-family:'Anek Bangla',sans-serif;color:var(--navy);padding:40px 44px 60px}
+h1{font-size:26px;font-weight:700;line-height:1.4}
+.note{font-size:16px;color:var(--ink2);margin-top:4px;line-height:1.5}
+.dir{margin-top:44px}
+.dir h2{font-family:'Noto Serif Bengali',serif;font-weight:700;font-size:26px;line-height:1.4;display:flex;gap:14px;align-items:baseline}
+.dir h2 b{font-family:'Anek Bangla';font-size:15px;background:var(--navy);color:#fff;padding:2px 10px;border-radius:3px}
+.dir p.idea{font-size:16px;line-height:1.5;margin:4px 0 16px;color:var(--ink2);max-width:1100px}
+.row{display:flex;gap:28px;align-items:flex-start}
+.cell figcaption{font-size:14px;text-align:center;margin-top:10px;font-weight:600}
+.smalls{display:flex;flex-direction:column;gap:18px}
+.shadow{box-shadow:0 1px 2px rgba(19,33,44,.25),0 10px 24px -8px rgba(19,33,44,.45)}
+
+/* ---------- shared cover ---------- */
+.cv{position:relative;width:340px;aspect-ratio:3/4;overflow:hidden;container-type:inline-size;font-family:'Anek Bangla',sans-serif}
+.cv.sm{width:200px}
+.cv .abs{position:absolute;left:0;right:0}
+.mast{font-family:'Galada',cursive;line-height:1.3;white-space:nowrap}
+.serif{font-family:'Noto Serif Bengali',serif}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tag{display:inline-block;font-weight:600;font-size:2.6cqw;padding:.2cqw 1.3cqw;border-radius:.6cqw;line-height:1.5;margin-right:1.4cqw;vertical-align:.25cqw;flex:none}
+@container (max-width:260px){ .hide-sm{display:none !important} }
+
+/* ===== D1 পাখা ===== */
+.d1{color:#fff}
+.d1.k-special{background:var(--red)} .d1.k-monthly{background:var(--navy)} .d1.k-festival{background:var(--peach);color:var(--navy)}
+.d1 .ear{top:3.2%;padding:0 6cqw;display:flex;justify-content:space-between;font-size:2.9cqw;font-weight:600;letter-spacing:.02em;line-height:1.4;opacity:.95}
+.d1 .ear::after{content:"";position:absolute;left:6cqw;right:6cqw;bottom:-1.4cqw;border-bottom:.35cqw solid currentColor;opacity:.5}
+.d1 .mast{top:6.2%;text-align:center;font-size:23cqw}
+.d1.k-special .mast,.d1.k-monthly .mast{color:var(--paper)} .d1.k-festival .mast{color:var(--red)}
+.d1 .fan{top:28.5%;left:3cqw;right:3cqw}
+.d1 .fan svg{display:block;width:100%}
+.d1 .ttl{top:65.2%;text-align:center;padding:0 5cqw}
+.d1 .ttl .main{font-weight:700;line-height:1.3}
+.d1 .ttl .lbl{font-size:3.3cqw;font-weight:600;letter-spacing:.03em;margin-top:.4cqw;line-height:1.4}
+.d1.k-special .lbl{color:var(--peach)} .d1.k-monthly .lbl{color:var(--peach)} .d1.k-festival .lbl{color:var(--red-d)}
+.d1 .lines{top:82.4%;padding:0 6cqw;text-align:center}
+.d1 .lead{font-size:5.4cqw;font-weight:700;line-height:1.35;display:flex;justify-content:center;gap:2cqw;align-items:baseline}
+.d1 .lead .w{font-family:'Anek Bangla';font-weight:500;font-size:3.6cqw;flex:none}
+.d1.k-special .lead .w,.d1.k-monthly .lead .w{color:var(--peach)} .d1.k-festival .lead .w{color:var(--red-d)}
+.d1 .sec{display:flex;justify-content:center;gap:1.5cqw;font-size:3.4cqw;line-height:1.5;margin-top:.8cqw;opacity:.95}
+.d1 .sec span.t{font-weight:600}
+.d1 .foot{bottom:2.6%;text-align:center;font-size:2.6cqw;letter-spacing:.08em;opacity:.8}
+.d1.k-special .tag{background:var(--paper);color:var(--red)} .d1.k-monthly .tag{background:var(--red);color:#fff} .d1.k-festival .tag{background:var(--navy);color:#fff}
+@container (max-width:260px){ .d1 .ttl{top:68%} .d1 .ttl .lbl{font-size:4.6cqw} .d1 .ear{font-size:4cqw} }
+
+/* ===== D2 পূর্ণ ছবি ===== */
+.d2{background:var(--navy)}
+.d2 .art{inset:0;position:absolute}
+.d2 .art img{width:100%;height:100%;object-fit:cover;display:block}
+.d2 .scrim{top:0;height:40%;background:linear-gradient(180deg,rgba(19,33,44,.94) 0%,rgba(19,33,44,.9) 52%,rgba(19,33,44,.55) 74%,rgba(19,33,44,0) 100%)}
+.d2 .ear{top:2.6%;padding:0 5cqw;display:flex;justify-content:space-between;font-size:2.8cqw;font-weight:600;color:#fff;letter-spacing:.03em;line-height:1.4}
+.d2 .mast{top:3.6%;text-align:center;font-size:29cqw;color:#fff}
+.d2 .stamp{position:absolute;right:4cqw;top:35%;width:25cqw;height:25cqw;border-radius:50%;background:var(--paper);color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-9deg);box-shadow:0 0 0 .9cqw var(--paper),0 0 0 1.3cqw var(--red) inset}
+.d2 .stamp::before{content:"";position:absolute;inset:2cqw;border-radius:50%;border:.35cqw dashed var(--red)}
+.d2 .stamp .m{font-size:3.4cqw;font-weight:600;line-height:1.3}
+.d2 .stamp .y{font-family:'Noto Serif Bengali';font-weight:700;font-size:6.6cqw;line-height:1.15;color:var(--red)}
+.d2 .stamp .v{font-size:2.7cqw;line-height:1.3;font-weight:600}
+.d2 .flag{position:absolute;left:0;top:51%;max-width:86cqw;padding:2.2cqw 5cqw 2.6cqw 5cqw}
+.d2.k-special .flag{background:var(--red);color:#fff} .d2.k-monthly .flag{background:var(--navy);color:#fff} .d2.k-festival .flag{background:var(--pink);color:var(--navy)}
+.d2 .flag .kind{font-size:3.1cqw;font-weight:700;letter-spacing:.08em;line-height:1.4}
+.d2.k-special .flag .kind,.d2.k-monthly .flag .kind{color:var(--peach)} .d2.k-festival .flag .kind{color:var(--red-d)}
+.d2 .flag .main{font-weight:700;line-height:1.28}
+.d2 .panel{bottom:0;height:25%;background:var(--paper);color:var(--navy);padding:3cqw 5cqw 0;display:flex;gap:4cqw}
+.d2 .panel .ls{flex:1;min-width:0}
+.d2 .lead{font-size:5.6cqw;font-weight:700;line-height:1.3}
+.d2 .lead .w{display:block;font-family:'Anek Bangla';font-weight:600;font-size:3.4cqw;color:var(--red);line-height:1.4}
+.d2 .sec{display:flex;gap:1.6cqw;font-size:3.2cqw;line-height:1.45;margin-top:.6cqw;align-items:baseline}
+.d2 .sec .t{font-weight:600}
+.d2 .sec .w{color:var(--ink2);flex:none}
+.d2 .bar{flex:none;width:20cqw;display:flex;flex-direction:column;align-items:center;padding-top:.6cqw}
+.d2 .bar svg{width:100%;height:auto;display:block}
+.d2 .bar small{font-size:2.3cqw;line-height:1.3;margin-top:.4cqw;letter-spacing:.02em}
+.d2 .bar .url{font-size:2.4cqw;margin-top:1.2cqw;color:var(--red);font-weight:600}
+.d2 .lead-rule{width:9cqw;height:.8cqw;background:var(--red);margin-bottom:1.2cqw}
+.d2 .tag{background:var(--navy);color:#fff}
+.d2.noart{background:var(--night)}
+@container (max-width:260px){ .d2 .flag{top:auto;bottom:6%} .d2 .flag .kind{font-size:4.4cqw} .d2 .scrim{height:44%} .d2 .ear{display:none} }
+
+/* ===== D3 সূচিপত্র ===== */
+.d3{background:var(--paper);color:var(--navy)}
+.d3 .spine{position:absolute;left:0;top:0;bottom:0;width:15cqw;display:flex;flex-direction:column;align-items:center;padding-top:4.5cqw}
+.d3.k-special .spine{background:var(--red);color:#fff} .d3.k-monthly .spine{background:var(--navy);color:#fff} .d3.k-festival .spine{background:var(--peach-d);color:var(--navy)}
+.d3 .spine .lab{font-size:2.6cqw;font-weight:600;line-height:1.3;letter-spacing:.04em}
+.d3 .spine .num{font-family:'Noto Serif Bengali';font-weight:700;font-size:9.5cqw;line-height:1.15}
+.d3 .spine .rule{width:6cqw;border-top:.4cqw solid currentColor;margin:2.4cqw 0;opacity:.6}
+.d3 .spine .vert{writing-mode:vertical-rl;transform:rotate(180deg);font-size:2.9cqw;font-weight:600;letter-spacing:.06em;line-height:1.3;white-space:nowrap}
+.d3 .spine .vert.bot{position:absolute;bottom:4cqw;opacity:.85;font-size:2.5cqw}
+.d3 .main{position:absolute;left:15cqw;right:0;top:0;bottom:0}
+.d3 .mast{position:absolute;left:5cqw;top:1%;font-size:21cqw;color:var(--red)}
+.d3 .kind{position:absolute;right:5cqw;top:9.2%;font-size:2.9cqw;font-weight:700;letter-spacing:.06em;text-align:right;line-height:1.35}
+.d3 .kind i{display:block;font-style:normal;font-weight:500;color:var(--ink2)}
+.d3 .art{position:absolute;left:0;right:0;top:24.5%;height:37%;overflow:hidden}
+.d3 .art img{width:100%;height:100%;object-fit:cover;display:block}
+.d3 .art.noart{background:var(--peach-l);display:flex;align-items:flex-end;justify-content:center}
+.d3 .ttl{position:absolute;left:0;top:55.5%;max-width:80cqw;background:var(--paper);padding:2cqw 5cqw 1.4cqw}
+.d3 .ttl .main{font-weight:700;line-height:1.28}
+.d3 .ttl .s{color:var(--red)}
+.d3 .toc{position:absolute;left:5cqw;right:5cqw;top:74.5%}
+.d3 .toc .h{font-size:2.7cqw;font-weight:700;letter-spacing:.1em;color:var(--red);border-bottom:.3cqw solid var(--navy);padding-bottom:.6cqw;margin-bottom:1.2cqw;line-height:1.3;display:flex;justify-content:space-between}
+.d3 .toc .h span:last-child{color:var(--ink2);font-weight:500;letter-spacing:.02em}
+.d3 .it{display:flex;gap:2cqw;align-items:baseline;line-height:1.4}
+.d3 .it .n{font-family:'Noto Serif Bengali';font-weight:700;color:var(--red);flex:none;width:3.4cqw}
+.d3 .it.lead{font-size:5.2cqw;margin-bottom:.6cqw}
+.d3 .it.lead .t{font-family:'Noto Serif Bengali';font-weight:700}
+.d3 .it .w{color:var(--ink2);flex:none;font-size:.72em}
+.d3 .it.sec{font-size:3.3cqw}
+.d3 .it.sec .t{font-weight:600}
+.d3 .it .tx{display:flex;gap:1.6cqw;align-items:baseline;min-width:0;flex:1}
+.d3 .tag{background:var(--red);color:#fff;font-size:2.4cqw}
+@container (max-width:260px){ .d3 .ttl{top:auto;bottom:5%;max-width:none;right:0} .d3 .art{height:52%} .d3 .kind{display:none} .d3 .spine .lab{font-size:3.6cqw} .d3 .mast{top:.5%} }
+</style>
+</head>
+<body>
+<h1>সংখ্যার প্রচ্ছদ: তিনটি নতুন ধারা</h1>
+<p class="note">ছবি, লেখার নাম আর লেখকের নাম এখানে নমুনা; আসল প্রচ্ছদে সংখ্যার নিজের ছবি আর লেখা বসবে। প্রতিটি সারি: বিশেষ সংখ্যা, মাসিক সংখ্যা, উৎসব সংখ্যা, ছবি না থাকলে, আর তালিকার ছোট কার্ড (২০০ পিক্সেল)।</p>
+<div id="out"></div>
+<script>
+const BN='০১২৩৪৫৬৭৮৯', bn=n=>String(n).replace(/\d/g,d=>BN[d]);
+const MONTHS=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const KIND={special:'বিশেষ সংখ্যা',monthly:'মাসিক সংখ্যা',festival:'উৎসব সংখ্যা'};
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+const L={lead:{t:'তবুও খুঁজি তোমাকে',w:'মিতা সেন'},serial:{t:'লাল কাচ',w:'অরুণ দাস',serial:1},
+  river:{t:'নদীর ধারে',w:'রিনা পাল'},long:{t:'বৃষ্টির দুপুরে ফিরে আসা একটা খুব লম্বা নামের গল্প',w:'রিনা পাল'}};
+const ISSUES=[
+ {cap:'বিশেষ সংখ্যা',kind:'special',title:'ফিরে আসা সংখ্যা',art:'zz-art1.svg',y:2026,m:12,lines:[L.lead,L.serial,L.long]},
+ {cap:'মাসিক সংখ্যা',kind:'monthly',title:'ডিসেম্বর সংখ্যা',art:'zz-art2.svg',y:2026,m:12,lines:[L.lead,L.serial,L.river]},
+ {cap:'উৎসব সংখ্যা (লম্বা প্রধান লেখা)',kind:'festival',title:'শারদীয়া সংখ্যা',art:'zz-art1.svg',y:2026,m:10,lines:[L.long,L.serial,L.river]},
+ {cap:'ছবি নেই (পাখা মোটিফ)',kind:'monthly',title:'নভেম্বর সংখ্যা',art:null,y:2026,m:11,lines:[L.lead,L.river]},
+];
+const SMALL=[{...ISSUES[0],cap:''},{...ISSUES[1],art:null,title:'নভেম্বর সংখ্যা',m:11}];
+
+// shared rules the system would compute
+function parts(is){
+  const t=is.title.trim(); const ends=/\sসংখ্যা$/.test(t);
+  const main=ends?t.replace(/\sসংখ্যা$/,''):t;
+  const vol=is.y-2011;                    // বর্ষ: the magazine began in 2012
+  const no=is.kind==='monthly'?is.m:null; // monthly issue number = month
+  return {main,ends,vol,no,month:MONTHS[is.m-1],year:bn(is.y),kindLabel:KIND[is.kind]};
+}
+// hero size by length of the main words (grapheme count), in cqw of cover width
+function hero(main,steps){ const n=[...main].length; for(const [max,sz] of steps) if(n<=max) return sz; return steps[steps.length-1][1]; }
+// cover lines: lead first (editor's pick), serial next, then the rest; at most 3
+function order(lines){ return lines.slice(0,3); }
+
+let uid=0;
+function fanSVG({art,bg,rays=12,cols,hub,line}){
+  const id='f'+(uid++); let s=`<svg viewBox="0 0 200 102" aria-hidden="true"><defs><clipPath id="${id}"><path d="M2 100 A98 98 0 0 1 198 100 Z"/></clipPath></defs>`;
+  const pt=a=>`${(100+98*Math.cos(a)).toFixed(2)} ${(100+98*Math.sin(a)).toFixed(2)}`;
+  if(art){ s+=`<image href="${art}" x="0" y="-25" width="200" height="150" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>`;
+    for(let k=1;k<rays;k++){const a=Math.PI+Math.PI*k/rays; s+=`<path d="M100 100 L${pt(a)}" stroke="${bg}" stroke-width="1.3"/>`;}
+    s+=`<path d="M2 100 A98 98 0 0 1 198 100" fill="none" stroke="${bg}" stroke-width="0"/>`;
+  } else { for(let k=0;k<rays;k++){const a1=Math.PI+Math.PI*k/rays,a2=Math.PI+Math.PI*(k+1)/rays; s+=`<path d="M100 100 L${pt(a1)} A98 98 0 0 1 ${pt(a2)} Z" fill="${cols[k%cols.length]}"/>`;} }
+  s+=`<path d="M74 100 A26 26 0 0 1 126 100 Z" fill="${hub}"/>`;
+  if(line) s+=`<rect x="0" y="100" width="200" height="2" fill="${line}"/>`;
+  return s+'</svg>';
+}
+function tag(l){ return l.serial?'<span class="tag">ধারাবাহিক</span>':''; }
+
+/* ---------- D1 পাখা ---------- */
+function d1(is,sm){
+  const p=parts(is); const bg={special:'#CB1B32',monthly:'#13212C',festival:'#EFC08D'}[is.kind];
+  const cols={special:['#FFFBF4','#EFC08D'],monthly:['#CB1B32','#F08D90'],festival:['#CB1B32','#F08D90']}[is.kind];
+  const hub={special:'#13212C',monthly:'#EFC08D',festival:'#13212C'}[is.kind];
+  const sz=hero(p.main,[[6,17],[9,14.5],[13,11.5],[18,9],[99,7.4]]);
+  const ear=p.no?`বর্ষ ${bn(p.vol)} · সংখ্যা ${bn(p.no)}`:`বর্ষ ${bn(p.vol)} · ${p.month} ${p.year}`;
+  const lbl=(p.ends?'সংখ্যা':p.kindLabel)+' · '+(p.no?`${p.month} ${p.year}`:p.kindLabel.replace(' সংখ্যা',''));
+  const ls=order(is.lines); const [a,...rest]=ls;
+  return `<div class="cv d1 k-${is.kind} ${sm?'sm':''}">
+   <div class="abs ear"><span>${ear}</span><span class="hide-sm">ISSN ২৩২১-৩০৩৫</span></div>
+   <div class="abs mast">হাতপাখা</div>
+   <div class="abs fan">${fanSVG({art:is.art,bg,cols,hub,line:null})}</div>
+   <div class="abs ttl"><div class="main serif ell" style="font-size:${sz}cqw">${esc(p.main)}</div><div class="lbl">${lbl}</div></div>
+   <div class="abs lines hide-sm">
+     <div class="lead serif"><span class="ell">${tag(a)}${esc(a.t)}</span><span class="w">${esc(a.w)}</span></div>
+     ${rest.map(l=>`<div class="sec">${tag(l)}<span class="t ell">${esc(l.t)}</span><span style="flex:none">· ${esc(l.w)}</span></div>`).join('')}
+   </div>
+   <div class="abs foot hide-sm">hatpakha.com</div>
+  </div>`;
+}
+
+/* ---------- D2 পূর্ণ ছবি ---------- */
+function ean13(code){ // real EAN-13 bars for ISSN 2321-3035 (977 + 2321303 + 00 + check)
+  const Lc=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+  const R=Lc.map(c=>c.replace(/./g,b=>b==='1'?'0':'1')), G=R.map(c=>[...c].reverse().join(''));
+  const PAR=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+  const d=[...code].map(Number); let s=0; for(let i=0;i<12;i++) s+=d[i]*(i%2?3:1); d[12]=(10-s%10)%10;
+  let bits='101'; const par=PAR[d[0]]; for(let i=1;i<7;i++) bits+=(par[i-1]==='L'?Lc:G)[d[i]]; bits+='01010'; for(let i=7;i<13;i++) bits+=R[d[i]]; bits+='101';
+  let r=''; [...bits].forEach((b,i)=>{ if(b==='1'){const guard=i<3||(i>=45&&i<50)||i>=92; r+=`<rect x="${i}" y="0" width="1" height="${guard?40:36}"/>`;} });
+  return {svg:`<svg viewBox="0 0 95 40" preserveAspectRatio="none" fill="#13212C">${r}</svg>`, digits:d.join('')};
+}
+const BAR=ean13('977232130300');
+function d2(is,sm){
+  const p=parts(is); const sz=hero(p.main,[[6,15],[9,13],[13,10.5],[18,8.4],[99,7]]);
+  const ls=order(is.lines); const [a,...rest]=ls;
+  const art=is.art?`<div class="art"><img src="${is.art}" alt=""></div>`:
+    `<div class="art" style="background:${{special:'#CB1B32',monthly:'#1D3A4F',festival:'#EFC08D'}[is.kind]}"><div style="position:absolute;left:-12cqw;right:-12cqw;bottom:24%">${fanSVG({art:null,cols:is.kind==='special'?['#FFFBF4','#EFC08D']:['#CB1B32','#F08D90'],hub:is.kind==='festival'?'#13212C':'#EFC08D'})}</div></div>`;
+  return `<div class="cv d2 k-${is.kind} ${sm?'sm':''}">
+   ${art}<div class="abs scrim"></div>
+   <div class="abs ear"><span>বর্ষ ${bn(p.vol)}${p.no?` · সংখ্যা ${bn(p.no)}`:''}</span><span>ISSN ২৩২১-৩০৩৫</span></div>
+   <div class="abs mast">হাতপাখা</div>
+   <div class="stamp hide-sm"><span class="m">${p.month}</span><span class="y">${p.year}</span><span class="v">বর্ষ ${bn(p.vol)}</span></div>
+   <div class="flag"><div class="kind">${p.kindLabel}</div><div class="main serif ell" style="font-size:${sz}cqw">${esc(p.main)}</div></div>
+   <div class="abs panel hide-sm"><div class="ls">
+      <div class="lead-rule"></div>
+      <div class="lead serif"><div class="clamp2">${tag(a)}${esc(a.t)}</div><span class="w">${esc(a.w)}</span></div>
+      ${rest.map(l=>`<div class="sec">${tag(l)}<span class="t ell">${esc(l.t)}</span><span class="w">${esc(l.w)}</span></div>`).join('')}
+     </div>
+     <div class="bar">${BAR.svg}<small>ISSN 2321-3035</small><span class="url">hatpakha.com</span></div>
+   </div>
+  </div>`;
+}
+
+/* ---------- D3 সূচিপত্র ---------- */
+function d3(is,sm){
+  const p=parts(is); const sz=hero(p.main,[[6,15],[9,12.5],[13,10],[18,8],[99,6.6]]);
+  const ls=order(is.lines); const [a,...rest]=ls;
+  const spineTop=p.no?`<span class="lab">সংখ্যা</span><span class="num">${bn(p.no)}</span><span class="rule"></span><span class="lab">বর্ষ</span><span class="num" style="font-size:7cqw">${bn(p.vol)}</span>`
+                     :`<span class="lab">বর্ষ</span><span class="num">${bn(p.vol)}</span>`;
+  const art=is.art?`<div class="art"><img src="${is.art}" alt=""></div>`:
+    `<div class="art noart"><div style="width:92%;margin-bottom:-1px">${fanSVG({art:null,cols:['#CB1B32','#F08D90'],hub:'#EFC08D'})}</div></div>`;
+  return `<div class="cv d3 k-${is.kind} ${sm?'sm':''}">
+   <div class="spine">${spineTop}<span class="rule"></span><span class="vert">${p.month} ${p.year}</span><span class="vert bot hide-sm">ISSN 2321-3035</span></div>
+   <div class="main">
+     <div class="mast">হাতপাখা</div>
+     <div class="kind">${p.kindLabel}<i>hatpakha.com</i></div>
+     ${art}
+     <div class="ttl"><div class="main serif ell" style="font-size:${sz}cqw">${esc(p.main)}${p.ends?` <span class="s">সংখ্যা</span>`:''}</div></div>
+     <div class="toc hide-sm"><div class="h"><span>এই সংখ্যায়</span><span>${p.kindLabel}</span></div>
+       <div class="it lead"><span class="n">${bn(1)}</span><span class="tx"><span class="t ell">${tag(a)}${esc(a.t)}</span><span class="w">${esc(a.w)}</span></span></div>
+       ${rest.map((l,i)=>`<div class="it sec"><span class="n">${bn(i+2)}</span><span class="tx">${tag(l)}<span class="t ell">${esc(l.t)}</span><span class="w">${esc(l.w)}</span></span></div>`).join('')}
+     </div>
+   </div>
+  </div>`;
+}
+
+const DIRS=[
+ {n:'ক',name:'পাখা',idea:'রঙের এক সমতল জমিতে ছবিটা হাতপাখার আকারে কেটে বসে, শিকগুলো রেখার মতো; উপরে বড় মাস্টহেড, নিচে সংখ্যার নাম বড় করে। লোগো আর প্রচ্ছদ একই চিহ্ন: দূর থেকেও হাতপাখা বলে চেনা যায়।',f:d1},
+ {n:'খ',name:'পূর্ণ ছবি',idea:'ছবি পুরো প্রচ্ছদ জুড়ে; মাথায় বিশাল সাদা মাস্টহেড গাঢ় নীল আস্তরণে, ডাকঘরের ছাপের মতো তারিখ, পতাকার মতো রঙিন ফালিতে সংখ্যার নাম, নিচে কাগজ-রঙা পাতে প্রধান লেখা বড় করে আর আসল আইএসএসএন বারকোড।',f:d2},
+ {n:'গ',name:'সূচিপত্র',idea:'বাঁ দিকে রঙিন মেরুদণ্ডে বর্ষ আর সংখ্যার নম্বর ছাপা বইয়ের মতো; ছবি জানালার মতো, তার কোণ চেপে সংখ্যার নাম, নিচে নম্বর দেওয়া সূচি: প্রধান লেখা সবার আগে আর বড়।',f:d3},
+];
+document.getElementById('out').innerHTML=DIRS.map(D=>`<section class="dir"><h2><b>${D.n}</b>${D.name}</h2><p class="idea">${D.idea}</p>
+ <div class="row">${ISSUES.map(is=>`<figure class="cell"><div class="shadow">${D.f(is,false)}</div><figcaption>${is.cap}</figcaption></figure>`).join('')}
+ <figure class="cell"><div class="smalls">${SMALL.map(is=>`<div class="shadow">${D.f(is,true)}</div>`).join('')}</div><figcaption>ছোট কার্ড</figcaption></figure></div></section>`).join('');
+</script>
+</body>
+</html>

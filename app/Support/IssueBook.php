@@ -60,37 +60,69 @@ final class IssueBook
         return $out->values();
     }
 
+    /** The monthly issue that follows this one (live only), or null. */
+    public static function nextMonthly(Issue $issue): ?Issue
+    {
+        return Issue::live()->where('published_at', '>', $issue->published_at ?? now())->orderBy('published_at')->get()
+            ->first(fn ($i) => preg_match('/^\d{4}-\d{2}$/', (string) $i->slug));
+    }
+
     /** The end of an issue's month for its serials: the next monthly issue's day, or now (preview: a month on). */
     public static function serialUntil(Issue $issue, bool $preview = false): \Illuminate\Support\Carbon
     {
-        $from = $issue->published_at ?? now();
-        $next = Issue::live()->where('published_at', '>', $from)->orderBy('published_at')->get(['id', 'slug', 'published_at'])
-            ->first(fn ($i) => preg_match('/^\d{4}-\d{2}$/', (string) $i->slug));
-        if ($next) {
+        if ($next = self::nextMonthly($issue)) {
             return $next->published_at;
         }
+        $from = $issue->published_at ?? now();
 
         return $preview ? $from->copy()->addMonth()->max(now()) : now();
     }
 
     /**
-     * D275: what follows the last episode an issue carries: "চলবে…" with where the rest is (the serial's page), or
-     * "সমাপ্ত". Null when the post is no episode of a public serial.
+     * D275/D276 (owner: "if we give a link, how will it work when I print the issue?"): what follows the last episode
+     * an issue carries. Worded so it works on paper too: where the story goes on (the next issue by name, or the
+     * coming issue and Saturdays on the site), the serial's address written out, and a QR code for print.
+     * Null when the post is no episode of a public serial.
      */
-    public static function serialEnd(Post $p): ?array
+    public static function serialEnd(Post $p, ?Issue $issue = null): ?array
     {
         $s = $p->serial;
         if (! $p->serial_id || ! $s?->isPublic()) {
             return null;
         }
+        $addr = preg_replace('~^https?://(www\.)?~', '', rtrim($s->url(), '/'));
         if ($p->isLastEpisode()) {
-            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায় পড়ুন:', 'url' => $s->url()];
+            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
         }
-        $later = Post::published()->where('serial_id', $s->id)->where('episode_no', '>', $p->episode_no)->count();
+        $nextNo = Bn::num((string) ($p->episode_no + 1));
+        $next = $issue ? self::nextMonthly($issue) : null;
+        $out = Post::published()->where('serial_id', $s->id)->where('episode_no', '>', $p->episode_no)->exists();
+        $text = $next && $out
+            ? 'পর্ব '.$nextNo.' থেকে পড়ুন “'.$next->title.'”-এ।'
+            : ($out ? 'পর্ব '.$nextNo.' থেকে পড়ুন সাইটে।' : 'পর্ব '.$nextNo.' আগামী সংখ্যায়; তার আগেই প্রতি '.$s->dayName().' সকালে নতুন পর্ব সাইটে।');
 
-        return ['head' => 'চলবে…', 'text' => $later
-            ? 'পরের '.Bn::num((string) $later).'টি পর্ব বেরিয়ে গেছে। সব পর্ব এক জায়গায়:'
-            : 'নতুন পর্ব প্রতি '.$s->dayName().' সকালে। সব পর্ব এক জায়গায়:', 'url' => $s->url()];
+        return ['head' => 'চলবে…', 'text' => $text.' সব পর্ব এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
+    }
+
+    /** D276: an issue that picks a serial up in the middle says where the earlier episodes are. */
+    public static function serialStart(Post $p): ?array
+    {
+        $s = $p->serial;
+        if (! $p->serial_id || ! $s?->isPublic() || $p->episode_no <= 1) {
+            return null;
+        }
+        $last = Bn::num((string) ($p->episode_no - 1));
+
+        return ['text' => 'আগে যা বেরিয়েছে: পর্ব ১'.($p->episode_no > 2 ? '–'.$last : '').',', 'addr' => preg_replace('~^https?://(www\.)?~', '', rtrim($s->url(), '/')), 'url' => $s->url()];
+    }
+
+    /** A QR code (SVG data URI) for a printed page, or null. */
+    public static function qr(string $url): ?string
+    {
+        return rescue(fn () => 'data:image/svg+xml;base64,'.base64_encode((new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions([
+            'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class, 'outputBase64' => false, 'svgAddXmlHeader' => false,
+            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true,
+        ])))->render($url)), null, false);
     }
 
     /** A piece's text as clean XHTML for the book: no pictures, embeds or scripts; every tag closed. */
@@ -194,10 +226,13 @@ final class IssueBook
             $kicker = $p->serial_id && $p->serial ? 'ধারাবাহিক · '.$p->serial->title : (string) $p->section?->name_bn;
             $h = $p->serial_id && $p->serial ? $p->episodeLabel() : $p->title;
             $lastRun = ! $pieces->slice($i + 1)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
-            $end = $lastRun ? self::serialEnd($p) : null;
-            $endHtml = $end ? '<p class="serial-end"><b>'.e($end['head']).'</b> '.e($end['text']).' '.e($end['url']).'</p>' : '';
+            $end = $lastRun ? self::serialEnd($p, $issue) : null;
+            $endHtml = $end ? '<p class="serial-end"><b>'.e($end['head']).'</b> '.e($end['text']).' <a href="'.e($end['url']).'">'.e($end['addr']).'</a></p>' : '';
+            $firstRun = ! $pieces->slice(0, $i)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
+            $start = $firstRun ? self::serialStart($p) : null;
+            $startHtml = $start ? '<p class="serial-start">'.e($start['text']).' <a href="'.e($start['url']).'">'.e($start['addr']).'</a></p>' : '';
             $zip->addFromString('OEBPS/'.$file, $page($h, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e($kicker).'</p>'
-                .'<h2>'.e($h).'</h2><p class="by">'.e($by).'</p>'.$d['body'].$endHtml.'</section>')));
+                .'<h2>'.e($h).'</h2><p class="by">'.e($by).'</p>'.$startHtml.$d['body'].$endHtml.'</section>')));
             $manifest[] = '<item id="c'.($i + 1).'" href="'.$file.'" media-type="application/xhtml+xml"/>';
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
@@ -281,6 +316,7 @@ figure { margin: 1em 0; text-align: center; } figure img { max-width: 100%; max-
 figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vignette img, figure.feature img { max-width: 70%; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
+.serial-start { font-size: .9em; color: #4D5A63; font-style: italic; }
 .serial-end { margin-top: 2em; padding: .8em 1em; border: 2px solid #13212C; } .serial-end b { color: #CB1B32; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
 .writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }

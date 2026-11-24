@@ -219,6 +219,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D188: the regular writers (3+ pieces, or rated 8+, any year) get a personal letter written and sent by the team for the ফিরে আসা সংখ্যা (pieces by 7 Dec, issue 14 Dec); answers, one reminder and received pieces tracked in /desk → লেখকদের আমন্ত্রণ
 - [ ] Owner: read the first letters in /desk → লেখকদের আমন্ত্রণ during their 12-hour wait (the wording could not be tried with the real AI before release); set the signer's name in /desk → শংসাপত্র if the letters should carry it
 - [x] D265: chosen পাঠকের কলম writers (signed in) told by e-mail; the form offers it
+- [x] D276: the serial box works on paper (words, address, QR code on the print page)
 - [x] D275: a serial in an issue carries its month of episodes and ends with “চলবে… সব পর্ব” (magazine, e-book, issue page)
 - [x] D274: an empty editorial (ফিরে আসা) can be written by the AI from the owner's words
 - [ ] Issue cover redesign: mock-up shown to the owner, waiting for their OK

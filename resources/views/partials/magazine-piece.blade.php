@@ -11,6 +11,7 @@
         $title = $p->episodeLabel();
     }
     $end ??= null;
+    $start ??= null;
 @endphp
 @if ($d['layout'] === 'feature')
     {{-- A full-page picture opens the piece; the title sits on a navy panel --}}
@@ -41,8 +42,11 @@
         <h2 class="mag-h">{{ $title }}</h2>
         <p class="mag-by">{{ $by }}</p>
     @endif
+    @if ($start)
+        <p class="mag-serial-start">{{ $start['text'] }} <a href="{{ $start['url'] }}">{{ $start['addr'] }}</a></p>
+    @endif
     {!! $d['body'] !!}
     @if ($end)
-        <p class="mag-serial-end"><b>{{ $end['head'] }}</b> {{ $end['text'] }} <a href="{{ $end['url'] }}">{{ preg_replace('~^https?://~', '', $end['url']) }}</a></p>
+        <p class="mag-serial-end"><b>{{ $end['head'] }}</b> {{ $end['text'] }} <a href="{{ $end['url'] }}">{{ $end['addr'] }}</a></p>
     @endif
 </section>
