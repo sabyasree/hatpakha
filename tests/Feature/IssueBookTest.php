@@ -56,4 +56,49 @@ class IssueBookTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => Role::Writer]))->get('/issue-print/'.$issue->id.'/')->assertForbidden();
         $this->actingAs(User::factory()->create(['role' => Role::Editor]))->get('/issue-print/'.$issue->id.'/')->assertOk()->assertSee('Save as PDF')->assertSee('নবান্ন');
     }
+    /** D275: a serial in an issue carries its episodes of the month, and the last one says where the rest is. */
+    public function test_a_serial_in_an_issue_carries_its_month_of_episodes_and_where_the_rest_is(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-12-20 10:00:00');
+        $issue = Issue::create(['slug' => '2026-12', 'title' => 'ডিসেম্বর সংখ্যা', 'status' => 'published', 'published_at' => '2026-12-01 03:30:00']);
+        $serial = \App\Models\Serial::create(['title' => 'লাল কাচ', 'slug' => 'lal-kach', 'status' => 'active', 'day' => 6]);
+        $ep = fn (int $n, string $at, array $more = []) => $this->makePost(['status' => 'published', 'slug' => 'lal-kach-'.$n, 'title' => 'লাল কাচ (পর্ব '.$n.'): দৃশ্য '.$n,
+            'serial_id' => $serial->id, 'episode_no' => $n, 'published_at' => $at, 'body_html' => '<p>পর্ব '.$n.' এর লেখা</p>'] + $more);
+        $ep(1, '2026-12-05 03:30:00', ['issue_id' => $issue->id]);
+        $ep(2, '2026-12-12 03:30:00');
+        $ep(3, '2026-12-19 03:30:00');
+        $ep(4, '2026-12-26 03:30:00', ['status' => 'scheduled']);   // not out yet
+        $this->makePost(['status' => 'published', 'slug' => 'kobita', 'title' => 'শীতের কবিতা', 'issue_id' => $issue->id, 'published_at' => '2026-12-02 03:30:00']);
+
+        $pieces = IssueBook::pieces($issue);
+        $this->assertSame(['শীতের কবিতা', 'লাল কাচ (পর্ব 1): দৃশ্য 1', 'লাল কাচ (পর্ব 2): দৃশ্য 2', 'লাল কাচ (পর্ব 3): দৃশ্য 3'], $pieces->pluck('title')->all());
+
+        $book = $this->get('/sonkha/2026-12/boi/')->assertOk();
+        $book->assertSee('ধারাবাহিক · লাল কাচ')->assertSee('পর্ব 3 এর লেখা', false)->assertSee('চলবে…')->assertSee('নতুন পর্ব প্রতি শনিবার সকালে')->assertSee('/dharabahik/lal-kach/', false)->assertDontSee('পর্ব 4 এর লেখা');
+        // the issue page lists the serial once, with its episodes and where all of it is
+        $page = $this->get('/sonkha/2026-12/')->assertOk()->assertSee('পর্ব ১–৩')->assertSee('সব পর্ব পড়ুন')->assertSee('২টি লেখা');
+
+        // the next monthly issue closes December: January's episodes are not in December's book
+        \Illuminate\Support\Carbon::setTestNow('2027-01-03 10:00:00');
+        Issue::create(['slug' => '2027-01', 'title' => 'জানুয়ারি সংখ্যা', 'status' => 'published', 'published_at' => '2027-01-01 03:30:00']);
+        $ep(5, '2027-01-02 03:30:00');
+        $titles = IssueBook::pieces($issue->fresh())->pluck('title')->all();
+        $this->assertContains('লাল কাচ (পর্ব 4): দৃশ্য 4', $titles);
+        $this->assertNotContains('লাল কাচ (পর্ব 5): দৃশ্য 5', $titles);
+        $this->get('/sonkha/2026-12/boi/')->assertSee('পরের ১টি পর্ব বেরিয়ে গেছে');
+
+        // the e-book says it too
+        $path = IssueBook::epub($issue->fresh());
+        $zip = new \ZipArchive();
+        $zip->open($path);
+        $all = '';
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $all .= (string) $zip->getFromIndex($i);
+        }
+        $zip->close();
+        @unlink($path);
+        $this->assertStringContainsString('ধারাবাহিক · লাল কাচ', $all);
+        $this->assertStringContainsString('lal-kach', $all);
+        \Illuminate\Support\Carbon::setTestNow();
+    }
 }

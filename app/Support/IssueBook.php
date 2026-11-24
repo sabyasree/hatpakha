@@ -22,7 +22,75 @@ final class IssueBook
         $posts = Post::published()->with('authors', 'section')->where('issue_id', $issue->id)
             ->when($editorial, fn ($q) => $q->whereKeyNot($editorial->id))->orderBy('published_at')->get();
 
-        return ($editorial ? collect([$editorial]) : collect())->concat($posts)->values();
+        return ($editorial ? collect([$editorial]) : collect())->concat(self::withSerials($issue, $posts))->values();
+    }
+
+    /**
+     * D275 (owner: "it has only the 1st part; after that, where is the rest?"): a serial in an issue carries every
+     * episode that came out in the issue's month, from the first one the issue holds, one after another where the
+     * first one stood. The month ends when the next monthly issue comes out (until then, the episodes so far).
+     * The preview (desk) also counts episodes already scheduled within a month of the issue's day.
+     */
+    public static function withSerials(Issue $issue, Collection $posts, bool $preview = false): Collection
+    {
+        if ($posts->whereNotNull('serial_id')->isEmpty()) {
+            return $posts->values();
+        }
+        $until = self::serialUntil($issue, $preview);
+        $out = collect();
+        $done = [];
+        foreach ($posts as $p) {
+            if (! $p->serial_id) {
+                $out->push($p);
+
+                continue;
+            }
+            if (isset($done[$p->serial_id])) {
+                continue;
+            }
+            $done[$p->serial_id] = true;
+            $own = $posts->where('serial_id', $p->serial_id);
+            $more = Post::with('authors', 'section', 'serial')->where('serial_id', $p->serial_id)
+                ->where('episode_no', '>=', (int) $own->min('episode_no'))
+                ->when($preview, fn ($q) => $q->whereIn('status', ['published', 'scheduled']), fn ($q) => $q->published())
+                ->where('published_at', '<=', $until)->get();
+            $out = $out->concat($own->concat($more)->unique('id')->sortBy('episode_no'));
+        }
+
+        return $out->values();
+    }
+
+    /** The end of an issue's month for its serials: the next monthly issue's day, or now (preview: a month on). */
+    public static function serialUntil(Issue $issue, bool $preview = false): \Illuminate\Support\Carbon
+    {
+        $from = $issue->published_at ?? now();
+        $next = Issue::live()->where('published_at', '>', $from)->orderBy('published_at')->get(['id', 'slug', 'published_at'])
+            ->first(fn ($i) => preg_match('/^\d{4}-\d{2}$/', (string) $i->slug));
+        if ($next) {
+            return $next->published_at;
+        }
+
+        return $preview ? $from->copy()->addMonth()->max(now()) : now();
+    }
+
+    /**
+     * D275: what follows the last episode an issue carries: "চলবে…" with where the rest is (the serial's page), or
+     * "সমাপ্ত". Null when the post is no episode of a public serial.
+     */
+    public static function serialEnd(Post $p): ?array
+    {
+        $s = $p->serial;
+        if (! $p->serial_id || ! $s?->isPublic()) {
+            return null;
+        }
+        if ($p->isLastEpisode()) {
+            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায় পড়ুন:', 'url' => $s->url()];
+        }
+        $later = Post::published()->where('serial_id', $s->id)->where('episode_no', '>', $p->episode_no)->count();
+
+        return ['head' => 'চলবে…', 'text' => $later
+            ? 'পরের '.Bn::num((string) $later).'টি পর্ব বেরিয়ে গেছে। সব পর্ব এক জায়গায়:'
+            : 'নতুন পর্ব প্রতি '.$s->dayName().' সকালে। সব পর্ব এক জায়গায়:', 'url' => $s->url()];
     }
 
     /** A piece's text as clean XHTML for the book: no pictures, embeds or scripts; every tag closed. */
@@ -122,8 +190,14 @@ final class IssueBook
             // The page designer's pictures (2026-11-12): the piece's own picture on top, the pictures inside in their place.
             $d = PageDesigner::design($p);
             $hero = $d['hero'] ? '<figure class="hero '.$d['layout'].'">'.PageDesigner::img($d['hero']).($d['credit'] ? '<figcaption>'.e($d['credit']).'</figcaption>' : '').'</figure>' : '';
-            $zip->addFromString('OEBPS/'.$file, $page($p->title, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e((string) $p->section?->name_bn).'</p>'
-                .'<h2>'.e($p->title).'</h2><p class="by">'.e($by).'</p>'.$d['body'].'</section>')));
+            // D275: an episode says which serial it belongs to, and the last one in the issue says where the rest is
+            $kicker = $p->serial_id && $p->serial ? 'ধারাবাহিক · '.$p->serial->title : (string) $p->section?->name_bn;
+            $h = $p->serial_id && $p->serial ? $p->episodeLabel() : $p->title;
+            $lastRun = ! $pieces->slice($i + 1)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
+            $end = $lastRun ? self::serialEnd($p) : null;
+            $endHtml = $end ? '<p class="serial-end"><b>'.e($end['head']).'</b> '.e($end['text']).' '.e($end['url']).'</p>' : '';
+            $zip->addFromString('OEBPS/'.$file, $page($h, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e($kicker).'</p>'
+                .'<h2>'.e($h).'</h2><p class="by">'.e($by).'</p>'.$d['body'].$endHtml.'</section>')));
             $manifest[] = '<item id="c'.($i + 1).'" href="'.$file.'" media-type="application/xhtml+xml"/>';
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
@@ -207,6 +281,7 @@ figure { margin: 1em 0; text-align: center; } figure img { max-width: 100%; max-
 figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vignette img, figure.feature img { max-width: 70%; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
+.serial-end { margin-top: 2em; padding: .8em 1em; border: 2px solid #13212C; } .serial-end b { color: #CB1B32; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
 .writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
 .writer { overflow: hidden; page-break-inside: avoid; } .writer-photo { float: left; width: 3.4em; height: 3.4em; margin: 1.2em .8em .3em 0; border-radius: 50%; object-fit: cover; }

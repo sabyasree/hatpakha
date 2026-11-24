@@ -4,6 +4,13 @@
     $d = \App\Support\PageDesigner::design($p);
     $by = $p->authors->map->publicName()->implode(', ');
     $credit = $d['credit'] ? '<p class="mag-credit">'.e($d['credit']).'</p>' : '';
+    // D275: an episode is headed by its serial ("ধারাবাহিক · লাল কাচ") and titled "পর্ব ২: …"
+    $title = $p->title;
+    if ($p->serial_id && $p->serial) {
+        $sec = 'ধারাবাহিক · '.$p->serial->title;
+        $title = $p->episodeLabel();
+    }
+    $end ??= null;
 @endphp
 @if ($d['layout'] === 'feature')
     {{-- A full-page picture opens the piece; the title sits on a navy panel --}}
@@ -13,26 +20,29 @@
             <div class="mag-mark on-dark" style="top:3.5%;bottom:auto;text-shadow:0 1px 4px rgba(19,33,44,.7)"><span class="mag-brand">হাতপাখা</span><span>ISSN 2321-3035</span></div>
             <div class="mag-feature-panel">
                 <p class="mag-kicker">{{ $sec }}</p>
-                <h2 class="mag-h">{{ $p->title }}</h2>
+                <h2 class="mag-h">{{ $title }}</h2>
                 <p class="mag-feature-by">{{ $by }}</p>
                 {!! $credit !!}
             </div>
         </div>
     </section>
 @endif
-<section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }} mag-l-{{ $d['layout'] }}" data-section="{{ $sec }}" data-running="{{ $p->title }} · {{ $by }}" data-anchor="{{ $d['layout'] === 'feature' ? '' : 'piece-'.$p->id }}">
+<section data-kind="piece" class="{{ $p->isPoem() ? 'mag-poem' : '' }} mag-l-{{ $d['layout'] }}" data-section="{{ $sec }}" data-running="{{ $title }} · {{ $by }}" data-anchor="{{ $d['layout'] === 'feature' ? '' : 'piece-'.$p->id }}">
     @if ($d['layout'] === 'hero')
         <figure class="mag-hero">{!! \App\Support\PageDesigner::img($d['hero'], $p->isPoem() ? 0.26 : 0.34) !!}{!! $credit !!}</figure>
     @elseif ($d['layout'] === 'vignette')
         <figure class="mag-vignette">{!! \App\Support\PageDesigner::img($d['hero'], $p->isPoem() ? 0.3 : 0.36) !!}{!! $credit !!}</figure>
     @endif
     @if ($d['layout'] === 'feature')
-        <p class="mag-kicker">{{ $sec }} · {{ $p->title }}</p>
+        <p class="mag-kicker">{{ $sec }} · {{ $title }}</p>
         <p class="mag-by">{{ $by }}</p>
     @else
         <p class="mag-kicker">{{ $sec }}</p>
-        <h2 class="mag-h">{{ $p->title }}</h2>
+        <h2 class="mag-h">{{ $title }}</h2>
         <p class="mag-by">{{ $by }}</p>
     @endif
     {!! $d['body'] !!}
+    @if ($end)
+        <p class="mag-serial-end"><b>{{ $end['head'] }}</b> {{ $end['text'] }} <a href="{{ $end['url'] }}">{{ preg_replace('~^https?://~', '', $end['url']) }}</a></p>
+    @endif
 </section>

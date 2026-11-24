@@ -297,4 +297,29 @@ class MagazineTest extends TestCase
         $this->assertSame([$other->id, $issue->id], [$issue->fresh()->editorial_post_id, $other->fresh()->issue_id]);
         \App\Ai\Claude::$fake = null;
     }
+
+    /** D274 (owner: "for the ফিরে আসা issue I can't rewrite the editorial"): an empty editorial is written from the owner's words. */
+    public function test_an_empty_editorial_of_a_special_issue_is_written_from_the_owners_words(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $asked = null;
+        \App\Ai\Claude::$fake = function ($purpose, $user) use (&$asked) {
+            $asked = $user;
+
+            return ['title' => 'ফেরা', 'paragraphs' => ['কিছু কিছু ফেরা নিঃশব্দে হয়।']];
+        };
+        User::factory()->create(['role' => Role::Admin]);
+        $issue = Issue::create(['slug' => 'phire-asha', 'title' => 'ফিরে আসা সংখ্যা', 'status' => 'planning', 'kind' => 'festival']);
+        $empty = $this->editorial($issue, 'draft');
+        $empty->forceFill(['title' => 'সম্পাদকীয়: ফিরে আসা সংখ্যা', 'body_html' => '', 'ai_drafted_at' => null])->save();
+        $this->makePost(['slug' => 'ferar-golpo', 'title' => 'ফেরার গল্প', 'status' => 'scheduled', 'issue_id' => $issue->id, 'published_at' => now()->addDays(10)]);
+        $this->assertTrue(\App\Ai\Rewriter::canRewrite($empty->fresh()), 'The rewrite button is there');
+        $f = \App\Models\WritingFeedback::create(['post_id' => $empty->id, 'body' => 'বিষয় "ফেরা"; নরম, চিঠির মতো।', 'apply_now' => true]);
+        $this->assertNull(\App\Ai\Rewriter::rewrite($f));
+        $this->assertSame('ফেরা', $empty->fresh()->title);
+        $this->assertStringContainsString('নিঃশব্দে', $empty->fresh()->body_html);
+        $this->assertStringContainsString('ফেরার গল্প', (string) $asked, 'The special issue\'s own pieces are given');
+        $this->assertStringContainsString('চিঠির মতো', (string) $asked, 'The owner\'s words are given');
+        \App\Ai\Claude::$fake = null;
+    }
 }

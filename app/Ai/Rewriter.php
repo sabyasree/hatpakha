@@ -29,7 +29,10 @@ final class Rewriter
      */
     public static function isEditorial(?Post $post): bool
     {
-        return $post && $post->ai_drafted_at && $post->section?->slug === 'editorial';
+        // D274 (owner: "for the ফিরে আসা issue I can't rewrite the editorial; there is no option"): also an empty editorial,
+        // which the AI then writes from the owner's words. One the owner wrote by hand stays theirs (D247).
+        return $post && $post->section?->slug === 'editorial'
+            && ($post->ai_drafted_at || trim(html_entity_decode(strip_tags((string) $post->body_html))) === '');
     }
 
     /** Every minute from the scheduler: queued rewrites and rules still to be written down. */
@@ -62,6 +65,16 @@ final class Rewriter
                 .'Keep it an editorial in the tradition of Bengali little magazines; do not list the contents; quote no line from a piece; invent no fact, event or number.';
         }
         $paras = collect(preg_split('~</p>~i', (string) $post->body_html))->map(fn ($p) => trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br />'], "\n", $p)))))->filter()->values();
+        // D274: an empty editorial has nothing to revise: the AI writes it from the owner's words, for its issue
+        if ($paras->isEmpty() && self::isEditorial($post)) {
+            $issue = $post->issue ?? \App\Models\Issue::where('editorial_post_id', $post->id)->first();
+            $owner = \App\Models\User::where('role', \App\Enums\Role::Admin->value)->orderBy('id')->first();
+            if (! $issue || ! $owner) {
+                return 'এই সম্পাদকীয়টি কোনো সংখ্যার সঙ্গে যুক্ত নয়।';
+            }
+
+            return \App\Ai\EditorialWriter::draft($issue, $owner, $f->body, $post) ? null : 'খসড়া লেখা গেল না। একটু পরে আবার চেষ্টা করুন।';
+        }
         [$d, $err] = Claude::json('rewrite',
             'You revise a piece written by the AI desk of Hatpakha (হাতপাখা), a Bengali literary web magazine, after a human reader\'s feedback. '
             .$brief.' '.Prompt::LITERARY.FeedbackLessons::forPrompt($slug, $post->serial_id).' '
