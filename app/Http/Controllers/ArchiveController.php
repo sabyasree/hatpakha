@@ -106,7 +106,9 @@ class ArchiveController extends Controller
         // The archivist's approved themed collections (D55), in season first (D100).
         $collections = \App\Models\Collection::seasonOrder(\App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->get())->take(4);
 
-        return view('archive-index', compact('years', 'issues', 'latestIssue', 'olderIssues', 'sections', 'total', 'seo', 'collections'));
+        $shelves = ShelfController::live();   // C4
+
+        return view('archive-index', compact('years', 'issues', 'latestIssue', 'olderIssues', 'sections', 'total', 'seo', 'collections', 'shelves'));
     }
 
     /** /sonkha/: every issue, newest first, grouped by year (owner, 2026-11-12). */

@@ -14,6 +14,6 @@
         @if (\App\Support\Debut::is($p))<span class="mb-0.5 inline-block rounded-full border border-red bg-peach-light px-2 text-xs font-bold text-red-dark" data-debut>নতুন কলম</span>@endif
         <span class="block font-serif text-[19px] font-bold leading-snug">{{ $p->title }}</span>
         @if ($first && $first !== $p->title)<span class="mt-0.5 line-clamp-2 font-serif text-[15px] leading-snug text-ink2">{{ $first }}</span>@endif
-        <span class="mt-0.5 block text-sm text-ink2">{{ $meta ?? (($p->authors->first()?->publicName() ?? '').($p->published_at ? ' · '.\App\Support\Bn::num((string) $p->published_at->year) : '')) }}</span>
+        <span class="mt-0.5 block text-base text-ink2">{{ $meta ?? (($p->authors->first()?->publicName() ?? '').($p->published_at ? ' · '.\App\Support\Bn::num((string) $p->published_at->year) : '')) }}</span>
     </span>
 </a>

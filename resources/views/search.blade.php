@@ -6,8 +6,36 @@
             <label for="q" class="sr-only">কী খুঁজছেন</label>
             <input id="q" name="q" type="search" value="{{ $q }}" maxlength="80" autofocus placeholder="লেখা, লেখক, বিষয় বা কবিতার একটি লাইন"
                 class="h-12 min-w-0 flex-1 rounded-full border-2 border-navy bg-white px-5 text-lg">
+            @foreach (array_filter($filters) as $fk => $fv)<input type="hidden" name="{{ $fk }}" value="{{ $fv }}">@endforeach
             <button class="h-12 flex-none rounded-full bg-red px-6 font-bold text-white">খুঁজুন</button>
         </form>
+        @if ($posts)
+            {{-- C5: filters as chips (plain links: work without JavaScript; filtered results stay noindex like every search page) --}}
+            @php
+                $chipUrl = fn (array $change) => \App\Support\Url::to('/search').'?'.http_build_query(array_filter(array_merge(['q' => $q], $filters, $change), fn ($v) => $v !== null && $v !== ''));
+                $chip = 'inline-flex min-h-11 flex-none items-center whitespace-nowrap rounded-full border-2 px-4 font-bold';
+                $on = 'border-navy bg-navy text-white';
+                $off = 'border-navy bg-white hover:bg-peach-light';
+            @endphp
+            <div data-search-filters class="mt-4 grid gap-2">
+                <div class="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1" role="group" aria-label="বিভাগ">
+                    <a href="{{ $chipUrl(['section' => null]) }}" class="{{ $chip }} {{ $filters['section'] ? $off : $on }}" @if (! $filters['section']) aria-current="true" @endif>সব বিভাগ</a>
+                    @foreach ($sections as $slug => $name)
+                        <a href="{{ $chipUrl(['section' => $slug]) }}" rel="nofollow" class="{{ $chip }} {{ $filters['section'] === $slug ? $on : $off }}" @if ($filters['section'] === $slug) aria-current="true" @endif>{{ $name }}</a>
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap gap-2" role="group" aria-label="দৈর্ঘ্য">
+                    @foreach (\App\Http\Controllers\SearchController::LENGTHS as $k => $label)
+                        <a href="{{ $chipUrl(['length' => $filters['length'] === $k ? null : $k]) }}" rel="nofollow" class="{{ $chip }} {{ $filters['length'] === $k ? $on : $off }}" @if ($filters['length'] === $k) aria-current="true" @endif>{{ $label }}</a>
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap gap-2" role="group" aria-label="ক্রম">
+                    @foreach ([null => 'সবচেয়ে প্রাসঙ্গিক'] + \App\Http\Controllers\SearchController::SORTS as $k => $label)
+                        <a href="{{ $chipUrl(['sort' => $k ?: null]) }}" rel="nofollow" class="{{ $chip }} {{ $filters['sort'] === ($k ?: null) ? $on : $off }}" @if ($filters['sort'] === ($k ?: null)) aria-current="true" @endif>{{ $label }}</a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         @if ($q !== '' && mb_strlen($q) < 2)
             <p class="mt-6 text-ink2">অন্তত দুটি অক্ষর লিখুন।</p>
@@ -30,12 +58,12 @@
             @forelse ($posts as $p)
                 <a href="{{ $p->url() }}" class="mt-3 flex gap-4 rounded-2xl border-2 border-rule bg-white p-3 hover:border-navy">
                     @if ($p->featured_image_path)
-                        @php($v = \App\Support\Images::variants($p->featured_image_path))
+                        @php $v = \App\Support\Images::variants($p->featured_image_path); @endphp
                         <img src="{{ $v ? reset($v) : asset(ltrim($p->featured_image_path, '/')) }}" alt="" loading="lazy" width="112" height="80" class="h-20 w-28 flex-none rounded-xl object-cover">
                     @endif
                     <span class="min-w-0">
                         <span class="block font-serif text-lg font-bold leading-snug">{{ $p->title }}</span>
-                        <span class="text-sm text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }} · {{ \App\Support\Bn::date($p->published_at) }}</span>
+                        <span class="text-base text-ink2">{{ $p->authors->first()?->publicName() }} · {{ $p->section?->name_bn }} · {{ \App\Support\Bn::date($p->published_at) }}</span>
                         @if ($p->search_snippet)<span class="mt-1 block border-l-2 border-red pl-2 font-serif text-ink2">“{{ $p->search_snippet }}”</span>@endif
                     </span>
                 </a>
@@ -43,12 +71,14 @@
             @empty
                 <div class="mt-4 rounded-2xl border-2 border-dashed border-navy p-6 text-center">
                     <p>"{{ $q }}" দিয়ে কিছু পাওয়া গেল না।</p>
+                    @if (array_filter($filters))<p class="mt-3"><a href="{{ \App\Support\Url::to('/search') }}?q={{ rawurlencode($q) }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">বাছাই সরিয়ে সব লেখায় খুঁজুন</a></p>@endif
                     @if ($suggest)
                         <p class="mt-3 text-lg">আপনি কি খুঁজছিলেন: <a href="{{ \App\Support\Url::to('/search') }}?q={{ rawurlencode($suggest) }}" class="font-bold text-sky-night underline">{{ $suggest }}</a>?</p>
                     @else
                         <p class="mt-2 text-ink2">কম শব্দে খুঁজে দেখুন, যেমন শুধু লেখকের নাম বা কবিতার একটি লাইনের দুটি শব্দ।</p>
                     @endif
                 </div>
+                @if ($authors->isEmpty())@include('partials.read-next', ['heading' => 'এগুলো পড়ে দেখতে পারেন'])@endif
             @endforelse
             @if ($posts->count() >= 5)<x-ad-slot spot="list" :height="250" />@endif
             <div class="mt-8">{{ $posts->links('pagination.hatpakha') }}</div>

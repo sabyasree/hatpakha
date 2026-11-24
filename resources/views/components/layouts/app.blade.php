@@ -73,12 +73,19 @@
                 <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto max-[359px]:h-7 md:h-12">
                 <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
-            @php $menu = \App\Models\Section::menu(); @endphp
+            @php
+                $menu = \App\Models\Section::menu();
+                $hpIssue = \App\Models\Issue::latestLive();
+                $hpIssueUrl = $hpIssue ? $hpIssue->url() : \App\Support\Url::to('/sonkha');
+            @endphp
             {{-- D95 (UX review): big screens show the chosen sections and "সব বিভাগ" for every section, grouped --}}
             <nav aria-label="{{ __('প্রধান বিভাগ') }}" class="hidden min-w-0 items-center gap-1 text-lg font-semibold lg:flex">
-                @foreach ($menu['top'] as [$name, $href, $lang])
-                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
+                {{-- C8 (research 2026-11): সংখ্যা and ধারাবাহিক always, before the games; the chosen sections fit around them --}}
+                @foreach (array_values(array_filter($menu['top'], fn ($l) => $l[1] !== \App\Support\Url::to('/dharabahik'))) as $i => [$name, $href, $lang])
+                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="{{ $i >= 3 ? 'hidden 2xl:inline-block' : ($i === 2 ? 'hidden xl:inline-block' : '') }} whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
+                <a href="{{ $hpIssueUrl }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (request()->is('sonkha*')) aria-current="page" @endif>{{ __('সংখ্যা') }}</a>
+                <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (request()->is('dharabahik*')) aria-current="page" @endif>{{ __('ধারাবাহিক') }}</a>
                 {{-- Owner, 2026-11-14: games and পাঠকের কলম in the top bar on wide screens (always in "সব বিভাগ" too) --}}
                 <a href="{{ \App\Support\Url::to('/khela/aaj') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('khela*')) aria-current="page" @endif>{{ __('খেলা') }}</a>
                 <a href="{{ \App\Support\Url::to('/kolom') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('kolom*')) aria-current="page" @endif>{{ __('পাঠকের কলম') }}</a>
@@ -111,7 +118,7 @@
                 @else
                     <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">{{ __('সাইন ইন') }}</a>
                 @endauth
-                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">{{ __('লেখা পাঠান') }}</a>
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center whitespace-nowrap rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">{{ __('লেখা পাঠান') }}</a>
             </div>
         </div>
     </header>
@@ -125,24 +132,51 @@
     </footer>
     @else
     <footer class="mt-16 bg-navy text-paper">
-        <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 py-12">
+        <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 pt-12">
             <div>
                 <div class="font-hand text-6xl leading-none text-sky md:text-8xl">আবার আসবেন</div>
-                <p class="mt-3 text-sm text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
+                <p class="mt-3 text-base text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
             </div>
             @if (! auth()->check() && ! request()->attributes->get('hp.newsletter.card'))<x-newsletter-signup variant="footer" />@endif
-            <nav aria-label="{{ __('ফুটার') }}" class="grid w-full grid-cols-2 gap-x-6 text-base sm:w-auto sm:grid-cols-3">
-                @foreach (\App\Models\Page::footerLinks() as [$t, $u])
-                    <a href="{{ $u }}" class="flex min-h-11 items-center hover:text-sky">{{ $t }}</a>
-                @endforeach
-                <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
-                <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
-                @if (filled(config('services.support.upi')))<a href="{{ \App\Support\Url::to('/pashe-thakun') }}" class="flex min-h-11 items-center hover:text-sky">পাশে থাকুন (সাহায্য)</a>@endif
-                @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
-                @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
-                @if (filled($wa = config('services.social.whatsapp')))<a href="{{ $wa }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">হোয়াটসঅ্যাপ চ্যানেল</a>@endif
-            </nav>
         </div>
+        {{-- A9 (research 2026-11): three columns on a computer, one under another on a phone: পড়ুন / লিখুন / হাতপাখা --}}
+        @php
+            $U = fn (string $p) => \App\Support\Url::to($p);
+            $fixed = [['আমাদের কথা', $U('/about-hatpakha')], ['যোগাযোগ', $U('/contact-us')], ['বিজ্ঞাপন', $U('/advertise')], ['গোপনীয়তা', $U('/privacy-policy')], ['শর্তাবলি', $U('/terms-conditions')]];
+            $fixedUrls = array_merge(array_column($fixed, 1), [$U('/submissions')]);
+            $footCols = [
+                'পড়ুন' => array_merge(
+                    array_map(fn ($l) => [$l[0], $l[1], $l[2]], array_values(array_filter($menu['top'], fn ($l) => $l[1] !== $U('/dharabahik')))),
+                    [['সংখ্যা', $hpIssueUrl], ['ধারাবাহিক', $U('/dharabahik')], ['লেখকেরা', $U('/lekhok')]],
+                    collect(\App\Http\Controllers\ShelfController::live())->map(fn ($t, $slug) => [$t, $U('/tak/'.$slug)])->values()->all(),
+                    [['পাঠকের পছন্দ', $U('/pathoker-pochhondo')], ['আর্কাইভ', $U('/archive')]],
+                ),
+                'লিখুন' => [['লেখা পাঠানোর নিয়ম', $U('/submissions')], ['লেখা পাঠান', $U('/submit')], ['পাঠকের কলম', $U('/kolom')], ['খেলা', $U('/khela/aaj')]],
+                'হাতপাখা' => array_merge($fixed,
+                    // pages the owner chose for the footer in /desk, that are not above
+                    array_values(array_filter(\App\Models\Page::footerLinks(), fn ($l) => ! in_array($l[1], $fixedUrls, true))),
+                    [['RSS', $U('/feed')]],
+                    filled(config('services.support.upi')) ? [['পাশে থাকুন (সাহায্য)', $U('/pashe-thakun')]] : []),
+            ];
+            $social = array_filter(['ফেসবুক' => config('services.social.facebook'), 'ইনস্টাগ্রাম' => config('services.social.instagram'), 'হোয়াটসঅ্যাপ চ্যানেল' => config('services.social.whatsapp')], 'filled');
+        @endphp
+        <nav data-footer-cols aria-label="{{ __('ফুটার') }}" class="mx-auto grid max-w-[1320px] gap-8 px-5 py-10 md:grid-cols-3">
+            @foreach ($footCols as $head => $links)
+                <div>
+                    <h2 class="border-b border-white/20 pb-2 font-display text-xl font-extrabold text-sky">{{ $head }}</h2>
+                    <ul class="mt-2 grid grid-cols-2 gap-x-6 text-base md:grid-cols-1">
+                        @foreach ($links as $l)
+                            <li><a href="{{ $l[1] }}" @if (($l[2] ?? 'bn') === 'en') lang="en" @endif class="flex min-h-11 items-center hover:text-sky">{{ $l[0] }}</a></li>
+                        @endforeach
+                        @if ($head === 'হাতপাখা')
+                            @foreach ($social as $name => $href)
+                                <li><a href="{{ $href }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">{{ $name }}</a></li>
+                            @endforeach
+                        @endif
+                    </ul>
+                </div>
+            @endforeach
+        </nav>
         {{-- D128: always a way to keep Hatpakha on a phone, like the store buttons other sites show (hidden inside the app itself) --}}
         <div data-app-badges class="mx-auto max-w-[1320px] border-t border-white/20 px-5 pb-12 pt-8">
             <p class="font-bold text-peach-light">হাতপাখা ফোনে রাখুন, অ্যাপের মতো · বিনামূল্যে</p>
@@ -158,19 +192,21 @@
     </footer>
     @endif
 
-    {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, "লিখুন" as a raised sticker, safe-area padding. --}}
+    {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, the centre as a raised sticker, safe-area padding.
+         C7 (owner approved, research 2026-11): most visitors read, so the centre is "সংখ্যা" (this month's issue, else all
+         issues); "লিখুন" moved to the top of the আরও sheet. --}}
     @php
         $tabs = [
             [__('হোম'), url('/').'/', request()->is('/'), 'home'],
             [__('কবিতা'), \App\Support\Url::to('/category/poetry'), request()->is('category/poetry*'), 'poem'],
-            [__('লিখুন'), \App\Support\Url::to('/submit'), request()->is('submit*', 'submissions*'), 'write'],
+            [__('সংখ্যা'), $hpIssueUrl, request()->is('sonkha*'), 'issue'],
             [__('গল্প'), \App\Support\Url::to('/category/short-stories'), request()->is('category/short-stories*'), 'story'],
             [__('আরও'), '#more-sheet', false, 'more'],   // D166 (owner): "আরও" opens one sheet with everything, the account included
         ];
         $icons = [
             'home' => '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
             'poem' => '<path d="M20 4c-7 1-12 6-13 13l-3 3"/><path d="M7 17c4 0 8-3 9-8"/>',
-            'write' => '<path d="M12 5v14M5 12h14"/>',
+            'issue' => '<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 7h6M9 11h6M9 15h4"/>',
             'story' => '<path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/>',
             'more' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
         ];
@@ -179,8 +215,8 @@
     @include('partials.more-sheet', ['menu' => $menu])
     <nav aria-label="{{ __('প্রধান') }}" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
-            @if ($ic === 'write')
-                <a href="{{ $href }}" class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
+            @if ($ic === 'issue')
+                <a href="{{ $href }}" data-tab-centre class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
                     <span class="-mt-5 flex h-11 w-11 items-center justify-center rounded-full border-2 border-navy bg-red text-white shadow-[2px_2px_0_#13212C]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg></span>
                     <span class="mt-0.5 text-red">{{ $label }}</span>
                 </a>

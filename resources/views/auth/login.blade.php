@@ -4,7 +4,7 @@
         <p class="mb-5 text-center">{{ \App\Auth\GoogleSignIn::ready() ? __('Gmail নেই, আর নতুন?') : __('নতুন?') }} <a href="{{ \App\Support\Url::to('/register') }}" class="font-bold text-red underline">{{ __('ফ্রিতে সাইন আপ করুন') }}</a></p>
         <form method="POST" action="{{ \App\Support\Url::to('/login') }}">
             @csrf
-            <x-field name="email" type="email" :label="__('ই-মেল')" autocomplete="email" required autofocus />
+            <x-field name="email" type="email" :label="__('ই-মেল')" autocomplete="email" required data-focus-wide />
             <x-field name="password" type="password" :label="__('পাসওয়ার্ড')" autocomplete="current-password" required />
             <label class="mb-5 flex min-h-11 items-center gap-3"><input type="checkbox" name="remember" value="1" class="h-6 w-6"> <span>{{ __('আমাকে মনে রাখুন') }}</span></label>
             <x-turnstile action="login" />

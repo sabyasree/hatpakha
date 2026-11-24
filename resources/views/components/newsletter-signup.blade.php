@@ -20,7 +20,7 @@
         <x-turnstile action="newsletter" class="mt-2" theme="dark" :lazy="true" />
         @if ($mine && session('newsletter'))<p role="status" class="mt-2 text-sm text-peach-light">{{ session('newsletter') }}</p>@endif
         @if ($mine)@error('email')<p class="mt-2 text-sm text-peach-light">{{ $message }}</p>@enderror @endif
-        <p class="mt-2 text-xs text-peach-light">যখন খুশি বন্ধ করা যায়। <a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="underline">গোপনীয়তা</a></p>
+        <p class="mt-1 text-sm text-peach-light">যখন খুশি বন্ধ করা যায়। <a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="inline-flex min-h-11 items-center underline">গোপনীয়তা</a></p>
     </form>
 @elseif (auth()->check())
     {{-- D74: signed-in readers already get the letter (D59); just say so, with the switch. --}}
@@ -67,7 +67,7 @@
                     <div class="hidden" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
                     <x-turnstile action="newsletter" class="mt-2" :lazy="true" appearance="interaction-only" />
                     @if ($mine)@error('email')<p class="mt-2 font-semibold text-red" role="alert">{{ $message }}</p>@enderror @endif
-                    <p class="mt-2 text-xs text-ink2">একটি নিশ্চিত করার লিংক যাবে; সেটায় চাপলেই চালু। ই-মেল কাউকে দেওয়া হয় না (<a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="underline">গোপনীয়তা</a>)।</p>
+                    <p class="mt-2 text-xs text-ink2">একটি নিশ্চিত করার লিংক যাবে; সেটায় চাপলেই চালু। ই-মেল কাউকে দেওয়া হয় না (<a href="{{ \App\Support\Url::to('/privacy-policy') }}" class="inline-flex min-h-11 items-center underline">গোপনীয়তা</a>)।</p>
                 </form>
             @endif
         </div>

@@ -100,10 +100,19 @@
                     <a href="{{ $s->url() }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-semibold hover:bg-navy hover:text-white">{{ $s->name_bn }}</a>
                 @endforeach
             </div>
-            <div class="tilt-b mt-6 rounded-2xl bg-sky-tint px-5 py-4 text-sky-night">
-                <p class="font-bold">কোনও লেখকের সব লেখা?</p>
-                <p class="text-sm">ওপরের খোঁজার ঘরে লেখকের নাম লিখুন।</p>
-            </div>
+            {{-- A2: the list of every writer (before, this box only said to search for a name) --}}
+            <a href="{{ Url::to('/lekhok') }}" class="mt-6 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-sky-tint px-5 py-3 text-navy hover:bg-sky-light">
+                <span><span class="block text-lg font-bold">লেখকেরা: অ থেকে হ</span><span class="block text-base text-ink2">কোনও লেখকের সব লেখা, নাম ধরে</span></span><span aria-hidden="true">→</span></a>
+            @if ($shelves)
+                {{-- C4: shelves across the sections --}}
+                <h2 class="mt-8 font-display text-2xl font-extrabold">তাক থেকে বাছুন</h2>
+                <div class="mt-3 flex flex-wrap gap-2.5">
+                    @foreach ($shelves as $slug => $name)
+                        <a href="{{ Url::to('/tak/'.$slug) }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-peach-light px-4 font-semibold hover:bg-peach">{{ $name }}</a>
+                    @endforeach
+                    <a href="{{ Url::to('/pathoker-pochhondo') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-peach-light px-4 font-semibold hover:bg-peach">পাঠকের পছন্দ</a>
+                </div>
+            @endif
         </section>
     </div>
 </x-layouts.app>

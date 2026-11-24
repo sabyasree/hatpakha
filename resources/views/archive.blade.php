@@ -3,6 +3,12 @@
         @if ($kicker)<div class="font-hand text-2xl text-red">{{ $kicker }}</div>@endif
         <h1 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">{{ $title }}</h1>
         @if (($section ?? null)?->about)<p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed text-ink2">{{ $section->about }}</p>@endif
+        @if ($intro ?? null)<p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed text-ink2">{{ $intro }}</p>@endif
+        @if (($shelf ?? null) && $posts->total() === 0)
+            {{-- C4: a shelf with nothing on it yet (no reader has answered in 90 days) still leads somewhere (A8) --}}
+            <p class="mt-6 font-serif text-lg">এই তাকে এখনও কোনো লেখা ওঠেনি। লেখার নিচে "পড়ে কেমন লাগল?" ছুঁয়ে আপনিও জানাতে পারেন।</p>
+            <div class="max-w-[720px]">@include('partials.read-next')</div>
+        @endif
         @if ($section ?? null)
             {{-- D132: every new piece of this section, on the phone (no account needed) --}}
             <div class="mt-4"><x-push-button :topic="'section:'.$section->id" :off="'🔔 '.$section->name_bn.': নতুন লেখা এলে ফোনে জানান'" :on="'✓ '.$section->name_bn.': নতুন লেখা এলে ফোনে জানাব'" /></div>
@@ -27,6 +33,7 @@
                 <p class="mt-2 font-serif text-xl">এই বিভাগে প্রথম লেখাটি আপনার হোক।</p>
                 <a href="{{ \App\Support\Url::to('/submit') }}?section={{ $section->slug }}" class="mt-5 inline-flex h-12 items-center rounded-full bg-red px-6 font-bold text-white shadow-[3px_3px_0_#13212C]">এই বিভাগে লেখা পাঠান</a>
             </div>
+            <div class="max-w-[720px]">@include('partials.read-next', ['heading' => 'ততক্ষণ অন্য বিভাগের লেখা পড়ুন'])</div>
         @endif
         {{-- Phones: one readable list (mobile UX review); wider screens: the card grid. --}}
         <ul class="mt-6 divide-y divide-rule border-y border-rule sm:hidden">
@@ -37,7 +44,7 @@
         </ul>
         <div class="mt-8 hidden gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($posts as $p)
-                <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-sm font-semibold text-ink2">{{ $p->authors->first()?->publicName() }} · {{ \App\Support\Bn::date($p->published_at) }}</span></a>
+                <a href="{{ $p->url() }}" class="block"><x-title-card :post="$p" />@if ($p->hasCardImage())<span class="mt-2 block font-serif text-base font-bold leading-snug sm:text-lg">{{ $p->title }}</span>@endif<span class="mt-1 block text-base font-semibold text-ink2">{{ $p->authors->first()?->publicName() }} · {{ \App\Support\Bn::date($p->published_at) }}</span></a>
                 @if ($loop->iteration % 8 === 0 && $loop->remaining > 2)<div class="col-span-full"><x-ad-slot spot="list" :height="250" class="!my-0" /></div>@endif
             @endforeach
         </div>

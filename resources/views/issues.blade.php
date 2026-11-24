@@ -17,6 +17,9 @@
     </section>
 
     <div class="mx-auto max-w-[1120px] px-5 pb-12">
+        @if ($issues->isEmpty())
+            @include('partials.read-next', ['heading' => 'প্রথম সংখ্যা তৈরি হচ্ছে। ততক্ষণ এগুলো পড়ুন'])
+        @endif
         @foreach ($byYear as $y => $list)
             <section class="mt-8" aria-labelledby="y{{ $y }}">
                 <h2 id="y{{ $y }}" class="border-b-2 border-navy pb-1 font-display text-2xl font-extrabold text-red">{{ Bn::year($y) }}</h2>

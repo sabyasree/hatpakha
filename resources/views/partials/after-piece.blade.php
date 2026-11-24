@@ -82,7 +82,7 @@
             </label>
             <button class="mt-1 flex h-12 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">মতামত পাঠান</button>
             <p class="mt-2 text-center text-xs text-ink2">
-                @guest সম্পাদক দেখে প্রকাশ করেন। <a class="font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#reactions') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
+                @guest সম্পাদক দেখে প্রকাশ করেন। <a class="inline-flex min-h-11 items-center font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode($here.'#reactions') }}">লগ-ইন করে লিখলে</a> তাড়াতাড়ি প্রকাশ পায়। @endguest
                 ভদ্র ও প্রাসঙ্গিক মতামত প্রকাশ পায়। লিংক, ওয়েবসাইট বা ই-মেলের ঠিকানা দেওয়া যায় না।
             </p>
         </form>

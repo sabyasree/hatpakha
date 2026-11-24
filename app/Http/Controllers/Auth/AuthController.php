@@ -218,11 +218,11 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:80'],
             'email' => ['required', 'email:rfc', 'max:190'],
-            'password' => ['required', 'confirmed', PasswordRule::min(10)->letters()->numbers()->uncompromised()],
+            'password' => ['required', \App\Support\PasswordPolicy::rule()],   // C9: one box (with "দেখান"), no second box
             'terms' => ['accepted'],
         ], [
             'terms.accepted' => __('শর্তাবলি মেনে নিতে হবে।'),
-            'password.confirmed' => __('দুটো পাসওয়ার্ড মেলেনি।'),
+            'password.min' => __('পাসওয়ার্ড অন্তত ৮ অক্ষরের হতে হবে।'),
             'password.uncompromised' => __('এই পাসওয়ার্ড আগে কোনো সাইট থেকে ফাঁস হয়েছে। অন্য একটি পাসওয়ার্ড দিন।'),
         ]);
         self::checkHuman($request, 'email', 'register');
@@ -293,7 +293,7 @@ class AuthController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', PasswordRule::min(10)->letters()->numbers()->uncompromised()],
+            'password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()],
         ], ['password.confirmed' => __('দুটো পাসওয়ার্ড মেলেনি।'), 'password.uncompromised' => __('এই পাসওয়ার্ড আগে কোনো সাইট থেকে ফাঁস হয়েছে। অন্য একটি পাসওয়ার্ড দিন।')]);
 
         $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $user, string $password) {
