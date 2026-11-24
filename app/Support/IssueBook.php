@@ -297,7 +297,7 @@ final class IssueBook
         $font = fn (string $f) => ['g' => "'Galada', cursive", 's' => "'Noto Serif Bengali', serif", 'a' => "'Anek Bangla', sans-serif"][$f];
         $t = fn (float $px, float $py, float $size, string $text, string $fill, string $f = 'a', string $anchor = 'start', string $weight = 'normal')
             => '<text x="'.round($px, 1).'" y="'.round($py, 1).'" font-size="'.round($size, 1).'" font-family="'.$font($f).'" fill="'.$fill.'" text-anchor="'.$anchor.'" font-weight="'.$weight.'">'.$x($text).'</text>';
-        $issn = 'ISSN '.Bn::num(IssueCover::ISSN);
+        $issn = 'ISSN '.IssueCover::bn(IssueCover::ISSN);
         $lead = $c['lines'][0] ?? null;
         $rest = array_slice($c['lines'], 1);
         $out = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 '.$W.' '.$H.'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">';
