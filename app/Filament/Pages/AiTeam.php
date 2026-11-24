@@ -45,7 +45,7 @@ class AiTeam extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = EditorTask::where('type', 'alert')->where('status', 'open')->count()) ? (string) $n : null;
+        return ($n = EditorTask::where('type', 'alert')->where('status', 'open')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     /** Which member's recent work is open below the cards. */

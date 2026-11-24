@@ -60,7 +60,7 @@ class WriterInviteResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = WriterInvite::where('status', 'drafted')->count()) ? (string) $n : null;
+        return ($n = WriterInvite::where('status', 'drafted')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function canCreate(): bool { return false; }

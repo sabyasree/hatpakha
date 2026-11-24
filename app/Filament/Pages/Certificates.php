@@ -55,7 +55,7 @@ class Certificates extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = EditorTask::open('certificate_request')->count()) ? (string) $n : null;
+        return ($n = EditorTask::open('certificate_request')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     protected function getHeaderActions(): array

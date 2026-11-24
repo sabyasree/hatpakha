@@ -84,7 +84,7 @@ class MessyPiecesTest extends TestCase
                 }
             }
         }
-        \Livewire\Livewire::test(ListPosts::class)->assertOk()->set('activeTab', 'all')->assertOk()->set('activeTab', 'changes')->assertOk();
+        \Livewire\Livewire::test(ListPosts::class)->assertOk()->set('activeTab', 'all')->assertOk()->set('activeTab', 'confirm')->assertOk();   // D280: with the writer (agree or change)
 
         // D230 (owner: a piece that was out still sat under "সময় ঠিক করা"): opening the list puts it right, with no wait for the ten-minute job.
         $out = $this->makePost(['slug' => 'out-already', 'title' => 'জ্যোৎস্না আটকে আছে', 'status' => 'scheduled', 'published_at' => now()->subHour()]);
@@ -135,7 +135,7 @@ class MessyPiecesTest extends TestCase
         $this->assertStringContainsString('নতুন রকমের ত্রুটি', implode(' ', array_map('strval', (new \App\Notifications\EditorBrief(\App\Ai\Brief::today()))->toMail($owner)->introLines)));
         $this->actingAs($owner);
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
-        $this->assertSame('1', \App\Filament\Resources\SiteErrors\SiteErrorResource::getNavigationBadge());
+        $this->assertSame('১', \App\Filament\Resources\SiteErrors\SiteErrorResource::getNavigationBadge());
         \Livewire\Livewire::test(\App\Filament\Resources\SiteErrors\Pages\ListSiteErrors::class)->assertSee('Mail to …@… failed')->callTableAction('seen', $e);
         $this->assertNull(\App\Filament\Resources\SiteErrors\SiteErrorResource::getNavigationBadge());
 

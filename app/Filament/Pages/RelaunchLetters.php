@@ -59,7 +59,7 @@ class RelaunchLetters extends Page
     {
         $yes = Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count();
 
-        return $yes ? (string) $yes : null;
+        return $yes ? \App\Support\Bn::num((string) $yes) : null;
     }
 
     public function mount(): void

@@ -53,7 +53,7 @@ class KidsCorner extends Page
     {
         $waiting = collect(KidsAlphabet::state())->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count();
 
-        return $waiting ? (string) $waiting : null;
+        return $waiting ? \App\Support\Bn::num((string) $waiting) : null;
     }
 
     protected function getHeaderActions(): array

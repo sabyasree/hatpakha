@@ -234,7 +234,7 @@ final class DeskInbox
         foreach (\App\Models\ContactMessage::where('status', 'new')->oldest()->limit(10)->get() as $m) {
             $add(['key' => 'm'.$m->id, 'group' => $m->created_at->lte(now()->subDays(2)) ? 'today' : 'week', 'tag' => 'reader',
                 'title' => ($m->kind === 'advertise' ? __('বিজ্ঞাপনের বার্তা') : __('পাঠকের বার্তা')).': “'.\Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', (string) $m->body), 90).'”',
-                'who' => (string) $m->name, 'sub' => self::ago($m->created_at), 'url' => \App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index'), 'button' => __('পড়ুন'), 'when' => $m->created_at]);
+                'who' => (string) $m->name, 'sub' => self::ago($m->created_at), 'url' => \App\Filament\Resources\ContactMessages\ContactMessageResource::getUrl('index'), 'action' => ['message', $m->id], 'button' => __('উত্তর লিখুন'), 'when' => $m->created_at]);
         }
         if ($n = \App\Models\PieceReview::where('status', 'done')->whereNull('desk_read_at')->count()) {
             $add(['key' => 'pr', 'group' => 'week', 'tag' => 'piece', 'title' => __('যাচাইকারীর মত এসেছে').': '.Bn::num((string) $n).__('টি লেখায়'), 'who' => '',
@@ -252,7 +252,7 @@ final class DeskInbox
         }
         if ($n = Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count()) {
             $add(['key' => 'rl', 'group' => 'week', 'tag' => 'piece', 'title' => __('পুরনো লেখক রাজি হয়েছেন').': '.Bn::num((string) $n).__('টি পুরনো লেখা'), 'who' => '',
-                'sub' => __('পড়ে সিদ্ধান্ত দিন'), 'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'backlog_yes']), 'button' => __('দেখুন')]);
+                'sub' => __('পড়ে সিদ্ধান্ত দিন'), 'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'backlog']), 'button' => __('দেখুন')]);
         }
         if (\App\Models\ReaderPrompt::where('status', 'closed')->whereHas('entries', fn ($q) => $q->where('status', 'picked'))->exists()) {
             $add(['key' => 'kolom', 'group' => 'week', 'tag' => 'reader', 'title' => __('পাঠকের কলম: এ সপ্তাহের বাছাই তৈরি'), 'who' => __('এআই'),
@@ -317,7 +317,7 @@ final class DeskInbox
         }
         if ($n = Post::where('status', 'changes')->count()) {
             $add(['key' => 'fx', 'group' => 'fyi', 'tag' => 'piece', 'title' => __('বদল চেয়ে লেখকের কাছে').': '.Bn::num((string) $n).__('টি লেখা'), 'who' => '', 'sub' => '',
-                'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'changes']), 'button' => __('দেখুন')]);
+                'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'confirm']), 'button' => __('দেখুন')]);
         }
         if (! $admin) {
             return;

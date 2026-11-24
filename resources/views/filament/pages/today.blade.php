@@ -81,6 +81,9 @@
                         @elseif ($a[0] === 'approveAiOkComments')
                             <x-filament::button wire:click="approveAiOkComments">{{ $r['button'] }}</x-filament::button>
                             <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('এক এক করে') }}</x-filament::button>
+                        @elseif ($a[0] === 'message')
+                            {{ ($this->replyMessageAction)(['message' => $a[1]]) }}
+                            <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('সব বার্তা') }}</x-filament::button>
                         @elseif ($a[0] === 'comment' && ($a[2] ?? false))
                             {{-- the AI thinks it is spam: that is the main button (UX audit) --}}
                             <x-filament::button wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
@@ -88,6 +91,7 @@
                         @elseif ($a[0] === 'comment')
                             <x-filament::button wire:click="approveComment({{ $a[1] }})">{{ __('প্রকাশ') }}</x-filament::button>
                             <x-filament::button color="gray" outlined wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
+                            {{ ($this->replyCommentAction)(['comment' => $a[1]]) }}
                         @elseif ($a[0] === 'replyQuestion')
                             {{ ($this->replyQuestionAction)(['task' => $a[1]]) }}
                         @elseif ($a[0] === 'task' && ($task = $tasks[$a[1]] ?? null))

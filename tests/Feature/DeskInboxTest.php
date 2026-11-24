@@ -120,4 +120,22 @@ class DeskInboxTest extends TestCase
         }
         $this->assertGreaterThan(40, $n);
     }
+
+    /** D280: the magazine answers a reader under their comment, and a contact message by e-mail, from the desk. */
+    public function test_replies_to_a_comment_and_a_message_from_the_desk(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        $post = $this->makePost(['slug' => 'brishti', 'title' => 'বৃষ্টির দুপুর']);
+        $c = \App\Models\Comment::create(['post_id' => $post->id, 'author_name' => 'মিতা', 'body' => 'খুব ভালো লাগল, পরের লেখা কবে?', 'status' => 'pending']);
+        $r = \App\Filament\Resources\Comments\Tables\CommentsTable::reply($c, 'শিগগিরই, ধন্যবাদ!');
+        $this->assertSame(['approved', 'approved', $c->id, 'হাতপাখা'], [$c->fresh()->status, $r->status, $r->parent_id, $r->author_name]);
+
+        $m = \App\Models\ContactMessage::create(['kind' => 'contact', 'topic' => 'other', 'name' => 'সুমন', 'email' => 'suman@example.com', 'body' => 'বিজ্ঞাপন নিয়ে কথা বলতে চাই।', 'status' => 'new']);
+        $this->assertSame('উত্তর লিখুন', DeskInbox::items()->firstWhere('key', 'm'.$m->id)['button']);
+        \App\Filament\Resources\ContactMessages\ContactMessageResource::reply($m, 'নিশ্চয়ই, ফোনে কথা বলি।');
+        $this->assertSame('replied', $m->fresh()->status);
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(\App\Notifications\ContactReply::class);
+        $this->assertNull(DeskInbox::items()->firstWhere('key', 'm'.$m->id), 'Answered: the line leaves');
+    }
 }

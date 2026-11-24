@@ -81,9 +81,12 @@ class PostsTable
                 SelectFilter::make('backlog_tier')->label(__('অপেক্ষার স্তর'))->options(\App\Support\Lang::t(ContentAudit::TIERS)),
                 TrashedFilter::make()->visible($isAdmin),
             ])
+            // D280 (UX audit: eight buttons stacked in each row): one main button opens the piece, where the decision is
+            // made with the AI report beside it; the same buttons as before are under "⋯"
             ->recordActions([
+                EditAction::make()->label(fn (Post $record) => $record->status === 'pending' ? __('দেখুন ও সিদ্ধান্ত') : __('খুলুন'))->button()->size('sm'),
+                \Filament\Actions\ActionGroup::make([
                 ...self::reviewActions(),
-                EditAction::make(),
                 \App\Support\PieceReviews::assignAction(),   // D168
                 Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Post $p) => $p->url())->openUrlInNewTab()->visible(fn (Post $p) => $p->status === 'published'),
@@ -102,6 +105,7 @@ class PostsTable
                     ->action(fn (Post $p) => ContentAudit::dismiss($p, auth()->user())),
                 \App\Filament\Support\Deleting::row(),
                 ...\App\Filament\Support\Deleting::trashActions(),
+                ])->label(__('আরও'))->tooltip(__('আরও')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

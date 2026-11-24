@@ -45,7 +45,7 @@ class HandoverPage extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return rescue(fn () => ($n = Handover::needsOwner()) ? (string) $n : null, null, false);   // pieces kept for the owner
+        return rescue(fn () => ($n = Handover::needsOwner()) ? \App\Support\Bn::num((string) $n) : null, null, false);   // pieces kept for the owner
     }
 
     public static function getNavigationBadgeColor(): ?string

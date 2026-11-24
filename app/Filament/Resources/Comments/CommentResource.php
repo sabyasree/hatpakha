@@ -64,7 +64,7 @@ class CommentResource extends Resource
     {
         $n = \App\Models\Comment::where('status', 'pending')->count();
 
-        return $n ? (string) $n : null;
+        return $n ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

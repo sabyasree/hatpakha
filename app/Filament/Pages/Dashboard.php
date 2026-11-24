@@ -173,6 +173,17 @@ class Dashboard extends BaseDashboard
             });
     }
 
+    /** D280: answer a reader's comment or a contact message right from the inbox. */
+    public function replyCommentAction(): \Filament\Actions\Action
+    {
+        return CommentsTable::replyAction('replyComment')->size('sm');
+    }
+
+    public function replyMessageAction(): \Filament\Actions\Action
+    {
+        return \App\Filament\Resources\ContactMessages\ContactMessageResource::replyAction('replyMessage')->visible(fn () => auth()->user()?->hasRole(Role::Admin));
+    }
+
     /** D224 (owner: "I sent this reply from there. Then I could not find any details"): the questions already answered. */
     public function answeredQuestions(): \Illuminate\Support\Collection
     {
@@ -397,7 +408,7 @@ class Dashboard extends BaseDashboard
 
     public function dismissTaskAction(): \Filament\Actions\Action
     {
-        return \Filament\Actions\Action::make('dismissTask')->label(__('বাদ দিন'))->icon('heroicon-o-x-mark')->size('sm')->color('gray')
+        return \Filament\Actions\Action::make('dismissTask')->label(__('বাদ দিন'))->icon('heroicon-o-x-mark')->size('sm')->color('gray')->iconButton()->tooltip(__('বাদ দিন'))
             ->requiresConfirmation()
             ->action(fn (array $arguments) => $this->task($arguments)->close('dismissed'));
     }

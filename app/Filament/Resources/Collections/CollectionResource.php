@@ -64,7 +64,7 @@ class CollectionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = Collection::where('status', 'proposed')->count()) ? (string) $n : null;
+        return ($n = Collection::where('status', 'proposed')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function form(Schema $schema): Schema

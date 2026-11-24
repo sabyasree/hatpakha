@@ -84,7 +84,7 @@ class PostResource extends Resource
     {
         $n = \App\Models\Post::where('status', 'pending')->whereNotNull('submitted_by')->count();
 
-        return $n ? (string) $n : null;
+        return $n ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

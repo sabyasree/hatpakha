@@ -51,7 +51,7 @@ class AiImages extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = self::waiting()->count()) ? (string) $n : null;
+        return ($n = self::waiting()->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function waiting()

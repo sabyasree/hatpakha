@@ -55,7 +55,7 @@ class NewsletterResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = Newsletter::where('status', 'draft')->count()) ? (string) $n : null;
+        return ($n = Newsletter::where('status', 'draft')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function form(Schema $schema): Schema

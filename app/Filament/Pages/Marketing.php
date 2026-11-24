@@ -101,7 +101,7 @@ class Marketing extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = SocialPost::where('status', 'ready')->where('kind', '!=', 'weekly')->count()) ? (string) $n : null;
+        return ($n = SocialPost::where('status', 'ready')->where('kind', '!=', 'weekly')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     /** "পরের সপ্তাহের পরিকল্পনা" (D70): plan ahead without waiting for Monday. */

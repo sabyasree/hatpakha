@@ -46,7 +46,7 @@ class SiteErrorResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = SiteErrors::unseen()) ? (string) $n : null;
+        return ($n = SiteErrors::unseen()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
