@@ -115,7 +115,7 @@
             <div class="hp-muted">{{ __('টি লেখা প্রকাশ হয়েছে') }}</div>
             <p class="hp-h-line">{{ __('নতুন জমা') }}: <b>{{ $n($pb['received']) }}</b> · {{ __('মনোনীত') }} {{ $n($pb['approved']) }} · {{ __('বদল চাওয়া') }} {{ $n($pb['changes']) }} · {{ __('ফেরত') }} {{ $n($pb['rejected']) }}</p>
             <p class="hp-h-line">{{ __('এখন পড়ার অপেক্ষায়') }}: <b>{{ $n($pb['waiting']) }}</b>@if ($pb['waiting']) · {{ __('সবচেয়ে পুরোনোটি') }} {{ $n($pb['oldest_days']) }} {{ __('দিন ধরে') }}@endif</p>
-            @if ($pb['oldest_days'] > 10)<p class="hp-muted hp-h-line">{{ __('লেখকেরা দুই সপ্তাহের মধ্যে উত্তর আশা করেন।') }}</p>@endif
+            @if ($pb['oldest_days'] > \App\Support\Review::REPLY_WARN_DAYS)<p class="hp-muted hp-h-line">{{ __('লেখকেরা ২–৩ সপ্তাহের মধ্যে উত্তর আশা করেন।') }}</p>@endif
         </section>
 
         {{-- Comments --}}
