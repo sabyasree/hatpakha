@@ -120,9 +120,9 @@ class WriterJourneyTest extends TestCase
         $post = $this->sent($author, $user);
         $post->forceFill(['status' => 'rejected', 'review_note' => 'এবার নয়, আবার লিখবেন।', 'reviewed_at' => now()])->save();
         // A letter kept for someone else is never shown here
-        SentLetter::create(['kind' => 'decision_declined', 'to_email' => 'other@example.com', 'user_id' => null, 'post_id' => $post->id, 'subject' => 's', 'html' => '<td class="content-cell"><p>গোপন</p></td>', 'sent_at' => now()]);
+        SentLetter::create(['kind' => 'decision_declined', 'to_email' => 'other@example.com', 'user_id' => null, 'post_id' => $post->id, 'subject' => 's', 'html' => '<td class="content-cell"><p>অন্যের-চিঠি-৭৩৯</p></td>', 'sent_at' => now()]);
 
-        $this->actingAs($user)->get('/submit/'.$post->id.'/')->assertOk()->assertSee('এবার নয়, আবার লিখবেন।')->assertDontSee('গোপন');
+        $this->actingAs($user)->get('/submit/'.$post->id.'/')->assertOk()->assertSee('এবার নয়, আবার লিখবেন।')->assertDontSee('অন্যের-চিঠি-৭৩৯');
         [$other] = $this->writer('অন্য লেখক');
         $this->actingAs($other)->get('/submit/'.$post->id.'/')->assertNotFound();
     }

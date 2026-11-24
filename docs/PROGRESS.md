@@ -222,7 +222,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D276: the serial box works on paper (words, address, QR code on the print page)
 - [x] D275: a serial in an issue carries its month of episodes and ends with “চলবে… সব পর্ব” (magazine, e-book, issue page)
 - [x] D274: an empty editorial (ফিরে আসা) can be written by the AI from the owner's words
-- [ ] Owner: read docs/RESEARCH-2026-11.md (five reviews: what is missing, writers, readers, other magazines, growth) and pick what to build
+- [x] D283–D286: research items built (all of A and C; from B: declined letter, reply-time figure, opened step, লেখার ডাক, নতুন কলম, portfolio); reply time 2–3 weeks; passwords ≥8
+- [ ] Owner: write the editor's wish list (desk → প্রতিযোগিতা → সম্পাদক যা খুঁজছেন); check pages you edited in /desk for the old reply time; confirm the shelf addresses /tak/panch-minute/ and /tak/mon-chhuyeche/ and leaving poems out of the 5-minute shelf
+- [ ] Later from the research (docs/RESEARCH-2026-11.md): B5 কেন বেছেছি, B8 monthly writer e-mail, B9 reader words back, B11 craft notes, B12 anniversaries, section D ideas
 - [x] D282: games leaderboard in the desk (numbers, board incl. hidden players, a player's games, titles)
 - [x] D281: serial episodes: where you are, the way back to episode 1, all episodes on the page, read marks; dates in the desk serial page
 - [x] D280: desk second round: reply to comments and contact messages from the desk, ten tabs on লেখা with one button per row, quiet dismiss, Bengali digits in the menu
