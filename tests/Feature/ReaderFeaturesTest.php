@@ -156,15 +156,17 @@ class ReaderFeaturesTest extends TestCase
         $html = $this->get('/p/')->assertOk()->getContent();
         $at = fn (string $needle) => tap(strpos($html, $needle), fn ($p) => $this->assertNotFalse($p, $needle));
         // the order a reader meets things in
-        $order = [$at('পড়ে কেমন লাগল?'), $at('লেখককে দু লাইন লিখুন'), $at('মতামত পাঠান'), $at('সব পড়ুন ↓'), $at('হোয়াটসঅ্যাপে পাঠান'), $at('data-ad-slot="3"'),
-            $at('aria-label="লেখক"'), $at('id="next-h"'), $at('id="comments"'), $at('data-ad-slot="4"'), $at('id="news-h"')];
-        $this->assertSame($order, collect($order)->sort()->values()->all(), 'Card, sharing, ad, writer, more pieces, every comment, ad, news');
-        // the card shows the two newest; the full list has all three
-        $card = substr($html, $at('id="reactions"'), $at('ভালো লাগলে বন্ধুকে পাঠান') - $at('id="reactions"'));
-        $this->assertStringContainsString('তৃতীয় মত', $card);
-        $this->assertStringContainsString('দ্বিতীয় মত', $card);
-        $this->assertStringNotContainsString('প্রথম মত', $card);
-        $this->assertSame(2, substr_count($html, 'প্রথম মত') + substr_count($card, 'তৃতীয় মত'), 'Oldest once (full list); newest in the card');
+        // A5 (research 2026-11): more pieces come straight after the card
+        $order = [$at('পড়ে কেমন লাগল?'), $at('লেখককে দু লাইন লিখুন'), $at('মতামত পাঠান'), $at('৩টি মতামত পড়ুন ↓'), $at('id="next-h"'), $at('হোয়াটসঅ্যাপে পাঠান'), $at('data-ad-slot="3"'),
+            $at('aria-label="লেখক"'), $at('id="comments"'), $at('data-ad-slot="4"'), $at('id="news-h"')];
+        $this->assertSame($order, collect($order)->sort()->values()->all(), 'Card, more pieces, sharing, ad, writer, every comment, ad, news');
+        // A5: each comment is shown once, in the full list; the card only leads there
+        $card = substr($html, $at('id="reactions"'), $at('id="next-h"') - $at('id="reactions"'));
+        foreach (['প্রথম মত', 'দ্বিতীয় মত', 'তৃতীয় মত'] as $body) {
+            $this->assertStringNotContainsString($body, $card);
+            $this->assertSame(1, substr_count($html, $body), $body.' once');
+        }
+        $this->assertStringContainsString('href="#comments"', $card);
         // a guest still writes with a name only, and may keep the comment off the front page
         $this->assertStringContainsString('name="name"', $card);
         $this->assertStringContainsString('name="not_featured"', $card);

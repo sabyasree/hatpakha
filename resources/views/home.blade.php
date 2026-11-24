@@ -1,5 +1,42 @@
 <x-layouts.app :seo="$seo">
-    @include('partials.hero')
+    @if ($resume)
+        {{-- C1: a signed-in reader with a reading history goes back to where they stopped (app.js opens it there, #resume-N) --}}
+        <section class="border-b-2 border-navy bg-peach-light" aria-labelledby="resume-h">
+            <a href="{{ $resume->url() }}#resume-{{ $resume->progress }}" class="mx-auto flex max-w-[1320px] items-center gap-4 px-5 py-4 hover:bg-white">
+                <span class="min-w-0 flex-1">
+                    <span id="resume-h" class="block font-hand text-xl text-red">যেখানে থেমেছিলেন</span>
+                    <span class="block font-serif text-xl font-bold leading-snug">{{ $resume->title }}</span>
+                    <span class="block text-sm text-ink2">{{ $resume->authors->first()?->publicName() }} · {{ \App\Support\Bn::num((string) $resume->progress) }}% পড়েছেন</span>
+                    <span class="mt-1.5 block h-2 max-w-[20rem] overflow-hidden rounded-full bg-white" aria-hidden="true"><span class="block h-full rounded-full bg-red" style="width: {{ $resume->progress }}%"></span></span>
+                </span>
+                <span class="flex h-12 flex-none items-center rounded-full bg-navy px-5 font-bold text-white">পড়া চালান →</span>
+            </a>
+        </section>
+    @endif
+
+    {{-- C1: the poster on a first visit; a returning reader's phone (flag in this browser, set by app.js) gets a slim band and today's pieces --}}
+    <div class="hp-first-visit">@include('partials.hero')</div>
+    <section class="hp-back-only border-b-2 border-navy bg-paper" data-home-slim aria-labelledby="slim-h">
+        <div class="relative overflow-hidden px-5 py-4" style="background: linear-gradient(160deg,#7CCBEE 0%,#2DAAE2 45%,#1A86C2 100%)">
+            <div class="halftone absolute inset-0" aria-hidden="true"></div>
+            <x-fan class="absolute -bottom-2 -right-8 w-40 opacity-40" :hub="null" />
+            <p class="relative text-sm font-bold">হাতপাখা · অনলাইন সাহিত্য পত্রিকা · ২০১২ থেকে</p>
+            <p class="relative mt-1 font-display text-[2.1rem] font-extrabold leading-[1] [word-spacing:.1em]" style="font-stretch: 75%">বাংলা সাহিত্যের <span class="text-paper [-webkit-text-stroke:3px_#13212C] [paint-order:stroke_fill]">নতুন হাওয়া</span></p>
+        </div>
+        @if ($newest->isNotEmpty())
+            <div class="px-5 pb-2 pt-4">
+                <h2 id="slim-h" class="font-display text-2xl font-extrabold">আজকের লেখা</h2>
+                <ul class="divide-y divide-rule" data-rotate="5">
+                    @if ($poemOfDay)<li data-pid="{{ $poemOfDay->id }}"><x-post-row :post="$poemOfDay" :meta="'আজকের '.$poemOfDay->kindLabel().' · '.($poemOfDay->authors->first()?->publicName() ?? '')" /></li>@endif
+                    @foreach ($newest->reject(fn ($p) => $p->id === $poemOfDay?->id) as $p)
+                        <li data-pid="{{ $p->id }}"><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->section ? ' · '.$p->section->name_bn : '')" /></li>
+                    @endforeach
+                </ul>
+            </div>
+        @else
+            <span id="slim-h" class="sr-only">হাতপাখা</span>
+        @endif
+    </section>
 
     @if ($issue)
     {{-- The month's issue, as a magazine on the stand: cover, name, editorial, and "পত্রিকা খুলুন" (owner, 2026-11-12) --}}

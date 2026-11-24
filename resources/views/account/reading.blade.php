@@ -90,6 +90,25 @@
             @endif
         @endif
 
+        {{-- C6: lines kept with "রাখুন" while reading (only this reader sees them) --}}
+        <h2 id="lines" class="mt-8 scroll-mt-24 font-display text-2xl font-extrabold">{{ __('রাখা লাইন') }} <span class="text-ink2">({{ Bn::num((string) $lines->count()) }})</span></h2>
+        @if ($lines->isEmpty())
+            <p class="mt-1 text-ink2">{{ __('লেখা পড়তে পড়তে কোনো লাইন বেছে নিয়ে “রাখুন” টিপলে লাইনটি এখানে থাকবে।') }}</p>
+        @else
+            <ul class="mt-3 space-y-3" data-lines>
+                @foreach ($lines as $l)
+                    <li class="rounded-2xl border-2 border-navy bg-white p-4">
+                        <blockquote class="whitespace-pre-line border-l-4 border-red pl-3 font-serif text-lg leading-relaxed">{{ $l->text }}</blockquote>
+                        <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <a href="{{ $l->post->url() }}" class="inline-flex min-h-11 min-w-0 items-center font-bold text-sky-night underline">{{ $l->post->title }}@if ($l->post->authors->first()) · {{ $l->post->authors->first()->publicName() }}@endif</a>
+                            <form method="POST" action="{{ route('lines.destroy', $l->id) }}">@csrf
+                                <button class="flex h-11 flex-none items-center rounded-full border-2 border-navy bg-white px-4 text-[15px] font-bold" aria-label="{{ __('লাইনটি সরান: :title', ['title' => $l->post->title]) }}">{{ __('সরান') }}</button></form>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
         <h2 class="mt-8 font-display text-2xl font-extrabold">{{ __('ফলো করছেন') }}</h2>
         @if ($following->isEmpty() && $serials->isEmpty())
             <p class="mt-1 text-ink2">{{ __('পছন্দের লেখকের পাতায় বা ধারাবাহিকে “ফলো করুন” টিপলে তাঁদের নতুন লেখার খবর এখানে আর ই-মেলে পাবেন।') }}</p>

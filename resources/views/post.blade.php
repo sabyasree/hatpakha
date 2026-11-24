@@ -2,6 +2,9 @@
     @php
         // D281: where the reader is in a serial (published episodes, in order), worked out once
         $nav = $post->serial_id && $post->serial?->isPublic() ? \App\Support\EpisodeNav::for($post) : null;
+        // পরে পড়ব: the same answer for the side rail and the buttons under the piece
+        $saved = auth()->check() && \Illuminate\Support\Facades\DB::table('saved_posts')->where(['user_id' => auth()->id(), 'post_id' => $post->id])->exists();
+        $waShare = 'https://wa.me/?text='.rawurlencode(($post->share_text ?: $post->title).' — '.$post->url());
     @endphp
     @if (! empty($preview))
         {{-- D251: the desk's preview; readers never see this page --}}
@@ -10,12 +13,34 @@
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <div class="fixed inset-x-0 top-0 z-50 h-[3px] origin-left scale-x-0 bg-red" data-progress aria-hidden="true"></div>
     <x-desk-edit :url="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $post], panel: 'desk')" />
-    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" @if ($post->isLive() && empty($preview)) data-view="{{ $post->id }}" @endif @if ($post->isLive() && ! $post->isKids()) data-quote-by="{{ $post->authors->map->publicName()->implode(', ') }}" data-quote-title="{{ $post->title }}" data-quote-url="{{ $post->url() }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
+    <article class="relative mx-auto max-w-[760px] px-5 pb-10 pt-8" data-reading @if ($post->isLive() && empty($preview)) data-view="{{ $post->id }}" @endif @if ($post->isLive() && ! $post->isKids()) data-quote-by="{{ $post->authors->map->publicName()->implode(', ') }}" data-quote-title="{{ $post->title }}" data-quote-url="{{ $post->url() }}" @endif @if ($post->isLive() && auth()->user()?->reading_history) data-read-track="{{ route('reading.progress', $post) }}" data-read-token="{{ csrf_token() }}" @endif>
         {{-- D111: wide computer screens only: a tall ad in the empty margin beside the text, starting below the first screen, never over the text.
              D167: from 1280px (common laptops) as a narrow 160px ad, the 300px one from 1500px; both fit the margin even with a 17px scrollbar. --}}
         <div class="absolute left-full top-[85vh] ml-8 hidden h-[calc(100%-85vh)] w-[160px] min-[1280px]:block min-[1500px]:ml-10 min-[1500px]:w-[300px]">
             <div class="sticky top-24"><x-ad-slot spot="sidebar" :height="600" class="!my-0" /></div>
         </div>
+        {{-- C3: from 1280px, a quiet rail in the LEFT margin (the ad has the right one): how far, share, পরে পড়ব, text size, night --}}
+        <aside class="absolute right-full top-0 mr-6 hidden h-full w-16 min-[1280px]:block" aria-label="পড়ার সুবিধা" data-md-skip data-read-rail>
+            <div class="sticky top-24 mt-40 flex flex-col items-center gap-3">
+                <div class="relative h-14 w-14" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" class="h-14 w-14 -rotate-90"><circle cx="24" cy="24" r="20" fill="none" stroke="#E8DCCB" stroke-width="4"/><circle data-progress-ring cx="24" cy="24" r="20" fill="none" stroke="#CB1B32" stroke-width="4" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66"/></svg>
+                    <span data-progress-pct class="absolute inset-0 flex items-center justify-center text-xs font-bold"></span>
+                </div>
+                <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}" rel="noopener" target="_blank" class="flex w-14 flex-col items-center gap-0.5 rounded-2xl border-2 border-navy py-1.5 text-xs font-bold hover:bg-peach-light" aria-label="শেয়ার করুন">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span aria-hidden="true">শেয়ার</span></a>
+                @if ($post->isLive())
+                    @auth
+                        <form method="POST" action="{{ route('save', $post) }}" data-toggle="save">@csrf
+                            <button class="flex min-h-12 w-16 items-center justify-center rounded-2xl border-2 border-navy px-1 text-center text-xs font-bold leading-tight {{ $saved ? 'bg-navy text-white' : 'bg-white' }}" aria-pressed="{{ $saved ? 'true' : 'false' }}"
+                                data-on="✓ তালিকায় আছে" data-off="পরে পড়ব">{{ $saved ? '✓ তালিকায় আছে' : 'পরে পড়ব' }}</button>
+                        </form>
+                    @else
+                        <a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH).'#reactions') }}" class="flex min-h-12 w-16 items-center justify-center rounded-2xl border-2 border-navy bg-white px-1 text-center text-xs font-bold leading-tight">পরে পড়ব</a>
+                    @endauth
+                @endif
+                @include('partials.reading-controls', ['where' => 'rail'])
+            </div>
+        </aside>
         <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-sm text-ink2">
             @foreach (array_slice($crumbs, 0, -1) as $c)
                 @if (! $loop->first)<span class="px-1" aria-hidden="true">›</span>@endif
@@ -38,11 +63,18 @@
                 <div class="text-sm text-ink2">{{ \App\Support\Bn::date($post->published_at) }}@if ($post->issue) · <a href="{{ $post->issue->url() }}" class="underline">{{ $post->issue->title }}</a>@endif</div>
             </div>
             {{-- Share early: readers come from WhatsApp (mobile UX review). The phone's own share sheet when there is one. --}}
-            <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}"
+            @include('partials.reading-controls', ['where' => 'top'])
+            <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}"
                 rel="noopener" target="_blank" class="flex h-11 w-11 flex-none items-center justify-center rounded-full border-2 border-navy hover:bg-peach-light" aria-label="শেয়ার করুন" title="শেয়ার করুন">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
             </a>
         </div>
+        {{-- C2: a device set to dark colours is offered the night page; it is never switched on by itself --}}
+        <p data-night-offer hidden class="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-sky-tint p-3 font-semibold">
+            <span class="min-w-0 flex-1">আপনার ফোন বা কম্পিউটার রাতের রঙে আছে। লেখাটি রাতের পাতায় পড়বেন?</span>
+            <button type="button" data-read-night-set="1" class="h-11 rounded-full bg-navy px-4 font-bold text-white">হ্যাঁ, রাতের পাতা</button>
+            <button type="button" data-read-night-set="0" class="h-11 rounded-full px-3 font-bold underline">না</button>
+        </p>
 
         @if ($nav)
             {{-- D281 (owner: "no way to go to the previous episode or start from the 1st"): where you are, and the way back --}}
@@ -116,7 +148,7 @@
 
         @if ($nav)
             {{-- D108: a serial episode ends with "ক্রমশ" (to be continued), as Bengali magazines always printed it --}}
-            <div class="my-10 text-center font-hand text-3xl text-red">{{ $post->isLastEpisode() ? 'সমাপ্ত' : 'ক্রমশ…' }}</div>
+            <div class="hp-mark my-10 text-center font-hand text-3xl text-red">{{ $post->isLastEpisode() ? 'সমাপ্ত' : 'ক্রমশ…' }}</div>
             {{-- D281: previous and next as two equal buttons, the way back to the start, and every episode --}}
             <nav class="mb-8 rounded-2xl border-2 border-navy bg-sky-tint p-4" aria-label="ধারাবাহিকের পর্ব">
                 <div class="text-sm font-bold text-ink2">ধারাবাহিক: <a href="{{ $post->serial->url() }}" class="text-navy underline">{{ $post->serial->title }}</a></div>
@@ -149,7 +181,7 @@
             </nav>
             @include('case-guess', ['serial' => $post->serial])
         @else
-        <div class="my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
+        <div class="hp-mark my-10 text-center font-hand text-3xl text-red">সমাপ্ত</div>
         @endif
         @foreach (\App\Models\Collection::forPost($post->id) as $col)
             {{-- D97 (UX review): right where the piece ends, the next piece of its collection --}}
@@ -165,8 +197,17 @@
 
     @if ($post->isLive() && ! $post->isKids())
         {{-- D173 (owner): a reader picks a line and shares it as a Hatpakha card. The card is drawn in the browser. --}}
-        <button type="button" data-quote-pill hidden class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-navy px-5 font-bold text-white shadow-[3px_3px_0_#CB1B32] md:bottom-6">
-            <span aria-hidden="true" class="font-serif text-2xl leading-none text-peach">❝</span> এই লাইন শেয়ার করুন</button>
+        {{-- C6: next to it, "রাখুন" keeps the line in the reader's library (signed-in readers; guests are asked to sign in) --}}
+        <div class="pointer-events-none fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap-reverse items-center justify-center gap-2 md:bottom-6">
+            <button type="button" data-quote-pill hidden class="pointer-events-auto flex h-12 items-center gap-2 whitespace-nowrap rounded-full bg-navy px-5 font-bold text-white shadow-[3px_3px_0_#CB1B32]">
+                <span aria-hidden="true" class="font-serif text-2xl leading-none text-peach">❝</span> এই লাইন শেয়ার করুন</button>
+            @auth
+                <button type="button" data-keep-pill data-keep-url="{{ route('lines.store', $post) }}" data-kept="✓ রাখা হলো" hidden class="pointer-events-auto flex h-12 items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 font-bold text-navy shadow-[3px_3px_0_#CB1B32]">রাখুন</button>
+            @else
+                <a data-keep-pill hidden href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode(parse_url($post->url(), PHP_URL_PATH)) }}" class="pointer-events-auto flex h-12 items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 text-sm font-bold text-navy shadow-[3px_3px_0_#CB1B32]">সাইন ইন করে লাইন রাখুন</a>
+            @endauth
+        </div>
+        <p data-keep-msg role="status" class="sr-only"></p>
         <div data-quote-dialog hidden class="fixed inset-0 z-[70] flex items-end justify-center bg-navy/60 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quote-dialog-h">
             <div class="max-h-[100dvh] w-full max-w-[460px] overflow-y-auto rounded-t-3xl border-2 border-navy bg-paper p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:rounded-3xl">
                 <div class="flex items-center justify-between gap-3">

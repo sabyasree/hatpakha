@@ -163,6 +163,8 @@ class AccountController extends Controller
             'serials' => \App\Models\Serial::whereIn('id', $db::table('serial_follows')->where('user_id', $user->id)->select('serial_id'))->get(),
             'liked' => Post::published()->with('authors', 'section')->whereIn('id', $likedIds)->get()->sortBy(fn ($p) => $likedIds->search($p->id))->values(),
             'recent' => $user->reading_history ? \App\Support\ReadingHistory::recent($user) : collect(),
+            // C6: lines kept from pieces that are still live, newest first
+            'lines' => \App\Models\SavedLine::with('post.authors')->where('user_id', $user->id)->whereHas('post', fn ($q) => $q->published())->latest('created_at')->latest('id')->limit(100)->get(),
         ]);
     }
 

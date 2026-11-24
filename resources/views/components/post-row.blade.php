@@ -1,5 +1,5 @@
 @props(['post', 'line' => true, 'meta' => null, 'tile' => true])
-{{-- One piece as a compact row (mobile UX review): picture or initial, title, writer, a first line to invite the tap. --}}
+{{-- One piece as a compact row (mobile UX review): picture or the small title card (A7), title, writer, a first line to invite the tap. --}}
 @php
     $p = $post;
     $first = $line ? \Illuminate\Support\Str::limit(trim(html_entity_decode(strip_tags(\App\Support\Excerpt::lines((string) $p->body_html, 1)), ENT_QUOTES | ENT_HTML5)), 90) : null;
@@ -8,7 +8,7 @@
     @if ($p->hasCardImage())
         <picture class="contents">{!! \App\Support\Images::source($p->featured_image_path, '88px') !!}<img src="{{ asset($p->featured_image_path) }}" alt="" loading="lazy" width="88" height="88" class="h-[88px] w-[88px] flex-none rounded-xl border-2 border-navy object-cover"></picture>
     @elseif ($tile)
-        <span class="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-xl border-2 border-navy bg-peach-light font-display text-3xl font-extrabold text-red" aria-hidden="true">{{ mb_substr($p->title, 0, 1) }}</span>
+        <x-title-card :post="$p" size="sm" class="h-[88px] w-[88px] flex-none !aspect-square !rounded-xl border-2 border-navy" />
     @endif
     <span class="min-w-0">
         <span class="block font-serif text-[19px] font-bold leading-snug">{{ $p->title }}</span>
