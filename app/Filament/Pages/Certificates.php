@@ -48,6 +48,11 @@ class Certificates extends Page
         return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\EditorTask::open('certificate_request')->count(), 'টি লেখকের শংসাপত্রের অনুরোধ']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = EditorTask::open('certificate_request')->count()) ? (string) $n : null;

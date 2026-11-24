@@ -52,6 +52,11 @@ class PieceReviewResource extends Resource
     public static function canDeleteAny(): bool { return false; }
 
     /** New feedback the desk has not opened yet. */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\PieceReview::where('status', 'done')->whereNull('desk_read_at')->count(), 'টি যাচাইকারীর মত পড়া বাকি']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = PieceReview::where('status', 'done')->whereNull('desk_read_at')->count();

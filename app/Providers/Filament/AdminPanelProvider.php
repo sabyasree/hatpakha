@@ -77,8 +77,8 @@ class AdminPanelProvider extends PanelProvider
                 'info' => Color::hex('#2DAAE2'),
                 'warning' => Color::hex('#E39A6A'),
                 // Logo palette only (docs/DESIGN.md): no stock green/red in the desk either.
-                'success' => Color::hex('#1A86C2'),
-                'danger' => Color::hex('#B0162B'),
+                'success' => Color::hex('#2DAAE2'),   // D279 (UX audit): palette blue and red only
+                'danger' => Color::hex('#CB1B32'),
                 'gray' => Color::hex('#4D5A63'),   // D279: grey numbers (for information) in the palette's ink
             ])
             ->font('Anek Bangla', url: asset('fonts/fonts.css').'?v=1', provider: LocalFontProvider::class)
@@ -102,7 +102,7 @@ class AdminPanelProvider extends PanelProvider
             // D260 (owner: "these action links take a long row; make them a vertical list"): a row with four or more
             // buttons shows them one under another, so the table keeps its width for the title and the writer.
             ->renderHook(\Filament\View\PanelsRenderHook::STYLES_AFTER, fn () => new \Illuminate\Support\HtmlString(
-                '<style>.fi-ta-row td .fi-ta-actions:has(> :nth-child(4)){flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:.45rem;min-width:11rem}</style>'))
+                '<style>.fi-btn.fi-color-success:not(.fi-outlined),.fi-btn.fi-color-warning:not(.fi-outlined),.fi-btn.fi-color-info:not(.fi-outlined){color:#13212C}.fi-btn.fi-color-success:not(.fi-outlined) .fi-icon,.fi-btn.fi-color-warning:not(.fi-outlined) .fi-icon,.fi-btn.fi-color-info:not(.fi-outlined) .fi-icon{color:#13212C}.fi-ta-row td .fi-ta-actions:has(> :nth-child(4)){flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:.45rem;min-width:11rem}</style>'))
             ->renderHook(\Filament\View\PanelsRenderHook::BODY_END, fn () => app()->getLocale() === 'bn' ? new \Illuminate\Support\HtmlString('<script src="'.asset('js/desk-bn.js').'?v=3"></script>') : '')
             ->authMiddleware([Authenticate::class])
             ->loginRouteSlug('login')

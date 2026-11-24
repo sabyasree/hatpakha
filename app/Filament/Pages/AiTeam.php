@@ -38,6 +38,11 @@ class AiTeam extends Page
         return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\EditorTask::where('type', 'alert')->where('status', 'open')->count(), 'টি সতর্কতা (আজকের কাজেও আছে)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = EditorTask::where('type', 'alert')->where('status', 'open')->count()) ? (string) $n : null;

@@ -126,6 +126,10 @@ final class DeskInbox
     private static function pieceLines(callable $add): void
     {
         $posts = self::waiting()->with(['authors', 'section', 'serial', 'latestAiReview'])->orderBy('submitted_at')->limit(40)->get();
+        if (($more = self::waiting()->count() - $posts->count()) > 0) {
+            $add(['key' => 'p-more', 'group' => 'week', 'tag' => 'piece', 'title' => __('আরও').' '.Bn::num((string) $more).__('টি লেখা অপেক্ষায়'), 'who' => '', 'sub' => '',
+                'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index'), 'button' => __('সব লেখা'), 'when' => now()->addYear()]);
+        }
         foreach ($posts as $p) {
             if ($p->serial_id && $p->serial?->status === 'proposed') {
                 continue;   // a new serial's first episode is one line with its proposal (below)
@@ -167,7 +171,7 @@ final class DeskInbox
             $first = $s->episodes()->whereIn('status', ['pending', 'draft'])->orderBy('episode_no')->first();
             $writer = $s->user_id ? (string) $s->user?->name : __('এআই দল');
             $plan = $s->planned_count ? ' · '.Bn::num((string) $s->planned_count).__(' পর্বের পরিকল্পনা') : '';
-            $add(['key' => 's'.$s->id, 'group' => 'week', 'tag' => 'serial',
+            $add(['key' => 's'.$s->id, 'group' => $s->created_at?->lte(now()->subDays(3)) ? 'today' : 'week', 'tag' => 'serial',
                 'title' => __('নতুন ধারাবাহিকের প্রস্তাব').': ‘'.$s->title.'’', 'who' => $writer,
                 'sub' => trim(($first ? __('পর্ব ১ সহ').' · ' : '').__('এসেছে').' '.self::ago($s->created_at).$plan),
                 'url' => $first ? \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $first]) : \App\Filament\Resources\Serials\SerialResource::getUrl('edit', ['record' => $s]),
@@ -183,11 +187,16 @@ final class DeskInbox
                 'sub' => __('পড়ে নিতে চাইলে “মন্তব্য” পাতায়; নইলে একসঙ্গে প্রকাশ করুন'), 'action' => ['approveAiOkComments'], 'button' => __('একসঙ্গে প্রকাশ'),
                 'url' => \App\Filament\Resources\Comments\CommentResource::getUrl('index'), 'when' => now()]);
         }
-        foreach (Comment::with('post')->where('status', 'pending')->where(fn ($q) => $q->whereNull('ai_verdict')->orWhere('ai_verdict', '!=', 'ok'))->oldest()->limit(10)->get() as $c) {
+        $rest = Comment::where('status', 'pending')->where(fn ($q) => $q->whereNull('ai_verdict')->orWhere('ai_verdict', '!=', 'ok'));
+        if (($more = (clone $rest)->count() - 10) > 0) {
+            $add(['key' => 'c-more', 'group' => 'week', 'tag' => 'comment', 'title' => __('আরও').' '.Bn::num((string) $more).__('টি মন্তব্য অপেক্ষায়'), 'who' => '', 'sub' => '',
+                'url' => \App\Filament\Resources\Comments\CommentResource::getUrl('index'), 'button' => __('সব মন্তব্য'), 'when' => now()->addYear()]);
+        }
+        foreach ($rest->with('post')->oldest()->limit(10)->get() as $c) {
             $add(['key' => 'c'.$c->id, 'group' => 'week', 'tag' => 'comment', 'title' => '“'.\Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', (string) $c->body), 110).'”',
                 'who' => (string) $c->author_name, 'sub' => '‘'.($c->post?->title ?? '').'’ · '.self::ago($c->created_at)
                     .($c->ai_verdict ? ' · '.__('এআই').': '.__(['spam' => 'স্প্যাম মনে হচ্ছে', 'check' => 'দেখে নিন'][$c->ai_verdict] ?? '') : ''),
-                'action' => ['comment', $c->id], 'button' => __('প্রকাশ'), 'when' => $c->created_at]);
+                'action' => ['comment', $c->id, $c->ai_verdict === 'spam'], 'button' => __('প্রকাশ'), 'when' => $c->created_at]);
         }
     }
 
@@ -211,9 +220,12 @@ final class DeskInbox
         }
         foreach (rescue(fn () => \App\Ai\IssueWatch::current()->filter(fn ($i) => \App\Ai\IssueWatch::needs($i)), collect(), false) as $i) {
             $st = \App\Ai\IssueWatch::status($i);
-            $what = ['missing' => __('সম্পাদকীয় এখনও নেই'), 'draft' => __('সম্পাদকীয় খসড়া, প্রকাশ বাকি')][$st['editorial']] ?? __('কিছু কাজ বাকি');
+            $edNeeded = in_array($st['editorial'], ['missing', 'draft'], true);
+            $what = ['missing' => __('সম্পাদকীয় এখনও নেই'), 'draft' => __('সম্পাদকীয় খসড়া, প্রকাশ বাকি')][$st['editorial']] ?? implode(' · ', array_map('__', (array) \App\Ai\IssueWatch::needs($i)));
             $add(['key' => 'iw'.$i->id, 'group' => 'week', 'tag' => 'issue', 'title' => $i->title.': '.$what, 'who' => '',
-                'sub' => $i->published_at ? __('প্রকাশ').' '.self::day($i->published_at) : '', 'url' => \App\Filament\Pages\Editorials::getUrl(), 'button' => __('সম্পাদকীয় দেখুন'), 'when' => $i->updated_at ?? now()]);
+                'sub' => $i->published_at ? __('প্রকাশ').' '.self::day($i->published_at) : '',
+                'url' => $edNeeded ? \App\Filament\Pages\Editorials::getUrl() : \App\Filament\Resources\Issues\IssueResource::getUrl('edit', ['record' => $i]),
+                'button' => $edNeeded ? __('সম্পাদকীয় দেখুন') : __('সংখ্যা দেখুন'), 'when' => $i->updated_at ?? now()]);
         }
         if ($n = \App\Filament\Pages\AiImages::waiting()->count()) {
             $add(['key' => 'img', 'group' => 'week', 'tag' => 'ai', 'title' => Bn::num((string) $n).__('টি লেখার জন্য এআই-এর আঁকা ছবি'), 'who' => '',
@@ -228,9 +240,11 @@ final class DeskInbox
             $add(['key' => 'pr', 'group' => 'week', 'tag' => 'piece', 'title' => __('যাচাইকারীর মত এসেছে').': '.Bn::num((string) $n).__('টি লেখায়'), 'who' => '',
                 'sub' => __('বাইরের পাঠকের মতামত'), 'url' => \App\Filament\Resources\PieceReviews\PieceReviewResource::getUrl('index'), 'button' => __('পড়ুন')]);
         }
-        if ($n = \App\Models\Newsletter::where('status', 'draft')->count()) {
-            $add(['key' => 'nl', 'group' => 'week', 'tag' => 'mail', 'title' => __('চিঠির খসড়া তৈরি').': '.Bn::num((string) $n).__('টি'), 'who' => __('এআই'),
-                'sub' => __('পড়ে পাঠান, বা যেমন আছে রেখে দিন'), 'url' => \App\Filament\Resources\Newsletters\NewsletterResource::getUrl('index'), 'button' => __('দেখুন ও পাঠান')]);
+        $drafts = \App\Models\Newsletter::where('status', 'draft')->latest()->limit(5)->get();
+        if ($drafts->isNotEmpty() && ! EditorTask::open('newsletter')->exists()) {
+            $one = $drafts->count() === 1;
+            $add(['key' => 'nl', 'group' => 'fyi', 'tag' => 'mail', 'title' => $one ? __('চিঠির খসড়া').': '.$drafts->first()->subject : __('চিঠির খসড়া').': '.Bn::num((string) $drafts->count()).__('টি'), 'who' => '',
+                'sub' => __('পাঠাতে চাইলে খুলে “পাঠান” চাপুন'), 'url' => $one ? \App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $drafts->first()]) : \App\Filament\Resources\Newsletters\NewsletterResource::getUrl('index'), 'button' => __('খুলুন')]);
         }
         if ($n = \App\Models\WriterInvite::where('status', 'drafted')->count()) {
             $add(['key' => 'wi', 'group' => 'week', 'tag' => 'mail', 'title' => __('লেখকদের আমন্ত্রণ, পাঠানোর অপেক্ষায়').': '.Bn::num((string) $n).__('টি'), 'who' => __('এআই'),
@@ -244,13 +258,13 @@ final class DeskInbox
             $add(['key' => 'kolom', 'group' => 'week', 'tag' => 'reader', 'title' => __('পাঠকের কলম: এ সপ্তাহের বাছাই তৈরি'), 'who' => __('এআই'),
                 'sub' => __('দেখে প্রকাশ করুন'), 'url' => \App\Filament\Resources\ReaderEntries\ReaderEntryResource::getUrl('index'), 'button' => __('বাছাই দেখুন')]);
         }
-        $kids = collect(rescue(fn () => \App\Support\KidsAlphabet::state(), [], false))->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count();
+        $kids = collect(rescue(fn () => \App\Ai\KidsAlphabet::state(), [], false))->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count();
         if ($kids) {
             $add(['key' => 'kids', 'group' => 'week', 'tag' => 'ai', 'title' => __('ছোটদের বর্ণমালা').': '.Bn::num((string) $kids).__('টি ছবি বা পাঠ দেখার অপেক্ষায়'), 'who' => '',
                 'sub' => '', 'url' => \App\Filament\Pages\KidsCorner::getUrl(), 'button' => __('দেখুন')]);
         }
         if ($n = \App\Support\SiteErrors::unseen()) {
-            $add(['key' => 'err', 'group' => 'today', 'tag' => 'site', 'title' => __('সাইটে নতুন ত্রুটি').': '.Bn::num((string) $n).__('টি (গত সাত দিনে)'), 'who' => '',
+            $add(['key' => 'err', 'group' => $n >= 10 ? 'today' : 'fyi', 'tag' => 'site', 'title' => __('সাইটে নতুন ত্রুটি').': '.Bn::num((string) $n).__('টি (গত সাত দিনে)'), 'who' => '',
                 'sub' => __('কী হয়েছে দেখে নিন; বেশিরভাগ নিজে থেকেই সেরে যায়'), 'url' => \App\Filament\Resources\SiteErrors\SiteErrorResource::getUrl('index'), 'button' => __('দেখুন')]);
         }
         if (rescue(fn () => cache()->remember('desk.health.badge', 600, fn () => \App\Ai\Report::build()['overall'] === \App\Ai\Report::URGENT ? '!' : null), null, false)) {
@@ -262,16 +276,37 @@ final class DeskInbox
     /** The AI editor's other prepared jobs (D48), each with the button it always had. */
     private static function taskLines(callable $add, bool $admin): void
     {
-        $skip = ['question', 'kolom', 'serial'];   // questions and new serials are their own lines; the কলম line is above
-        $tasks = EditorTask::where('status', 'open')->whereNotIn('type', $skip)
+        // their own lines above: questions, new serials, the কলম, the children's alphabet, site health (UX audit)
+        $skip = ['question', 'kolom', 'serial', 'kids_alphabet', 'health'];
+        $tasks = EditorTask::with('subject')->where('status', 'open')->whereNotIn('type', $skip)
             ->when(! $admin, fn ($q) => $q->whereIn('type', ['followup', 'welcome']))->latest()->limit(30)->get();
         $info = ['report', 'health', 'quality', 'insights', 'seo_refresh', 'team_review', 'strategy'];
         foreach ($tasks as $t) {
+            // a job whose piece was already dealt with on its own page leaves (UX audit: lines that never went away)
+            if (self::done($t)) {
+                $t->close();
+
+                continue;
+            }
+            $label = __(self::TASK_LABELS[$t->type] ?? $t->type);
+            $title = str_starts_with((string) $t->title, $label) ? (string) $t->title : $label.': '.$t->title;
             $group = $t->type === 'alert' ? 'today' : (in_array($t->type, $info, true) ? 'fyi' : 'week');
             $add(['key' => 't'.$t->id, 'group' => $group, 'tag' => in_array($t->type, ['serial', 'serial_episode'], true) ? 'serial' : 'ai',
-                'title' => __(self::TASK_LABELS[$t->type] ?? $t->type).': '.$t->title, 'who' => '', 'sub' => self::ago($t->created_at),
+                'title' => $title, 'who' => '', 'sub' => self::ago($t->created_at),
                 'action' => ['task', $t->id], 'button' => '', 'when' => $t->created_at]);
         }
+    }
+
+    /** An AI job whose piece has been published, chosen or thrown away on its own page. */
+    private static function done(EditorTask $t): bool
+    {
+        $p = $t->subject;
+
+        return match ($t->type) {
+            'serial_episode' => $p instanceof Post && ! in_array($p->status, ['draft', 'pending'], true),
+            'rewrite' => $p instanceof Post && $p->rewrite_kind !== 'proposed',
+            default => false,
+        };
     }
 
     private static function fyiLines(callable $add, bool $admin): void
@@ -288,7 +323,7 @@ final class DeskInbox
             return;
         }
         // the AI desk's own drafts (classics, kids' tales…): one line, never one each (UX review)
-        if ($n = Post::where('status', 'draft')->whereNull('submitted_by')->whereNotNull('ai_drafted_at')->whereDoesntHave('section', fn ($q) => $q->where('slug', 'editorial'))->count()) {
+        if ($n = Post::where('status', 'draft')->whereNull('submitted_by')->whereNotNull('ai_drafted_at')->whereNull('serial_id')->whereDoesntHave('section', fn ($q) => $q->where('slug', 'editorial'))->count()) {
             $add(['key' => 'drafts', 'group' => 'fyi', 'tag' => 'ai', 'title' => __('এআই-এর তৈরি খসড়া').': '.Bn::num((string) $n).__('টি'), 'who' => '', 'sub' => __('সময় পেলে পড়ে প্রকাশ করুন'),
                 'url' => \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'drafts']), 'button' => __('দেখুন')]);
         }
@@ -319,7 +354,7 @@ final class DeskInbox
         'report' => 'মাসের হিসাব', 'health' => 'সাইটের স্বাস্থ্য', 'alert' => 'প্রধান সম্পাদকের সতর্কতা', 'quality' => 'এআই সম্পাদকের কাজের মান', 'plagiarism' => 'মৌলিকতা নিয়ে সন্দেহ',
         'insights' => 'পাঠকের হিসাব', 'seo_refresh' => 'এসইও ঘষামাজা', 'collection' => 'সংগ্রাহকের প্রস্তাব', 'collection_add' => 'সংকলনে নতুন লেখা', 'kids_alphabet' => 'ছোটদের বর্ণমালা',
         'serial' => 'নতুন ধারাবাহিক', 'serial_episode' => 'ধারাবাহিকের পর্ব', 'tags' => 'ট্যাগ গোছানো', 'certificates' => 'শংসাপত্র', 'certificate_request' => 'লেখকের শংসাপত্রের অনুরোধ',
-        'team_review' => 'এআই দলের মাসিক পর্যালোচনা', 'strategy' => 'কৌশলবিদের পরিকল্পনা', 'honour' => 'মাসের লেখক', 'audio' => 'লেখকের পাঠ (অডিও)'];
+        'team_review' => 'এআই দলের মাসিক পর্যালোচনা', 'strategy' => 'কৌশলবিদের পরিকল্পনা', 'honour' => 'মাসের লেখক', 'audio' => 'লেখকের পাঠ (অডিও)', 'rewrite' => 'মতামত মেনে নতুন সংস্করণ'];
 
     private static function aiLine(Post $p): ?string
     {

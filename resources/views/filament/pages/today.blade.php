@@ -38,6 +38,7 @@
         .hp-muted { font-size: .875rem; opacity: .72; }
         .hp-day { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem .1rem; border-bottom: 1px dashed rgba(127,127,127,.25); }
         .hp-day:last-child { border-bottom: 0; }
+        @media (max-width: 640px) { .hp-in-counts { position: sticky; top: 4rem; z-index: 5; background: inherit; padding: .3rem 0; } .hp-in-row { padding: .7rem .8rem; } .hp-in-fyi .hp-in-sub { display: none; } .hp-in-act { width: 100%; } }
         .hp-state { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); }
         @media (min-width: 1100px) { .hp-state { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
@@ -80,6 +81,10 @@
                         @elseif ($a[0] === 'approveAiOkComments')
                             <x-filament::button wire:click="approveAiOkComments">{{ $r['button'] }}</x-filament::button>
                             <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('এক এক করে') }}</x-filament::button>
+                        @elseif ($a[0] === 'comment' && ($a[2] ?? false))
+                            {{-- the AI thinks it is spam: that is the main button (UX audit) --}}
+                            <x-filament::button wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
+                            <x-filament::button color="gray" outlined wire:click="approveComment({{ $a[1] }})">{{ __('প্রকাশ') }}</x-filament::button>
                         @elseif ($a[0] === 'comment')
                             <x-filament::button wire:click="approveComment({{ $a[1] }})">{{ __('প্রকাশ') }}</x-filament::button>
                             <x-filament::button color="gray" outlined wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
@@ -100,6 +105,7 @@
                                     @if (in_array($task->type, ['serial', 'serial_episode'], true)) <x-filament::button tag="a" size="sm" icon="heroicon-o-book-open" :href="$task->subject instanceof \App\Models\Serial ? \App\Filament\Resources\Serials\SerialResource::getUrl('edit', ['record' => $task->subject]) : ($task->subject instanceof \App\Models\Post ? \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject]) : \App\Filament\Resources\Serials\SerialResource::getUrl())">{{ __('ধারাবাহিক দেখুন') }}</x-filament::button> @endif
                                     @if ($task->type === 'kids_alphabet') <x-filament::button tag="a" size="sm" icon="heroicon-o-face-smile" :href="\App\Filament\Pages\KidsCorner::getUrl()">{{ __('দেখে অনুমোদন দিন') }}</x-filament::button> @endif
                                     @if ($task->type === 'collection_add' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-plus" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl()">{{ __('দেখে যোগ করুন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'rewrite' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-arrows-right-left" :href="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject])">{{ __('দুই সংস্করণ মিলিয়ে দেখুন') }}</x-filament::button> @endif
                                     @if ($task->type === 'tags') {{ ($this->mergeTagsAction)(['task' => $task->id]) }} @endif
                                     @if ($task->type === 'question') {{ ($this->replyQuestionAction)(['task' => $task->id]) }} @endif
                                     @if (in_array($task->type, ['report', 'health', 'alert', 'quality', 'plagiarism', 'insights', 'seo_refresh', 'team_review', 'strategy'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
@@ -210,9 +216,7 @@
                 @endforeach
             </x-filament::section>
 
-            @if ($t['isAdmin'] && $t['auditOpen'])
-                <div class="hp-card hp-muted">{{ __('পুরনো লেখার অডিট সুপারিশ, সিদ্ধান্ত বাকি:') }} {{ Bn::num($t['auditOpen']) }}{{ __('টি') }}</div>
-            @endif
+
         </div>
     </x-filament::section>
 </x-filament-panels::page>

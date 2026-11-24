@@ -57,6 +57,11 @@ class CollectionResource extends Resource
         return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\Collection::where('status', 'proposed')->count(), 'টি সংকলনের প্রস্তাব অনুমোদনের অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = Collection::where('status', 'proposed')->count()) ? (string) $n : null;

@@ -71,10 +71,6 @@ class EditPost extends EditRecord
             Action::make('view')->label(__('সাইটে দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')->color('gray')
                 ->url(fn (Post $record) => $record->url())->openUrlInNewTab()
                 ->visible(fn (Post $record) => $record->status === 'published'),
-            // D251: how it will look to readers, before it is published (the saved version)
-            Action::make('preview')->label(__('কেমন দেখাবে'))->icon('heroicon-o-eye')->color('gray')
-                ->url(fn (Post $record) => \App\Support\Url::to('/post-preview/'.$record->id))->openUrlInNewTab()
-                ->visible(fn (Post $record) => $record->status !== 'published'),
             ...$review,
             // D208: a strong piece is selected by itself after a day; this keeps it for the owner
             Action::make('stopAuto')->label(fn (Post $record) => __('নিজে থেকে প্রকাশ থামান').' ('.\App\Support\Bn::num($record->auto_publish_at->copy()->timezone('Asia/Kolkata')->format('d/m, H:i')).')')
@@ -84,16 +80,6 @@ class EditPost extends EditRecord
                     \App\Support\Handover::stop($record);
                     \Filament\Notifications\Notification::make()->title(__('এই লেখা নিজে থেকে প্রকাশ হবে না; আপনি দেখে ঠিক করবেন'))->success()->send();
                 }),
-            \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
-            // D171 (owner): every round with the writer, and what changed each time
-            Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
-                ->modalHeading(fn (Post $record) => __('বদলের ইতিহাস').': '.$record->title)
-                ->modalContent(fn (Post $record) => \App\Filament\Support\Safe::view('filament.post-history', ['post' => $record, 'canRevert' => true]))
-                ->modalWidth('4xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন')),
-            Action::make('pieceReviews')->color('gray')->icon('heroicon-o-chat-bubble-bottom-center-text')
-                ->label(fn (Post $record) => __('যাচাইকারীর মতামত').' ('.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', 'done')->count()).'/'.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->count()).')')
-                ->visible(fn (Post $record) => \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->exists())
-                ->url(fn (Post $record) => \App\Filament\Resources\PieceReviews\PieceReviewResource::getUrl('index').'?post='.$record->id),
             // D113 (owner): a real person read this AI-written piece; their feedback rewrites it and/or guides the next ones.
             Action::make('humanFeedback')->label(fn (Post $record) => \App\Ai\Rewriter::isEditorial($record) ? __('আবার লেখান') : __('মানুষের মতামত'))->icon('heroicon-o-chat-bubble-left-right')->color('warning')
                 ->visible(fn (Post $record) => \App\Ai\Rewriter::canRewrite($record))
@@ -228,8 +214,25 @@ class EditPost extends EditRecord
                     \Filament\Notifications\Notification::make()->title(__('প্রচ্ছদ সরানো হয়েছে'))->success()->send();
                 }),
             // Owner, 2026-11-09: a plain red "মুছুন" button, not hidden in a menu.
-            \App\Filament\Support\Deleting::page(static::$resource),
-            ...\App\Filament\Support\Deleting::trashActions(),
+            // D279 (UX audit: nine buttons beside the decision): the decision stays in sight; the rest is under "আরও"
+            ActionGroup::make([
+                // D251: how it will look to readers, before it is published (the saved version)
+                Action::make('preview')->label(__('কেমন দেখাবে'))->icon('heroicon-o-eye')->color('gray')
+                    ->url(fn (Post $record) => \App\Support\Url::to('/post-preview/'.$record->id))->openUrlInNewTab()
+                    ->visible(fn (Post $record) => $record->status !== 'published'),
+                \App\Support\PieceReviews::assignAction(),   // D168: a human reviewer reads it
+                // D171 (owner): every round with the writer, and what changed each time
+                Action::make('history')->label(__('বদলের ইতিহাস'))->icon('heroicon-o-clock')->color('gray')
+                    ->modalHeading(fn (Post $record) => __('বদলের ইতিহাস').': '.$record->title)
+                    ->modalContent(fn (Post $record) => \App\Filament\Support\Safe::view('filament.post-history', ['post' => $record, 'canRevert' => true]))
+                    ->modalWidth('4xl')->modalSubmitAction(false)->modalCancelActionLabel(__('বন্ধ করুন')),
+                Action::make('pieceReviews')->color('gray')->icon('heroicon-o-chat-bubble-bottom-center-text')
+                    ->label(fn (Post $record) => __('যাচাইকারীর মতামত').' ('.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', 'done')->count()).'/'.\App\Support\Bn::num((string) \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->count()).')')
+                    ->visible(fn (Post $record) => \App\Models\PieceReview::where('post_id', $record->id)->where('status', '!=', 'withdrawn')->exists())
+                    ->url(fn (Post $record) => \App\Filament\Resources\PieceReviews\PieceReviewResource::getUrl('index').'?post='.$record->id),
+                \App\Filament\Support\Deleting::page(static::$resource),
+                ...\App\Filament\Support\Deleting::trashActions(),
+            ])->label(__('আরও'))->icon('heroicon-o-ellipsis-horizontal')->button()->color('gray'),
         ];
     }
 

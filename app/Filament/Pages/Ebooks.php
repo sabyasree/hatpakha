@@ -41,6 +41,11 @@ class Ebooks extends Page
         return auth()->user()?->hasRole(Role::Editor) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[rescue(fn () => \App\Ai\IssueWatch::current()->filter(fn ($i) => \App\Ai\IssueWatch::needs($i))->count(), 0, false), 'টি সংখ্যায় কিছু কাজ বাকি (প্রচ্ছদ, সম্পাদকীয় বা ই-বুক)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = rescue(fn () => IssueWatch::current()->filter(fn ($i) => IssueWatch::needs($i))->count(), 0, false);

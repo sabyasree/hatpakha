@@ -44,6 +44,11 @@ class KidsCorner extends Page
         return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[collect(\App\Ai\KidsAlphabet::state())->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count(), 'টি ছবি বা পাঠ দেখার অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $waiting = collect(KidsAlphabet::state())->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count();

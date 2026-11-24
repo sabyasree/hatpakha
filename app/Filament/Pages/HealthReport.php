@@ -41,6 +41,11 @@ class HealthReport extends Page
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[1, ' জরুরি বিষয় আছে, খুলে দেখুন']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return rescue(fn () => cache()->remember('desk.health.badge', 600, fn () => Report::build()['overall'] === Report::URGENT ? '!' : null), null, false);

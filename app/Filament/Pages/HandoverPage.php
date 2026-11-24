@@ -38,6 +38,11 @@ class HandoverPage extends Page
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Support\Handover::needsOwner(), 'টি লেখা আপনার দেখার জন্য রাখা (“লেখা”-তেও আছে)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return rescue(fn () => ($n = Handover::needsOwner()) ? (string) $n : null, null, false);   // pieces kept for the owner

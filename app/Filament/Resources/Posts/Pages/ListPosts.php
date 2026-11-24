@@ -43,7 +43,7 @@ class ListPosts extends ListRecords
             // The desk's own drafts. Writers' unsent drafts are theirs until they press "জমা দিন" (owner, 2026-11-12):
             // they live in their own quiet tab, never in the counts.
             'drafts' => Tab::make(__('খসড়া'))
-                ->badge(fn () => Post::where('status', 'draft')->whereNull('submitted_by')->count() ?: null)
+                ->badge(fn () => Post::where('status', 'draft')->whereNull('submitted_by')->count() ?: null)->badgeColor('gray')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->whereNull('submitted_by')->reorder()->orderByDesc('updated_at')),
             'writer_drafts' => Tab::make(__('লেখকের অসমাপ্ত খসড়া'))
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'draft')->whereNotNull('submitted_by')->reorder()->orderByDesc('updated_at')),

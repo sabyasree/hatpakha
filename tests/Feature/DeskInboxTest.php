@@ -89,4 +89,35 @@ class DeskInboxTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('desk'));
         Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('আজ কিছু বাকি নেই।');
     }
+
+    /** UX audit: an AI job whose piece was published on its own page leaves; titles never say the same thing twice. */
+    public function test_finished_jobs_leave_and_titles_are_not_doubled(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        $serial = Serial::create(['title' => 'লাল কাচ', 'status' => 'active', 'slug' => 'lal-kach', 'day' => 6]);
+        $ep = $this->makePost(['slug' => 'lal-4', 'title' => 'লাল কাচ (পর্ব ৪)', 'status' => 'published', 'serial_id' => $serial->id, 'episode_no' => 4, 'ai_drafted_at' => now()]);
+        $done = \App\Models\EditorTask::propose('serial_episode', 'ধারাবাহিকের নতুন পর্ব: লাল কাচ (পর্ব ৪)', [], $ep);
+        $tags = \App\Models\EditorTask::propose('tags', 'ট্যাগ গোছানো: ৫টি জোড়া');
+        $lines = DeskInbox::items()->keyBy('key');
+        $this->assertArrayNotHasKey('t'.$done->id, $lines->all());
+        $this->assertSame('done', $done->fresh()->status, 'Published on its page: the job is closed');
+        $this->assertSame('ট্যাগ গোছানো: ৫টি জোড়া', $lines['t'.$tags->id]['title']);
+    }
+
+    /** Every menu number and its tooltip can be worked out (a wrong class name once broke the whole desk). */
+    public function test_every_menu_number_and_tooltip_runs(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => Role::Admin]));
+        Filament::setCurrentPanel(Filament::getPanel('desk'));
+        $n = 0;
+        foreach (array_merge(Filament::getCurrentPanel()->getResources(), Filament::getCurrentPanel()->getPages()) as $class) {
+            foreach (['getNavigationBadge', 'getNavigationBadgeTooltip', 'getNavigationBadgeColor'] as $m) {
+                if (method_exists($class, $m)) {
+                    $class::$m();
+                    $n++;
+                }
+            }
+        }
+        $this->assertGreaterThan(40, $n);
+    }
 }

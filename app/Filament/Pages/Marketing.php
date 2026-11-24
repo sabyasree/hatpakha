@@ -94,6 +94,11 @@ class Marketing extends Page
         return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\SocialPost::where('status', 'ready')->where('kind', '!=', 'weekly')->count(), 'টি পোস্ট তৈরি, দেখে নিতে পারেন']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = SocialPost::where('status', 'ready')->where('kind', '!=', 'weekly')->count()) ? (string) $n : null;

@@ -50,6 +50,11 @@ class RelaunchLetters extends Page
         return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count(), 'টি পুরনো লেখা, লেখক রাজি; পড়ে সিদ্ধান্ত দিন']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $yes = Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count();

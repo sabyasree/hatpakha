@@ -53,6 +53,11 @@ class WriterInviteResource extends Resource
         return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\WriterInvite::where('status', 'drafted')->count(), 'টি আমন্ত্রণ পাঠানোর অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = WriterInvite::where('status', 'drafted')->count()) ? (string) $n : null;

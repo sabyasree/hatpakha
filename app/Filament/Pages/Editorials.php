@@ -42,6 +42,11 @@ class Editorials extends Page
     }
 
     /** This month's or next month's issue without a published editorial. */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[rescue(fn () => \App\Ai\IssueWatch::current()->filter(fn ($i) => ! $i->liveEditorial())->count(), 0, false), 'টি সংখ্যার সম্পাদকীয় এখনও প্রকাশ হয়নি']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = rescue(fn () => \App\Ai\IssueWatch::current()->filter(fn ($i) => ! $i->liveEditorial())->count(), 0, false);

@@ -48,6 +48,11 @@ class NewsletterResource extends Resource
         return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\Newsletter::where('status', 'draft')->count(), 'টি চিঠির খসড়া']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return ($n = Newsletter::where('status', 'draft')->count()) ? (string) $n : null;
