@@ -128,14 +128,6 @@
 /* Home stories shelf on phones: only the first (unread) taped card; the rest are in the list below (owner, 2026-11-08). */
 @media (max-width: 639px) { .hp-first-only > [data-pid]:not([data-first]) { display: none; } }
 
-/* C1: a returning reader's phone skips the big poster: a slim band, then today's pieces (the flag is set in this
-   browser only, by app.js, after the first visit; the page itself is the same for everyone, so it can be cached). */
-.hp-back-only { display: none; }
-@media (max-width: 767px) {
-    html[data-hp-back] .hp-back-only { display: block; }
-    html[data-hp-back] .hp-first-visit { display: none; }
-}
-
 /* C2: the reader's text size (3 steps) for the reading text of a piece */
 html[data-read-size="1"] [data-reading] .prose-bn { font-size: 1.38rem; }
 html[data-read-size="1"] [data-reading] .poem-bn { font-size: 1.5rem; }

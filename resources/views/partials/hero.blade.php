@@ -46,24 +46,31 @@
 </style>
 <section class="hp relative overflow-hidden border-b-2 border-navy" data-hero style="background: linear-gradient(160deg,#7CCBEE 0%,#2DAAE2 45%,#1A86C2 100%)">
     <div class="halftone absolute inset-0" aria-hidden="true"></div>
-    <div class="relative mx-auto max-w-[1320px] px-5 pt-5 md:pt-14 xl:min-h-[640px]">
+    {{-- D288 (owner, UX review): on a phone the poster is a compact band for everyone (headline and two buttons, the fan
+         at the side); a computer keeps the whole poster. The same page for every visitor. --}}
+    <x-fan class="absolute -bottom-4 -right-10 w-44 opacity-70 md:hidden" :hub="null" />
+    <div class="relative mx-auto max-w-[1320px] px-5 pb-5 pt-4 md:pb-0 md:pt-14 xl:min-h-[640px]">
         <div class="relative z-10 max-w-[680px]">
-            <span class="inline-block -rotate-3 rounded-full border-2 border-navy bg-paper px-4 pt-1 font-hand text-2xl shadow-[3px_3px_0_#13212C]">অনলাইন সাহিত্য পত্রিকা</span>
-            <div class="hp-heads mt-5 font-display text-[clamp(3rem,15.4vw,3.75rem)] font-extrabold leading-[.9] [word-spacing:.1em] sm:text-7xl md:text-[136px] md:[word-spacing:normal]" style="font-stretch: 75%">
+            <span class="hidden -rotate-3 rounded-full border-2 border-navy bg-paper px-4 pt-1 font-hand text-2xl shadow-[3px_3px_0_#13212C] md:inline-block">অনলাইন সাহিত্য পত্রিকা</span>
+            <div class="hp-heads font-display text-[clamp(2.1rem,10vw,2.6rem)] font-extrabold md:mt-5 leading-[.9] [word-spacing:.1em] sm:text-7xl md:text-[136px] md:[word-spacing:normal]" style="font-stretch: 75%">
                 @foreach ($heads as $i => [$a, $b])
                     @if ($i === 0)<h1><b class="l1" style="--s:0">{{ $a }}</b> <b class="l2" style="--s:0">{{ $b }}</b></h1>
                     @else<p aria-hidden="true"><b class="l1" style="--s:{{ $i }}">{{ $a }}</b> <b class="l2" style="--s:{{ $i }}">{{ $b }}</b></p>
                     @endif
                 @endforeach
             </div>
-            <p class="mt-5 max-w-[480px] font-serif text-base sm:text-lg font-medium leading-relaxed">গল্প, কবিতা, ধারাবাহিক আর প্রতিদিন একটি নতুন ধাঁধা। প্রতি মাসে নতুন সংখ্যা। পড়ুন, নিজের লেখাও পাঠান।</p>
-            <div class="mt-6 flex flex-wrap gap-3">
+            <p class="mt-5 hidden max-w-[480px] font-serif text-base font-medium leading-relaxed sm:text-lg md:block">গল্প, কবিতা, ধারাবাহিক আর প্রতিদিন একটি নতুন ধাঁধা। প্রতি মাসে নতুন সংখ্যা। পড়ুন, নিজের লেখাও পাঠান।</p>
+            <div class="mt-6 hidden flex-wrap gap-3 md:flex">
                 <a href="{{ \App\Support\Url::to('/category/poetry') }}" class="flex h-14 items-center rounded-full bg-navy px-6 text-lg font-bold text-paper shadow-[4px_4px_0_#CB1B32]">পড়া শুরু করুন</a>
                 <a href="{{ \App\Support\Url::to('/submit') }}" class="flex h-14 items-center rounded-full border-2 border-navy bg-paper px-6 text-lg font-bold">লেখা পাঠান</a>
             </div>
+            <div class="mt-3 flex flex-wrap gap-2 md:hidden">
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white">লেখা পাঠান</a>
+                <a href="{{ ($hpIssue = \App\Models\Issue::latestLive()) ? $hpIssue->url() : \App\Support\Url::to('/sonkha') }}" class="flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">এই মাসের সংখ্যা</a>
+            </div>
             <p class="mt-6 hidden text-base font-semibold md:block xl:pb-10"><b>{{ \App\Support\Bn::num($counts['writers']) }} জন লেখক</b>, <b>{{ \App\Support\Bn::num($counts['pieces']) }}টি লেখা</b>। সবাই একদিন আপনার মতোই পাঠক ছিলেন।</p>
         </div>
-        <svg class="hp-scene pointer-events-none relative mx-auto mt-3 block w-full max-w-[300px] sm:max-w-[460px] xl:absolute xl:bottom-0 xl:right-0 xl:mt-0 xl:w-[min(46vw,690px)] xl:max-w-none" viewBox="130 80 690 580" aria-hidden="true">
+        <svg class="hp-scene pointer-events-none relative mx-auto mt-3 hidden w-full md:block max-w-[300px] sm:max-w-[460px] xl:absolute xl:bottom-0 xl:right-0 xl:mt-0 xl:w-[min(46vw,690px)] xl:max-w-none" viewBox="130 80 690 580" aria-hidden="true">
 <g class="book"><polygon points="152,652 480,640 808,652 808,662 152,662" fill="#CB1B32" stroke="#13212C" stroke-width="2" stroke-linejoin="round"/><polygon points="160,642 480,630 800,642 800,652 480,640 160,652" fill="#FBEBD8" stroke="#13212C" stroke-width="2" stroke-linejoin="round"/><polygon points="176,566 480,552 480,630 160,642" fill="#FFFBF4" stroke="#13212C" stroke-width="2" stroke-linejoin="round"/><path d="M200 584 L440 574" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M200 599 L440 589" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M200 614 L440 604" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M200 629 L440 619" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><polygon points="480,552 784,566 800,642 480,630" fill="#FFFBF4" stroke="#13212C" stroke-width="2" stroke-linejoin="round"/><path d="M520 574 L760 584" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M520 589 L760 599" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M520 604 L760 614" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M520 619 L760 629" stroke="#EFC08D" stroke-width="3" stroke-linecap="round"/><path d="M480 552V630" stroke="#13212C" stroke-width="2"/><polygon points="474,630 486,630 486,656 480,650 474,656" fill="#CB1B32" stroke="#13212C" stroke-width="2" stroke-linejoin="round"/></g>
 <g class="sc sc0" style="--s:0">
 <g class="pop" style="--s:0;--d:0">

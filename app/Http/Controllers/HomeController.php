@@ -113,7 +113,7 @@ class HomeController extends Controller
             'issueEditorial' => $issue?->liveEditorial(),
             'issueCount' => $issue ? $issue->posts()->published()->count() : 0,
             'kidsPosts' => $kids ? $kids->posts()->published()->with('authors')->latest('published_at')->limit(2)->get() : collect(),
-            // C1: a returning reader's phone shows a slim band and then the newest pieces (the poster only on a first visit)
+            // D288: the newest pieces; four of them (not today's piece) in "আরও আজকের লেখা" under today's piece
             'newest' => Post::published()->with(['authors', 'section'])->whereDoesntHave('section', fn ($q) => $q->where('slug', \App\Models\Section::KIDS))
                 ->latest('published_at')->limit(6)->get(),
             // C1: "যেখানে থেমেছিলেন" for a signed-in reader who keeps a reading history (their pages are never shared, D65)

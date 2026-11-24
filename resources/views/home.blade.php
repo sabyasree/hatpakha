@@ -14,29 +14,8 @@
         </section>
     @endif
 
-    {{-- C1: the poster on a first visit; a returning reader's phone (flag in this browser, set by app.js) gets a slim band and today's pieces --}}
-    <div class="hp-first-visit">@include('partials.hero')</div>
-    <section class="hp-back-only border-b-2 border-navy bg-paper" data-home-slim aria-labelledby="slim-h">
-        <div class="relative overflow-hidden px-5 py-4" style="background: linear-gradient(160deg,#7CCBEE 0%,#2DAAE2 45%,#1A86C2 100%)">
-            <div class="halftone absolute inset-0" aria-hidden="true"></div>
-            <x-fan class="absolute -bottom-2 -right-8 w-40 opacity-40" :hub="null" />
-            <p class="relative text-sm font-bold">হাতপাখা · অনলাইন সাহিত্য পত্রিকা · ২০১২ থেকে</p>
-            <p class="relative mt-1 font-display text-[2.1rem] font-extrabold leading-[1] [word-spacing:.1em]" style="font-stretch: 75%">বাংলা সাহিত্যের <span class="text-paper [-webkit-text-stroke:3px_#13212C] [paint-order:stroke_fill]">নতুন হাওয়া</span></p>
-        </div>
-        @if ($newest->isNotEmpty())
-            <div class="px-5 pb-2 pt-4">
-                <h2 id="slim-h" class="font-display text-2xl font-extrabold">আজকের লেখা</h2>
-                <ul class="divide-y divide-rule" data-rotate="5">
-                    @if ($poemOfDay)<li data-pid="{{ $poemOfDay->id }}"><x-post-row :post="$poemOfDay" :meta="'আজকের '.$poemOfDay->kindLabel().' · '.($poemOfDay->authors->first()?->publicName() ?? '')" /></li>@endif
-                    @foreach ($newest->reject(fn ($p) => $p->id === $poemOfDay?->id) as $p)
-                        <li data-pid="{{ $p->id }}"><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->section ? ' · '.$p->section->name_bn : '')" /></li>
-                    @endforeach
-                </ul>
-            </div>
-        @else
-            <span id="slim-h" class="sr-only">হাতপাখা</span>
-        @endif
-    </section>
+    {{-- D288: one home page for everyone; on a phone the poster is a compact band (partials.hero) --}}
+    @include('partials.hero')
 
     @if ($issue)
     {{-- The month's issue, as a magazine on the stand: cover, name, editorial, and "পত্রিকা খুলুন" (owner, 2026-11-12) --}}
@@ -146,6 +125,20 @@
             </div>
         </div>
     </section>
+    @endif
+
+    @php
+        $moreToday = $newest->reject(fn ($p) => $p->id === $poemOfDay?->id)->take(4);
+    @endphp
+    @if ($moreToday->count() >= 2)
+        {{-- D288 (owner, UX review): four more new pieces under today's piece, each once, in a 2×2 grid (4 across on a computer) --}}
+        <section class="mx-auto max-w-[1320px] px-4 py-8 sm:px-5" aria-labelledby="more-today-h">
+            <h2 id="more-today-h" class="font-display text-3xl font-extrabold">আরও আজকের লেখা</h2>
+            <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+                @foreach ($moreToday as $p)<x-post-card-mini :post="$p" />@endforeach
+            </div>
+            <a href="{{ \App\Support\Url::to('/archive') }}" class="mt-3 inline-flex min-h-11 items-center font-bold underline">সব নতুন লেখা →</a>
+        </section>
     @endif
 
     @if ($serials->isNotEmpty())

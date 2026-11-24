@@ -26,22 +26,23 @@ class ReaderExperienceTest extends TestCase
 
     // ---- C1 ----
 
-    public function test_the_home_page_is_the_same_for_every_guest_and_a_returning_phone_gets_the_slim_band(): void
+    /** D288 (owner, UX review): one home page for everyone; four more new pieces under today's piece, each shown once. */
+    public function test_the_home_page_is_the_same_for_everyone_with_more_new_pieces_under_todays(): void
     {
-        $this->makePost(['slug' => 'notun', 'title' => 'আজকের নতুন লেখা', 'published_at' => now()->subHour()]);
+        foreach (range(1, 6) as $n) {
+            $this->makePost(['slug' => 'notun-'.$n, 'title' => 'নতুন লেখা '.$n, 'published_at' => now()->subHours($n)]);
+        }
         $res = $this->get('/')->assertOk();
         $html = $res->getContent();
-        // one page for everyone (Cloudflare may share it, D65): the choice is made in the browser, from a flag only it keeps
         $this->assertStringContainsString('public', (string) $res->headers->get('Cache-Control'));
-        $this->assertStringContainsString('class="hp-first-visit"', $html);
-        $this->assertStringContainsString('data-home-slim', $html);
-        $this->assertStringContainsString('আজকের লেখা', $html);
-        $slim = substr($html, strpos($html, 'data-home-slim'));
-        $this->assertStringContainsString('আজকের নতুন লেখা', substr($slim, 0, strpos($slim, '</section>')));
-        $this->assertSame(1, substr_count($html, '<h1'), 'The slim band does not add a second main heading');
-        // the flag is read before the page draws, by a script that carries the CSP nonce
-        $this->assertMatchesRegularExpression('/<script nonce="[^"]+">[^<]*hp\.back[^<]*<\/script>/', $html);
-        $this->assertStringContainsString('html[data-hp-back] .hp-first-visit', file_get_contents(resource_path('css/app.css')));
+        $this->assertStringNotContainsString('data-home-slim', $html);
+        $this->assertStringNotContainsString('hp.back', $html);
+        $this->assertSame(1, substr_count($html, '<h1'));
+        $this->assertStringContainsString('আরও আজকের লেখা', $html);
+        $grid = substr($html, strpos($html, 'id="more-today-h"'));
+        $grid = substr($grid, 0, strpos($grid, '</section>'));
+        $this->assertSame(4, substr_count($grid, 'min-h-[10.5rem]'), 'Four cards');
+        $this->assertStringContainsString('এই মাসের সংখ্যা', $html, 'The phone band offers this month\'s issue');
         $this->assertStringNotContainsString('যেখানে থেমেছিলেন', $html);
     }
 

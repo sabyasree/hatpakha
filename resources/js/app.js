@@ -851,9 +851,6 @@ const hpOpenEntry = () => {
 hpOpenEntry();
 window.addEventListener('hashchange', hpOpenEntry);
 
-// C1: the home page has been seen in this browser: from the next visit a phone shows the slim band instead of the poster
-// (read before the page draws by the layout's first script; nothing leaves the browser).
-if (document.querySelector('[data-home-slim]')) hpStore.set('hp.back', '1');
 
 // C2/C3: text size (three steps) and the night page on a piece, from the "অ অ" panel or the side rail. The choice is kept
 // in this browser; the layout's first script applies it before the page draws. Night is only offered, never switched on.
