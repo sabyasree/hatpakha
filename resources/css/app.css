@@ -127,3 +127,55 @@
 
 /* Home stories shelf on phones: only the first (unread) taped card; the rest are in the list below (owner, 2026-11-08). */
 @media (max-width: 639px) { .hp-first-only > [data-pid]:not([data-first]) { display: none; } }
+
+/* C1: a returning reader's phone skips the big poster: a slim band, then today's pieces (the flag is set in this
+   browser only, by app.js, after the first visit; the page itself is the same for everyone, so it can be cached). */
+.hp-back-only { display: none; }
+@media (max-width: 767px) {
+    html[data-hp-back] .hp-back-only { display: block; }
+    html[data-hp-back] .hp-first-visit { display: none; }
+}
+
+/* C2: the reader's text size (3 steps) for the reading text of a piece */
+html[data-read-size="1"] [data-reading] .prose-bn { font-size: 1.38rem; }
+html[data-read-size="1"] [data-reading] .poem-bn { font-size: 1.5rem; }
+html[data-read-size="2"] [data-reading] .prose-bn { font-size: 1.58rem; line-height: 1.9; }
+html[data-read-size="2"] [data-reading] .poem-bn { font-size: 1.72rem; }
+@media (max-width: 480px) {
+    html[data-read-size="1"] [data-reading] .prose-bn { font-size: 1.28rem; }
+    html[data-read-size="1"] [data-reading] .poem-bn { font-size: 1.34rem; }
+    html[data-read-size="2"] [data-reading] .prose-bn { font-size: 1.46rem; }
+    html[data-read-size="2"] [data-reading] .poem-bn { font-size: 1.52rem; }
+}
+
+/* C2: the night page ("রাত"): navy page, paper text, peach links. Inside the logo palette: white/paper text on navy only.
+   Text placed straight on the page turns light; cards (white, paper, peach, sky) keep their own dark text. */
+html[data-read-night]:has([data-reading]), html[data-read-night] body:has([data-reading]) { background-color: var(--color-navy); }
+html[data-read-night] [data-reading] {
+    color: var(--color-paper);
+    --color-ink2: #FBEBD8;          /* secondary text on the page: peach-light */
+    --color-sky-night: #EFC08D;     /* links on the page: peach */
+    --hp-line: #FFFBF4;
+}
+/* In the base layer, so a card's own text colour (a red outline button, white on a filled one) still wins over it. */
+@layer base {
+    html[data-read-night] [data-reading] :is(.bg-white, .bg-paper, .bg-peach-light, .bg-peach, .bg-sky-tint, .bg-pink),
+    html[data-read-night] [data-reading] .hover\:bg-peach-light:hover {
+        color: var(--color-navy);
+        --color-ink2: #4D5A63;
+        --color-sky-night: #12304A;
+        --hp-line: #13212C;
+    }
+}
+html[data-read-night] [data-reading] .border-navy { border-color: var(--hp-line); }
+html[data-read-night] [data-reading] .bg-navy { box-shadow: inset 0 0 0 2px rgba(255, 251, 244, .35); }
+html[data-read-night] [data-reading] :is(.prose-bn, .poem-bn) a { color: var(--color-peach); }
+html[data-read-night] [data-reading] .prose-bn blockquote { color: var(--color-peach-light); border-left-color: var(--color-peach); }
+html[data-read-night] [data-reading] .prose-bn h4 { color: var(--color-peach); }
+html[data-read-night] [data-reading] .prose-bn th { color: var(--color-navy); }
+html[data-read-night] [data-reading] .hp-mark { color: var(--color-peach); }
+html[data-read-night] [data-reading] :is([data-read-size-set], [data-read-night-set="toggle"])[aria-pressed="true"] { background-color: var(--color-peach); color: var(--color-navy); }
+html[data-read-night] [data-reading] .hp-on-page.text-red { color: var(--color-peach); }
+
+/* C3: the progress ring in the desktop rail */
+[data-progress-ring] { transition: stroke-dashoffset .1s linear; }

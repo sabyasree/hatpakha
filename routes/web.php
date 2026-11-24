@@ -206,6 +206,13 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class, 'thr
     Route::post('/follow/{author}', [\App\Http\Controllers\ReaderController::class, 'follow'])->whereNumber('author')->name('follow');
 });
 
+// ---- C6 (research 2026-11): saved lines. A signed-in reader keeps a line from a piece; removes it from their library. ----
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->group(function () {
+    Route::post('/line/{post}', [\App\Http\Controllers\SavedLineController::class, 'store'])->whereNumber('post')->middleware('throttle:20,1')->name('lines.store');
+    Route::post('/account/lines/{line}/remove', [\App\Http\Controllers\SavedLineController::class, 'destroy'])->whereNumber('line')->middleware('throttle:30,1')->name('lines.destroy');
+});
+// ---- end C6 ----
+
 // D108: one-click stop for a serial's new-episode e-mails, no sign-in needed.
 Route::match(['get', 'post'], '/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Serial $serial, \App\Models\User $user) {
     \Illuminate\Support\Facades\DB::table('serial_follows')->where(['serial_id' => $serial->id, 'user_id' => $user->id])->delete();

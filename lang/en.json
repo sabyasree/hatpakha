@@ -3137,5 +3137,9 @@
     "সামনের সংখ্যা, প্রতিযোগিতা আর সম্পাদক যা খুঁজছেন": "Coming issues, contests and what the editor is looking for",
     "সেভ হয়েছে। কোনো লেখা বাছা নেই।": "Saved. No piece is chosen.",
     "সেভ হয়েছে। লেখক-পাতায় এই লেখাগুলো সবার আগে দেখা যাবে।": "Saved. These pieces are now shown first on your writer page.",
-    "সম্পাদকের কাছে পৌঁছেছে": "With the editor"
+    "সম্পাদকের কাছে পৌঁছেছে": "With the editor",
+    "রাখা লাইন": "Saved lines",
+    "লেখা পড়তে পড়তে কোনো লাইন বেছে নিয়ে “রাখুন” টিপলে লাইনটি এখানে থাকবে।": "While reading, select a line and tap “রাখুন” (keep): it will be kept here.",
+    "লাইনটি সরান: :title": "Remove the line: :title",
+    "লাইনটি সরানো হল।": "The line was removed."
 }

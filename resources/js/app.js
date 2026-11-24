@@ -165,7 +165,13 @@ document.querySelectorAll('form[data-toggle]').forEach((form) => {
             } else {
                 btn.textContent = d.on ? btn.dataset.on : btn.dataset.off;
                 if (kind === 'save') {
-                    btn.classList.toggle('bg-navy', d.on); btn.classList.toggle('text-white', d.on);
+                    // C3: the side rail and the buttons under the piece say the same
+                    [...document.querySelectorAll('form[data-toggle="save"]')].filter((f) => f.action === form.action).forEach((f) => {
+                        const b = f.querySelector('button');
+                        b.textContent = d.on ? b.dataset.on : b.dataset.off;
+                        b.setAttribute('aria-pressed', d.on ? 'true' : 'false');
+                        b.classList.toggle('bg-navy', d.on); b.classList.toggle('text-white', d.on); b.classList.toggle('bg-white', !d.on);
+                    });
                     hpOffline(d.on ? { type: 'keep', urls: [location.pathname] } : { type: 'drop', url: location.pathname });   // "পরে পড়ব" offline
                 }
                 if (kind === 'follow') {
@@ -625,8 +631,29 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
             if (!dialog.hidden) return;
             const p = picked();
             pill.hidden = !p;
+            if (keep) { keep.hidden = !p || p === 'long'; if (!keep.hidden && keep.dataset.label) keep.textContent = keep.dataset.label; }
             if (p === 'long') pill.textContent = 'একটু ছোট অংশ বেছে নিন (২-৪ লাইন)'; else pill.innerHTML = label;
         }, 250);
+    });
+
+    // C6: "রাখুন" keeps the chosen line in the reader's library (signed-in readers; for guests the pill is a sign-in link)
+    const keep = document.querySelector('button[data-keep-pill]') || document.querySelector('a[data-keep-pill]');
+    const keepMsg = document.querySelector('[data-keep-msg]');
+    keep?.tagName === 'BUTTON' && keep.addEventListener('click', async () => {
+        const line = picked();
+        if (!line || line === 'long' || keep.disabled) return;
+        keep.dataset.label ||= keep.textContent;
+        keep.disabled = true;
+        const say = (t) => { keep.textContent = t; if (keepMsg) keepMsg.textContent = t; };
+        try {
+            const body = new FormData();
+            body.append('text', line);
+            const tok = (await hpFreshToken()) || '';
+            const r = await fetch(keep.dataset.keepUrl, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': tok }, body });
+            const j = await r.json().catch(() => ({}));
+            say(r.ok ? keep.dataset.kept : (j.message || 'রাখা গেল না, আবার চেষ্টা করুন'));
+        } catch (e) { say('রাখা গেল না, আবার চেষ্টা করুন'); }
+        setTimeout(() => { keep.disabled = false; keep.textContent = keep.dataset.label; keep.hidden = !picked() || picked() === 'long'; }, 2500);
     });
 
     const wrap = (g, text, width) => {
@@ -823,3 +850,79 @@ const hpOpenEntry = () => {
 };
 hpOpenEntry();
 window.addEventListener('hashchange', hpOpenEntry);
+
+// C1: the home page has been seen in this browser: from the next visit a phone shows the slim band instead of the poster
+// (read before the page draws by the layout's first script; nothing leaves the browser).
+if (document.querySelector('[data-home-slim]')) hpStore.set('hp.back', '1');
+
+// C2/C3: text size (three steps) and the night page on a piece, from the "অ অ" panel or the side rail. The choice is kept
+// in this browser; the layout's first script applies it before the page draws. Night is only offered, never switched on.
+(() => {
+    if (!document.querySelector('[data-reading]')) return;
+    const root = document.documentElement;
+    const theme = document.querySelector('meta[name="theme-color"]');
+    const sync = () => {
+        const size = root.getAttribute('data-read-size') || '0';
+        const night = root.hasAttribute('data-read-night');
+        document.querySelectorAll('[data-read-size-set]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.readSizeSet === size ? 'true' : 'false'));
+        document.querySelectorAll('[data-read-night-set="toggle"]').forEach((b) => b.setAttribute('aria-pressed', night ? 'true' : 'false'));
+        if (theme) theme.content = night ? '#13212C' : '#FFFBF4';
+    };
+    // Keep the reader's place when the text grows or shrinks: the paragraph at the top of the screen stays there.
+    const keepPlace = (change) => {
+        const paras = [...document.querySelectorAll('[data-reading] :is(.prose-bn, .poem-bn) > *')];
+        const at = paras.find((p) => p.getBoundingClientRect().bottom > 80);
+        const before = at ? at.getBoundingClientRect().top : 0;
+        change();
+        if (at && before > -innerHeight && before < innerHeight) scrollBy(0, at.getBoundingClientRect().top - before);
+    };
+    const panel = document.getElementById('read-panel');
+    const opener = document.querySelector('[data-read-open]');
+    const openPanel = (open) => { if (!panel || !opener) return; panel.hidden = !open; opener.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    opener?.addEventListener('click', () => openPanel(panel.hidden));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel && !panel.hidden) { openPanel(false); opener.focus(); } });
+    document.addEventListener('click', (e) => {
+        if (panel && !panel.hidden && !e.target.closest('[data-read-controls]')) openPanel(false);
+        const s = e.target.closest('[data-read-size-set]');
+        if (s) {
+            const v = s.dataset.readSizeSet;
+            keepPlace(() => { if (v === '0') root.removeAttribute('data-read-size'); else root.setAttribute('data-read-size', v); });
+            hpStore.set('hp.size', v);
+            sync();
+            return;
+        }
+        const n = e.target.closest('[data-read-night-set]');
+        if (n) {
+            const want = n.dataset.readNightSet;
+            const on = want === 'toggle' ? !root.hasAttribute('data-read-night') : want === '1';
+            root.toggleAttribute('data-read-night', on);
+            hpStore.set('hp.night', on ? '1' : '0');
+            document.querySelectorAll('[data-night-offer]').forEach((o) => { o.hidden = true; });
+            sync();
+        }
+    });
+    // A device set to dark colours: offer the night page (until the reader answers either way)
+    const offer = document.querySelector('[data-night-offer]');
+    if (offer && hpStore.get('hp.night') === null && window.matchMedia?.('(prefers-color-scheme: dark)').matches) offer.hidden = false;
+    sync();
+
+    // C3: the progress ring in the side rail (the same measure as the thin bar at the top)
+    const ring = document.querySelector('[data-progress-ring]');
+    const pct = document.querySelector('[data-progress-pct]');
+    const art = document.querySelector('article[data-reading]');
+    if (ring && art) {
+        const C = 125.66;
+        const bn = new Intl.NumberFormat('bn-BD');
+        let busy = false;
+        const draw = () => {
+            busy = false;
+            const r = art.getBoundingClientRect();
+            const total = r.height - innerHeight;
+            const done = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
+            ring.style.strokeDashoffset = String(C * (1 - done));
+            if (pct) pct.textContent = bn.format(Math.round(done * 100)) + '%';
+        };
+        addEventListener('scroll', () => { if (!busy) { busy = true; requestAnimationFrame(draw); } }, { passive: true });
+        draw();
+    }
+})();

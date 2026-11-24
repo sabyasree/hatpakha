@@ -19,6 +19,8 @@
     <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
+    {{-- C1/C2: this reader's own text size and night page, and "has seen the home page before", set before the page draws (no flash). Kept in this browser only. --}}
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">(function(){try{var d=document.documentElement,s=localStorage,z=s.getItem('hp.size');if(z==='1'||z==='2')d.setAttribute('data-read-size',z);if(s.getItem('hp.night')==='1')d.setAttribute('data-read-night','');if(s.getItem('hp.back'))d.setAttribute('data-hp-back','');}catch(e){}})();</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @if ($gaId = \App\Support\Analytics::id())
         {{-- D119: Google Analytics 4. Only the page's path (plus utm_ campaign labels) is sent, never the rest of the query: signed links stay private; no Google signals or ad
