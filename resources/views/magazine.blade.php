@@ -105,7 +105,11 @@
         .mag-feature-panel .mag-credit { color: #EFC08D; text-align: left; }
         .mag-serial-end { margin: 1.6em 0 0; padding: .8em 1em; border: 2px solid #13212C; background: #FBEBD8; font-family: 'Anek Bangla', sans-serif; text-indent: 0 !important; }
         .mag-serial-start { font: italic .85em 'Anek Bangla', sans-serif; color: #4D5A63; margin: -.6em 0 1em !important; } .mag-serial-start a { color: inherit; }
-        .mag-serial-end b { color: #CB1B32; font-size: 1.15em; margin-right: .3em; } .mag-serial-end a { color: #13212C; font-weight: 700; word-break: break-all; }
+        .mag-serial-end b { color: #CB1B32; font-size: 1.15em; margin-right: .3em; } .mag-serial-end p { margin: 0 0 .4em !important; text-indent: 0 !important; }
+        .mag-serial-end { display: grid; grid-template-columns: auto 1fr; column-gap: 1em; align-items: center; } .mag-serial-end p { grid-column: 2; }
+        .mag-qr { grid-row: 1 / span 2; display: block; width: 5.2em; } .mag-qr img { display: block; width: 100% !important; height: auto; border-radius: 0 !important; background: #fff !important; }
+        .mag-read-on { display: inline-block; background: #CB1B32; color: #fff !important; font-weight: 700; text-decoration: none; padding: .25em .9em; border-radius: 999px; margin-right: .4em; }
+        .mag-addr { font-weight: 700; color: #13212C; word-break: break-all; }
         .mag-poem .mag-by::after { margin-left: auto; margin-right: auto; }
 
         /* Cover, inside cover, openers, back cover */

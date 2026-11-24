@@ -20,7 +20,7 @@
         .next-ep { margin-top: 2.2em; padding-top: 1.4em; border-top: 1px solid #E8DCCB; }
         .serial-start { font-size: 9.5pt; font-style: italic; color: #4D5A63; }
         .serial-end { display: flex; gap: 14px; align-items: center; margin-top: 1.6em; padding: 10px 14px; border: 1.5pt solid #13212C; break-inside: avoid; font-family: 'Anek Bangla', sans-serif; }
-        .serial-end img { width: 0.9in; height: 0.9in; flex: none; } .serial-end p { margin: 0; } .serial-end b { color: #CB1B32; font-size: 13pt; } .serial-end .addr { font-weight: 700; }
+        .serial-end img { width: 0.9in; height: 0.9in; flex: none; } .serial-end p { margin: 0; } .serial-end b { color: #CB1B32; font-size: 13pt; } .serial-end .addr { font-weight: 700; color: #13212C; }
         .toc li { margin: .3em 0; } .small { font-size: 9pt; color: #4D5A63; }
         .ta-center { text-align: center; } .ta-right { text-align: right; }
         .help { font-family: 'Anek Bangla', sans-serif; background: #DDF1FA; border: 2px solid #2DAAE2; border-radius: 12px; padding: 12px 16px; margin: 16px auto; max-width: 6in; }
@@ -66,7 +66,7 @@
                 @if ($end)
                     <div class="serial-end">
                         @if ($qr = \App\Support\IssueBook::qr($end['url']))<img src="{{ $qr }}" alt="">@endif
-                        <p><b>{{ $end['head'] }}</b> {{ $end['text'] }}<br><span class="addr">{{ $end['addr'] }}</span></p>
+                        <p><b>{{ $end['head'] }}</b> {{ $end['text'] }}<br><a href="{{ $end['url'] }}" class="addr">{{ $end['addr'] }}</a></p>
                     </div>
                 @endif
             </section>

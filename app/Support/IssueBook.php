@@ -15,6 +15,9 @@ use Illuminate\Support\Str;
  */
 final class IssueBook
 {
+    /** D278: a serial brings at most this many episodes into one issue; the box after them says where the rest is. */
+    public const MAX_EPISODES = 3;
+
     /** Editorial first (if published), then the issue's published pieces in publishing order. */
     public static function pieces(Issue $issue): Collection
     {
@@ -49,12 +52,20 @@ final class IssueBook
                 continue;
             }
             $done[$p->serial_id] = true;
+            // D278 (owner: "don't put the next part in the next issue"): a serial is in one issue only, the first that
+            // carried it; later issues leave it out and readers go on on the site
+            $earlier = Post::where('serial_id', $p->serial_id)->whereNotNull('issue_id')->where('issue_id', '!=', $issue->id)
+                ->whereHas('issue', fn ($q) => $q->where('published_at', '<', $issue->published_at ?? now()))->exists();
+            if ($earlier) {
+                continue;
+            }
             $own = $posts->where('serial_id', $p->serial_id);
             $more = Post::with('authors', 'section', 'serial')->where('serial_id', $p->serial_id)
                 ->where('episode_no', '>=', (int) $own->min('episode_no'))
                 ->when($preview, fn ($q) => $q->whereIn('status', ['published', 'scheduled']), fn ($q) => $q->published())
                 ->where('published_at', '<=', $until)->get();
-            $out = $out->concat($own->concat($more)->unique('id')->sortBy('episode_no'));
+            // D278 (owner: "2-3 episodes max in an issue"): at most three, from the first one the issue holds
+            $out = $out->concat($own->concat($more)->unique('id')->sortBy('episode_no')->take(self::MAX_EPISODES));
         }
 
         return $out->values();
@@ -92,16 +103,12 @@ final class IssueBook
         }
         $addr = preg_replace('~^https?://(www\.)?~', '', rtrim($s->url(), '/'));
         if ($p->isLastEpisode()) {
-            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
+            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায় পড়ুন হাতপাখার সাইটে।', 'addr' => $addr, 'url' => $s->url()];
         }
+        // D278 (owner: "don't put the next part in the next issue; ask them to go to the site to read more")
         $nextNo = Bn::num((string) ($p->episode_no + 1));
-        $next = $issue ? self::nextMonthly($issue) : null;
-        $out = Post::published()->where('serial_id', $s->id)->where('episode_no', '>', $p->episode_no)->exists();
-        $text = $next && $out
-            ? 'পর্ব '.$nextNo.' থেকে পড়ুন “'.$next->title.'”-এ।'
-            : ($out ? 'পর্ব '.$nextNo.' থেকে পড়ুন সাইটে।' : 'পর্ব '.$nextNo.' আগামী সংখ্যায়; তার আগেই প্রতি '.$s->dayName().' সকালে নতুন পর্ব সাইটে।');
 
-        return ['head' => 'চলবে…', 'text' => $text.' সব পর্ব এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
+        return ['head' => 'চলবে…', 'text' => 'পর্ব '.$nextNo.' থেকে বাকি গল্প পড়ুন হাতপাখার সাইটে। প্রতি '.$s->dayName().' সকালে নতুন পর্ব।', 'addr' => $addr, 'url' => $s->url()];
     }
 
     /** D276: an issue that picks a serial up in the middle says where the earlier episodes are. */
@@ -119,10 +126,18 @@ final class IssueBook
     /** A QR code (SVG data URI) for a printed page, or null. */
     public static function qr(string $url): ?string
     {
-        return rescue(fn () => 'data:image/svg+xml;base64,'.base64_encode((new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions([
+        $svg = self::qrSvg($url);
+
+        return $svg ? 'data:image/svg+xml;base64,'.base64_encode($svg) : null;
+    }
+
+    /** The QR code as SVG markup (for the e-book, where it sits inside the page). */
+    public static function qrSvg(string $url): ?string
+    {
+        return rescue(fn () => (string) (new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions([
             'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class, 'outputBase64' => false, 'svgAddXmlHeader' => false,
             'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true,
-        ])))->render($url)), null, false);
+        ])))->render($url), null, false);
     }
 
     /** A piece's text as clean XHTML for the book: no pictures, embeds or scripts; every tag closed. */
@@ -227,7 +242,9 @@ final class IssueBook
             $h = $p->serial_id && $p->serial ? $p->episodeLabel() : $p->title;
             $lastRun = ! $pieces->slice($i + 1)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
             $end = $lastRun ? self::serialEnd($p, $issue) : null;
-            $endHtml = $end ? '<p class="serial-end"><b>'.e($end['head']).'</b> '.e($end['text']).' <a href="'.e($end['url']).'">'.e($end['addr']).'</a></p>' : '';
+            // D278: the link and the QR code, both
+            $qr = $end ? self::qrSvg($end['url']) : null;
+            $endHtml = $end ? '<div class="serial-end">'.($qr ? '<div class="qr">'.$qr.'</div>' : '').'<p><b>'.e($end['head']).'</b> '.e($end['text']).'<br/><a href="'.e($end['url']).'">'.e($end['addr']).' →</a></p></div>' : '';
             $firstRun = ! $pieces->slice(0, $i)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
             $start = $firstRun ? self::serialStart($p) : null;
             $startHtml = $start ? '<p class="serial-start">'.e($start['text']).' <a href="'.e($start['url']).'">'.e($start['addr']).'</a></p>' : '';
@@ -379,7 +396,8 @@ figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vig
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
 .serial-start { font-size: .9em; color: #4D5A63; font-style: italic; }
-.serial-end { margin-top: 2em; padding: .8em 1em; border: 2px solid #13212C; } .serial-end b { color: #CB1B32; }
+.serial-end { margin-top: 2em; padding: .8em 1em; border: 2px solid #13212C; overflow: hidden; page-break-inside: avoid; } .serial-end b { color: #CB1B32; }
+.serial-end .qr { float: left; width: 5em; height: 5em; margin: 0 .9em .2em 0; } .serial-end .qr svg { width: 100%; height: 100%; } .serial-end p { margin: 0; } .serial-end a { font-weight: bold; color: #13212C; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
 .writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
 .writer { overflow: hidden; page-break-inside: avoid; } .writer-photo { float: left; width: 3.4em; height: 3.4em; margin: 1.2em .8em .3em 0; border-radius: 50%; object-fit: cover; }

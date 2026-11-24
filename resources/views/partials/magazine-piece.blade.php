@@ -47,6 +47,11 @@
     @endif
     {!! $d['body'] !!}
     @if ($end)
-        <p class="mag-serial-end"><b>{{ $end['head'] }}</b> {{ $end['text'] }} <a href="{{ $end['url'] }}">{{ $end['addr'] }}</a></p>
+        {{-- D278: the link to read on, and a QR code for a phone (or a printed page) --}}
+        <div class="mag-serial-end">
+            @if ($qr = \App\Support\IssueBook::qr($end['url']))<a href="{{ $end['url'] }}" class="mag-qr" aria-hidden="true" tabindex="-1"><img src="{{ $qr }}" alt="" width="84" height="84"></a>@endif
+            <p><b>{{ $end['head'] }}</b> {{ $end['text'] }}</p>
+            <p><a href="{{ $end['url'] }}" class="mag-read-on">সব পর্ব পড়ুন →</a> <span class="mag-addr">{{ $end['addr'] }}</span></p>
+        </div>
     @endif
 </section>
