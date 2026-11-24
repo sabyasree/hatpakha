@@ -209,7 +209,7 @@ class SerialsTest extends TestCase
 
         $this->get('/dharabahik/')->assertOk()->assertSee($serial->title);
         $this->get($serial->url())->assertOk()->assertSee('পর্ব ১: বন্ধ দরজা')->assertSee('নতুন পর্ব এলে জানান')->assertSee('প্রতি শনিবার');
-        $this->get($ep1->url())->assertOk()->assertSee('ক্রমশ…')->assertSee('পরের পর্ব আসবে শনিবার')->assertDontSee('>সমাপ্ত<', false);
+        $this->get($ep1->url())->assertOk()->assertSee('ক্রমশ…')->assertSee('পরের পর্ব আসবে')->assertSee('শনিবার')->assertDontSee('>সমাপ্ত<', false);
         $this->get('/category/dharabahik/')->assertRedirect($serial->url() === '' ? '' : \App\Support\Url::to('/dharabahik'));
 
         $reader = User::factory()->create(['email_verified_at' => now()]);
@@ -223,7 +223,7 @@ class SerialsTest extends TestCase
         $ep1->forceFill(['followers_notified_at' => now()])->saveQuietly();
         FollowNotifier::run();
         Notification::assertSentTo($reader, NewEpisode::class, fn (NewEpisode $n) => str_contains($n->unfollowUrl, '/newsletter/unsubscribe/s/'));
-        $this->get($ep1->url())->assertSee('পরের পর্ব: পর্ব ২: দ্বিতীয় রাত');
+        $this->get($ep1->url())->assertSee('পরের পর্ব →')->assertSee('পর্ব ২: দ্বিতীয় রাত');   // D281
     }
 
     public function test_desk_shows_proposals_to_the_owner_only(): void
