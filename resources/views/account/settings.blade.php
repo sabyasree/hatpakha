@@ -97,7 +97,7 @@
                 @else
                     <x-field name="current_password" type="password" :label="__('এখনকার পাসওয়ার্ড')" autocomplete="current-password" required />
                 @endif
-                <x-field name="password" type="password" :label="__('নতুন পাসওয়ার্ড')" autocomplete="new-password" required :hint="__('অন্তত :count অক্ষর, অক্ষর আর সংখ্যা দুই-ই।', ['count' => \App\Support\Bn::num('10')])" />
+                <x-field name="password" type="password" :label="__('নতুন পাসওয়ার্ড')" autocomplete="new-password" required :hint="__('কমপক্ষে ৮ অক্ষর। যে-কোনো অক্ষর, সংখ্যা বা চিহ্ন চলবে।')" />
                 <x-field name="password_confirmation" type="password" :label="__('নতুন পাসওয়ার্ড আবার')" autocomplete="new-password" required />
                 <button class="h-12 rounded-full bg-red px-8 font-bold text-white">{{ __('বদলান') }}</button>
                 <p class="mt-3 text-sm text-ink2">{{ __('এখনকার পাসওয়ার্ড মনে নেই? লগ আউট করে সাইন ইন পাতায় “পাসওয়ার্ড ভুলে গেছেন?” টিপুন। ই-মেলে নতুন পাসওয়ার্ডের লিংক যাবে।') }}</p>

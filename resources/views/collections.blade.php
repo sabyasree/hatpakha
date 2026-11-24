@@ -10,6 +10,7 @@
             @if ($loop->last)</ul>@endif
         @empty
             <p class="mt-8 rounded-2xl border-2 border-dashed border-navy p-6 font-serif text-lg">প্রথম সংকলন তৈরি হচ্ছে। শিগগির এখানে পড়তে পাবেন।</p>
+            @include('partials.read-next')
         @endforelse
     </section>
 </x-layouts.app>

@@ -351,7 +351,7 @@ class AccountController extends Controller
     {
         $request->validate([
             'current_password' => self::proofRule($request),
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()->uncompromised()],
+            'password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()],
         ], ['current_password.current_password' => __('এখনকার পাসওয়ার্ড মিলছে না।'), 'password.confirmed' => __('দুটি পাসওয়ার্ড মেলেনি।'),
             'password.uncompromised' => __('এই পাসওয়ার্ডটি অন্য কোনো সাইট থেকে ফাঁস হয়ে গেছে। অন্য একটি পাসওয়ার্ড দিন।')]);
         $request->user()->forceFill(['password' => $request->input('password'), 'legacy_password' => null])->save();

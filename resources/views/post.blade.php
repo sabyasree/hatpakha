@@ -16,16 +16,16 @@
         <div class="absolute left-full top-[85vh] ml-8 hidden h-[calc(100%-85vh)] w-[160px] min-[1280px]:block min-[1500px]:ml-10 min-[1500px]:w-[300px]">
             <div class="sticky top-24"><x-ad-slot spot="sidebar" :height="600" class="!my-0" /></div>
         </div>
-        <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-sm text-ink2">
+        <nav aria-label="অবস্থান" class="flex flex-wrap items-center text-base text-ink2">
             @foreach (array_slice($crumbs, 0, -1) as $c)
                 @if (! $loop->first)<span class="px-1" aria-hidden="true">›</span>@endif
                 <a href="{{ $c[1] }}" class="inline-flex min-h-11 items-center hover:text-red">{{ $c[0] }}</a>
             @endforeach
         </nav>
-        <div class="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
-            @if ($post->section)<a href="{{ $post->section->url() }}" class="rounded-full bg-red px-3 py-1 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-base font-semibold">
+            @if ($post->section)<a href="{{ $post->section->url() }}" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white">{{ $post->section->name_bn }}</a>@endif
             <span class="text-ink2">{{ \App\Support\Bn::num($post->reading_minutes) }} মিনিট পড়া</span>
-            @if ($post->readers_choice)<a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="rounded-full bg-navy px-3 py-1 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</a>@endif
+            @if ($post->readers_choice)<a href="{{ \App\Support\Url::to('/pathoker-pochhondo') }}" class="inline-flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">পাঠকের পছন্দ · {{ \App\Support\Feelings::monthLabel($post->readers_choice) }}</a>@endif
             @if ($post->isKids() && $post->ageLabel())<span class="rounded-full bg-sky-tint px-3 py-1 font-bold text-sky-night">বয়স {{ $post->ageLabel() }}</span>@endif
         </div>
         <h1 class="mt-4 font-display text-[2.4rem] font-extrabold leading-[1.1] sm:text-5xl sm:leading-[1.05] md:text-6xl" style="font-stretch: 80%">{{ $post->title }}</h1>
@@ -35,7 +35,7 @@
             @endforeach
             <div class="min-w-0 flex-1">
                 <div class="text-lg"><x-byline :post="$post" /></div>
-                <div class="text-sm text-ink2">{{ \App\Support\Bn::date($post->published_at) }}@if ($post->issue) · <a href="{{ $post->issue->url() }}" class="underline">{{ $post->issue->title }}</a>@endif</div>
+                <div class="text-base text-ink2">{{ \App\Support\Bn::date($post->published_at) }}@if ($post->issue) · <a href="{{ $post->issue->url() }}" class="underline">{{ $post->issue->title }}</a>@endif</div>
             </div>
             {{-- Share early: readers come from WhatsApp (mobile UX review). The phone's own share sheet when there is one. --}}
             <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}"

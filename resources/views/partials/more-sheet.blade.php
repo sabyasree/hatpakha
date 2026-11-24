@@ -47,6 +47,10 @@
                 <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
                     <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>
             </div>
+            {{-- C7 (owner approved): "লিখুন" left the middle of the bottom bar for "সংখ্যা"; it is here, near the top --}}
+            <a href="{{ Url::to('/submit') }}" data-more-write class="mx-3 mt-2 flex min-h-14 items-center gap-3 rounded-2xl border-2 border-navy bg-red px-4 py-2 font-bold text-white shadow-[3px_3px_0_#13212C]">
+                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white text-xl text-red" aria-hidden="true">+</span>
+                <span class="flex-1 text-lg leading-tight">{{ __('লিখুন: লেখা পাঠান') }}<span class="block text-sm font-medium">{{ __('কবিতা, গল্প, প্রবন্ধ · বিনামূল্যে') }}</span></span><span aria-hidden="true">›</span></a>
             @if ($me)
                 <div class="flex items-center gap-3 px-4 py-3">
                     @if ($acct['avatar'])<img src="{{ $acct['avatar'] }}" alt="" class="h-12 w-12 flex-none rounded-full border-2 border-navy object-cover">
@@ -85,6 +89,10 @@
             <div class="mt-2">
                 <a href="{{ Url::to('/search') }}" class="{{ $row }}">{!! $icon($I['search']) !!}<span class="flex-1">{{ __('সার্চ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
                 <a href="{{ Url::to('/archive') }}" class="{{ $row }}">{!! $icon($I['archive']) !!}<span class="flex-1">{{ __('পুরনো লেখা') }}<span class="block text-sm font-medium text-ink2">{{ __(':year থেকে, বছর ধরে (আর্কাইভ)', ['year' => \App\Support\Bn::num(2012)]) }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
+                <a href="{{ Url::to('/lekhok') }}" class="{{ $row }}">{!! $icon($I['person']) !!}<span class="flex-1">{{ __('লেখকেরা') }}<span class="block text-sm font-medium text-ink2">{{ __('সব লেখক, নাম ধরে') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
+                @foreach (\App\Http\Controllers\ShelfController::live() as $shelfSlug => $shelfName)
+                    <a href="{{ Url::to('/tak/'.$shelfSlug) }}" class="{{ $row }}">{!! $icon($I['stack']) !!}<span class="flex-1">{{ __($shelfName) }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
+                @endforeach
                 @if ($issue)<a href="{{ Url::to('/sonkha') }}" class="{{ $row }}">{!! $icon($I['issue']) !!}<span class="flex-1">{{ __('সব সংখ্যা') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>@endif
                 <a href="{{ Url::to('/contact-us') }}" class="{{ $row }}">{!! $icon($I['help']) !!}<span class="flex-1">{{ __('সাহায্য ও যোগাযোগ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
             </div>

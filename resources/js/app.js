@@ -823,3 +823,10 @@ const hpOpenEntry = () => {
 };
 hpOpenEntry();
 window.addEventListener('hashchange', hpOpenEntry);
+
+// C9 (research 2026-11): the sign-in page puts the cursor in the e-mail box on a computer only; on a phone the
+// keyboard would jump up and hide the page (and the Google button) before the reader has looked at it.
+const focusWide = document.querySelector('[data-focus-wide]');
+if (focusWide && window.matchMedia('(min-width: 768px)').matches) {
+    focusWide.focus();
+}

@@ -6,6 +6,7 @@
         <p class="mt-3 max-w-[60ch] font-serif text-lg text-ink2">রহস্য, অলৌকিক আর সম্পর্কের গল্প। প্রতি সপ্তাহে নতুন পর্ব; আগের পর্ব ভুলে গেলে গল্পের পাতাতেই সব পর্ব আছে।</p>
         @if ($serials->isEmpty())
             <p class="mt-8 font-serif text-lg">প্রথম ধারাবাহিক শিগগির শুরু হচ্ছে।</p>
+            @include('partials.read-next', ['heading' => 'ততক্ষণ এগুলো পড়ুন'])
         @else
             <ul class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($serials as $s)

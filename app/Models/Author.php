@@ -17,6 +17,23 @@ class Author extends Model
         return ['links' => 'array', 'is_guest' => 'boolean', 'is_desk' => 'boolean', 'claimed_at' => 'datetime', 'honoured_at' => 'datetime', 'quality_at' => 'datetime', 'quality_score' => 'float', 'relaunch_letter_at' => 'datetime'];
     }
 
+    protected static function booted(): void
+    {
+        // A4: the folded name the search matches in the database.
+        static $hasColumn = false;   // older migrations save writers before the column exists
+        static::saving(function (self $a) use (&$hasColumn) {
+            $hasColumn = $hasColumn || \Illuminate\Support\Facades\Schema::hasColumn('authors', 'search_name');
+            if ($hasColumn && ($a->isDirty(['display_name', 'display_name_bn', 'slug']) || $a->search_name === null)) {
+                $a->search_name = self::searchKey($a->display_name, $a->display_name_bn, $a->slug);
+            }
+        });
+    }
+
+    public static function searchKey(?string $name, ?string $nameBn, ?string $slug): string
+    {
+        return mb_substr(\App\Support\BnSearch::key(trim($name.' '.$nameBn.' '.str_replace('-', ' ', (string) $slug))), 0, 500);
+    }
+
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
 
     public function posts(): BelongsToMany

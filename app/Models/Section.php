@@ -23,8 +23,8 @@ class Section extends Model
 
     protected static function booted(): void
     {
-        static::saved(fn () => \Illuminate\Support\Facades\Cache::deleteMultiple(['sections.nav', 'sections.all', 'sections.menu']));
-        static::deleted(fn () => \Illuminate\Support\Facades\Cache::deleteMultiple(['sections.nav', 'sections.all', 'sections.menu']));
+        static::saved(fn () => \Illuminate\Support\Facades\Cache::deleteMultiple(['sections.nav', 'sections.all', 'sections.menu', 'sections.choices']));
+        static::deleted(fn () => \Illuminate\Support\Facades\Cache::deleteMultiple(['sections.nav', 'sections.all', 'sections.menu', 'sections.choices']));
     }
 
     /** Header menu (D65): cached 10 minutes as plain arrays (models are never cached, D18). */
@@ -33,6 +33,13 @@ class Section extends Model
     {
         return \Illuminate\Support\Facades\Cache::remember('sections.all', 600, fn () => self::where('is_active', true)->whereHas('posts', fn ($q) => $q->published())
             ->orderBy('sort')->get()->map(fn (self $s) => [$s->name_bn, $s->url()])->all());
+    }
+
+    /** C5: the sections a search can be narrowed to, slug => name (scalars only, D18). */
+    public static function searchChoices(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('sections.choices', 600, fn () => self::where('is_active', true)->where('slug', '!=', 'dharabahik')
+            ->whereHas('posts', fn ($q) => $q->published())->orderBy('sort')->pluck('name_bn', 'slug')->all());
     }
 
     public static function navLinks(): array

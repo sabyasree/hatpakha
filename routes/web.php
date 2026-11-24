@@ -68,6 +68,8 @@ Route::get('/category/{slug}', [ArchiveController::class, 'section'])->name('sec
 Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
+Route::get('/lekhok', \App\Http\Controllers\WritersController::class)->name('writers');   // A2: every writer, অ to হ
+Route::get('/tak/{slug}', [\App\Http\Controllers\ShelfController::class, 'show'])->whereIn('slug', array_keys(\App\Http\Controllers\ShelfController::SHELVES))->name('shelf');   // C4: shelves
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 // Owner (2026-11-12): /sonkha/ is the page of all the issues, by year.
 Route::get('/sonkha', [ArchiveController::class, 'issues'])->name('issues');
