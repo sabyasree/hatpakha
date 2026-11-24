@@ -23,6 +23,9 @@ class PostForm
             // What to do with a waiting submission, at the top (owner, 2026-11-12).
             \Filament\Schemas\Components\View::make('filament.review-guide')->columnSpanFull()
                 ->visible(fn (?Post $record) => $record?->status === 'pending'),
+            // D279: a serial's episode names its serial at the top; a new serial shows the writer's whole proposal
+            \Filament\Schemas\Components\View::make('filament.serial-banner')->columnSpanFull()
+                ->visible(fn (?Post $record) => (bool) $record?->serial_id && ! in_array($record?->status, ['published'], true)),
             Section::make(__('লেখার পাঠ'))->collapsible()->columnSpan(2)->schema([
                 TextInput::make('title')->label(__('শিরোনাম'))->required()->maxLength(400),
                 TextInput::make('slug')->label(__('ঠিকানা'))->required()->maxLength(380)

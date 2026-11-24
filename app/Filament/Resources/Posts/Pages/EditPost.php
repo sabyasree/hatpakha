@@ -30,6 +30,21 @@ class EditPost extends EditRecord
             : \Filament\Notifications\Notification::make()->title(__('ফেরানো গেল না: ওই শব্দগুলো লেখায় আর আগের মতো নেই'))->warning()->send();
     }
 
+    /** D279: the next writer's piece waiting for a decision (oldest first), or back to আজকের কাজ. */
+    private function goToNext(): void
+    {
+        $waiting = \App\Models\Post::where('status', 'pending')->whereNotNull('submitted_by')->whereKeyNot($this->record->id);
+        $next = (clone $waiting)->orderBy('submitted_at')->first();
+        if (! $next) {
+            \Filament\Notifications\Notification::make()->title(__('আর কোনো লেখা অপেক্ষায় নেই'))->success()->send();
+            $this->redirect(\Filament\Facades\Filament::getUrl());
+
+            return;
+        }
+        \Filament\Notifications\Notification::make()->title(__('পরের লেখা খোলা হলো'))->body(__('আরও').' '.\App\Support\Bn::num((string) $waiting->count()).__('টি বাকি'))->info()->send();
+        $this->redirect(PostResource::getUrl('edit', ['record' => $next]));
+    }
+
     protected function getHeaderActions(): array
     {
         // Deleting content needs the owner (CLAUDE.md §3): only admins see these; editors unpublish instead.
@@ -39,7 +54,8 @@ class EditPost extends EditRecord
         // After a decision, go back to the queue for the next piece.
         $review = array_map(
             fn (Action $action) => match (true) {
-                in_array($action->getName(), ['approve', 'requestChanges', 'reject'], true) => $action->after(fn () => $this->redirect(PostResource::getUrl('index'))),
+                // D279 (UX review): after a decision, the next waiting piece opens at once ("আরও ২টি বাকি"); none left → আজকের কাজ
+                in_array($action->getName(), ['approve', 'requestChanges', 'reject'], true) => $action->after(fn () => $this->goToNext()),
                 // Owner, 2026-11-14 ("I applied, then saved, and the corrections were gone"): the open form still held the
                 // old text, so "save" wrote it back over the corrected one. The form now takes the corrected text at once.
                 $action->getName() === 'applyFixes' => $action->after(function () {

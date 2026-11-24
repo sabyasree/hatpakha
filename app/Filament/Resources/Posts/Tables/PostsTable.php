@@ -41,11 +41,13 @@ class PostsTable
         $actionable = fn (Post $p) => $p->audit_label && $p->audit_label !== 'keep' && ! $p->audit_decision;
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section', 'latestAiReview']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section', 'latestAiReview', 'serial']))
             ->defaultSort('published_at', 'desc')
             ->columns([
                 TextColumn::make('title')->label(__('শিরোনাম'))->searchable()->wrap()->limit(80)
-                    ->description(fn (Post $p) => trim(($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
+                    // D279: a serial's episode says so ("নতুন ধারাবাহিকের প্রস্তাব · পর্ব ১" / "ধারাবাহিক ‘…’ · পর্ব ৩")
+                    ->description(fn (Post $p) => trim(($p->serial_id && $p->serial ? ($p->serial->status === 'proposed' ? __('নতুন ধারাবাহিকের প্রস্তাব').' ‘'.$p->serial->title.'’' : __('ধারাবাহিক').' ‘'.$p->serial->title.'’').' · '.__('পর্ব').' '.\App\Support\Bn::num((string) $p->episode_no).' · ' : '')
+                        .($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
                         .($p->authors->first()?->publicName() ?? '').' · '.($p->section?->name_bn ?? ''), ' ·')),
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(self::STATUS[$state] ?? $state))

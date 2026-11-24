@@ -28,6 +28,10 @@ class ListPosts extends ListRecords
             'review' => Tab::make(__('অপেক্ষায়'))
                 ->badge(fn () => Post::where('status', 'pending')->whereNotNull('submitted_by')->count() ?: null)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNotNull('submitted_by')->reorder()->orderBy('submitted_at')),
+            // D279: writers' serial episodes and new serials' first episodes, apart, so they are found at once
+            'episodes' => Tab::make(__('ধারাবাহিকের পর্ব'))
+                ->badge(fn () => Post::where('status', 'pending')->whereNotNull('submitted_by')->whereNotNull('serial_id')->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'pending')->whereNotNull('submitted_by')->whereNotNull('serial_id')->reorder()->orderBy('submitted_at')),
             // The 424 old WordPress submissions, kept apart so they never bury new ones (tiers: D16, Phase 2).
             // D104: old submissions whose writer said yes to the apology letter: these may be read and decided.
             'backlog_yes' => Tab::make(__('পুরনো: লেখক রাজি'))
