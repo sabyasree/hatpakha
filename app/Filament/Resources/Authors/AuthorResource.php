@@ -26,10 +26,9 @@ class AuthorResource extends Resource
     protected static ?string $modelLabel = 'লেখক';
 
     protected static ?string $pluralModelLabel = 'লেখক';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {

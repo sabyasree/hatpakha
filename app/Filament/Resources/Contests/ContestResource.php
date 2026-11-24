@@ -32,10 +32,9 @@ class ContestResource extends Resource
     protected static ?string $modelLabel = 'প্রতিযোগিতা';
 
     protected static ?string $pluralModelLabel = 'প্রতিযোগিতা';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 32;
+    protected static ?int $navigationSort = 7;
 
     public static function form(Schema $schema): Schema
     {

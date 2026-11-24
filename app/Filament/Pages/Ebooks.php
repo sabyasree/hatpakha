@@ -32,14 +32,18 @@ class Ebooks extends Page
     protected static ?string $title = 'মাসের পত্রিকা';
 
     protected static ?string $slug = 'ebooks';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 31;
+    protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Editor) ?? false;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[rescue(fn () => \App\Ai\IssueWatch::current()->filter(fn ($i) => \App\Ai\IssueWatch::needs($i))->count(), 0, false), 'টি সংখ্যায় কিছু কাজ বাকি (প্রচ্ছদ, সম্পাদকীয় বা ই-বুক)']]);   // D279: every number says what it counts
     }
 
     public static function getNavigationBadge(): ?string
@@ -51,7 +55,7 @@ class Ebooks extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public function getViewData(): array

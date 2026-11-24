@@ -26,6 +26,7 @@ class HealthReport extends Page
     protected static ?string $title = 'সাইটের স্বাস্থ্য';
 
     protected static ?string $slug = 'health';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
     protected static ?int $navigationSort = 2;
 
@@ -40,6 +41,11 @@ class HealthReport extends Page
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[1, ' জরুরি বিষয় আছে, খুলে দেখুন']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return rescue(fn () => cache()->remember('desk.health.badge', 600, fn () => Report::build()['overall'] === Report::URGENT ? '!' : null), null, false);
@@ -47,7 +53,7 @@ class HealthReport extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public function show(string $period, int $back = 0): void

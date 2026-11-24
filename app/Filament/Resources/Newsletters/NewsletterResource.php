@@ -34,17 +34,28 @@ class NewsletterResource extends Resource
     protected static ?string $modelLabel = 'চিঠি';
 
     protected static ?string $pluralModelLabel = 'চিঠি';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'gray';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\Newsletter::where('status', 'draft')->count(), 'টি চিঠির খসড়া']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ($n = Newsletter::where('status', 'draft')->count()) ? (string) $n : null;
+        return ($n = Newsletter::where('status', 'draft')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function form(Schema $schema): Schema

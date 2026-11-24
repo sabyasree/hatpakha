@@ -27,10 +27,9 @@ class ContactMessageResource extends Resource
     protected static ?string $modelLabel = 'বার্তা';
 
     protected static ?string $pluralModelLabel = 'বার্তা';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = null;   // top level, next to comments
-
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 5;
 
     public static function canAccess(): bool
     {
@@ -42,9 +41,19 @@ class ContactMessageResource extends Resource
         return false;
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\ContactMessage::where('status', 'new')->count(), 'টি নতুন বার্তা']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ($n = ContactMessage::where('status', 'new')->count()) ? (string) $n : null;
+        return ($n = ContactMessage::where('status', 'new')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function table(Table $table): Table
@@ -83,7 +92,8 @@ class ContactMessageResource extends Resource
                 Action::make('openPiece')->label(__('লেখাটি খুলুন'))->icon('heroicon-o-pencil-square')->color('gray')
                     ->visible(fn (ContactMessage $record) => (bool) $record->post())
                     ->url(fn (ContactMessage $record) => \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $record->post()])),
-                Action::make('reply')->label(__('ই-মেলে উত্তর'))->icon('heroicon-o-paper-airplane')->color('primary')
+                self::replyAction(),
+                Action::make('reply')->label(__('নিজের ই-মেল থেকে'))->icon('heroicon-o-envelope')->color('gray')
                     ->url(fn (ContactMessage $record) => 'mailto:'.rawurlencode($record->email).'?subject='.rawurlencode('Re: হাতপাখা — '.$record->topicLabel()), shouldOpenInNewTab: true),
                 $mark('replied', 'উত্তর দিয়েছি', 'heroicon-o-check', 'replied', 'success'),
                 $mark('closed', 'হয়ে গেছে', 'heroicon-o-archive-box', 'closed'),
@@ -91,6 +101,31 @@ class ContactMessageResource extends Resource
                 \App\Filament\Support\Deleting::row(),
             ])
             ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\ContactMessage::class)])]);
+    }
+
+    /** D280: write the answer in the desk; one e-mail to that person, and the message is marked answered. */
+    public static function reply(ContactMessage $m, string $text): void
+    {
+        \Illuminate\Support\Facades\Notification::route('mail', $m->email)->notify(new \App\Notifications\ContactReply($m->name, $m->topicLabel(), trim($text)));
+        $m->forceFill(['status' => 'replied', 'handled_by' => auth()->id(), 'handled_at' => now()])->save();
+        AuditLog::record('contact.replied', $m, ['reply' => mb_substr(trim($text), 0, 2000)]);
+    }
+
+    public static function replyAction(string $name = 'answer'): Action
+    {
+        return Action::make($name)->label(__('উত্তর লিখুন'))->icon('heroicon-o-paper-airplane')->color('primary')
+            ->modalHeading(__('পাঠকের বার্তার উত্তর'))
+            ->schema(fn ($record, array $arguments) => [
+                \Filament\Forms\Components\Placeholder::make('msg')->label(fn () => ($m = $record ?? ContactMessage::find($arguments['message'] ?? 0))?->name.' · '.$m?->email)
+                    ->content(fn () => ($record ?? ContactMessage::find($arguments['message'] ?? 0))?->body),
+                \Filament\Forms\Components\Textarea::make('text')->label(__('আপনার উত্তর (ই-মেলে যাবে)'))->required()->rows(6)->maxLength(3000),
+            ])
+            ->modalSubmitActionLabel(__('পাঠান'))
+            ->action(function (array $data, $record, array $arguments) {
+                $m = $record instanceof ContactMessage ? $record : ContactMessage::findOrFail((int) ($arguments['message'] ?? 0));
+                self::reply($m, (string) $data['text']);
+                \Filament\Notifications\Notification::make()->title(__('উত্তর পাঠানো হয়েছে'))->success()->send();
+            });
     }
 
     public static function getPages(): array

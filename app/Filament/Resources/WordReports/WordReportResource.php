@@ -30,8 +30,9 @@ class WordReportResource extends Resource
     protected static ?string $pluralModelLabel = 'শব্দের অভিযোগ';
 
     protected static ?string $slug = 'word-reports';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 5;
 
     public static function canAccess(): bool
     {

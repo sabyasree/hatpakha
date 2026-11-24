@@ -26,10 +26,9 @@ class PageResource extends Resource
     protected static ?string $modelLabel = 'পাতা';
 
     protected static ?string $pluralModelLabel = 'পাতা';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 11;
 
 
 

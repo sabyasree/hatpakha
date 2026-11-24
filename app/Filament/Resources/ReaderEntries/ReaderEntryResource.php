@@ -30,8 +30,9 @@ class ReaderEntryResource extends Resource
     protected static ?string $pluralModelLabel = 'পাঠকের কলম';
 
     protected static ?string $slug = 'reader-entries';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
@@ -47,14 +48,19 @@ class ReaderEntryResource extends Resource
     public static function canDeleteAny(): bool { return false; }
 
     /** A week waiting for the owner's "publish". */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\ReaderPrompt::where('status', 'closed')->whereHas('entries', fn ($q) => $q->where('status', 'picked'))->count(), 'টি সপ্তাহের বাছাই প্রকাশের অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ReaderPrompt::where('status', 'closed')->whereHas('entries', fn ($q) => $q->where('status', 'picked'))->exists() ? '!' : null;
+        return ReaderPrompt::where('status', 'closed')->whereHas('entries', fn ($q) => $q->where('status', 'picked'))->exists() ? __('বাছাই তৈরি') : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function table(Table $table): Table

@@ -38,10 +38,9 @@ class SerialResource extends Resource
     protected static ?string $modelLabel = 'ধারাবাহিক';
 
     protected static ?string $pluralModelLabel = 'ধারাবাহিক';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 19;
+    protected static ?int $navigationSort = 2;
 
     public const STATUS = ['proposed' => 'প্রস্তাব', 'active' => 'চলছে', 'paused' => 'থামানো', 'finished' => 'শেষ', 'dropped' => 'বাদ দেওয়া'];
 
@@ -57,7 +56,18 @@ class SerialResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = Serial::where('status', 'proposed')->count()) ? (string) $n : null;
+        // D279 (owner: "a number beside the series menu, but I can't tell which"): new proposals AND new episodes
+        return ($n = \App\Support\DeskInbox::serialCount()) ? \App\Support\Bn::num((string) $n) : null;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::serialTooltip();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
     }
 
     public static function form(Schema $schema): Schema
@@ -93,6 +103,10 @@ class SerialResource extends Resource
                     ->color(fn ($state) => ['proposed' => 'warning', 'active' => 'success'][$state] ?? 'gray'),
                 TextColumn::make('day')->label(__('দিন'))->formatStateUsing(fn ($state) => __(Serial::DAYS[(int) $state] ?? '')),
                 TextColumn::make('episodes_count')->counts('episodes')->label(__('পর্ব')),
+                // D279: what waits for the editor in this serial, with one click to it
+                TextColumn::make('waiting')->label(__('এখন কী করবেন'))->state(fn (Serial $s) => self::waitingText($s))
+                    ->url(fn (Serial $s) => ($p = self::waitingEpisode($s)) ? PostResource::getUrl('edit', ['record' => $p]) : null)
+                    ->color('danger')->weight('bold')->placeholder('—')->wrap(),
             ])
             ->recordActions([
                 EditAction::make()->label(__('খুলুন')),
@@ -101,6 +115,22 @@ class SerialResource extends Resource
                 \App\Filament\Support\Deleting::row(),
             ])
             ->toolbarActions([\Filament\Actions\BulkActionGroup::make([\App\Filament\Support\Deleting::bulk(\App\Models\Serial::class)])]);
+    }
+
+    /** The writer's episode waiting for a decision (a new serial's first one, or the next one). */
+    public static function waitingEpisode(Serial $s): ?Post
+    {
+        return $s->episodes()->where('status', 'pending')->orderBy('episode_no')->first();
+    }
+
+    public static function waitingText(Serial $s): ?string
+    {
+        $p = self::waitingEpisode($s);
+        if (! $p) {
+            return $s->status === 'proposed' ? __('প্রস্তাব দেখুন') : null;
+        }
+
+        return $s->status === 'proposed' ? __('প্রস্তাব ও পর্ব ১ পড়ুন →') : __('নতুন পর্ব').' '.\App\Support\Bn::num((string) $p->episode_no).' '.__('দেখুন →');
     }
 
     public static function start(Serial $s): void

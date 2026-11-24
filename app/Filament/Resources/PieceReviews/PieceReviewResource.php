@@ -34,8 +34,9 @@ class PieceReviewResource extends Resource
     protected static ?string $pluralModelLabel = 'যাচাইকারীর মতামত';
 
     protected static ?string $slug = 'piece-reviews';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     public static function canAccess(): bool
     {
@@ -51,6 +52,11 @@ class PieceReviewResource extends Resource
     public static function canDeleteAny(): bool { return false; }
 
     /** New feedback the desk has not opened yet. */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\PieceReview::where('status', 'done')->whereNull('desk_read_at')->count(), 'টি যাচাইকারীর মত পড়া বাকি']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = PieceReview::where('status', 'done')->whereNull('desk_read_at')->count();
@@ -60,7 +66,7 @@ class PieceReviewResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function table(Table $table): Table

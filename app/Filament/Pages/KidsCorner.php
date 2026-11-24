@@ -26,25 +26,34 @@ class KidsCorner extends Page
     protected string $view = 'filament.pages.kids-corner';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFaceSmile;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
     protected static ?string $navigationLabel = 'ছোটদের হাতপাখা';
 
     protected static ?string $title = 'ছোটদের হাতপাখা';
 
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 6;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[collect(\App\Ai\KidsAlphabet::state())->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count(), 'টি ছবি বা পাঠ দেখার অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $waiting = collect(KidsAlphabet::state())->filter(fn ($s) => (! empty($s['pic']) && empty($s['pic_ok'])) || (! empty($s['audio']) && empty($s['audio_ok'])))->count();
 
-        return $waiting ? (string) $waiting : null;
+        return $waiting ? \App\Support\Bn::num((string) $waiting) : null;
     }
 
     protected function getHeaderActions(): array

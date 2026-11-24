@@ -30,22 +30,28 @@ class SiteErrorResource extends Resource
     protected static ?string $pluralModelLabel = 'সাইটের ত্রুটি';
 
     protected static ?string $slug = 'site-errors';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
-    protected static ?int $navigationSort = 99;
+    protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Support\SiteErrors::unseen(), 'টি নতুন ত্রুটি (গত সাত দিনে)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ($n = SiteErrors::unseen()) ? (string) $n : null;
+        return ($n = SiteErrors::unseen()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public static function canCreate(): bool { return false; }

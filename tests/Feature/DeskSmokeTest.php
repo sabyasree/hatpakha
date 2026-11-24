@@ -103,9 +103,9 @@ class DeskSmokeTest extends TestCase
             ->call('approveComment', $comment->id);
         $this->assertSame('approved', $comment->fresh()->status);
         $this->assertDatabaseHas('audit_logs', ['action' => 'comment.approved']);
-        $this->assertNull(\App\Filament\Resources\Posts\PostResource::getNavigationGroup(), 'লেখা is a top-level menu item');
+        $this->assertSame('আপনার সিদ্ধান্ত', \App\Filament\Resources\Posts\PostResource::getNavigationGroup(), 'D279: লেখা opens the daily group');
         $this->assertFalse(\App\Filament\Resources\AuditLogs\AuditLogResource::canAccess());
-        $this->assertSame('1', \App\Filament\Resources\Posts\PostResource::getNavigationBadge());
+        $this->assertSame('১', \App\Filament\Resources\Posts\PostResource::getNavigationBadge());
         $this->assertFalse(\App\Filament\Resources\Sections\SectionResource::canAccess(), 'Editors cannot change sections (URLs)');
         $this->assertFalse(\App\Filament\Resources\Redirects\RedirectResource::canAccess());
         $this->assertFalse(\App\Filament\Resources\Posts\PostResource::canDelete($sub), 'Editors never delete');

@@ -20,23 +20,32 @@ class AiTeam extends Page
     protected string $view = 'filament.pages.ai-team';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
     protected static ?string $navigationLabel = 'এআই দল';
 
     protected static ?string $title = 'এআই দল';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'gray';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\EditorTask::where('type', 'alert')->where('status', 'open')->count(), 'টি সতর্কতা (আজকের কাজেও আছে)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ($n = EditorTask::where('type', 'alert')->where('status', 'open')->count()) ? (string) $n : null;
+        return ($n = EditorTask::where('type', 'alert')->where('status', 'open')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     /** Which member's recent work is open below the cards. */

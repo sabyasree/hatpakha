@@ -26,10 +26,9 @@ class IssueResource extends Resource
     protected static ?string $modelLabel = 'সংখ্যা';
 
     protected static ?string $pluralModelLabel = 'সংখ্যা';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

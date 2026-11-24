@@ -44,7 +44,7 @@ class DeskLanguageTest extends TestCase
         app()->setLocale('en');
         \App\Support\Bn::$latin = true;
         Filament::setCurrentPanel(Filament::getPanel('desk'));
-        Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('Waiting for your approval')->assertDontSee('আপনার অনুমোদনের অপেক্ষায়');
+        Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('This week')->assertDontSee('এই সপ্তাহে');   // D279: the inbox's groups
         $this->assertSame('Pieces', \App\Filament\Resources\Posts\PostResource::getNavigationLabel());
         $this->assertSame('12', \App\Support\Bn::num('12'));
 

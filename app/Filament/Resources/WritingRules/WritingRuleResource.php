@@ -40,10 +40,9 @@ class WritingRuleResource extends Resource
     protected static ?string $modelLabel = 'লেখার নির্দেশ';
 
     protected static ?string $pluralModelLabel = 'লেখার নির্দেশিকা';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 18;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $slug = 'writing-rules';
 

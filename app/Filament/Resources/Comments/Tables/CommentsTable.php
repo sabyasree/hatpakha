@@ -25,6 +25,41 @@ class CommentsTable
         AuditLog::record("comment.{$status}", $c);
     }
 
+    /**
+     * D280 (UX audit): the magazine answers a reader under their comment. The answer is published at once (the editor
+     * wrote it), the comment it answers too, and the reader is told as for any reply (D252).
+     */
+    public static function reply(Comment $c, string $text): Comment
+    {
+        $top = $c->parent_id ? $c->parent : $c;
+        if ($c->status !== 'approved') {
+            self::setStatus($c, 'approved');
+        }
+        $r = Comment::create(['post_id' => $c->post_id, 'parent_id' => $top->id, 'user_id' => auth()->id(), 'author_name' => 'হাতপাখা',
+            'body' => trim(strip_tags($text)), 'status' => 'approved']);
+        AuditLog::record('comment.replied', $r, ['to' => $c->id]);
+
+        return $r;
+    }
+
+    public static function replyAction(string $name = 'reply'): Action
+    {
+        return Action::make($name)->label(__('উত্তর দিন'))->icon('heroicon-o-chat-bubble-left')->color('gray')
+            ->modalHeading(__('হাতপাখার পক্ষ থেকে উত্তর'))
+            ->schema(fn ($record, array $arguments) => [
+                \Filament\Forms\Components\Placeholder::make('c')->label(fn () => ($record ?? Comment::find($arguments['comment'] ?? 0))?->author_name)
+                    ->content(fn () => ($record ?? Comment::find($arguments['comment'] ?? 0))?->body),
+                \Filament\Forms\Components\Textarea::make('text')->label(__('উত্তর (মন্তব্যের নিচে “হাতপাখা” নামে দেখা যাবে)'))->required()->rows(4)->maxLength(2000),
+            ])
+            ->modalDescription(__('মন্তব্যটি অপেক্ষায় থাকলে সেটিও প্রকাশ হবে। পাঠককে উত্তরের খবর দেওয়া হবে।'))
+            ->modalSubmitActionLabel(__('উত্তর প্রকাশ করুন'))
+            ->action(function (array $data, $record, array $arguments) {
+                $c = $record instanceof Comment ? $record : Comment::findOrFail((int) ($arguments['comment'] ?? 0));
+                self::reply($c, (string) $data['text']);
+                \Filament\Notifications\Notification::make()->title(__('উত্তর প্রকাশিত'))->success()->send();
+            });
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -45,6 +80,7 @@ class CommentsTable
                 Action::make('spam')->label(__('স্প্যাম'))->icon('heroicon-o-no-symbol')->color('gray')
                     ->visible(fn (Comment $record) => $record->status !== 'spam')
                     ->action(fn (Comment $record) => self::setStatus($record, 'spam')),
+                self::replyAction()->visible(fn (Comment $record) => $record->status !== 'spam'),
                 Action::make('post')->label(__('লেখাটি'))->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Comment $record) => $record->post?->url())->openUrlInNewTab()
                     ->visible(fn (Comment $record) => $record->post?->status === 'published'),

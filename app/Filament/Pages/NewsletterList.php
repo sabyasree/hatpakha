@@ -37,8 +37,9 @@ class NewsletterList extends Page implements HasTable
     protected static ?string $navigationLabel = 'চিঠির তালিকা';
 
     protected static ?string $title = 'চিঠির তালিকা';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     #[\Livewire\Attributes\Url]
     public string $source = 'accounts';
@@ -83,7 +84,7 @@ class NewsletterList extends Page implements HasTable
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadgeTooltip(): ?string

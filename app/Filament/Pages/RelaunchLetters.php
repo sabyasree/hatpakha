@@ -23,14 +23,13 @@ class RelaunchLetters extends Page
     protected string $view = 'filament.pages.relaunch-letters';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelopeOpen;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
     protected static ?string $navigationLabel = 'পুরনো লেখকদের চিঠি';
 
     protected static ?string $title = 'পুরনো লেখকদের চিঠি';
 
-    protected static ?int $navigationSort = 22;
+    protected static ?int $navigationSort = 3;
 
     public string $subject = '';
 
@@ -46,11 +45,21 @@ class RelaunchLetters extends Page
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count(), 'টি পুরনো লেখা, লেখক রাজি; পড়ে সিদ্ধান্ত দিন']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $yes = Post::where('status', 'pending')->whereNull('submitted_by')->where('relaunch_status', 'yes')->count();
 
-        return $yes ? (string) $yes : null;
+        return $yes ? \App\Support\Bn::num((string) $yes) : null;
     }
 
     public function mount(): void

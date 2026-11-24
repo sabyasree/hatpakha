@@ -29,22 +29,28 @@ class HandoverPage extends Page
     protected static ?string $title = 'নিজে থেকে চলা কাজ';
 
     protected static ?string $slug = 'handover';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
     }
 
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Support\Handover::needsOwner(), 'টি লেখা আপনার দেখার জন্য রাখা (“লেখা”-তেও আছে)']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return rescue(fn () => ($n = Handover::needsOwner()) ? (string) $n : null, null, false);   // pieces kept for the owner
+        return rescue(fn () => ($n = Handover::needsOwner()) ? \App\Support\Bn::num((string) $n) : null, null, false);   // pieces kept for the owner
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public function toggle(string $job): void

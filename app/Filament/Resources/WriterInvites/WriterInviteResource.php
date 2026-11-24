@@ -34,8 +34,9 @@ class WriterInviteResource extends Resource
     protected static ?string $pluralModelLabel = 'লেখকদের আমন্ত্রণ';
 
     protected static ?string $slug = 'writer-invites';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 2;
 
     public const STATUSES = ['drafted' => 'পাঠানোর অপেক্ষায়', 'held' => 'থামানো', 'sent' => 'পাঠানো হয়েছে', 'failed' => 'যায়নি'];
 
@@ -47,9 +48,19 @@ class WriterInviteResource extends Resource
     }
 
     /** Letters written and still waiting to go: the number in the menu says there is something to read. */
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\WriterInvite::where('status', 'drafted')->count(), 'টি আমন্ত্রণ পাঠানোর অপেক্ষায়']]);   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
-        return ($n = WriterInvite::where('status', 'drafted')->count()) ? (string) $n : null;
+        return ($n = WriterInvite::where('status', 'drafted')->count()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function canCreate(): bool { return false; }

@@ -41,11 +41,13 @@ class PostsTable
         $actionable = fn (Post $p) => $p->audit_label && $p->audit_label !== 'keep' && ! $p->audit_decision;
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section', 'latestAiReview']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['authors', 'section', 'latestAiReview', 'serial']))
             ->defaultSort('published_at', 'desc')
             ->columns([
                 TextColumn::make('title')->label(__('শিরোনাম'))->searchable()->wrap()->limit(80)
-                    ->description(fn (Post $p) => trim(($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
+                    // D279: a serial's episode says so ("নতুন ধারাবাহিকের প্রস্তাব · পর্ব ১" / "ধারাবাহিক ‘…’ · পর্ব ৩")
+                    ->description(fn (Post $p) => trim(($p->serial_id && $p->serial ? ($p->serial->status === 'proposed' ? __('নতুন ধারাবাহিকের প্রস্তাব').' ‘'.$p->serial->title.'’' : __('ধারাবাহিক').' ‘'.$p->serial->title.'’').' · '.__('পর্ব').' '.\App\Support\Bn::num((string) $p->episode_no).' · ' : '')
+                        .($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
                         .($p->authors->first()?->publicName() ?? '').' · '.($p->section?->name_bn ?? ''), ' ·')),
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(self::STATUS[$state] ?? $state))
@@ -79,9 +81,12 @@ class PostsTable
                 SelectFilter::make('backlog_tier')->label(__('অপেক্ষার স্তর'))->options(\App\Support\Lang::t(ContentAudit::TIERS)),
                 TrashedFilter::make()->visible($isAdmin),
             ])
+            // D280 (UX audit: eight buttons stacked in each row): one main button opens the piece, where the decision is
+            // made with the AI report beside it; the same buttons as before are under "⋯"
             ->recordActions([
+                EditAction::make()->label(fn (Post $record) => $record->status === 'pending' ? __('দেখুন ও সিদ্ধান্ত') : __('খুলুন'))->button()->size('sm'),
+                \Filament\Actions\ActionGroup::make([
                 ...self::reviewActions(),
-                EditAction::make(),
                 \App\Support\PieceReviews::assignAction(),   // D168
                 Action::make('view')->label(__('দেখুন'))->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Post $p) => $p->url())->openUrlInNewTab()->visible(fn (Post $p) => $p->status === 'published'),
@@ -100,6 +105,7 @@ class PostsTable
                     ->action(fn (Post $p) => ContentAudit::dismiss($p, auth()->user())),
                 \App\Filament\Support\Deleting::row(),
                 ...\App\Filament\Support\Deleting::trashActions(),
+                ])->label(__('আরও'))->tooltip(__('আরও')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

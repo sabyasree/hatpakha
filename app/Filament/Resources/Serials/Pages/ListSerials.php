@@ -14,6 +14,26 @@ class ListSerials extends ListRecords
 {
     protected static string $resource = SerialResource::class;
 
+    /** D279: what needs a decision first (proposals, serials with an episode waiting), then running, then ended. */
+    public function getTabs(): array
+    {
+        $decide = fn ($query) => $query->where(fn ($w) => $w->where('status', 'proposed')->orWhereHas('episodes', fn ($e) => $e->where('status', 'pending')->whereNotNull('submitted_by')));
+
+        return [
+            'decide' => \Filament\Schemas\Components\Tabs\Tab::make(__('সিদ্ধান্ত বাকি'))
+                ->badge(fn () => ($n = $decide(\App\Models\Serial::query())->count()) ? \App\Support\Bn::num((string) $n) : null)->badgeColor('danger')
+                ->modifyQueryUsing($decide),
+            'running' => \Filament\Schemas\Components\Tabs\Tab::make(__('চলছে'))->modifyQueryUsing(fn ($query) => $query->whereIn('status', ['active', 'paused'])),
+            'ended' => \Filament\Schemas\Components\Tabs\Tab::make(__('শেষ বা বাদ'))->modifyQueryUsing(fn ($query) => $query->whereIn('status', ['finished', 'dropped'])),
+            'all' => \Filament\Schemas\Components\Tabs\Tab::make(__('সব')),
+        ];
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return \App\Support\DeskInbox::serialCount() ? 'decide' : 'all';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

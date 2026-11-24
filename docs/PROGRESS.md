@@ -222,6 +222,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D276: the serial box works on paper (words, address, QR code on the print page)
 - [x] D275: a serial in an issue carries its month of episodes and ends with “চলবে… সব পর্ব” (magazine, e-book, issue page)
 - [x] D274: an empty editorial (ফিরে আসা) can be written by the AI from the owner's words
+- [x] D280: desk second round: reply to comments and contact messages from the desk, ten tabs on লেখা with one button per row, quiet dismiss, Bengali digits in the menu
+- [x] D279: desk redesign: one inbox on আজকের কাজ, serials marked everywhere, menu in five groups, numbers with tooltips, next piece after a decision
 - [x] D278: a serial is in one issue only, three episodes at most, then "read on at the site" with a link and a QR code
 - [x] D277: new issue cover (পাখা for monthly, পূর্ণ ছবি for festival/special; changeable per issue), the same in magazine, issue page, lists, desk, print and e-book
 - [ ] Owner: after release, check the ফিরে আসা and December covers in the desk (সংখ্যা → প্রচ্ছদ) and pick the other style if preferred

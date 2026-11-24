@@ -1,134 +1,146 @@
 {{--
-  আজকের কাজ (D36 + D42): one page for the owner/editor. The AI editor prepares, you approve.
-  Inline styles + one scoped <style> (the desk only loads Filament's CSS).
+  আজকের কাজ (D36, D42; D279 owner: "as admin I should not spend time finding where things are"; three UX reviews):
+  one inbox. Every waiting thing is one line (App\Support\DeskInbox): what it is, who, when, and one button that opens
+  exactly that item. Most urgent first: আজই, এই সপ্তাহে, জেনে রাখুন. The menu's numbers count the same things.
+  The AI editor's state, the next issue, the calendar and the editor's pick are below, folded.
 --}}
 @php
     use App\Support\Bn;
-    use App\Ai\EditorPackage;
+    use App\Support\DeskInbox;
     $t = $this->today();
-    $subs = $t['submissions'];
-    $posts = \App\Filament\Resources\Posts\PostResource::class;
+    $items = DeskInbox::items();
+    $counts = DeskInbox::counts($items);
     $issues = \App\Filament\Resources\Issues\IssueResource::class;
-    $words = fn ($p) => count(preg_split('/\s+/u', trim(strip_tags((string) $p->body_html)), -1, PREG_SPLIT_NO_EMPTY));
-    $decision = ['publish' => [__('প্রকাশযোগ্য'), 'success'], 'changes' => [__('বদল দরকার'), 'warning'], 'decline' => [__('এবার নয়'), 'gray']];
-    $approvals = $subs->count() + ($t['issue'] ? 1 : 0) + $t['editorials']->count() + ($t['images'] ? 1 : 0) + $t['tasks']->count();
     $aiState = ! $t['aiEnabled'] ? [__('বন্ধ'), 'gray'] : ($t['aiPaused'] ? [__('থামানো'), 'warning'] : [__('কাজ করছে'), 'success']);
+    $tasks = \App\Models\EditorTask::with('subject')->whereIn('id', $items->pluck('action')->filter(fn ($a) => ($a[0] ?? null) === 'task')->map(fn ($a) => $a[1]))->get()->keyBy('id');
 @endphp
 <x-filament-panels::page>
     <style>
-        .hp-dash { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); }
-        @media (min-width: 1100px) { .hp-dash { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } }
-        .hp-stats { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); }
-        .hp-stat { display: block; border: 1px solid rgba(127,127,127,.22); border-radius: .9rem; padding: .9rem 1rem; background: rgba(127,127,127,.04); }
-        .hp-stat:hover { border-color: rgba(127,127,127,.5); }
-        .hp-stat b { display: block; font-size: 1.9rem; line-height: 1.2; }
+        .hp-in-counts { display: flex; flex-wrap: wrap; gap: .5rem; }
+        .hp-in-counts a { border-radius: 999px; padding: .45rem 1.1rem; font-weight: 700; text-decoration: none; }
+        .hp-in-box { border: 1px solid rgba(127,127,127,.25); border-radius: 1rem; overflow: hidden; background: rgba(127,127,127,.03); }
+        .hp-in-box.today { border-left: 5px solid #CB1B32; }
+        .hp-in-box > h2 { font-size: .95rem; font-weight: 800; padding: .7rem 1.1rem; border-bottom: 1px solid rgba(127,127,127,.18); margin: 0; }
+        .hp-in-box.today > h2 { color: #CB1B32; }
+        .hp-in-row { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; padding: .8rem 1.1rem; border-bottom: 1px solid rgba(127,127,127,.14); }
+        .hp-in-row:last-child { border-bottom: 0; }
+        .hp-in-tag { font-size: .78rem; font-weight: 700; padding: .1rem .55rem; border-radius: .4rem; color: #13212C; white-space: nowrap; }
+        .hp-in-text { flex: 1 1 18rem; min-width: 0; }
+        .hp-in-text b { font-weight: 700; }
+        .hp-in-sub { font-size: .875rem; opacity: .75; margin-top: .1rem; }
+        .hp-in-due { display: inline-block; font-size: .78rem; font-weight: 700; padding: .05rem .5rem; border-radius: .4rem; margin-left: .35rem; background: #DDF1FA; color: #13212C; }
+        .hp-in-due.soon { background: #F08D90; }
+        .hp-in-act { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+        .hp-in-fyi { background: rgba(239,192,141,.14); }
+        .hp-in-empty { text-align: center; padding: 2rem 1rem; }
         .hp-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; padding: .8rem 0; border-bottom: 1px solid rgba(127,127,127,.18); }
         .hp-row:last-child { border-bottom: 0; }
         .hp-muted { font-size: .875rem; opacity: .72; }
-        .hp-card { border: 1px solid rgba(127,127,127,.22); border-radius: .9rem; padding: 1rem; }
-        .hp-col { display: grid; gap: 1.25rem; align-content: start; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-        .hp-col > * { min-width: 0; }
         .hp-day { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem .1rem; border-bottom: 1px dashed rgba(127,127,127,.25); }
         .hp-day:last-child { border-bottom: 0; }
+        @media (max-width: 640px) { .hp-in-counts { position: sticky; top: 4rem; z-index: 5; background: inherit; padding: .3rem 0; } .hp-in-row { padding: .7rem .8rem; } .hp-in-fyi .hp-in-sub { display: none; } .hp-in-act { width: 100%; } }
+        .hp-state { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); }
+        @media (min-width: 1100px) { .hp-state { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
 
-    {{-- Greeting + the one-line status --}}
     <div>
         <div style="font-size:1.15rem">{{ __('নমস্কার,') }} <strong>{{ $t['name'] }}</strong>{{ __('।') }}</div>
-        <div class="hp-muted" style="font-size:1rem;margin-top:.15rem">
-            @if ($approvals + $t['commentsTotal'] === 0)
-                {{ __('আজ কিছু বাকি নেই। এআই সম্পাদক নতুন লেখা এলেই তৈরি করে রাখবে।') }}
-            @else
-                {{ __('এআই সম্পাদক সব তৈরি করে রেখেছে, এখন শুধু আপনার সিদ্ধান্ত।') }}
-            @endif
+        <div class="hp-muted" style="font-size:1rem;margin-top:.15rem">{{ __('যা আপনার একটি ক্লিকের অপেক্ষায়, জরুরি আগে। প্রতিটি লাইনের বোতাম ঠিক সেই জিনিসটি খোলে।') }}</div>
+    </div>
+
+    <div class="hp-in-counts">
+        <a href="#in-today" style="background:{{ $counts['today'] ? '#CB1B32' : '#DDF1FA' }};color:{{ $counts['today'] ? '#fff' : '#13212C' }}">{{ __('আজই') }} {{ Bn::num((string) $counts['today']) }}</a>
+        <a href="#in-week" style="background:#13212C;color:#fff">{{ __('এই সপ্তাহে') }} {{ Bn::num((string) $counts['week']) }}</a>
+        <a href="#in-fyi" style="background:#FBEBD8;color:#13212C">{{ __('জেনে রাখুন') }} {{ Bn::num((string) $counts['fyi']) }}</a>
+    </div>
+
+    @if ($items->isEmpty())
+        <div class="hp-in-box hp-in-empty">
+            <div style="font-size:1.25rem;font-weight:700">{{ __('আজ কিছু বাকি নেই।') }}</div>
+            <div class="hp-muted">{{ __('নতুন লেখা, প্রস্তাব, পর্ব, মন্তব্য বা প্রশ্ন এলে এখানেই দেখাবে।') }}</div>
         </div>
-    </div>
+    @endif
 
-    {{-- Four numbers, each a link --}}
-    <div class="hp-stats">
-        <a class="hp-stat" href="#approvals"><span class="hp-muted">{{ __('আপনার অনুমোদনের অপেক্ষায়') }}</span><b>{{ Bn::num($approvals) }}</b></a>
-        <a class="hp-stat" href="#comments"><span class="hp-muted">{{ __('মন্তব্য') }}</span><b>{{ Bn::num($t['commentsTotal']) }}</b></a>
-        <a class="hp-stat" href="{{ $posts::getUrl('index', ['tab' => 'published']) }}"><span class="hp-muted">{{ __('এই সপ্তাহে প্রকাশিত') }}</span><b>{{ Bn::num($t['publishedWeek']) }}</b></a>
-        @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
-            {{-- D215: who is on the site now (Google Analytics realtime, the last half hour) --}}
-            @php($online = rescue(fn () => \App\Support\GoogleData::realtime(), [null, null], false))
-            @if ($online[0])
-                <div class="hp-stat" wire:poll.60s title="{{ collect($online[0]['pages'])->map(fn ($x) => $x['title'].' ('.$x['n'].')')->implode(' · ') }}">
-                    <span class="hp-muted">{{ __('এখন সাইটে (শেষ আধ ঘণ্টায়)') }}</span><b>{{ Bn::num((string) $online[0]['now']) }} <span style="font-size:1rem;font-weight:600">{{ __('জন') }}</span></b>
-                    @if ($online[0]['pages'])<span class="hp-muted" style="display:block;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $online[0]['pages'][0]['title'] }}</span>@endif
-                </div>
-            @endif
-        @endif
-        <div class="hp-stat"><span class="hp-muted">{{ __('এআই সম্পাদক') }}</span><b style="font-size:1.25rem;margin-top:.45rem"><x-filament::badge :color="$aiState[1]" size="lg">{{ $aiState[0] }}</x-filament::badge></b></div>
-    </div>
-
-    <div class="hp-dash">
-        {{-- LEFT: everything waiting for a decision --}}
-        <div class="hp-col">
-            <x-filament::section id="approvals" icon="heroicon-o-check-badge" collapsible persist-collapsed collapse-id="hp-today-1">
-                <x-slot name="heading">{{ __('আপনার অনুমোদনের অপেক্ষায়') }}</x-slot>
-                <x-slot name="description">{{ __('খুলে দেখুন, দরকার হলে বদলান, তারপর এক ক্লিকে অনুমোদন।') }}</x-slot>
-
-                @if ($t['issue'])
-                    <div class="hp-row">
-                        <div style="min-width:0;flex:1 1 16rem">
-                            <div style="font-weight:700">{{ __('সংখ্যার প্রস্তাব:') }} {{ $t['issue']->title }}</div>
-                            <div class="hp-muted">{{ __(\App\Filament\Resources\Issues\Schemas\IssueForm::THEMES[$t['issue']->theme_key] ?? '') }} · {{ Bn::num(count((array) ($t['issue']->ai_plan['post_ids'] ?? []))) }}{{ __('টি লেখা') }} · {{ ['live' => __('সম্পাদকীয় প্রকাশিত'), 'scheduled' => __('সম্পাদকীয়র সময় ঠিক'), 'draft' => __('সম্পাদকীয় খসড়া'), 'missing' => __('সম্পাদকীয় এখনও নেই')][\App\Ai\IssueWatch::status($t['issue'])['editorial']] }}</div>
-                        </div>
-                        <x-filament::button tag="a" :href="$issues::getUrl('edit', ['record' => $t['issue']])" icon="heroicon-o-book-open">{{ __('সংখ্যা দেখুন') }}</x-filament::button>
+    @foreach (DeskInbox::GROUPS as $g => $label)
+        @php($rows = $items->where('group', $g))
+        @continue($rows->isEmpty())
+        <section id="in-{{ $g }}" class="hp-in-box {{ $g }} {{ $g === 'fyi' ? 'hp-in-fyi' : '' }}">
+            <h2>{{ __($label) }} · {{ Bn::num((string) $rows->count()) }}</h2>
+            @foreach ($rows as $r)
+                @php($tag = DeskInbox::TAGS[$r['tag']] ?? DeskInbox::TAGS['ai'])
+                <div class="hp-in-row" wire:key="in-{{ $r['key'] }}">
+                    <span class="hp-in-tag" style="background:{{ $tag[1] }}">{{ __($tag[0]) }}</span>
+                    <div class="hp-in-text">
+                        <div><b>{{ $r['title'] }}</b>@if ($r['who'] !== '') · {{ $r['who'] }}@endif @if ($r['due'])<span class="hp-in-due {{ $r['soon'] ? 'soon' : '' }}">{{ $r['due'] }}</span>@endif</div>
+                        @if ($r['sub'])<div class="hp-in-sub">{{ $r['sub'] }}</div>@endif
                     </div>
-                @endif
-                @foreach ($t['editorials'] as $e)
-                    <div class="hp-row">
-                        <div style="min-width:0;flex:1 1 16rem"><div style="font-weight:700">{{ __('সম্পাদকীয় খসড়া:') }} {{ $e->title }}</div><div class="hp-muted">{{ __('আপনার নামে প্রকাশ হবে; পড়ে বদলে নিন') }}</div></div>
-                        <x-filament::button tag="a" :href="$this->editUrl($e)" icon="heroicon-o-pencil">{{ __('পড়ুন ও প্রকাশ করুন') }}</x-filament::button>
-                    </div>
-                @endforeach
-                @if ($t['images'])
-                    <div class="hp-row">
-                        <div style="min-width:0;flex:1 1 16rem"><div style="font-weight:700">{{ __('এআই-এর আঁকা') }} {{ Bn::num($t['images']) }}{{ __('টি প্রচ্ছদ') }}</div><div class="hp-muted">{{ __('ছবি ছাড়া পুরনো লেখার জন্য; ভালোগুলো একসঙ্গে বসান') }}</div></div>
-                        <x-filament::button tag="a" :href="\App\Filament\Pages\AiImages::getUrl()" icon="heroicon-o-photo" color="gray">{{ __('ছবিগুলো দেখুন') }}</x-filament::button>
-                    </div>
-                @endif
-                @foreach ($subs as $p)
-                    @php($r = EditorPackage::report($p))
-                    <div class="hp-row" wire:key="s{{ $p->id }}">
-                        @if ($img = $p->featured_image_path ?: $p->proposed_image_path)
-                            <img src="{{ asset($img) }}" alt="" style="width:4.5rem;height:3rem;object-fit:cover;border-radius:.5rem;flex:none">
+                    <div class="hp-in-act">
+                        @php($a = $r['action'])
+                        @if (! $a)
+                            <x-filament::button tag="a" :href="$r['url']" :color="$g === 'fyi' ? 'gray' : 'primary'" :outlined="$g === 'fyi'">{{ $r['button'] }}</x-filament::button>
+                        @elseif ($a[0] === 'approveAiOkComments')
+                            <x-filament::button wire:click="approveAiOkComments">{{ $r['button'] }}</x-filament::button>
+                            <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('এক এক করে') }}</x-filament::button>
+                        @elseif ($a[0] === 'message')
+                            {{ ($this->replyMessageAction)(['message' => $a[1]]) }}
+                            <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('সব বার্তা') }}</x-filament::button>
+                        @elseif ($a[0] === 'comment' && ($a[2] ?? false))
+                            {{-- the AI thinks it is spam: that is the main button (UX audit) --}}
+                            <x-filament::button wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
+                            <x-filament::button color="gray" outlined wire:click="approveComment({{ $a[1] }})">{{ __('প্রকাশ') }}</x-filament::button>
+                        @elseif ($a[0] === 'comment')
+                            <x-filament::button wire:click="approveComment({{ $a[1] }})">{{ __('প্রকাশ') }}</x-filament::button>
+                            <x-filament::button color="gray" outlined wire:click="spamComment({{ $a[1] }})">{{ __('স্প্যাম') }}</x-filament::button>
+                            {{ ($this->replyCommentAction)(['comment' => $a[1]]) }}
+                        @elseif ($a[0] === 'replyQuestion')
+                            {{ ($this->replyQuestionAction)(['task' => $a[1]]) }}
+                        @elseif ($a[0] === 'task' && ($task = $tasks[$a[1]] ?? null))
+                                    @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
+                                    @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
+                                    @if ($task->type === 'newsletter' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-envelope" :href="\App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $task->subject])">{{ __('দেখুন ও পাঠান') }}</x-filament::button> @endif
+                                    @if ($task->type === 'audio' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-speaker-wave" :href="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject])">{{ __('শুনুন ও অনুমোদন দিন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'kolom') <x-filament::button tag="a" size="sm" icon="heroicon-o-megaphone" :href="\App\Filament\Resources\ReaderEntries\ReaderEntryResource::getUrl('index')">{{ __('দেখে প্রকাশ করুন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'honour') {{ ($this->honourAction)(['task' => $task->id]) }} @endif
+                                    @if ($task->type === 'certificates') {{ ($this->issueCertificatesAction)(['task' => $task->id]) }} @endif
+                                    @if ($task->type === 'certificate_request') <x-filament::button tag="a" size="sm" icon="heroicon-o-academic-cap" :href="\App\Filament\Pages\Certificates::getUrl().'#requests'">{{ __('দেখে শংসাপত্র দিন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }}
+                                        @if ($task->subject) <x-filament::button tag="a" size="sm" color="gray" icon="heroicon-o-arrows-up-down" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl('edit', ['record' => $task->subject])">{{ __('সাজিয়ে দেখুন') }}</x-filament::button> @endif
+                                    @endif
+                                    @if (in_array($task->type, ['serial', 'serial_episode'], true)) <x-filament::button tag="a" size="sm" icon="heroicon-o-book-open" :href="$task->subject instanceof \App\Models\Serial ? \App\Filament\Resources\Serials\SerialResource::getUrl('edit', ['record' => $task->subject]) : ($task->subject instanceof \App\Models\Post ? \App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject]) : \App\Filament\Resources\Serials\SerialResource::getUrl())">{{ __('ধারাবাহিক দেখুন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'kids_alphabet') <x-filament::button tag="a" size="sm" icon="heroicon-o-face-smile" :href="\App\Filament\Pages\KidsCorner::getUrl()">{{ __('দেখে অনুমোদন দিন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'collection_add' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-plus" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl()">{{ __('দেখে যোগ করুন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'rewrite' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-arrows-right-left" :href="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject])">{{ __('দুই সংস্করণ মিলিয়ে দেখুন') }}</x-filament::button> @endif
+                                    @if ($task->type === 'tags') {{ ($this->mergeTagsAction)(['task' => $task->id]) }} @endif
+                                    @if ($task->type === 'question') {{ ($this->replyQuestionAction)(['task' => $task->id]) }} @endif
+                                    @if (in_array($task->type, ['report', 'health', 'alert', 'quality', 'plagiarism', 'insights', 'seo_refresh', 'team_review', 'strategy'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
+                                    {{ ($this->dismissTaskAction)(['task' => $task->id]) }}
                         @endif
-                        <div style="min-width:0;flex:1 1 14rem">
-                            <div style="font-weight:700">{{ $p->title }}</div>
-                            @if (str_starts_with((string) $p->review_note, \App\Ai\EditorPackage::OBJECTED))
-                                {{-- D256: the writer said no to the word changes; their words, then the editor decides again --}}
-                                <div style="margin:.35rem 0;border-left:4px solid #CB1B32;padding:.35rem .6rem;background:rgba(203,27,50,.08)"><strong>{{ __('লেখক বদলে আপত্তি করেছেন') }}:</strong> {{ \Illuminate\Support\Str::after($p->review_note, \App\Ai\EditorPackage::OBJECTED) }}</div>
-                            @endif
-                            <div class="hp-muted">{{ $p->authors->first()?->publicName() ?? '—' }} · {{ $p->section?->name_bn }} · {{ Bn::num($words($p)) }} {{ __('শব্দ · জমা') }} {{ Bn::num((string) $p->submitted_at?->locale(app()->getLocale())->diffForHumans()) }}</div>
-                        </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center">
-                            @if ($r)
-                                @php($d = $decision[$r['decision'] ?? ''] ?? null)
-                                @if ($d)<x-filament::badge :color="$d[1]">{{ __('এআই:') }} {{ $d[0] }}</x-filament::badge>@endif
-                                <x-filament::badge color="gray">{{ __('মান') }} {{ Bn::num((string) $r['quality_score']) }}{{ __('/১০') }}</x-filament::badge>
-                                @if (count($r['edits'] ?? []))<x-filament::badge color="info">{{ Bn::num(count($r['edits'])) }}{{ __('টি সংশোধন') }}</x-filament::badge>@endif
-                            @else
-                                <x-filament::badge color="gray">{{ $t['aiEnabled'] && ! $t['aiPaused'] ? __('এআই পড়ছে…') : __('এআই ছাড়া') }}</x-filament::badge>
-                            @endif
-                            <x-filament::button tag="a" :href="$this->editUrl($p)" icon="heroicon-o-book-open">{{ __('দেখুন ও সিদ্ধান্ত') }}</x-filament::button>
-                        </div>
                     </div>
-                @endforeach
-                @if ($approvals === 0)
-                    <p class="hp-muted">{{ __('এখন অনুমোদনের কিছু নেই।') }}</p>
-                @endif
-                @if ($t['backlogReady'] || $t['confirms'] || $t['withWriter'])
-                    <div class="hp-muted" style="margin-top:.75rem;line-height:1.9">
-                        @if ($t['backlogReady'])<div>{{ __('ওয়ার্ডপ্রেসের পুরনো জমা:') }} {{ Bn::num($t['backlogReady']) }}{{ __('টি তৈরি (') }}{{ Bn::num($t['backlog']) }}{{ __('টির মধ্যে)।') }} <a href="{{ $posts::getUrl('index', ['tab' => 'backlog']) }}" style="text-decoration:underline">{{ __('সময় পেলে দেখুন') }}</a></div>@endif
-                        @if ($t['confirms'])<div><a class="underline" href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'confirm']) }}">{{ __('লেখকের সম্মতির অপেক্ষায়:') }} {{ Bn::num($t['confirms']) }}{{ __('টি') }}</a></div>@endif
-                        @if ($t['withWriter'])<div><a class="underline" href="{{ \App\Filament\Resources\Posts\PostResource::getUrl('index', ['tab' => 'changes']) }}">{{ __('বদল চেয়ে লেখকের কাছে:') }} {{ Bn::num($t['withWriter']) }}{{ __('টি') }}</a></div>@endif
-                    </div>
-                @endif
-            </x-filament::section>
+                </div>
+            @endforeach
+        </section>
+    @endforeach
 
+    {{-- The rest, folded: the editor's pick, answered questions, the AI editor, the next issue, the calendar --}}
+    <x-filament::section icon="heroicon-o-adjustments-horizontal" collapsible collapsed persist-collapsed collapse-id="hp-today-state">
+        <x-slot name="heading">{{ __('অবস্থা: এআই, পরের সংখ্যা, প্রকাশের সূচি') }}</x-slot>
+        <x-slot name="description">{{ __('এআই') }}: {{ $aiState[0] }} · {{ __('এই সপ্তাহে প্রকাশিত') }} {{ Bn::num((string) $t['publishedWeek']) }}</x-slot>
+        <div class="hp-state">
+            @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
+                {{-- Owner (2026-11-16): the editor's pick is always in sight and can be changed, whatever the AI proposed --}}
+                @php($nowPick = $this->currentPick())
+                <x-filament::section icon="heroicon-o-star" compact>
+                    <x-slot name="heading">{{ __('প্রথম পাতায় সম্পাদকের পছন্দ') }}</x-slot>
+                    <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between">
+                        <span>@if ($nowPick['post'])<a href="{{ $nowPick['post']->url() }}" target="_blank" rel="noopener" style="font-weight:700;text-decoration:underline">{{ $nowPick['post']->title }}</a>
+                            <span style="opacity:.75"> — {{ $nowPick['post']->authors->first()?->publicName() }}</span>
+                            @if ($nowPick['note'])<div style="opacity:.8">{{ $nowPick['note'] }}</div>@endif
+                            @else<span style="opacity:.75">{{ __('এখন কোনো লেখা বসানো নেই।') }}</span>@endif</span>
+                        <span style="display:flex;gap:.4rem">{{ $this->changePickAction }}
+                            @if ($nowPick['post'])<x-filament::button size="sm" color="gray" outlined wire:click="removePick" wire:confirm="{{ __('প্রথম পাতা থেকে সম্পাদকের পছন্দ সরাবেন?') }}">{{ __('সরান') }}</x-filament::button>@endif</span>
+                    </div>
+                </x-filament::section>
+            @endif
             @php($answered = $this->answeredQuestions())
             @if ($answered->isNotEmpty())
                 {{-- D224: questions already answered stay in sight, with what was said --}}
@@ -148,91 +160,6 @@
                     @endforeach
                 </x-filament::section>
             @endif
-
-            @if (auth()->user()?->hasRole(\App\Enums\Role::Admin))
-                {{-- Owner (2026-11-16): the editor's pick is always in sight and can be changed, whatever the AI proposed --}}
-                @php($nowPick = $this->currentPick())
-                <x-filament::section icon="heroicon-o-star" compact>
-                    <x-slot name="heading">{{ __('প্রথম পাতায় সম্পাদকের পছন্দ') }}</x-slot>
-                    <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between">
-                        <span>@if ($nowPick['post'])<a href="{{ $nowPick['post']->url() }}" target="_blank" rel="noopener" style="font-weight:700;text-decoration:underline">{{ $nowPick['post']->title }}</a>
-                            <span style="opacity:.75"> — {{ $nowPick['post']->authors->first()?->publicName() }}</span>
-                            @if ($nowPick['note'])<div style="opacity:.8">{{ $nowPick['note'] }}</div>@endif
-                            @else<span style="opacity:.75">{{ __('এখন কোনো লেখা বসানো নেই।') }}</span>@endif</span>
-                        <span style="display:flex;gap:.4rem">{{ $this->changePickAction }}
-                            @if ($nowPick['post'])<x-filament::button size="sm" color="gray" outlined wire:click="removePick" wire:confirm="{{ __('প্রথম পাতা থেকে সম্পাদকের পছন্দ সরাবেন?') }}">{{ __('সরান') }}</x-filament::button>@endif</span>
-                    </div>
-                </x-filament::section>
-            @endif
-
-            @if ($t['tasks']->isNotEmpty())
-                {{-- The AI editor's other jobs (D48): nothing is sent or shown until you click. --}}
-                <x-filament::section id="tasks" icon="heroicon-o-briefcase" collapsible persist-collapsed collapse-id="hp-today-2">
-                    <x-slot name="heading">{{ __('সম্পাদকের অন্য কাজ') }}</x-slot>
-                    <x-slot name="description">{{ __('এআই তৈরি করে রেখেছে; পাঠানো বা বসানো হবে আপনি চাপলে।') }}</x-slot>
-                    @php($labels = ['kolom' => __('পাঠকের কলম'), 'followup' => __('লেখককে মনে করানো'), 'welcome' => __('প্রথম লেখার শুভেচ্ছা'), 'pick' => __('সম্পাদকের পছন্দ ও এই দিনে'), 'newsletter' => __('সাপ্তাহিক চিঠি'), 'report' => __('মাসের হিসাব'), 'health' => __('সাইটের স্বাস্থ্য'), 'alert' => __('প্রধান সম্পাদকের সতর্কতা'), 'quality' => __('এআই সম্পাদকের কাজের মান'), 'question' => __('চ্যাটে লেখকের প্রশ্ন'), 'plagiarism' => __('মৌলিকতা নিয়ে সন্দেহ'), 'insights' => __('পাঠকের হিসাব'), 'seo_refresh' => __('এসইও ঘষামাজা'), 'collection' => __('সংগ্রাহকের প্রস্তাব'), 'collection_add' => __('সংকলনে নতুন লেখা'), 'kids_alphabet' => __('ছোটদের বর্ণমালা'), 'serial' => __('নতুন ধারাবাহিক'), 'serial_episode' => __('ধারাবাহিকের পর্ব'), 'tags' => __('ট্যাগ গোছানো'), 'certificates' => __('শংসাপত্র'), 'certificate_request' => __('লেখকের শংসাপত্রের অনুরোধ'), 'team_review' => __('এআই দলের মাসিক পর্যালোচনা'), 'strategy' => __('কৌশলবিদের পরিকল্পনা'), 'honour' => __('মাসের লেখক'), 'audio' => __('লেখকের পাঠ (অডিও)')])
-                    @foreach ($t['tasks'] as $task)
-                        <div class="hp-row" wire:key="task{{ $task->id }}">
-                            <div style="min-width:0;flex:1 1 16rem">
-                                <div class="hp-muted">{{ $labels[$task->type] ?? $task->type }}</div>
-                                <div style="font-weight:700">{{ $task->title }}</div>
-                            </div>
-                            <div style="display:flex;flex-wrap:wrap;gap:.4rem">
-                                @if (in_array($task->type, ['followup', 'welcome'], true)) {{ ($this->sendNoteAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'pick') {{ ($this->approvePickAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'newsletter' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-envelope" :href="\App\Filament\Resources\Newsletters\NewsletterResource::getUrl('edit', ['record' => $task->subject])">{{ __('দেখুন ও পাঠান') }}</x-filament::button> @endif
-                                @if ($task->type === 'audio' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-speaker-wave" :href="\App\Filament\Resources\Posts\PostResource::getUrl('edit', ['record' => $task->subject])">{{ __('শুনুন ও অনুমোদন দিন') }}</x-filament::button> @endif
-                                @if ($task->type === 'kolom') <x-filament::button tag="a" size="sm" icon="heroicon-o-megaphone" :href="\App\Filament\Resources\ReaderEntries\ReaderEntryResource::getUrl('index')">{{ __('দেখে প্রকাশ করুন') }}</x-filament::button> @endif
-                                @if ($task->type === 'honour') {{ ($this->honourAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'certificates') {{ ($this->issueCertificatesAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'certificate_request') <x-filament::button tag="a" size="sm" icon="heroicon-o-academic-cap" :href="\App\Filament\Pages\Certificates::getUrl().'#requests'">{{ __('দেখে শংসাপত্র দিন') }}</x-filament::button> @endif
-                                @if ($task->type === 'collection') {{ ($this->approveCollectionAction)(['task' => $task->id]) }}
-                                    @if ($task->subject) <x-filament::button tag="a" size="sm" color="gray" icon="heroicon-o-arrows-up-down" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl('edit', ['record' => $task->subject])">{{ __('সাজিয়ে দেখুন') }}</x-filament::button> @endif
-                                @endif
-                                @if (in_array($task->type, ['serial', 'serial_episode'], true)) <x-filament::button tag="a" size="sm" icon="heroicon-o-book-open" :href="\App\Filament\Resources\Serials\SerialResource::getUrl()">{{ __('ধারাবাহিক দেখুন') }}</x-filament::button> @endif
-                                @if ($task->type === 'kids_alphabet') <x-filament::button tag="a" size="sm" icon="heroicon-o-face-smile" :href="\App\Filament\Pages\KidsCorner::getUrl()">{{ __('দেখে অনুমোদন দিন') }}</x-filament::button> @endif
-                                @if ($task->type === 'collection_add' && $task->subject) <x-filament::button tag="a" size="sm" icon="heroicon-o-plus" :href="\App\Filament\Resources\Collections\CollectionResource::getUrl()">{{ __('দেখে যোগ করুন') }}</x-filament::button> @endif
-                                @if ($task->type === 'tags') {{ ($this->mergeTagsAction)(['task' => $task->id]) }} @endif
-                                @if ($task->type === 'question') {{ ($this->replyQuestionAction)(['task' => $task->id]) }} @endif
-                                @if (in_array($task->type, ['report', 'health', 'alert', 'quality', 'plagiarism', 'insights', 'seo_refresh', 'team_review', 'strategy'], true)) {{ ($this->readTaskAction)(['task' => $task->id]) }} @endif
-                                {{ ($this->dismissTaskAction)(['task' => $task->id]) }}
-                            </div>
-                        </div>
-                    @endforeach
-                </x-filament::section>
-            @endif
-
-            <x-filament::section id="comments" icon="heroicon-o-chat-bubble-left-right" collapsible persist-collapsed collapse-id="hp-today-3">
-                <x-slot name="heading">{{ __('পাঠকের মন্তব্য') }}</x-slot>
-                <x-slot name="description">{{ __('এআই আগেই পড়ে রেখেছে। "ঠিক আছে" চিহ্নিতগুলো একসঙ্গে প্রকাশ করতে পারেন।') }}</x-slot>
-                @if ($t['commentsOk'])
-                    <x-filament::button color="success" icon="heroicon-o-check" wire:click="approveAiOkComments" style="margin-bottom:.5rem">{{ __('এআই যেগুলো ঠিক বলেছে (') }}{{ Bn::num($t['commentsOk']) }}{{ __('টি) সব প্রকাশ করুন') }}</x-filament::button>
-                @endif
-                @forelse ($t['comments'] as $c)
-                    <div class="hp-row" wire:key="c{{ $c->id }}">
-                        <div style="min-width:0;flex:1 1 16rem">
-                            <div class="hp-muted">{{ $c->author_name }} ({{ $c->user_id ? __('অ্যাকাউন্ট') : __('অতিথি') }}) · "{{ $c->post?->title }}"</div>
-                            <div style="white-space:pre-line">{{ \Illuminate\Support\Str::limit($c->body, 400) }}</div>
-                            @if ($c->ai_verdict)
-                                <div style="margin-top:.3rem"><x-filament::badge :color="['ok' => 'success', 'spam' => 'danger', 'check' => 'warning'][$c->ai_verdict]">{{ __('এআই:') }} {{ ['ok' => __('ঠিক আছে'), 'spam' => __('স্প্যাম মনে হচ্ছে'), 'check' => __('দেখে নিন')][$c->ai_verdict] }}</x-filament::badge> <span class="hp-muted">{{ $c->ai_reason }}</span></div>
-                            @endif
-                        </div>
-                        <div style="display:flex;gap:.5rem">
-                            <x-filament::button color="success" icon="heroicon-o-check" wire:click="approveComment({{ $c->id }})">{{ __('প্রকাশ') }}</x-filament::button>
-                            <x-filament::button color="gray" icon="heroicon-o-no-symbol" wire:click="spamComment({{ $c->id }})">{{ __('স্প্যাম') }}</x-filament::button>
-                        </div>
-                    </div>
-                @empty
-                    <p class="hp-muted">{{ __('কোনো মন্তব্য অপেক্ষায় নেই।') }}</p>
-                @endforelse
-                @if ($t['commentsTotal'] > $t['comments']->count())
-                    <p style="margin-top:.5rem"><a href="{{ \App\Filament\Resources\Comments\CommentResource::getUrl('index') }}" style="text-decoration:underline">{{ __('সব') }} {{ Bn::num($t['commentsTotal']) }}{{ __('টি মন্তব্য') }}</a></p>
-                @endif
-            </x-filament::section>
-        </div>
-
-        {{-- RIGHT: the AI editor, the publishing calendar, the next issue --}}
-        <div class="hp-col">
             <x-filament::section icon="heroicon-o-sparkles" collapsible persist-collapsed collapse-id="hp-today-4">
                 <x-slot name="heading">{{ __('এআই সম্পাদক') }}</x-slot>
                 <div style="line-height:1.9">
@@ -293,9 +220,7 @@
                 @endforeach
             </x-filament::section>
 
-            @if ($t['isAdmin'] && $t['auditOpen'])
-                <div class="hp-card hp-muted">{{ __('পুরনো লেখার অডিট সুপারিশ, সিদ্ধান্ত বাকি:') }} {{ Bn::num($t['auditOpen']) }}{{ __('টি') }}</div>
-            @endif
+
         </div>
-    </div>
+    </x-filament::section>
 </x-filament-panels::page>

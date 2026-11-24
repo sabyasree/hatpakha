@@ -20,6 +20,9 @@ class PostForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->columns(3)->components([
+            // D279: a serial's episode names its serial at the top; a new serial shows the writer's whole proposal
+            \Filament\Schemas\Components\View::make('filament.serial-banner')->columnSpanFull()
+                ->visible(fn (?Post $record) => (bool) $record?->serial_id && ! in_array($record?->status, ['published'], true)),
             // What to do with a waiting submission, at the top (owner, 2026-11-12).
             \Filament\Schemas\Components\View::make('filament.review-guide')->columnSpanFull()
                 ->visible(fn (?Post $record) => $record?->status === 'pending'),

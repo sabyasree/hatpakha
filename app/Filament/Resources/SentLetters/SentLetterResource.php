@@ -29,6 +29,7 @@ class SentLetterResource extends Resource
     protected static ?string $pluralModelLabel = 'পাঠানো চিঠি';
 
     protected static ?string $slug = 'sent-letters';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
     protected static ?int $navigationSort = 7;
 

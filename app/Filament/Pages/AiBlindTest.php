@@ -22,14 +22,13 @@ class AiBlindTest extends Page
     protected string $view = 'filament.pages.ai-blind-test';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
     protected static ?string $navigationLabel = 'এআই পরীক্ষা';
 
     protected static ?string $title = 'এআই পরীক্ষা';
 
-    protected static ?int $navigationSort = 91;
+    protected static ?int $navigationSort = 4;
 
     /** The piece on screen. */
     public ?int $postId = null;
