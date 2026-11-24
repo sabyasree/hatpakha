@@ -37,12 +37,18 @@ class WriterQuestions extends Page implements HasTable
     protected static ?string $title = 'লেখকদের প্রশ্ন';
 
     protected static ?string $slug = 'writer-questions';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Editor) ?? false;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\EditorTask::open('question')->count(), 'টি প্রশ্নের উত্তর বাকি']]);   // D279: every number says what it counts
     }
 
     public static function getNavigationBadge(): ?string
@@ -54,7 +60,7 @@ class WriterQuestions extends Page implements HasTable
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public function getSubheading(): ?string

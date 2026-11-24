@@ -29,8 +29,9 @@ class HandoverPage extends Page
     protected static ?string $title = 'নিজে থেকে চলা কাজ';
 
     protected static ?string $slug = 'handover';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
@@ -44,7 +45,7 @@ class HandoverPage extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public function toggle(string $job): void

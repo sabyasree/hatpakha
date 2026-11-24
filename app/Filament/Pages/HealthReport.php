@@ -26,6 +26,7 @@ class HealthReport extends Page
     protected static ?string $title = 'সাইটের স্বাস্থ্য';
 
     protected static ?string $slug = 'health';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
     protected static ?int $navigationSort = 2;
 
@@ -47,7 +48,7 @@ class HealthReport extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public function show(string $period, int $back = 0): void

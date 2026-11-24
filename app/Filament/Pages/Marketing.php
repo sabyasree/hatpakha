@@ -31,8 +31,9 @@ class Marketing extends Page
     protected static ?string $navigationLabel = 'মার্কেটিং';
 
     protected static ?string $title = 'মার্কেটিং';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public string $filter = 'ready';
 
@@ -86,6 +87,11 @@ class Marketing extends Page
             ->where('published_at', '<', now()->subMonths(3))->whereHas('section', fn ($q) => $q->where('slug', '!=', \App\Models\Section::KIDS))->inRandomOrder()->first();
 
         return $p ? \App\Ai\Marketer::forPiece($p, 'archive', true) : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

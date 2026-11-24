@@ -24,14 +24,13 @@ class AiSettings extends Page
     protected string $view = 'filament.pages.ai-settings';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
     protected static ?string $navigationLabel = 'এআই সহকারী';
 
     protected static ?string $title = 'এআই সহকারী';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 3;
 
     public ?array $data = [];
 

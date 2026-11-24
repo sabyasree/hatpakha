@@ -26,18 +26,22 @@ class KidsCorner extends Page
     protected string $view = 'filament.pages.kids-corner';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFaceSmile;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
     protected static ?string $navigationLabel = 'ছোটদের হাতপাখা';
 
     protected static ?string $title = 'ছোটদের হাতপাখা';
 
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 6;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

@@ -30,8 +30,9 @@ class ReaderEntryResource extends Resource
     protected static ?string $pluralModelLabel = 'পাঠকের কলম';
 
     protected static ?string $slug = 'reader-entries';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
@@ -54,7 +55,7 @@ class ReaderEntryResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'warning';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function table(Table $table): Table

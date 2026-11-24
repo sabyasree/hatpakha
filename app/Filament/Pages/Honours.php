@@ -30,8 +30,9 @@ class Honours extends Page
     protected static ?string $navigationLabel = 'সম্মানিত লেখক';
 
     protected static ?string $title = 'সম্মানিত লেখক';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 8;
 
     public static function canAccess(): bool
     {

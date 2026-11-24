@@ -23,14 +23,13 @@ class AiImages extends Page
     protected string $view = 'filament.pages.ai-images';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
     protected static ?string $navigationLabel = 'ছবি অনুমোদন';
 
     protected static ?string $title = 'এআই-এর আঁকা ছবি';
 
-    protected static ?int $navigationSort = 85;
+    protected static ?int $navigationSort = 6;
 
     /** @var array<int,bool> post id → ticked */
     public array $picked = [];
@@ -38,6 +37,16 @@ class AiImages extends Page
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[self::waiting()->count(), 'টি ছবি দেখার অপেক্ষায়']]);   // D279: every number says what it counts
     }
 
     public static function getNavigationBadge(): ?string

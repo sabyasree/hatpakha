@@ -23,14 +23,13 @@ class RelaunchLetters extends Page
     protected string $view = 'filament.pages.relaunch-letters';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelopeOpen;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
     protected static ?string $navigationLabel = 'পুরনো লেখকদের চিঠি';
 
     protected static ?string $title = 'পুরনো লেখকদের চিঠি';
 
-    protected static ?int $navigationSort = 22;
+    protected static ?int $navigationSort = 3;
 
     public string $subject = '';
 
@@ -44,6 +43,11 @@ class RelaunchLetters extends Page
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

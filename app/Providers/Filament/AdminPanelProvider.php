@@ -57,9 +57,13 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn () => route('desk.language', app()->getLocale() === 'en' ? 'bn' : 'en')),
             ])
             ->navigationGroups([
-                // Editors' daily work is the top three items; everything else is folded away.
-                NavigationGroup::make('আরও')->label(fn () => __('আরও'))->collapsed(),
-                NavigationGroup::make('প্রশাসন')->label(fn () => __('প্রশাসন'))->collapsed(),
+                // D279 (owner: "I should not spend time finding where things are"; three UX reviews): five groups in the
+                // order of the work. Daily decisions first; records and settings folded away. Red numbers wait for you.
+                NavigationGroup::make('আপনার সিদ্ধান্ত')->label(fn () => __('আপনার সিদ্ধান্ত')),
+                NavigationGroup::make('সংখ্যা ও প্রকাশ')->label(fn () => __('সংখ্যা ও প্রকাশ')),
+                NavigationGroup::make('চিঠি ও প্রচার')->label(fn () => __('চিঠি ও প্রচার')),
+                NavigationGroup::make('হিসাব ও খাতা')->label(fn () => __('হিসাব ও খাতা'))->collapsed(),
+                NavigationGroup::make('সেটিং ও এআই')->label(fn () => __('সেটিং ও এআই'))->collapsed(),
             ])
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications(false)
@@ -75,6 +79,7 @@ class AdminPanelProvider extends PanelProvider
                 // Logo palette only (docs/DESIGN.md): no stock green/red in the desk either.
                 'success' => Color::hex('#1A86C2'),
                 'danger' => Color::hex('#B0162B'),
+                'gray' => Color::hex('#4D5A63'),   // D279: grey numbers (for information) in the palette's ink
             ])
             ->font('Anek Bangla', url: asset('fonts/fonts.css').'?v=1', provider: LocalFontProvider::class)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

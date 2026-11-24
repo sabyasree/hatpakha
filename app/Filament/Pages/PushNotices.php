@@ -34,8 +34,9 @@ class PushNotices extends Page
     protected static ?string $navigationLabel = 'ফোনে খবর';
 
     protected static ?string $title = 'ফোনে খবর';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 5;
 
     public static function canAccess(): bool
     {

@@ -76,7 +76,7 @@
                     <div class="hp-in-act">
                         @php($a = $r['action'])
                         @if (! $a)
-                            <x-filament::button tag="a" :href="$r['url']">{{ $r['button'] }}</x-filament::button>
+                            <x-filament::button tag="a" :href="$r['url']" :color="$g === 'fyi' ? 'gray' : 'primary'" :outlined="$g === 'fyi'">{{ $r['button'] }}</x-filament::button>
                         @elseif ($a[0] === 'approveAiOkComments')
                             <x-filament::button wire:click="approveAiOkComments">{{ $r['button'] }}</x-filament::button>
                             <x-filament::button tag="a" color="gray" outlined :href="$r['url']">{{ __('এক এক করে') }}</x-filament::button>

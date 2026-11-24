@@ -38,10 +38,9 @@ class SerialResource extends Resource
     protected static ?string $modelLabel = 'ধারাবাহিক';
 
     protected static ?string $pluralModelLabel = 'ধারাবাহিক';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 19;
+    protected static ?int $navigationSort = 2;
 
     public const STATUS = ['proposed' => 'প্রস্তাব', 'active' => 'চলছে', 'paused' => 'থামানো', 'finished' => 'শেষ', 'dropped' => 'বাদ দেওয়া'];
 

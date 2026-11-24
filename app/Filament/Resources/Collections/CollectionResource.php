@@ -36,10 +36,9 @@ class CollectionResource extends Resource
     protected static ?string $modelLabel = 'সংকলন';
 
     protected static ?string $pluralModelLabel = 'সংকলন';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 5;
 
     public const MONTHS = [1 => 'জানুয়ারি', 2 => 'ফেব্রুয়ারি', 3 => 'মার্চ', 4 => 'এপ্রিল', 5 => 'মে', 6 => 'জুন', 7 => 'জুলাই', 8 => 'আগস্ট', 9 => 'সেপ্টেম্বর', 10 => 'অক্টোবর', 11 => 'নভেম্বর', 12 => 'ডিসেম্বর'];
 
@@ -51,6 +50,11 @@ class CollectionResource extends Resource
     public static function canCreate(): bool
     {
         return false;   // the archivist proposes; see "প্রস্তাব চাই"
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

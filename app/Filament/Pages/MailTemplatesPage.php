@@ -29,8 +29,9 @@ class MailTemplatesPage extends Page
     protected static ?string $title = 'ই-মেলের নমুনা';
 
     protected static ?string $slug = 'mail-templates';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 8;
 
     public static function canAccess(): bool
     {

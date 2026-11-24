@@ -143,7 +143,7 @@ final class DeskInbox
             }
             if ($p->serial_id && $p->serial) {
                 $due = rescue(fn () => $p->serial->nextEpisodeAt($p->id), null, false);
-                $soon = $due && $due->lte(now()->addDays(2));
+                $soon = $due && $due->lte(now()->addDays(3));   // due by Saturday when Wednesday's reminder goes
                 $add(['key' => 'p'.$p->id, 'group' => $soon ? 'today' : 'week', 'tag' => 'serial',
                     'title' => __('নতুন পর্ব').': ‘'.$p->serial->title.'’ '.__('পর্ব').' '.Bn::num((string) $p->episode_no), 'who' => $who,
                     'sub' => trim(__('এসেছে').' '.self::ago($arrived).($ai ? ' · '.$ai : '')),

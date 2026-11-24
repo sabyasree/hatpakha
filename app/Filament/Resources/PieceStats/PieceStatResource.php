@@ -35,8 +35,9 @@ class PieceStatResource extends Resource
     protected static ?string $pluralModelLabel = 'লেখার হিসাব';
 
     protected static ?string $slug = 'piece-stats';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {

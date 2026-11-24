@@ -36,10 +36,9 @@ class PostResource extends Resource
     protected static ?string $modelLabel = 'লেখা';
 
     protected static ?string $pluralModelLabel = 'লেখা';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = null;
-
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {
@@ -76,6 +75,11 @@ class PostResource extends Resource
     }
 
     /** Waiting work, shown as a counter in the menu. */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::piecesTooltip();   // D279: every number says what it counts
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = \App\Models\Post::where('status', 'pending')->whereNotNull('submitted_by')->count();
@@ -85,6 +89,6 @@ class PostResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 }

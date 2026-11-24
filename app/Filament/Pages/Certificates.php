@@ -30,18 +30,22 @@ class Certificates extends Page
     protected string $view = 'filament.pages.certificates';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
-
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
     protected static ?string $navigationLabel = 'শংসাপত্র';
 
     protected static ?string $title = 'শংসাপত্র';
 
-    protected static ?int $navigationSort = 33;
+    protected static ?int $navigationSort = 9;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

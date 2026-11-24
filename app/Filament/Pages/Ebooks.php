@@ -32,10 +32,9 @@ class Ebooks extends Page
     protected static ?string $title = 'মাসের পত্রিকা';
 
     protected static ?string $slug = 'ebooks';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'আরও';
-
-    protected static ?int $navigationSort = 31;
+    protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
@@ -51,7 +50,7 @@ class Ebooks extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public function getViewData(): array

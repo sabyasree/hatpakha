@@ -24,10 +24,9 @@ class AuditLogResource extends Resource
     protected static ?string $modelLabel = 'কাজের খাতা';
 
     protected static ?string $pluralModelLabel = 'কাজের খাতা';
+    protected static string|\UnitEnum|null $navigationGroup = 'হিসাব ও খাতা';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
-
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 4;
 
     /** Plain-language names for the logged actions. */
     public const ACTIONS = [

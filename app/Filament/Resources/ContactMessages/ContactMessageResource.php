@@ -27,10 +27,9 @@ class ContactMessageResource extends Resource
     protected static ?string $modelLabel = 'বার্তা';
 
     protected static ?string $pluralModelLabel = 'বার্তা';
+    protected static string|\UnitEnum|null $navigationGroup = 'আপনার সিদ্ধান্ত';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = null;   // top level, next to comments
-
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 5;
 
     public static function canAccess(): bool
     {
@@ -40,6 +39,16 @@ class ContactMessageResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';   // D279: red = waiting for you, grey = for information
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return \App\Support\DeskInbox::join([[\App\Models\ContactMessage::where('status', 'new')->count(), 'টি নতুন বার্তা']]);   // D279: every number says what it counts
     }
 
     public static function getNavigationBadge(): ?string

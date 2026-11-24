@@ -26,10 +26,9 @@ class RedirectResource extends Resource
     protected static ?string $modelLabel = 'রিডাইরেক্ট';
 
     protected static ?string $pluralModelLabel = 'রিডাইরেক্ট';
+    protected static string|\UnitEnum|null $navigationGroup = 'সেটিং ও এআই';   // D279
 
-    protected static string|\UnitEnum|null $navigationGroup = 'প্রশাসন';
-
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 8;
 
     public static function form(Schema $schema): Schema
     {

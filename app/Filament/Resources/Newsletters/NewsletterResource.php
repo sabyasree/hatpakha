@@ -34,12 +34,18 @@ class NewsletterResource extends Resource
     protected static ?string $modelLabel = 'চিঠি';
 
     protected static ?string $pluralModelLabel = 'চিঠি';
+    protected static string|\UnitEnum|null $navigationGroup = 'চিঠি ও প্রচার';   // D279
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole(\App\Enums\Role::Admin) ?? false;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'gray';   // D279: red = waiting for you, grey = for information
     }
 
     public static function getNavigationBadge(): ?string

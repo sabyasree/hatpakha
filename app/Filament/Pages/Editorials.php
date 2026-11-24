@@ -32,8 +32,9 @@ class Editorials extends Page
     protected static ?string $title = 'সম্পাদকীয়';
 
     protected static ?string $slug = 'editorials';
+    protected static string|\UnitEnum|null $navigationGroup = 'সংখ্যা ও প্রকাশ';   // D279
 
-    protected static ?int $navigationSort = 11;
+    protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
@@ -50,7 +51,7 @@ class Editorials extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'danger';
+        return 'danger';   // D279: red = waiting for you, grey = for information
     }
 
     public function getViewData(): array
