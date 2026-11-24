@@ -222,6 +222,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D276: the serial box works on paper (words, address, QR code on the print page)
 - [x] D275: a serial in an issue carries its month of episodes and ends with “চলবে… সব পর্ব” (magazine, e-book, issue page)
 - [x] D274: an empty editorial (ফিরে আসা) can be written by the AI from the owner's words
+- [x] D282: games leaderboard in the desk (numbers, board incl. hidden players, a player's games, titles)
 - [x] D281: serial episodes: where you are, the way back to episode 1, all episodes on the page, read marks; dates in the desk serial page
 - [x] D280: desk second round: reply to comments and contact messages from the desk, ten tabs on লেখা with one button per row, quiet dismiss, Bengali digits in the menu
 - [x] D279: desk redesign: one inbox on আজকের কাজ, serials marked everywhere, menu in five groups, numbers with tooltips, next piece after a decision
