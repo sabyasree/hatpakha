@@ -14,11 +14,12 @@ use App\Models\User;
  */
 final class EditorialWriter
 {
-    public static function draft(Issue $issue, User $owner): ?Post
+    /** @param ?string $brief the owner's own words for this editorial (D274) @param ?Post $into an empty editorial to fill */
+    public static function draft(Issue $issue, User $owner, ?string $brief = null, ?Post $into = null): ?Post
     {
         // D270 (owner: "I have the editorial scheduled, but it is showing draft"): a new AI draft only replaces the AI's own
         // untouched draft. An editorial the owner wrote, edited, approved or scheduled is never overwritten or unlinked.
-        $current = $issue->editorialPost();
+        $current = $into ?? $issue->editorialPost();
         if ($current && ! self::replaceable($current)) {
             return null;
         }
@@ -26,7 +27,9 @@ final class EditorialWriter
         if (! $section) {
             return null;
         }
-        $pieces = Post::with('authors', 'section', 'latestAiReview')->whereIn('id', (array) ($issue->ai_plan['post_ids'] ?? []))->get()
+        // the AI's proposal for a monthly issue; a special issue (ফিরে আসা) has its pieces attached instead (D274)
+        $pieces = Post::with('authors', 'section', 'latestAiReview')->where(fn ($q) => $q->whereIn('id', (array) ($issue->ai_plan['post_ids'] ?? []))
+            ->orWhere(fn ($q) => $q->where('issue_id', $issue->id)->whereNotIn('status', ['draft', 'rejected', 'archived'])->where('section_id', '!=', $section->id)))->limit(40)->get()
             ->map(fn (Post $p) => '- '.$p->section?->name_bn.': "'.$p->title.'" — '.($p->authors->first()?->publicName() ?? '').'. '
                 .mb_substr((string) ($p->latestAiReview?->report['summary'] ?? $p->excerpt ?? ''), 0, 200))->implode("\n");
         $past = Post::where('section_id', $section->id)->where('status', 'published')->latest('published_at')->limit(2)->get()
@@ -41,7 +44,7 @@ final class EditorialWriter
             .'without a jump, to what this issue is about. Do not list the contents: choose two or three pieces and say in a line each what stays with you, quoting nothing you were not given '
             .'(title and writer only, no invented lines from the pieces). Thank readers and writers in one sentence, plainly, and invite new writing once, briefly, without slogans. '
             .'300-450 words. Do not invent facts, events, quotes or numbers. If past editorials are given, keep their voice but do not repeat their openings.',
-            "Issue: {$issue->title}\nEditor's brief: ".($issue->ai_plan['editorial_brief'] ?? '')."\nPieces:\n{$pieces}\n\nPast editorials:\n".($past ?: '(none)'),
+            "Issue: {$issue->title}\nEditor's brief: ".($issue->ai_plan['editorial_brief'] ?? '').($brief ? "\nThe owner-editor's own instructions (follow them): ".$brief : '')."\nPieces:\n{$pieces}\n\nPast editorials:\n".($past ?: '(none)'),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'paragraphs'], 'properties' => [
                 'title' => ['type' => 'string'], 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
             ]], (string) config('ai.anthropic.writer_model'), 32000);
@@ -77,6 +80,10 @@ final class EditorialWriter
     /** Only the AI's own draft that nobody has edited, approved or scheduled. */
     public static function replaceable(Post $post): bool
     {
+        if ($post->status === 'draft' && blank(trim(strip_tags((string) $post->body_html)))) {
+            return true;   // D274: an empty editorial (started by hand, nothing written yet) may be filled
+        }
+
         return $post->status === 'draft' && $post->ai_drafted_at !== null
             && ($post->edited_in_desk_at === null || $post->edited_in_desk_at->lte($post->ai_drafted_at->copy()->addMinute()));
     }

@@ -250,7 +250,7 @@ class ArchiveController extends Controller
     public function issue(Request $request, string $slug)
     {
         $issue = Issue::where('slug', $slug)->live()->firstOrFail();   // D272: from its day only
-        $posts = $issue->posts()->published()->with(['authors', 'section'])->orderBy('section_id')->get();
+        $posts = \App\Support\IssueBook::withSerials($issue, $issue->posts()->published()->with(['authors', 'section', 'serial'])->orderBy('section_id')->orderBy('published_at')->get());   // D275
         $seo = new Seo(title: $issue->title, description: $issue->editor_note ?? $issue->title, canonical: $issue->url(), jsonLd: [JsonLd::issue($issue)]);
 
         \App\Support\Ads::allow();   // D111
@@ -290,6 +290,7 @@ class ArchiveController extends Controller
             ->whereNotIn('status', ['rejected', 'archived'])
             ->when($editorial, fn ($q) => $q->whereKeyNot($editorial->id))
             ->orderByRaw('published_at is null')->orderBy('published_at')->get();
+        $rest = \App\Support\IssueBook::withSerials($issue, $rest, true);   // D275
         $pieces = ($editorial ? collect([$editorial]) : collect())->concat($rest)->values();
         $writers = $rest->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id')->values();
 

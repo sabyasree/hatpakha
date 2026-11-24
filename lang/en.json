@@ -2952,5 +2952,11 @@
     "শব্দ বদল ছাড়াই প্রকাশ": "Publish without the word changes",
     "শব্দ বদল ছাড়াই প্রকাশ: ": "Publish without the word changes: ",
     "লেখক উত্তর দেননি। লেখাটি লেখক যেমন পাঠিয়েছিলেন তেমনই (ছোট সংশোধনসহ) প্রকাশ হবে, প্রস্তাবিত শব্দ বদল বাদ যাবে। দিন: ঠিক করা দিন, সেটি পেরিয়ে গেলে পরের ঠিক দিন। লেখক \"মনোনীত\" ই-মেল পাবেন।": "The writer has not answered. The piece goes out as the writer sent it (with the small fixes); the proposed word changes are dropped. Day: the planned day, or the next right one if it has passed. The writer gets the \"selected\" e-mail.",
-    "মনোনীত হয়েছে": "Selected"
+    "মনোনীত হয়েছে": "Selected",
+    "প্রচ্ছদের ধরন": "Cover style",
+    "পাখা (ছবি হাতপাখার আকারে)": "Fan (the picture in the shape of a hand fan)",
+    "পূর্ণ ছবি (ছবি পুরো প্রচ্ছদ জুড়ে)": "Full picture (the picture across the whole cover)",
+    "ধরন অনুযায়ী (মাসিক: পাখা; উৎসব ও বিশেষ: পূর্ণ ছবি)": "By kind (monthly: fan; festival and special: full picture)",
+    "বিশেষ সংখ্যা": "Special issue",
+    "বিশেষ": "Special"
 }

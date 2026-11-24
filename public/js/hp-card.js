@@ -17,6 +17,11 @@
         for (const img of clone.querySelectorAll('img')) {
             try { img.src = await asData(img.src); } catch (e) { img.remove(); }
         }
+        // D277: the cover's fan carries its picture as an SVG <image>
+        for (const im of clone.querySelectorAll('image')) {
+            const u = im.getAttribute('href') || im.getAttribute('xlink:href');
+            try { const d = await asData(u); im.setAttribute('href', d); im.removeAttribute('xlink:href'); } catch (e) { im.remove(); }
+        }
         const faces = (await Promise.all(FONTS.map(async ([f, u, wt]) => `@font-face{font-family:'${f}';font-weight:${wt};src:url(${await asData(u)}) format('woff2')}`))).join('');
         const html = new XMLSerializer().serializeToString(clone);
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${faces}</style>${html}</div></foreignObject></svg>`;

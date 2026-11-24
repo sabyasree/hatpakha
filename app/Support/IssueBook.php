@@ -22,7 +22,107 @@ final class IssueBook
         $posts = Post::published()->with('authors', 'section')->where('issue_id', $issue->id)
             ->when($editorial, fn ($q) => $q->whereKeyNot($editorial->id))->orderBy('published_at')->get();
 
-        return ($editorial ? collect([$editorial]) : collect())->concat($posts)->values();
+        return ($editorial ? collect([$editorial]) : collect())->concat(self::withSerials($issue, $posts))->values();
+    }
+
+    /**
+     * D275 (owner: "it has only the 1st part; after that, where is the rest?"): a serial in an issue carries every
+     * episode that came out in the issue's month, from the first one the issue holds, one after another where the
+     * first one stood. The month ends when the next monthly issue comes out (until then, the episodes so far).
+     * The preview (desk) also counts episodes already scheduled within a month of the issue's day.
+     */
+    public static function withSerials(Issue $issue, Collection $posts, bool $preview = false): Collection
+    {
+        if ($posts->whereNotNull('serial_id')->isEmpty()) {
+            return $posts->values();
+        }
+        $until = self::serialUntil($issue, $preview);
+        $out = collect();
+        $done = [];
+        foreach ($posts as $p) {
+            if (! $p->serial_id) {
+                $out->push($p);
+
+                continue;
+            }
+            if (isset($done[$p->serial_id])) {
+                continue;
+            }
+            $done[$p->serial_id] = true;
+            $own = $posts->where('serial_id', $p->serial_id);
+            $more = Post::with('authors', 'section', 'serial')->where('serial_id', $p->serial_id)
+                ->where('episode_no', '>=', (int) $own->min('episode_no'))
+                ->when($preview, fn ($q) => $q->whereIn('status', ['published', 'scheduled']), fn ($q) => $q->published())
+                ->where('published_at', '<=', $until)->get();
+            $out = $out->concat($own->concat($more)->unique('id')->sortBy('episode_no'));
+        }
+
+        return $out->values();
+    }
+
+    /** The monthly issue that follows this one (live only), or null. */
+    public static function nextMonthly(Issue $issue): ?Issue
+    {
+        return Issue::live()->where('published_at', '>', $issue->published_at ?? now())->orderBy('published_at')->get()
+            ->first(fn ($i) => preg_match('/^\d{4}-\d{2}$/', (string) $i->slug));
+    }
+
+    /** The end of an issue's month for its serials: the next monthly issue's day, or now (preview: a month on). */
+    public static function serialUntil(Issue $issue, bool $preview = false): \Illuminate\Support\Carbon
+    {
+        if ($next = self::nextMonthly($issue)) {
+            return $next->published_at;
+        }
+        $from = $issue->published_at ?? now();
+
+        return $preview ? $from->copy()->addMonth()->max(now()) : now();
+    }
+
+    /**
+     * D275/D276 (owner: "if we give a link, how will it work when I print the issue?"): what follows the last episode
+     * an issue carries. Worded so it works on paper too: where the story goes on (the next issue by name, or the
+     * coming issue and Saturdays on the site), the serial's address written out, and a QR code for print.
+     * Null when the post is no episode of a public serial.
+     */
+    public static function serialEnd(Post $p, ?Issue $issue = null): ?array
+    {
+        $s = $p->serial;
+        if (! $p->serial_id || ! $s?->isPublic()) {
+            return null;
+        }
+        $addr = preg_replace('~^https?://(www\.)?~', '', rtrim($s->url(), '/'));
+        if ($p->isLastEpisode()) {
+            return ['head' => 'সমাপ্ত', 'text' => 'পুরো ধারাবাহিকটি এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
+        }
+        $nextNo = Bn::num((string) ($p->episode_no + 1));
+        $next = $issue ? self::nextMonthly($issue) : null;
+        $out = Post::published()->where('serial_id', $s->id)->where('episode_no', '>', $p->episode_no)->exists();
+        $text = $next && $out
+            ? 'পর্ব '.$nextNo.' থেকে পড়ুন “'.$next->title.'”-এ।'
+            : ($out ? 'পর্ব '.$nextNo.' থেকে পড়ুন সাইটে।' : 'পর্ব '.$nextNo.' আগামী সংখ্যায়; তার আগেই প্রতি '.$s->dayName().' সকালে নতুন পর্ব সাইটে।');
+
+        return ['head' => 'চলবে…', 'text' => $text.' সব পর্ব এক জায়গায়:', 'addr' => $addr, 'url' => $s->url()];
+    }
+
+    /** D276: an issue that picks a serial up in the middle says where the earlier episodes are. */
+    public static function serialStart(Post $p): ?array
+    {
+        $s = $p->serial;
+        if (! $p->serial_id || ! $s?->isPublic() || $p->episode_no <= 1) {
+            return null;
+        }
+        $last = Bn::num((string) ($p->episode_no - 1));
+
+        return ['text' => 'আগে যা বেরিয়েছে: পর্ব ১'.($p->episode_no > 2 ? '–'.$last : '').',', 'addr' => preg_replace('~^https?://(www\.)?~', '', rtrim($s->url(), '/')), 'url' => $s->url()];
+    }
+
+    /** A QR code (SVG data URI) for a printed page, or null. */
+    public static function qr(string $url): ?string
+    {
+        return rescue(fn () => 'data:image/svg+xml;base64,'.base64_encode((new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions([
+            'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class, 'outputBase64' => false, 'svgAddXmlHeader' => false,
+            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true,
+        ])))->render($url)), null, false);
     }
 
     /** A piece's text as clean XHTML for the book: no pictures, embeds or scripts; every tag closed. */
@@ -122,8 +222,17 @@ final class IssueBook
             // The page designer's pictures (2026-11-12): the piece's own picture on top, the pictures inside in their place.
             $d = PageDesigner::design($p);
             $hero = $d['hero'] ? '<figure class="hero '.$d['layout'].'">'.PageDesigner::img($d['hero']).($d['credit'] ? '<figcaption>'.e($d['credit']).'</figcaption>' : '').'</figure>' : '';
-            $zip->addFromString('OEBPS/'.$file, $page($p->title, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e((string) $p->section?->name_bn).'</p>'
-                .'<h2>'.e($p->title).'</h2><p class="by">'.e($by).'</p>'.$d['body'].'</section>')));
+            // D275: an episode says which serial it belongs to, and the last one in the issue says where the rest is
+            $kicker = $p->serial_id && $p->serial ? 'ধারাবাহিক · '.$p->serial->title : (string) $p->section?->name_bn;
+            $h = $p->serial_id && $p->serial ? $p->episodeLabel() : $p->title;
+            $lastRun = ! $pieces->slice($i + 1)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
+            $end = $lastRun ? self::serialEnd($p, $issue) : null;
+            $endHtml = $end ? '<p class="serial-end"><b>'.e($end['head']).'</b> '.e($end['text']).' <a href="'.e($end['url']).'">'.e($end['addr']).'</a></p>' : '';
+            $firstRun = ! $pieces->slice(0, $i)->contains(fn ($q) => $q->serial_id && $q->serial_id === $p->serial_id);
+            $start = $firstRun ? self::serialStart($p) : null;
+            $startHtml = $start ? '<p class="serial-start">'.e($start['text']).' <a href="'.e($start['url']).'">'.e($start['addr']).'</a></p>' : '';
+            $zip->addFromString('OEBPS/'.$file, $page($h, $embed('<section epub:type="chapter" class="'.($p->isPoem() ? 'poem' : 'prose').'">'.$hero.'<p class="section">'.e($kicker).'</p>'
+                .'<h2>'.e($h).'</h2><p class="by">'.e($by).'</p>'.$startHtml.$d['body'].$endHtml.'</section>')));
             $manifest[] = '<item id="c'.($i + 1).'" href="'.$file.'" media-type="application/xhtml+xml"/>';
             $spine[] = '<itemref idref="c'.($i + 1).'"/>';
             $navItems .= '<li><a href="'.$file.'">'.e($p->title).' — '.e($by).'</a></li>';
@@ -156,38 +265,100 @@ final class IssueBook
         return $path;
     }
 
-    /** The cover as SVG (600×900): artwork or the fan, masthead, the issue's name and three pieces from inside. */
+    /**
+     * The e-book cover as SVG, 600×846 (D277): the same cover as on the site, in its style (fan or full picture), so the
+     * Bengali stays text. $artHref: the picture's file name inside the book, or null.
+     */
     public static function coverSvg(Issue $issue, Collection $pieces, ?string $artHref): string
     {
+        $c = IssueCover::data($issue, $pieces->reject(fn ($p) => $p->id === $issue->editorial_post_id)->values());
         $x = fn (string $t) => htmlspecialchars($t, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-        $fan = '';
-        if (! $artHref) {
-            for ($k = 0; $k < 26; $k++) {
-                $a1 = M_PI + $k * M_PI / 52;
-                $a2 = M_PI + ($k + 1) * M_PI / 52;
-                $fan .= sprintf('<path d="M640 640 L%.1f %.1f A420 420 0 0 1 %.1f %.1f Z" fill="%s"/>', 640 + 420 * cos($a1), 640 + 420 * sin($a1), 640 + 420 * cos($a2), 640 + 420 * sin($a2), $k % 2 ? '#F08D90' : '#CB1B32');
+        $cut = fn (string $t, int $n) => mb_strlen($t) > $n ? mb_substr($t, 0, $n - 1).'…' : $t;
+        $W = 600;
+        $H = 846;
+        $u = $W / 100;   // 1cqw
+        $font = fn (string $f) => ['g' => "'Galada', cursive", 's' => "'Noto Serif Bengali', serif", 'a' => "'Anek Bangla', sans-serif"][$f];
+        $t = fn (float $px, float $py, float $size, string $text, string $fill, string $f = 'a', string $anchor = 'start', string $weight = 'normal')
+            => '<text x="'.round($px, 1).'" y="'.round($py, 1).'" font-size="'.round($size, 1).'" font-family="'.$font($f).'" fill="'.$fill.'" text-anchor="'.$anchor.'" font-weight="'.$weight.'">'.$x($text).'</text>';
+        $issn = 'ISSN '.Bn::num(IssueCover::ISSN);
+        $lead = $c['lines'][0] ?? null;
+        $rest = array_slice($c['lines'], 1);
+        $out = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 '.$W.' '.$H.'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">';
+        if ($c['style'] === 'fan') {
+            $bg = ['special' => '#CB1B32', 'monthly' => '#13212C', 'festival' => '#EFC08D'][$c['kind']];
+            $ink = $c['kind'] === 'festival' ? '#13212C' : '#FFFBF4';
+            $accent = $c['kind'] === 'festival' ? '#A3152A' : '#EFC08D';
+            $mast = $c['kind'] === 'festival' ? '#CB1B32' : '#FFFBF4';
+            $fan = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::fanSvg($artHref, $c['kind']));
+            $fw = $W - 14 * $u;
+            $out .= '<rect width="'.$W.'" height="'.$H.'" fill="'.$bg.'"/>'
+                .$t(6 * $u, 0.03 * $H + 3 * $u, 2.9 * $u, $c['ear'], $ink).$t($W - 6 * $u, 0.03 * $H + 3 * $u, 2.9 * $u, $issn, $ink, 'a', 'end')
+                .'<rect x="'.(6 * $u).'" y="'.round(0.03 * $H + 4.6 * $u, 1).'" width="'.($W - 12 * $u).'" height="1.5" fill="'.$ink.'" opacity=".5"/>'
+                .$t($W / 2, 0.07 * $H + 21 * $u, 21 * $u, 'হাতপাখা', $mast, 'g', 'middle')
+                .'<g transform="translate('.(7 * $u).' '.round(0.26 * $H, 1).') scale('.round($fw / 200, 4).')">'.$fan.'</g>'
+                .$t($W / 2, 0.59 * $H + $c['hero'] * $u, $c['hero'] * $u, $c['main'], $ink, 's', 'middle', 'bold')
+                .$t($W / 2, 0.59 * $H + $c['hero'] * $u * 1.3 + 4.4 * $u, 3.3 * $u, $c['sub'], $accent, 'a', 'middle', '600');
+            if ($lead) {
+                $y = 0.785 * $H + 3 * $u;
+                $out .= '<rect x="'.($W / 2 - 5 * $u).'" y="'.round($y - 2.4 * $u, 1).'" width="'.(10 * $u).'" height="'.(0.7 * $u).'" fill="'.($c['kind'] === 'monthly' ? '#CB1B32' : $ink).'"/>'
+                    .'<text x="'.($W / 2).'" y="'.round($y + 5.2 * $u, 1).'" text-anchor="middle" font-family="'.$font('s').'" fill="'.$ink.'"><tspan font-size="'.(5.4 * $u).'" font-weight="bold">'.$x(($lead['serial'] ? 'ধারাবাহিক: ' : '').$cut($lead['t'], 26)).'</tspan>'
+                    .($lead['w'] !== '' ? '<tspan font-size="'.(3.6 * $u).'" font-family="'.$font('a').'" fill="'.$accent.'">  '.$x($lead['w']).'</tspan>' : '').'</text>';
+                foreach ($rest as $n => $l) {
+                    $out .= $t($W / 2, $y + 5.2 * $u + ($n + 1) * 5.2 * $u, 3.4 * $u, ($l['serial'] ? 'ধারাবাহিক: ' : '').$cut($l['t'], 30).($l['w'] !== '' ? ' · '.$l['w'] : ''), $ink, 'a', 'middle');
+                }
             }
-        }
-        $title = $issue->title;
-        $size = max(28, min(46, (int) floor(1000 / max(1, mb_strlen($title)))));
-        $lines = $pieces->filter(fn ($p) => $p->id !== $issue->editorial_post_id)->take(3)->values();
-        $cl = '';
-        foreach ($lines as $n => $p) {
-            $by = $p->authors->where('is_desk', false)->map->publicName()->implode(', ');
-            $cl .= '<text x="40" y="'.(790 + $n * 36).'" font-size="22" fill="#FFFBF4"><tspan font-weight="bold">'.$x(mb_strimwidth($p->title, 0, 34, '…')).'</tspan>'
-                .($by !== '' ? '<tspan fill="#EFC08D"> · '.$x(mb_strimwidth($by, 0, 24, '…')).'</tspan>' : '').'</text>';
+            $out .= $t($W / 2, $H - 0.018 * $H - 0.6 * $u, 2.6 * $u, 'hatpakha.com', $ink, 'a', 'middle');
+        } else {
+            $flag = ['special' => ['#CB1B32', '#FFFBF4', '#EFC08D'], 'monthly' => ['#13212C', '#FFFBF4', '#EFC08D'], 'festival' => ['#F08D90', '#13212C', '#A3152A']][$c['kind']];
+            $none = ['special' => '#CB1B32', 'monthly' => '#1D3A4F', 'festival' => '#EFC08D'][$c['kind']];
+            $out .= '<defs><linearGradient id="hpscrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13212C" stop-opacity=".94"/><stop offset=".52" stop-color="#13212C" stop-opacity=".9"/><stop offset=".74" stop-color="#13212C" stop-opacity=".55"/><stop offset="1" stop-color="#13212C" stop-opacity="0"/></linearGradient></defs>';
+            if ($artHref) {
+                $out .= '<rect width="'.$W.'" height="'.$H.'" fill="#13212C"/><image width="'.$W.'" height="'.$H.'" preserveAspectRatio="xMidYMid slice" xlink:href="'.$x($artHref).'" href="'.$x($artHref).'"/>';
+            } else {
+                $fan = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::fanSvg(null, $c['kind']));
+                $fw = $W + 24 * $u;
+                $out .= '<rect width="'.$W.'" height="'.$H.'" fill="'.$none.'"/><g transform="translate('.(-12 * $u).' '.round(0.76 * $H - 102 * $fw / 200, 1).') scale('.round($fw / 200, 4).')">'.$fan.'</g>';
+            }
+            $fy = 0.52 * $H;
+            $fh = 3.1 * $u * 1.4 + $c['hero'] * $u * 1.28 + 4.8 * $u;
+            $fwid = min(86 * $u, 10 * $u + max(mb_strlen($c['main']) * $c['hero'] * $u * 0.62, mb_strlen($c['label']) * 3.1 * $u * 0.7));
+            $out .= '<rect width="'.$W.'" height="'.round(0.4 * $H, 1).'" fill="url(#hpscrim)"/>'
+                .$t(5 * $u, 0.026 * $H + 3 * $u, 2.8 * $u, 'বর্ষ '.$c['vol'].($c['no'] ? ' · সংখ্যা '.$c['no'] : ''), '#FFFFFF')
+                .$t($W - 5 * $u, 0.026 * $H + 3 * $u, 2.8 * $u, $issn, '#FFFFFF', 'a', 'end')
+                .$t($W / 2, 0.05 * $H + 27 * $u, 27 * $u, 'হাতপাখা', '#FFFFFF', 'g', 'middle')
+                .'<g transform="translate('.round($W - 4 * $u - 12.5 * $u, 1).' '.round(0.35 * $H + 12.5 * $u, 1).') rotate(-9)">'
+                .'<circle r="'.(13.4 * $u).'" fill="#FFFBF4"/><circle r="'.(12.6 * $u).'" fill="none" stroke="#CB1B32" stroke-width="'.(0.4 * $u).'"/>'
+                .'<circle r="'.(10.4 * $u).'" fill="none" stroke="#CB1B32" stroke-width="'.(0.35 * $u).'" stroke-dasharray="4 3"/>'
+                .$t(0, -3.6 * $u, 3.4 * $u, $c['month'], '#13212C', 'a', 'middle', '600').$t(0, 2.6 * $u, 6.6 * $u, $c['year'], '#CB1B32', 's', 'middle', 'bold')
+                .$t(0, 6.6 * $u, 2.7 * $u, 'বর্ষ '.$c['vol'], '#13212C', 'a', 'middle', '600').'</g>'
+                .'<rect x="0" y="'.round($fy, 1).'" width="'.round($fwid, 1).'" height="'.round($fh, 1).'" fill="'.$flag[0].'"/>'
+                .$t(5 * $u, $fy + 2.2 * $u + 3.1 * $u, 3.1 * $u, $c['label'], $flag[2], 'a', 'start', 'bold')
+                .$t(5 * $u, $fy + 2.2 * $u + 3.1 * $u * 1.4 + $c['hero'] * $u, $c['hero'] * $u, $cut($c['main'], 22), $flag[1], 's', 'start', 'bold');
+            $py = 0.76 * $H;
+            $out .= '<rect x="0" y="'.round($py, 1).'" width="'.$W.'" height="'.round($H - $py, 1).'" fill="#FFFBF4"/>'
+                .'<rect x="'.(5 * $u).'" y="'.round($py + 3 * $u, 1).'" width="'.(9 * $u).'" height="'.(0.8 * $u).'" fill="#CB1B32"/>';
+            $y = $py + 3 * $u + 0.8 * $u + 6.4 * $u;
+            if ($lead) {
+                $out .= $t(5 * $u, $y, 5.6 * $u, ($lead['serial'] ? 'ধারাবাহিক: ' : '').$cut($lead['t'], 24), '#13212C', 's', 'start', 'bold');
+                if ($lead['w'] !== '') {
+                    $y += 4.6 * $u;
+                    $out .= $t(5 * $u, $y, 3.4 * $u, $lead['w'], '#CB1B32', 'a', 'start', '600');
+                }
+                foreach ($rest as $l) {
+                    $y += 4.8 * $u;
+                    $out .= $t(5 * $u, $y, 3.2 * $u, ($l['serial'] ? 'ধারাবাহিক: ' : '').$cut($l['t'], 26).($l['w'] !== '' ? ' · '.$l['w'] : ''), '#13212C', 'a', 'start', '600');
+                }
+            } else {
+                $out .= $t(5 * $u, $y, 5.6 * $u, $c['monthYear'], '#13212C', 's', 'start', 'bold');
+            }
+            $bar = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::barcodeSvg());
+            $bx = $W - 5 * $u - 20 * $u;
+            $out .= '<g transform="translate('.round($bx, 1).' '.round($py + 3.6 * $u, 1).') scale('.round(20 * $u / 95, 4).' '.round(9 * $u / 40, 4).')" fill="#13212C">'.$bar.'</g>'
+                .$t($bx + 10 * $u, $py + 3.6 * $u + 9 * $u + 3 * $u, 2.3 * $u, 'ISSN '.IssueCover::ISSN, '#13212C', 'a', 'middle')
+                .$t($bx + 10 * $u, $py + 3.6 * $u + 9 * $u + 7 * $u, 2.4 * $u, 'hatpakha.com', '#CB1B32', 'a', 'middle', '600');
         }
 
-        return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 600 900" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" font-family="\'Noto Serif Bengali\', serif">'
-            .'<rect width="600" height="900" fill="#13212C"/>'
-            .($artHref ? '<image width="600" height="900" preserveAspectRatio="xMidYMid slice" xlink:href="'.$x($artHref).'" href="'.$x($artHref).'"/>' : $fan)
-            .'<text x="40" y="115" font-size="92" font-weight="bold" fill="#FFFBF4">হাতপাখা</text>'
-            .'<text x="44" y="152" font-size="18" fill="#EFC08D">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</text>'
-            .'<rect y="660" width="600" height="240" fill="#13212C"/>'
-            .'<rect x="40" y="676" width="60" height="5" fill="#CB1B32"/>'
-            .'<text x="40" y="'.(712 + (int) ($size / 2)).'" font-size="'.$size.'" font-weight="bold" fill="#FFFBF4">'.$x($title).'</text>'
-            .$cl
-            .'</svg>';
+        return $out.'</svg>';
     }
 
     public static function css(): string
@@ -207,6 +378,8 @@ figure { margin: 1em 0; text-align: center; } figure img { max-width: 100%; max-
 figure.hero img { width: 100%; max-height: 45vh; object-fit: cover; } figure.vignette img, figure.feature img { max-width: 70%; }
 .titlepage { text-align: center; margin-top: 15%; } .mast { color: #CB1B32; font-size: 2.2em; font-weight: bold; margin: 0; }
 .note { text-align: left; margin-top: 2em; } .small { font-size: .8em; color: #4D5A63; margin-top: 3em; }
+.serial-start { font-size: .9em; color: #4D5A63; font-style: italic; }
+.serial-end { margin-top: 2em; padding: .8em 1em; border: 2px solid #13212C; } .serial-end b { color: #CB1B32; }
 .ta-center { text-align: center; } .ta-right { text-align: right; }
 .writers h3 { margin: 1.2em 0 .2em; } .writers p { color: #4D5A63; font-size: .95em; }
 .writer { overflow: hidden; page-break-inside: avoid; } .writer-photo { float: left; width: 3.4em; height: 3.4em; margin: 1.2em .8em .3em 0; border-radius: 50%; object-fit: cover; }

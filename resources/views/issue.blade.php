@@ -5,6 +5,7 @@
     $editorial = $issue->liveEditorial();   // its own section, first (owner, 2026-11-12)
     $bySection = $posts->reject(fn ($p) => $editorial && $p->id === $editorial->id)->groupBy(fn ($p) => $p->section?->name_bn ?? 'অন্যান্য');
     $writers = $posts->flatMap(fn ($p) => $p->authors->where('is_desk', false))->unique('id');
+    $pieceCount = $posts->unique(fn ($p) => $p->serial_id ? 's'.$p->serial_id : $p->id)->count();   // D275: a serial is one piece
 @endphp
 <x-layouts.app :seo="$seo">
     <x-desk-edit :url="\App\Filament\Resources\Issues\IssueResource::getUrl('edit', ['record' => $issue], panel: 'desk')" label="সংখ্যা সম্পাদনা" />
@@ -13,23 +14,13 @@
             {{-- The cover, like a magazine on a stand --}}
             {{-- Owner (2026-11-12): the cover read as a broken red line (navy on navy). Now a magazine on the stand: a cream
                  edge, the fan in its corner, the name on its own navy panel, like the cover inside the magazine. --}}
-            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block aspect-[1/1.41] w-56 overflow-hidden rounded-md border-4 border-paper bg-sky-night shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
-                @if ($issue->cover_path)
-                    <picture class="contents">{!! \App\Support\Images::source($issue->cover_path, '(max-width: 640px) 60vw, 320px') !!}<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover"></picture>
-                @else
-                    <span class="absolute -right-[30%] top-[24%] aspect-square w-[80%] rounded-full" style="background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg)" aria-hidden="true"></span>
-                @endif
-                <span class="absolute inset-x-0 top-0 px-4 pt-3 font-hand text-5xl leading-none text-white [text-shadow:0_2px_6px_rgba(19,33,44,.7)]">হাতপাখা</span>
-                <span class="absolute inset-x-0 bottom-0 bg-navy px-4 pb-4 pt-3">
-                    <span class="block h-1 w-10 bg-red" aria-hidden="true"></span>
-                    <span class="mt-2 block font-display text-xl font-extrabold leading-tight text-white">{{ $issue->title }}</span>
-                    <span class="mt-0.5 block text-xs text-peach">ISSN 2321-3035</span>
-                </span>
+            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block w-56 overflow-hidden rounded-md border-4 border-paper shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
+                @include('partials.issue-cover', ['c' => \App\Support\IssueCover::data($issue, $posts)])
             </a>
             <div>
                 <p class="font-hand text-2xl text-peach">সংখ্যা</p>
                 <h1 class="font-display text-5xl font-extrabold leading-tight md:text-6xl">{{ $issue->title }}</h1>
-                <p class="mt-3 text-peach-light">{{ Bn::num((string) $posts->count()) }}টি লেখা · {{ Bn::num((string) $writers->count()) }} জন লেখক @if ($issue->published_at)· {{ Bn::date($issue->published_at) }}@endif</p>
+                <p class="mt-3 text-peach-light">{{ Bn::num((string) $pieceCount) }}টি লেখা · {{ Bn::num((string) $writers->count()) }} জন লেখক @if ($issue->published_at)· {{ Bn::date($issue->published_at) }}@endif</p>
                 <div class="mt-6 flex flex-wrap gap-3">
                     @if ($posts->isNotEmpty())
                         <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="inline-flex h-14 items-center gap-2 rounded-full bg-red px-7 text-lg font-bold text-white hover:bg-red-dark">
@@ -70,8 +61,16 @@
                 <div>
                     <h3 class="border-b-2 border-navy pb-1 text-sm font-extrabold text-red">{{ $sec }}</h3>
                     <ol class="divide-y divide-rule">
-                        @foreach ($list as $p)
+                        @foreach ($list->unique(fn ($p) => $p->serial_id ? 's'.$p->serial_id : $p->id) as $p)
+                            @if ($p->serial_id && $p->serial?->isPublic())
+                                @php
+                                    $eps = $list->where('serial_id', $p->serial_id);
+                                @endphp
+                                {{-- D275: a serial is one entry, its episodes in this issue, and where all of it is --}}
+                                <li><a href="{{ $p->serial->url() }}" class="block py-3 hover:text-red"><span class="mr-1 inline-block bg-red px-1.5 text-xs font-bold text-white">ধারাবাহিক</span><span class="font-serif text-xl font-bold leading-snug">{{ $p->serial->title }}</span><span class="mt-0.5 block text-sm text-ink2">{{ $p->authors->map->publicName()->implode(', ') }} · পর্ব {{ Bn::num((string) $eps->min('episode_no')) }}{{ $eps->count() > 1 ? '–'.Bn::num((string) $eps->max('episode_no')) : '' }} · সব পর্ব পড়ুন →</span></a></li>
+                            @else
                             <li><a href="{{ $p->url() }}" class="block py-3 hover:text-red"><span class="block font-serif text-xl font-bold leading-snug">{{ $p->title }}</span><span class="mt-0.5 block text-sm text-ink2">{{ $p->authors->map->publicName()->implode(', ') }}</span></a></li>
+                            @endif
                         @endforeach
                     </ol>
                 </div>

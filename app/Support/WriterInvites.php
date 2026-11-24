@@ -82,7 +82,7 @@ final class WriterInvites
 
     public static function issue(): Issue
     {
-        return Issue::firstOrCreate(['slug' => self::ISSUE_SLUG], ['title' => 'ফিরে আসা সংখ্যা', 'kind' => 'festival', 'status' => 'planning']);
+        return Issue::firstOrCreate(['slug' => self::ISSUE_SLUG], ['title' => 'ফিরে আসা সংখ্যা', 'kind' => 'special', 'status' => 'planning']);
     }
 
     /** Writers still to be written to: the best-rated first, then whoever published most recently. */

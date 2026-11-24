@@ -32,7 +32,7 @@ class IssueForm
                 ]),
             // The graphic designer's issue cover (D51): AI artwork under our own Bengali masthead and title.
             \Filament\Schemas\Components\Section::make(__('সংখ্যার প্রচ্ছদ'))->collapsible()->columnSpanFull()->collapsible()
-                ->visible(fn ($record) => $record && ($record->cover_path || $record->proposed_cover_path))
+                ->visible(fn ($record) => (bool) $record)   // D277: a cover even before the artwork
                 ->schema([
                     \Filament\Forms\Components\Placeholder::make('cover')->hiddenLabel()->content(fn ($record) => new \Illuminate\Support\HtmlString(
                         view('filament.issue-cover', ['issue' => $record])->render())),
@@ -41,7 +41,10 @@ class IssueForm
             TextInput::make('slug')->label(__('ঠিকানা'))->prefix('/sonkha/')->suffix('/')->required()->regex('/^(?:'.\App\Models\Issue::SLUG.')$/')
                 ->unique(ignoreRecord: true)->helperText(__('মাসিক সংখ্যা: বছর-মাস, যেমন 2026-10। বিশেষ সংখ্যা: ইংরেজি ছোট অক্ষরে একটি নাম, যেমন phire-asha। প্রকাশের পর বদলাবেন না।'))
                 ->disabled(fn ($record) => $record?->status === 'published'),
-            Select::make('kind')->label(__('ধরন'))->options(['festival' => __('উৎসব সংখ্যা'), 'monthly' => __('মাসিক সংখ্যা')])->required()->default('monthly'),
+            Select::make('kind')->label(__('ধরন'))->options(['monthly' => __('মাসিক সংখ্যা'), 'festival' => __('উৎসব সংখ্যা'), 'special' => __('বিশেষ সংখ্যা')])->required()->default('monthly'),
+            // D277: two cover styles; empty = by the kind (monthly: fan; festival and special: full picture)
+            Select::make('cover_style')->label(__('প্রচ্ছদের ধরন'))->options(\App\Support\Lang::t(\App\Support\IssueCover::STYLES))->nullable()
+                ->placeholder(__('ধরন অনুযায়ী (মাসিক: পাখা; উৎসব ও বিশেষ: পূর্ণ ছবি)')),
             Select::make('theme_key')->label(__('প্রচ্ছদের থিম'))->options(\App\Support\Lang::t(self::THEMES))->required(),
             Select::make('status')->label(__('অবস্থা'))->options(\App\Support\Lang::t(self::STATUS))->required()->default('planning'),
             DateTimePicker::make('published_at')->label(__('প্রকাশের তারিখ'))->seconds(false),

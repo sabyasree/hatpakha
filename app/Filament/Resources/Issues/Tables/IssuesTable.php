@@ -18,7 +18,7 @@ class IssuesTable
             ->defaultSort('slug', 'desc')
             ->columns([
                 TextColumn::make('title')->label(__('সংখ্যা'))->weight('bold')->searchable()->description(fn (Issue $record) => '/sonkha/'.$record->slug.'/'),
-                TextColumn::make('kind')->label(__('ধরন'))->badge()->formatStateUsing(fn ($state) => $state === 'festival' ? __('উৎসব') : __('মাসিক')),
+                TextColumn::make('kind')->label(__('ধরন'))->badge()->formatStateUsing(fn ($state) => ['festival' => __('উৎসব'), 'special' => __('বিশেষ')][$state] ?? __('মাসিক')),
                 TextColumn::make('theme_key')->label(__('থিম'))->formatStateUsing(fn ($state) => __(IssueForm::THEMES[$state] ?? $state))->toggleable(),
                 TextColumn::make('posts_count')->label(__('লেখা'))->numeric(),
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()->formatStateUsing(fn ($state) => __(IssueForm::STATUS[$state] ?? $state))

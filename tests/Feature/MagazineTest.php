@@ -100,7 +100,8 @@ class MagazineTest extends TestCase
         }
         $this->assertMatchesRegularExpression('#<img class="writer-photo" src="images/p\d+\.png"#', (string) $zip->getFromName('OEBPS/writers.xhtml'), 'The photo travels inside the e-book');
         $cover = $zip->getFromName('OEBPS/images/cover.svg');
-        $this->assertStringContainsString('অগ্রহায়ণ সংখ্যা', $cover);
+        $this->assertStringContainsString('অগ্রহায়ণ', $cover);   // D277: the name large, with "মাসিক সংখ্যা" under it
+        $this->assertStringContainsString('মাসিক সংখ্যা', $cover);
         $this->assertStringContainsString('হাতপাখা', $cover);
         $this->assertStringContainsString('properties="cover-image"', $zip->getFromName('OEBPS/content.opf'));
         $this->assertNotFalse(simplexml_load_string($cover), 'The cover is valid XML');
@@ -198,7 +199,7 @@ class MagazineTest extends TestCase
         $this->actingAs(User::factory()->create())->get('/issue-preview/'.$issue->id.'/')->assertForbidden();   // nor writers
         $this->actingAs(User::factory()->create(['role' => Role::Editor]));
         $res = $this->get('/issue-preview/'.$issue->id.'/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-        $res->assertSee('খসড়া দেখছেন')->assertSee('পাঁচিলের ওপর কাক')->assertSee('হেমন্তের আলো')->assertSee('src="'.url('/media/covers/2026/11/x.jpg').'"', false);
+        $res->assertSee('খসড়া দেখছেন')->assertSee('পাঁচিলের ওপর কাক')->assertSee('হেমন্তের আলো')->assertSee('href="'.url('/media/covers/2026/11/x.jpg').'"', false);   // D277: a monthly cover cuts the picture into the fan
         $this->assertStringContainsString('no-store', $res->headers->get('Cache-Control'));
         $this->get('/sonkha/2026-12/boi/')->assertNotFound();   // the public magazine still waits for publishing
 
@@ -295,6 +296,31 @@ class MagazineTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('desk'));
         \Livewire\Livewire::test(\App\Filament\Pages\Editorials::class)->assertSee('প্রকাশ হবে ২৭ ডিসেম্বর')->call('useFor', $other->id, $issue->id);
         $this->assertSame([$other->id, $issue->id], [$issue->fresh()->editorial_post_id, $other->fresh()->issue_id]);
+        \App\Ai\Claude::$fake = null;
+    }
+
+    /** D274 (owner: "for the ফিরে আসা issue I can't rewrite the editorial"): an empty editorial is written from the owner's words. */
+    public function test_an_empty_editorial_of_a_special_issue_is_written_from_the_owners_words(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $asked = null;
+        \App\Ai\Claude::$fake = function ($purpose, $user) use (&$asked) {
+            $asked = $user;
+
+            return ['title' => 'ফেরা', 'paragraphs' => ['কিছু কিছু ফেরা নিঃশব্দে হয়।']];
+        };
+        User::factory()->create(['role' => Role::Admin]);
+        $issue = Issue::create(['slug' => 'phire-asha', 'title' => 'ফিরে আসা সংখ্যা', 'status' => 'planning', 'kind' => 'festival']);
+        $empty = $this->editorial($issue, 'draft');
+        $empty->forceFill(['title' => 'সম্পাদকীয়: ফিরে আসা সংখ্যা', 'body_html' => '', 'ai_drafted_at' => null])->save();
+        $this->makePost(['slug' => 'ferar-golpo', 'title' => 'ফেরার গল্প', 'status' => 'scheduled', 'issue_id' => $issue->id, 'published_at' => now()->addDays(10)]);
+        $this->assertTrue(\App\Ai\Rewriter::canRewrite($empty->fresh()), 'The rewrite button is there');
+        $f = \App\Models\WritingFeedback::create(['post_id' => $empty->id, 'body' => 'বিষয় "ফেরা"; নরম, চিঠির মতো।', 'apply_now' => true]);
+        $this->assertNull(\App\Ai\Rewriter::rewrite($f));
+        $this->assertSame('ফেরা', $empty->fresh()->title);
+        $this->assertStringContainsString('নিঃশব্দে', $empty->fresh()->body_html);
+        $this->assertStringContainsString('ফেরার গল্প', (string) $asked, 'The special issue\'s own pieces are given');
+        $this->assertStringContainsString('চিঠির মতো', (string) $asked, 'The owner\'s words are given');
         \App\Ai\Claude::$fake = null;
     }
 }
