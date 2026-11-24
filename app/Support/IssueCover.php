@@ -26,6 +26,12 @@ final class IssueCover
 
     private static int $uid = 0;
 
+    /** Bengali digits always: the cover is for readers, even when the desk is shown in English (Bn::num follows the desk). */
+    public static function bn(int|string $n): string
+    {
+        return strtr((string) $n, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']);
+    }
+
     /** monthly (a year-month address), festival, or special (any other address); a collection counts as special. */
     public static function kind(object $issue): string
     {
@@ -61,7 +67,7 @@ final class IssueCover
         $main = preg_replace('/\s+সংখ্যা$/u', '', $title);   // "ফিরে আসা সংখ্যা": the kind label says "সংখ্যা"
         $main = $main !== '' ? $main : $title;
         $vol = max(1, $y - 2011);   // the magazine began in 2012
-        $month = self::MONTHS[$m - 1].' '.Bn::num((string) $y);
+        $month = self::MONTHS[$m - 1].' '.self::bn((string) $y);
         $art = $issue->cover_path ?: ($preview ? ($issue->proposed_cover_path ?? null) : null);
         $label = $issue instanceof MagazineBook ? 'সংকলন' : self::KINDS[$kind];
         $lines = self::lines($pieces ?? collect(), $style === 'full' ? 3 : 3);
@@ -71,10 +77,10 @@ final class IssueCover
 
         return [
             'style' => $style, 'kind' => $kind, 'label' => $label, 'title' => $title, 'main' => $main,
-            'hero' => self::hero($main, $style), 'vol' => Bn::num((string) $vol), 'no' => $kind === 'monthly' ? Bn::num((string) $m) : null,
-            'month' => self::MONTHS[$m - 1], 'year' => Bn::num((string) $y), 'monthYear' => $month,
-            'ear' => 'বর্ষ '.Bn::num((string) $vol).' · '.($kind === 'monthly' ? 'সংখ্যা '.Bn::num((string) $m) : $month),
-            'sub' => $label.' · '.($kind === 'monthly' ? Bn::num((string) $y) : $month),
+            'hero' => self::hero($main, $style), 'vol' => self::bn((string) $vol), 'no' => $kind === 'monthly' ? self::bn((string) $m) : null,
+            'month' => self::MONTHS[$m - 1], 'year' => self::bn((string) $y), 'monthYear' => $month,
+            'ear' => 'বর্ষ '.self::bn((string) $vol).' · '.($kind === 'monthly' ? 'সংখ্যা '.self::bn((string) $m) : $month),
+            'sub' => $label.' · '.($kind === 'monthly' ? self::bn((string) $y) : $month),
             'art' => $art ? asset(ltrim($art, '/')) : null, 'artPath' => $art, 'lines' => $lines,
         ];
     }

@@ -72,6 +72,19 @@ class IssueCoverTest extends TestCase
         $this->assertStringNotContainsString('হাতপাখা ডেস্ক', $svg);
     }
 
+    public function test_the_cover_keeps_bengali_digits_when_the_desk_is_in_english(): void
+    {
+        $issue = Issue::create(['slug' => '2026-12', 'title' => 'ডিসেম্বর সংখ্যা', 'status' => 'published', 'published_at' => '2026-12-01 03:30:00']);
+        app()->setLocale('en');
+        \App\Support\Bn::$latin = true;
+        try {
+            $c = IssueCover::data($issue);
+            $this->assertSame(['১৫', '২০২৬', 'বর্ষ ১৫ · সংখ্যা ১২'], [$c['vol'], $c['year'], $c['ear']]);
+        } finally {
+            \App\Support\Bn::$latin = false;
+        }
+    }
+
     public function test_the_barcode_is_the_issns(): void
     {
         // 977 + 2321303 + 00 + check digit 9: the standard ISSN barcode (EAN-13)

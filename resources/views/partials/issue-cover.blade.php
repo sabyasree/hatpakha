@@ -10,7 +10,7 @@
 @endphp
 <span class="hp-cv {{ $c['style'] }} k-{{ $c['kind'] }} {{ ($fill ?? false) ? 'fill' : '' }}" role="img" aria-label="হাতপাখা · {{ $c['title'] }}">
     @if ($c['style'] === 'fan')
-        <span class="abs ear hide-sm"><span>{{ $c['ear'] }}</span><span>ISSN {{ \App\Support\Bn::num(\App\Support\IssueCover::ISSN) }}</span></span>
+        <span class="abs ear hide-sm"><span>{{ $c['ear'] }}</span><span>ISSN {{ \App\Support\IssueCover::bn(\App\Support\IssueCover::ISSN) }}</span></span>
         <span class="abs mast">হাতপাখা</span>
         <span class="abs fanart">{!! \App\Support\IssueCover::fanSvg($c['art'], $c['kind']) !!}</span>
         <span class="abs ttl"><span class="main serif ell" style="display:block;font-size:{{ $c['hero'] }}cqw">{{ $c['main'] }}</span><span class="lbl" style="display:block">{{ $c['sub'] }}</span></span>
@@ -28,7 +28,7 @@
             @if ($c['art'])<img src="{{ $c['art'] }}" alt="">@else<span class="fanbg">{!! \App\Support\IssueCover::fanSvg(null, $c['kind']) !!}</span>@endif
         </span>
         <span class="abs scrim"></span>
-        <span class="abs ear hide-sm"><span>বর্ষ {{ $c['vol'] }}{{ $c['no'] ? ' · সংখ্যা '.$c['no'] : '' }}</span><span>ISSN {{ \App\Support\Bn::num(\App\Support\IssueCover::ISSN) }}</span></span>
+        <span class="abs ear hide-sm"><span>বর্ষ {{ $c['vol'] }}{{ $c['no'] ? ' · সংখ্যা '.$c['no'] : '' }}</span><span>ISSN {{ \App\Support\IssueCover::bn(\App\Support\IssueCover::ISSN) }}</span></span>
         <span class="abs mast">হাতপাখা</span>
         <span class="stamp hide-sm"><span class="m">{{ $c['month'] }}</span><span class="y">{{ $c['year'] }}</span><span class="v">বর্ষ {{ $c['vol'] }}</span></span>
         <span class="flag"><span class="kind" style="display:block">{{ $c['label'] }}</span><span class="main serif ell" style="display:block;font-size:{{ $c['hero'] }}cqw">{{ $c['main'] }}</span></span>
