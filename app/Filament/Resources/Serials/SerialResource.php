@@ -82,7 +82,7 @@ class SerialResource extends Resource
                 \Filament\Forms\Components\Placeholder::make('writer_plan')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(
                     '<p><b>'.e(__('লেখক')).':</b> '.e((string) \App\Models\User::find($record?->user_id)?->name).' · <b>'.e(__('আনুমানিক পর্ব')).':</b> '.e(\App\Support\Bn::num((string) (int) $record?->planned_count)).'</p>'
                     .'<p style="white-space:pre-line;margin-top:.5rem">'.e((string) $record?->plan).'</p>'
-                    .'<p style="opacity:.75;margin-top:.5rem">'.e(__('প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।')).'</p>')),
+                    .($record?->status === 'proposed' ? '<p style="opacity:.75;margin-top:.5rem">'.e(__('প্রথম পর্বটি “লেখা” পাতায় অপেক্ষায় আছে। সেটি মনোনীত করলে ধারাবাহিক শুরু হবে; না নিলে ধারাবাহিকও শুরু হবে না। এই ধারাবাহিকের পর্ব লেখক নিজেই লেখেন, এআই লেখে না।')).'</p>' : ''))),
             ]),
             Section::make(__('গল্পের পরিকল্পনা (শুধু ডেস্কে)'))->collapsible()->visible(fn (?Serial $record) => ! $record?->user_id)->schema([
                 \Filament\Forms\Components\Placeholder::make('bible_view')->hiddenLabel()->content(fn (?Serial $record) => new HtmlString(self::bibleHtml($record))),
@@ -168,8 +168,17 @@ class SerialResource extends Resource
         if (! $s) {
             return '';
         }
+        // D281 (owner: "it is good if I see the scheduled date here"): number, title, state and its day in India time
+        $when = function (Post $p) {
+            if (! $p->published_at || ! in_array($p->status, ['scheduled', 'published'], true)) {
+                return '';
+            }
+            $at = $p->published_at->copy()->setTimezone('Asia/Kolkata');
+
+            return ' · <b>'.e(\App\Support\Bn::num($at->locale(app()->getLocale())->isoFormat('dddd, D MMMM, h:mm')).' '.($at->hour < 12 ? __('সকাল') : __('বিকেল'))).'</b>';
+        };
         $rows = $s->episodes()->get()->map(fn (Post $p) => '<li style="padding:.3rem 0"><a href="'.e(PostResource::getUrl('edit', ['record' => $p])).'" style="text-decoration:underline;font-weight:600">'
-            .e($p->title).'</a> · '.e(__(['draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়'][$p->status] ?? $p->status))
+            .e($p->episodeLabel()).'</a> · '.e(__(['draft' => 'খসড়া', 'scheduled' => 'নির্ধারিত', 'published' => 'প্রকাশিত', 'pending' => 'অপেক্ষায়'][$p->status] ?? $p->status)).$when($p)
             .($p->proposed_image_path ? ' · '.e(__('ছবি দেখার অপেক্ষায়')) : '').'</li>')->implode('');
 
         return $rows ? '<ul>'.$rows.'</ul>' : e(__('এখনও কোনো পর্ব নেই।'));

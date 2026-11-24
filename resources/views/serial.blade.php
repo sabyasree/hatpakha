@@ -1,4 +1,9 @@
 {{-- D108: one serial: poster, the story in a line, every episode, and "tell me when the next one comes". --}}
+@php
+    // D281: read marks and "where you stopped" only from a signed-in reader's own reading history
+    $read = \App\Support\EpisodeNav::readMap(auth()->user(), $episodes);
+    $resume = \App\Support\EpisodeNav::resume($episodes, $read);
+@endphp
 <x-layouts.app :seo="$seo">
     <div class="h-1 bg-gradient-to-r from-pink via-red to-peach" aria-hidden="true"></div>
     <article class="mx-auto max-w-[820px] px-5 pb-16 pt-8">
@@ -19,11 +24,15 @@
         </div>
         <h1 class="mt-3 font-display text-5xl font-extrabold leading-tight md:text-6xl" style="font-stretch: 85%">{{ $serial->title }}</h1>
         @if ($serial->logline)<p class="mt-4 font-serif text-xl leading-relaxed">{{ $serial->logline }}</p>@endif
+        @if ($episodes->isNotEmpty())<p class="mt-2 font-bold text-ink2">{{ \App\Support\Bn::num((string) $episodes->count()) }}টি পর্ব বেরিয়েছে{{ $serial->status === 'active' ? ' · প্রতি '.$serial->dayName().' নতুন পর্ব' : '' }}</p>@endif
 
         @if (session('serial_status'))<p class="mt-4 rounded-2xl bg-sky-tint p-3 font-semibold" role="status">{{ session('serial_status') }}</p>@endif
         <div class="mt-5 flex flex-wrap gap-3">
             @if ($episodes->isNotEmpty())
-                <a href="{{ $episodes->first()->url() }}" class="inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">প্রথম পর্ব থেকে পড়ুন →</a>
+                <a href="{{ $episodes->first()->url() }}" class="inline-flex min-h-14 w-full flex-col items-center justify-center rounded-full bg-navy px-6 py-1 text-lg font-bold leading-snug text-white sm:w-auto">পর্ব ১ থেকে পড়া শুরু করুন →<span class="text-sm font-semibold text-peach">{{ $episodes->first()->episodeLabel() }}</span></a>
+                @if ($resume)
+                    <a href="{{ $resume[1]->url() }}" class="inline-flex min-h-14 w-full items-center justify-center rounded-full border-2 border-navy bg-white px-6 text-lg font-bold sm:w-auto">{{ $resume[0] }}: পর্ব {{ \App\Support\Bn::num((string) $resume[1]->episode_no) }} →</a>
+                @endif
             @endif
             @if ($serial->status !== 'finished')
                 @include('serial-follow')
@@ -37,8 +46,8 @@
             <ol class="mt-3 divide-y divide-rule border-y-2 border-navy">
                 @foreach ($episodes as $e)
                     <li><a href="{{ $e->url() }}" class="flex min-h-14 items-center justify-between gap-3 py-3 hover:text-red">
-                        <span><span class="block font-serif text-lg font-bold">{{ $e->episodeLabel() }}</span>
-                            <span class="block text-sm text-ink2">{{ \App\Support\Bn::date($e->published_at) }}</span></span><span aria-hidden="true">→</span></a></li>
+                        <span><span class="block font-serif text-lg font-bold">{{ $e->episodeLabel() }}@if ($loop->first && $episodes->count() > 1) <span class="ml-1 rounded-full bg-red px-2 align-middle font-sans text-xs text-white">শুরু এখান থেকে</span>@endif</span>
+                            <span class="block text-sm text-ink2">{{ \App\Support\Bn::date($e->published_at) }}</span></span>@if ($m = \App\Support\EpisodeNav::mark($read, $e->id))<span class="flex-none text-sm font-bold {{ $m === 'অর্ধেক পড়া' ? 'text-red' : 'text-ink2' }}">{{ $m }}</span>@else<span aria-hidden="true">→</span>@endif</a></li>
                 @endforeach
             </ol>
             @if ($serial->status === 'active')
