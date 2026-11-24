@@ -193,20 +193,20 @@
     @endif
 
     {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, the centre as a raised sticker, safe-area padding.
-         C7 (owner approved, research 2026-11): most visitors read, so the centre is "সংখ্যা" (this month's issue, else all
-         issues); "লিখুন" moved to the top of the আরও sheet. --}}
+         D287 (owner, after trying "সংখ্যা" there: "+ লিখুন is good, so writers will easily find it"): the raised centre stays
+         "+ লিখুন"; this month's issue is in the আরও sheet and in the computer's top menu. --}}
     @php
         $tabs = [
             [__('হোম'), url('/').'/', request()->is('/'), 'home'],
             [__('কবিতা'), \App\Support\Url::to('/category/poetry'), request()->is('category/poetry*'), 'poem'],
-            [__('সংখ্যা'), $hpIssueUrl, request()->is('sonkha*'), 'issue'],
+            [__('লিখুন'), \App\Support\Url::to('/submit'), request()->is('submit*', 'submissions*'), 'write'],
             [__('গল্প'), \App\Support\Url::to('/category/short-stories'), request()->is('category/short-stories*'), 'story'],
             [__('আরও'), '#more-sheet', false, 'more'],   // D166 (owner): "আরও" opens one sheet with everything, the account included
         ];
         $icons = [
             'home' => '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
             'poem' => '<path d="M20 4c-7 1-12 6-13 13l-3 3"/><path d="M7 17c4 0 8-3 9-8"/>',
-            'issue' => '<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+            'write' => '<path d="M12 5v14M5 12h14"/>',
             'story' => '<path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/>',
             'more' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
         ];
@@ -215,7 +215,7 @@
     @include('partials.more-sheet', ['menu' => $menu])
     <nav aria-label="{{ __('প্রধান') }}" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
-            @if ($ic === 'issue')
+            @if ($ic === 'write')
                 <a href="{{ $href }}" data-tab-centre class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
                     <span class="-mt-5 flex h-11 w-11 items-center justify-center rounded-full border-2 border-navy bg-red text-white shadow-[2px_2px_0_#13212C]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg></span>
                     <span class="mt-0.5 text-red">{{ $label }}</span>

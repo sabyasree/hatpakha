@@ -47,10 +47,6 @@
                 <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
                     <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>
             </div>
-            {{-- C7 (owner approved): "লিখুন" left the middle of the bottom bar for "সংখ্যা"; it is here, near the top --}}
-            <a href="{{ Url::to('/submit') }}" data-more-write class="mx-3 mt-2 flex min-h-14 items-center gap-3 rounded-2xl border-2 border-navy bg-red px-4 py-2 font-bold text-white shadow-[3px_3px_0_#13212C]">
-                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white text-xl text-red" aria-hidden="true">+</span>
-                <span class="flex-1 text-lg leading-tight">{{ __('লিখুন: লেখা পাঠান') }}<span class="block text-sm font-medium">{{ __('কবিতা, গল্প, প্রবন্ধ · বিনামূল্যে') }}</span></span><span aria-hidden="true">›</span></a>
             @if ($me)
                 <div class="flex items-center gap-3 px-4 py-3">
                     @if ($acct['avatar'])<img src="{{ $acct['avatar'] }}" alt="" class="h-12 w-12 flex-none rounded-full border-2 border-navy object-cover">

@@ -180,11 +180,9 @@ class NavigationAndSearchTest extends TestCase
         foreach (['/lekhok', '/sonkha', '/dharabahik', '/submissions', '/submit', '/kolom', '/khela/aaj', '/about-hatpakha', '/contact-us', '/advertise', '/privacy-policy', '/terms-conditions', '/feed', '/archive'] as $path) {
             $this->assertStringContainsString('href="'.url($path).'/"', $html, $path.' in the menus or footer, with its slash');
         }
-        // Bottom bar: the raised centre is সংখ্যা (all issues until one is out); লিখুন is in the sheet.
-        $this->assertMatchesRegularExpression('~data-tab-centre[^>]*>.*?সংখ্যা~s', $html);
-        $this->assertStringContainsString('href="'.url('/sonkha').'/" data-tab-centre', $html);
-        $this->assertStringContainsString('data-more-write', $html);
-        $this->assertLessThan(strpos($html, 'নমস্কার') ?: strpos($html, 'অ্যাকাউন্ট থাকলে'), strpos($html, 'data-more-write'), 'লিখুন near the top of the sheet');
+        // D287 (owner): the raised centre of the phone bar is "+ লিখুন"; this month's issue is in the আরও sheet
+        $this->assertMatchesRegularExpression('~data-tab-centre[^>]*>.*?লিখুন~s', $html);
+        $this->assertStringContainsString('href="'.url('/submit').'/" data-tab-centre', $html);
         // Desktop: সংখ্যা and ধারাবাহিক come before খেলা.
         $nav = substr($html, strpos($html, 'aria-label="প্রধান বিভাগ"'), 6000);
         $this->assertLessThan(strpos($nav, '>খেলা<'), strpos($nav, '>সংখ্যা<'));
@@ -194,7 +192,7 @@ class NavigationAndSearchTest extends TestCase
         $p = $this->makePost(['slug' => 'issue-piece']);
         $p->forceFill(['issue_id' => $issue->id])->saveQuietly();
         \Illuminate\Support\Facades\Cache::flush();
-        $this->assertStringContainsString('href="'.$issue->url().'" data-tab-centre', $this->get('/ek/')->getContent());
+        $this->assertStringContainsString('href="'.$issue->url().'"', $this->get('/ek/')->getContent(), 'This month\'s issue in the menus');
     }
 
     /** C9: one password box, Google first when ready, the owner's 8-character rule explained; no phone autofocus on sign-in. A10: tap targets. */
