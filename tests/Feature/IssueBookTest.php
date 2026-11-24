@@ -74,7 +74,7 @@ class IssueBookTest extends TestCase
         $this->assertSame(['শীতের কবিতা', 'লাল কাচ (পর্ব 1): দৃশ্য 1', 'লাল কাচ (পর্ব 2): দৃশ্য 2', 'লাল কাচ (পর্ব 3): দৃশ্য 3'], $pieces->pluck('title')->all());
 
         $book = $this->get('/sonkha/2026-12/boi/')->assertOk();
-        $book->assertSee('ধারাবাহিক · লাল কাচ')->assertSee('পর্ব 3 এর লেখা', false)->assertSee('চলবে…')->assertSee('পর্ব ৪ আগামী সংখ্যায়; তার আগেই প্রতি শনিবার সকালে নতুন পর্ব সাইটে।')->assertSee('/dharabahik/lal-kach/', false)->assertDontSee('পর্ব 4 এর লেখা');
+        $book->assertSee('ধারাবাহিক · লাল কাচ')->assertSee('পর্ব 3 এর লেখা', false)->assertSee('চলবে…')->assertSee('পর্ব ৪ থেকে বাকি গল্প পড়ুন হাতপাখার সাইটে। প্রতি শনিবার সকালে নতুন পর্ব।')->assertDontSee('আগামী সংখ্যায়')->assertSee('/dharabahik/lal-kach/', false)->assertDontSee('পর্ব 4 এর লেখা');
         // the issue page lists the serial once, with its episodes and where all of it is
         $page = $this->get('/sonkha/2026-12/')->assertOk()->assertSee('পর্ব ১–৩')->assertSee('সব পর্ব পড়ুন')->assertSee('২টি লেখা');
 
@@ -83,15 +83,16 @@ class IssueBookTest extends TestCase
         Issue::create(['slug' => '2027-01', 'title' => 'জানুয়ারি সংখ্যা', 'status' => 'published', 'published_at' => '2027-01-01 03:30:00']);
         $ep(5, '2027-01-02 03:30:00');
         $titles = IssueBook::pieces($issue->fresh())->pluck('title')->all();
-        $this->assertContains('লাল কাচ (পর্ব 4): দৃশ্য 4', $titles);
+        $this->assertNotContains('লাল কাচ (পর্ব 4): দৃশ্য 4', $titles, 'D278: three episodes at most in one issue');
         $this->assertNotContains('লাল কাচ (পর্ব 5): দৃশ্য 5', $titles);
-        $this->get('/sonkha/2026-12/boi/')->assertSee('পর্ব ৫ থেকে পড়ুন “জানুয়ারি সংখ্যা”-এ।');
+        $this->get('/sonkha/2026-12/boi/')->assertSee('পর্ব ৪ থেকে বাকি গল্প পড়ুন হাতপাখার সাইটে।')->assertSee('সব পর্ব পড়ুন →')->assertSee('class="mag-qr"', false);
         // D276: on paper the place is written out in words, with a QR code; January's issue says where the start is
         $this->actingAs(User::factory()->create(['role' => Role::Editor]))->get('/issue-print/'.$issue->id.'/')->assertOk()
-            ->assertSee('ধারাবাহিক: লাল কাচ (পর্ব ১–৪)')->assertSee('/dharabahik/lal-kach</span>', false)->assertSee('data:image/svg+xml;base64,', false);
+            ->assertSee('ধারাবাহিক: লাল কাচ (পর্ব ১–৩)')->assertSee('/dharabahik/lal-kach</a>', false)->assertSee('data:image/svg+xml;base64,', false);
         $jan = Issue::where('slug', '2027-01')->first();
         $this->makePost(['status' => 'published', 'slug' => 'lal-kach-6', 'title' => 'লাল কাচ (পর্ব 6): দৃশ্য 6', 'serial_id' => $serial->id, 'episode_no' => 6, 'published_at' => '2027-01-03 03:30:00', 'issue_id' => $jan->id]);
-        $this->get('/sonkha/2027-01/boi/')->assertSee('আগে যা বেরিয়েছে: পর্ব ১–৫,');
+        // D278: January does not carry the serial again (December did); readers go on on the site
+        $this->assertNotContains('লাল কাচ (পর্ব 6): দৃশ্য 6', IssueBook::pieces($jan->fresh())->pluck('title')->all());
 
         // the e-book says it too
         $path = IssueBook::epub($issue->fresh());
