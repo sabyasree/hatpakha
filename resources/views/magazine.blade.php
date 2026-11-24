@@ -6,7 +6,6 @@
     // An issue by default; a collection (বর্ষসেরা) passes its own words (App\Support\MagazineBook::WORDS).
     $w = ($words ?? []) + ['in' => 'এই সংখ্যায়', 'of' => 'এই সংখ্যার', 'back' => 'সংখ্যার পাতায় ফিরুন', 'ed' => 'সম্পাদকীয়', 'note' => 'সম্পাদকের কথা'];
     $bySection = $rest->groupBy(fn ($p) => $p->section?->name_bn ?? 'অন্যান্য');
-    $coverLines = $rest->take(3);
     // D275: the last episode of each serial in this issue closes with where the rest of the story is
     $runEnds = $rest->whereNotNull('serial_id')->groupBy('serial_id')->map(fn ($g) => $g->last()->id)->values()->all();
     $runStarts = $rest->whereNotNull('serial_id')->groupBy('serial_id')->map(fn ($g) => $g->first()->id)->values()->all();
@@ -183,19 +182,8 @@
     {{-- The content, in order. hp-magazine.js lays it out into pages; without it, this is the page. --}}
     <div class="mag-source" data-mag-source>
         <section data-kind="cover" data-head="none">
-            <div class="mag-cover-in">
-                @if ($coverImg = $issue->cover_path ?: (($preview ?? false) ? $issue->proposed_cover_path : null))<img src="{{ asset(ltrim($coverImg, '/')) }}" alt="">@else<div class="mag-fanbg" aria-hidden="true"></div>@endif
-                <div>
-                    <p class="mag-mast">হাতপাখা</p>
-                    <p class="mag-mast-sub">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</p>
-                </div>
-                <div>
-                    <p class="mag-cover-title">{{ $issue->title }}</p>
-                    <ul class="mag-cover-lines">
-                        @foreach ($coverLines as $p)<li><b>{{ $p->title }}</b><span>{{ $p->authors->map->publicName()->implode(', ') }}</span></li>@endforeach
-                    </ul>
-                </div>
-            </div>
+            {{-- D277: the cover, the same everywhere (App\Support\IssueCover) --}}
+            @include('partials.issue-cover', ['c' => \App\Support\IssueCover::data($issue, $rest, $preview ?? false), 'fill' => true])
         </section>
         <section data-kind="inside" data-head="none">
             <p style="font-family:'Galada',cursive;font-size:2.4em;color:#CB1B32;margin:0">হাতপাখা</p>

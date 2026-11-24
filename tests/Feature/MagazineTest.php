@@ -100,7 +100,8 @@ class MagazineTest extends TestCase
         }
         $this->assertMatchesRegularExpression('#<img class="writer-photo" src="images/p\d+\.png"#', (string) $zip->getFromName('OEBPS/writers.xhtml'), 'The photo travels inside the e-book');
         $cover = $zip->getFromName('OEBPS/images/cover.svg');
-        $this->assertStringContainsString('অগ্রহায়ণ সংখ্যা', $cover);
+        $this->assertStringContainsString('অগ্রহায়ণ', $cover);   // D277: the name large, with "মাসিক সংখ্যা" under it
+        $this->assertStringContainsString('মাসিক সংখ্যা', $cover);
         $this->assertStringContainsString('হাতপাখা', $cover);
         $this->assertStringContainsString('properties="cover-image"', $zip->getFromName('OEBPS/content.opf'));
         $this->assertNotFalse(simplexml_load_string($cover), 'The cover is valid XML');
@@ -198,7 +199,7 @@ class MagazineTest extends TestCase
         $this->actingAs(User::factory()->create())->get('/issue-preview/'.$issue->id.'/')->assertForbidden();   // nor writers
         $this->actingAs(User::factory()->create(['role' => Role::Editor]));
         $res = $this->get('/issue-preview/'.$issue->id.'/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-        $res->assertSee('খসড়া দেখছেন')->assertSee('পাঁচিলের ওপর কাক')->assertSee('হেমন্তের আলো')->assertSee('src="'.url('/media/covers/2026/11/x.jpg').'"', false);
+        $res->assertSee('খসড়া দেখছেন')->assertSee('পাঁচিলের ওপর কাক')->assertSee('হেমন্তের আলো')->assertSee('href="'.url('/media/covers/2026/11/x.jpg').'"', false);   // D277: a monthly cover cuts the picture into the fan
         $this->assertStringContainsString('no-store', $res->headers->get('Cache-Control'));
         $this->get('/sonkha/2026-12/boi/')->assertNotFound();   // the public magazine still waits for publishing
 

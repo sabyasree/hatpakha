@@ -14,7 +14,7 @@
         h1, h2 { font-family: 'Anek Bangla', sans-serif; line-height: 1.3; margin: 0 0 .2em; }
         h2 { font-size: 20pt; } .section { color: #CB1B32; font-size: 9.5pt; margin: 0; } .by { color: #4D5A63; margin: 0 0 1.2em; }
         p { margin: 0 0 .75em; orphans: 3; widows: 3; } .poem { text-align: center; } blockquote { margin: 1em 1.5em; font-style: italic; }
-        .cover { height: 7.4in; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .cover { height: 7.4in; display: flex; flex-direction: column; justify-content: center; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .cover img { max-width: 100%; max-height: 5.2in; object-fit: contain; margin: 0 auto 1em; }
         .mast { font-family: 'Galada', cursive; color: #CB1B32; font-size: 40pt; margin: 0; }
         .next-ep { margin-top: 2.2em; padding-top: 1.4em; border-top: 1px solid #E8DCCB; }
@@ -36,10 +36,8 @@
     </div>
     <div class="sheet">
         <section class="cover">
-            @if ($issue->cover_path)<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="">@endif
-            <p class="mast">হাতপাখা</p>
-            <h1>{{ $issue->title }}</h1>
-            <p class="small">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</p>
+            {{-- D277: the same cover as on the site --}}
+            <div style="width:4.6in;margin:0 auto">@include('partials.issue-cover', ['c' => \App\Support\IssueCover::data($issue, $pieces)])</div>
         </section>
         <section class="page">
             <p class="small">হাতপাখা · {{ $issue->title }}<br>প্রকাশক: হাতপাখা (hatpakha.com) · ISSN 2321-3035<br>

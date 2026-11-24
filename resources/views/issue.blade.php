@@ -14,18 +14,8 @@
             {{-- The cover, like a magazine on a stand --}}
             {{-- Owner (2026-11-12): the cover read as a broken red line (navy on navy). Now a magazine on the stand: a cream
                  edge, the fan in its corner, the name on its own navy panel, like the cover inside the magazine. --}}
-            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block aspect-[1/1.41] w-56 overflow-hidden rounded-md border-4 border-paper bg-sky-night shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
-                @if ($issue->cover_path)
-                    <picture class="contents">{!! \App\Support\Images::source($issue->cover_path, '(max-width: 640px) 60vw, 320px') !!}<img src="{{ asset(ltrim($issue->cover_path, '/')) }}" alt="" class="absolute inset-0 h-full w-full object-cover"></picture>
-                @else
-                    <span class="absolute -right-[30%] top-[24%] aspect-square w-[80%] rounded-full" style="background: repeating-conic-gradient(#CB1B32 0 7deg, #F08D90 7deg 14deg)" aria-hidden="true"></span>
-                @endif
-                <span class="absolute inset-x-0 top-0 px-4 pt-3 font-hand text-5xl leading-none text-white [text-shadow:0_2px_6px_rgba(19,33,44,.7)]">হাতপাখা</span>
-                <span class="absolute inset-x-0 bottom-0 bg-navy px-4 pb-4 pt-3">
-                    <span class="block h-1 w-10 bg-red" aria-hidden="true"></span>
-                    <span class="mt-2 block font-display text-xl font-extrabold leading-tight text-white">{{ $issue->title }}</span>
-                    <span class="mt-0.5 block text-xs text-peach">ISSN 2321-3035</span>
-                </span>
+            <a href="{{ \App\Support\Url::to('/sonkha/'.$issue->slug.'/boi') }}" class="relative mx-auto block w-56 overflow-hidden rounded-md border-4 border-paper shadow-[8px_8px_0_#CB1B32] transition hover:-translate-y-1 md:w-full" aria-label="পত্রিকা খুলুন: {{ $issue->title }}">
+                @include('partials.issue-cover', ['c' => \App\Support\IssueCover::data($issue, $posts)])
             </a>
             <div>
                 <p class="font-hand text-2xl text-peach">সংখ্যা</p>

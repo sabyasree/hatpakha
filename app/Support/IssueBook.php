@@ -265,38 +265,100 @@ final class IssueBook
         return $path;
     }
 
-    /** The cover as SVG (600×900): artwork or the fan, masthead, the issue's name and three pieces from inside. */
+    /**
+     * The e-book cover as SVG, 600×846 (D277): the same cover as on the site, in its style (fan or full picture), so the
+     * Bengali stays text. $artHref: the picture's file name inside the book, or null.
+     */
     public static function coverSvg(Issue $issue, Collection $pieces, ?string $artHref): string
     {
+        $c = IssueCover::data($issue, $pieces->reject(fn ($p) => $p->id === $issue->editorial_post_id)->values());
         $x = fn (string $t) => htmlspecialchars($t, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-        $fan = '';
-        if (! $artHref) {
-            for ($k = 0; $k < 26; $k++) {
-                $a1 = M_PI + $k * M_PI / 52;
-                $a2 = M_PI + ($k + 1) * M_PI / 52;
-                $fan .= sprintf('<path d="M640 640 L%.1f %.1f A420 420 0 0 1 %.1f %.1f Z" fill="%s"/>', 640 + 420 * cos($a1), 640 + 420 * sin($a1), 640 + 420 * cos($a2), 640 + 420 * sin($a2), $k % 2 ? '#F08D90' : '#CB1B32');
+        $cut = fn (string $t, int $n) => mb_strlen($t) > $n ? mb_substr($t, 0, $n - 1).'…' : $t;
+        $W = 600;
+        $H = 846;
+        $u = $W / 100;   // 1cqw
+        $font = fn (string $f) => ['g' => "'Galada', cursive", 's' => "'Noto Serif Bengali', serif", 'a' => "'Anek Bangla', sans-serif"][$f];
+        $t = fn (float $px, float $py, float $size, string $text, string $fill, string $f = 'a', string $anchor = 'start', string $weight = 'normal')
+            => '<text x="'.round($px, 1).'" y="'.round($py, 1).'" font-size="'.round($size, 1).'" font-family="'.$font($f).'" fill="'.$fill.'" text-anchor="'.$anchor.'" font-weight="'.$weight.'">'.$x($text).'</text>';
+        $issn = 'ISSN '.Bn::num(IssueCover::ISSN);
+        $lead = $c['lines'][0] ?? null;
+        $rest = array_slice($c['lines'], 1);
+        $out = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 '.$W.' '.$H.'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">';
+        if ($c['style'] === 'fan') {
+            $bg = ['special' => '#CB1B32', 'monthly' => '#13212C', 'festival' => '#EFC08D'][$c['kind']];
+            $ink = $c['kind'] === 'festival' ? '#13212C' : '#FFFBF4';
+            $accent = $c['kind'] === 'festival' ? '#A3152A' : '#EFC08D';
+            $mast = $c['kind'] === 'festival' ? '#CB1B32' : '#FFFBF4';
+            $fan = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::fanSvg($artHref, $c['kind']));
+            $fw = $W - 14 * $u;
+            $out .= '<rect width="'.$W.'" height="'.$H.'" fill="'.$bg.'"/>'
+                .$t(6 * $u, 0.03 * $H + 3 * $u, 2.9 * $u, $c['ear'], $ink).$t($W - 6 * $u, 0.03 * $H + 3 * $u, 2.9 * $u, $issn, $ink, 'a', 'end')
+                .'<rect x="'.(6 * $u).'" y="'.round(0.03 * $H + 4.6 * $u, 1).'" width="'.($W - 12 * $u).'" height="1.5" fill="'.$ink.'" opacity=".5"/>'
+                .$t($W / 2, 0.07 * $H + 21 * $u, 21 * $u, 'হাতপাখা', $mast, 'g', 'middle')
+                .'<g transform="translate('.(7 * $u).' '.round(0.26 * $H, 1).') scale('.round($fw / 200, 4).')">'.$fan.'</g>'
+                .$t($W / 2, 0.59 * $H + $c['hero'] * $u, $c['hero'] * $u, $c['main'], $ink, 's', 'middle', 'bold')
+                .$t($W / 2, 0.59 * $H + $c['hero'] * $u * 1.3 + 4.4 * $u, 3.3 * $u, $c['sub'], $accent, 'a', 'middle', '600');
+            if ($lead) {
+                $y = 0.785 * $H + 3 * $u;
+                $out .= '<rect x="'.($W / 2 - 5 * $u).'" y="'.round($y - 2.4 * $u, 1).'" width="'.(10 * $u).'" height="'.(0.7 * $u).'" fill="'.($c['kind'] === 'monthly' ? '#CB1B32' : $ink).'"/>'
+                    .'<text x="'.($W / 2).'" y="'.round($y + 5.2 * $u, 1).'" text-anchor="middle" font-family="'.$font('s').'" fill="'.$ink.'"><tspan font-size="'.(5.4 * $u).'" font-weight="bold">'.$x(($lead['serial'] ? 'ধারাবাহিক: ' : '').$cut($lead['t'], 26)).'</tspan>'
+                    .($lead['w'] !== '' ? '<tspan font-size="'.(3.6 * $u).'" font-family="'.$font('a').'" fill="'.$accent.'">  '.$x($lead['w']).'</tspan>' : '').'</text>';
+                foreach ($rest as $n => $l) {
+                    $out .= $t($W / 2, $y + 5.2 * $u + ($n + 1) * 5.2 * $u, 3.4 * $u, ($l['serial'] ? 'ধারাবাহিক: ' : '').$cut($l['t'], 30).($l['w'] !== '' ? ' · '.$l['w'] : ''), $ink, 'a', 'middle');
+                }
             }
-        }
-        $title = $issue->title;
-        $size = max(28, min(46, (int) floor(1000 / max(1, mb_strlen($title)))));
-        $lines = $pieces->filter(fn ($p) => $p->id !== $issue->editorial_post_id)->take(3)->values();
-        $cl = '';
-        foreach ($lines as $n => $p) {
-            $by = $p->authors->where('is_desk', false)->map->publicName()->implode(', ');
-            $cl .= '<text x="40" y="'.(790 + $n * 36).'" font-size="22" fill="#FFFBF4"><tspan font-weight="bold">'.$x(mb_strimwidth($p->title, 0, 34, '…')).'</tspan>'
-                .($by !== '' ? '<tspan fill="#EFC08D"> · '.$x(mb_strimwidth($by, 0, 24, '…')).'</tspan>' : '').'</text>';
+            $out .= $t($W / 2, $H - 0.018 * $H - 0.6 * $u, 2.6 * $u, 'hatpakha.com', $ink, 'a', 'middle');
+        } else {
+            $flag = ['special' => ['#CB1B32', '#FFFBF4', '#EFC08D'], 'monthly' => ['#13212C', '#FFFBF4', '#EFC08D'], 'festival' => ['#F08D90', '#13212C', '#A3152A']][$c['kind']];
+            $none = ['special' => '#CB1B32', 'monthly' => '#1D3A4F', 'festival' => '#EFC08D'][$c['kind']];
+            $out .= '<defs><linearGradient id="hpscrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13212C" stop-opacity=".94"/><stop offset=".52" stop-color="#13212C" stop-opacity=".9"/><stop offset=".74" stop-color="#13212C" stop-opacity=".55"/><stop offset="1" stop-color="#13212C" stop-opacity="0"/></linearGradient></defs>';
+            if ($artHref) {
+                $out .= '<rect width="'.$W.'" height="'.$H.'" fill="#13212C"/><image width="'.$W.'" height="'.$H.'" preserveAspectRatio="xMidYMid slice" xlink:href="'.$x($artHref).'" href="'.$x($artHref).'"/>';
+            } else {
+                $fan = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::fanSvg(null, $c['kind']));
+                $fw = $W + 24 * $u;
+                $out .= '<rect width="'.$W.'" height="'.$H.'" fill="'.$none.'"/><g transform="translate('.(-12 * $u).' '.round(0.76 * $H - 102 * $fw / 200, 1).') scale('.round($fw / 200, 4).')">'.$fan.'</g>';
+            }
+            $fy = 0.52 * $H;
+            $fh = 3.1 * $u * 1.4 + $c['hero'] * $u * 1.28 + 4.8 * $u;
+            $fwid = min(86 * $u, 10 * $u + max(mb_strlen($c['main']) * $c['hero'] * $u * 0.62, mb_strlen($c['label']) * 3.1 * $u * 0.7));
+            $out .= '<rect width="'.$W.'" height="'.round(0.4 * $H, 1).'" fill="url(#hpscrim)"/>'
+                .$t(5 * $u, 0.026 * $H + 3 * $u, 2.8 * $u, 'বর্ষ '.$c['vol'].($c['no'] ? ' · সংখ্যা '.$c['no'] : ''), '#FFFFFF')
+                .$t($W - 5 * $u, 0.026 * $H + 3 * $u, 2.8 * $u, $issn, '#FFFFFF', 'a', 'end')
+                .$t($W / 2, 0.05 * $H + 27 * $u, 27 * $u, 'হাতপাখা', '#FFFFFF', 'g', 'middle')
+                .'<g transform="translate('.round($W - 4 * $u - 12.5 * $u, 1).' '.round(0.35 * $H + 12.5 * $u, 1).') rotate(-9)">'
+                .'<circle r="'.(13.4 * $u).'" fill="#FFFBF4"/><circle r="'.(12.6 * $u).'" fill="none" stroke="#CB1B32" stroke-width="'.(0.4 * $u).'"/>'
+                .'<circle r="'.(10.4 * $u).'" fill="none" stroke="#CB1B32" stroke-width="'.(0.35 * $u).'" stroke-dasharray="4 3"/>'
+                .$t(0, -3.6 * $u, 3.4 * $u, $c['month'], '#13212C', 'a', 'middle', '600').$t(0, 2.6 * $u, 6.6 * $u, $c['year'], '#CB1B32', 's', 'middle', 'bold')
+                .$t(0, 6.6 * $u, 2.7 * $u, 'বর্ষ '.$c['vol'], '#13212C', 'a', 'middle', '600').'</g>'
+                .'<rect x="0" y="'.round($fy, 1).'" width="'.round($fwid, 1).'" height="'.round($fh, 1).'" fill="'.$flag[0].'"/>'
+                .$t(5 * $u, $fy + 2.2 * $u + 3.1 * $u, 3.1 * $u, $c['label'], $flag[2], 'a', 'start', 'bold')
+                .$t(5 * $u, $fy + 2.2 * $u + 3.1 * $u * 1.4 + $c['hero'] * $u, $c['hero'] * $u, $cut($c['main'], 22), $flag[1], 's', 'start', 'bold');
+            $py = 0.76 * $H;
+            $out .= '<rect x="0" y="'.round($py, 1).'" width="'.$W.'" height="'.round($H - $py, 1).'" fill="#FFFBF4"/>'
+                .'<rect x="'.(5 * $u).'" y="'.round($py + 3 * $u, 1).'" width="'.(9 * $u).'" height="'.(0.8 * $u).'" fill="#CB1B32"/>';
+            $y = $py + 3 * $u + 0.8 * $u + 6.4 * $u;
+            if ($lead) {
+                $out .= $t(5 * $u, $y, 5.6 * $u, ($lead['serial'] ? 'ধারাবাহিক: ' : '').$cut($lead['t'], 24), '#13212C', 's', 'start', 'bold');
+                if ($lead['w'] !== '') {
+                    $y += 4.6 * $u;
+                    $out .= $t(5 * $u, $y, 3.4 * $u, $lead['w'], '#CB1B32', 'a', 'start', '600');
+                }
+                foreach ($rest as $l) {
+                    $y += 4.8 * $u;
+                    $out .= $t(5 * $u, $y, 3.2 * $u, ($l['serial'] ? 'ধারাবাহিক: ' : '').$cut($l['t'], 26).($l['w'] !== '' ? ' · '.$l['w'] : ''), '#13212C', 'a', 'start', '600');
+                }
+            } else {
+                $out .= $t(5 * $u, $y, 5.6 * $u, $c['monthYear'], '#13212C', 's', 'start', 'bold');
+            }
+            $bar = preg_replace('~^<svg[^>]*>|</svg>$~', '', IssueCover::barcodeSvg());
+            $bx = $W - 5 * $u - 20 * $u;
+            $out .= '<g transform="translate('.round($bx, 1).' '.round($py + 3.6 * $u, 1).') scale('.round(20 * $u / 95, 4).' '.round(9 * $u / 40, 4).')" fill="#13212C">'.$bar.'</g>'
+                .$t($bx + 10 * $u, $py + 3.6 * $u + 9 * $u + 3 * $u, 2.3 * $u, 'ISSN '.IssueCover::ISSN, '#13212C', 'a', 'middle')
+                .$t($bx + 10 * $u, $py + 3.6 * $u + 9 * $u + 7 * $u, 2.4 * $u, 'hatpakha.com', '#CB1B32', 'a', 'middle', '600');
         }
 
-        return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 600 900" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" font-family="\'Noto Serif Bengali\', serif">'
-            .'<rect width="600" height="900" fill="#13212C"/>'
-            .($artHref ? '<image width="600" height="900" preserveAspectRatio="xMidYMid slice" xlink:href="'.$x($artHref).'" href="'.$x($artHref).'"/>' : $fan)
-            .'<text x="40" y="115" font-size="92" font-weight="bold" fill="#FFFBF4">হাতপাখা</text>'
-            .'<text x="44" y="152" font-size="18" fill="#EFC08D">বাংলা সাহিত্যের ওয়েব পত্রিকা · ISSN 2321-3035</text>'
-            .'<rect y="660" width="600" height="240" fill="#13212C"/>'
-            .'<rect x="40" y="676" width="60" height="5" fill="#CB1B32"/>'
-            .'<text x="40" y="'.(712 + (int) ($size / 2)).'" font-size="'.$size.'" font-weight="bold" fill="#FFFBF4">'.$x($title).'</text>'
-            .$cl
-            .'</svg>';
+        return $out.'</svg>';
     }
 
     public static function css(): string
