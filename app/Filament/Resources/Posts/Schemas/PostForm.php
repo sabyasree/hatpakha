@@ -196,6 +196,9 @@ class PostForm
                     Select::make('section_id')->label(__('বিভাগ'))->relationship('section', 'name_bn')->preload(),
                     Select::make('authors')->label(__('লেখক'))->relationship('authors', 'display_name')->multiple()->searchable()->required(),
                     Select::make('issue_id')->label(__('সংখ্যা'))->relationship('issue', 'title'),
+                    // D293: topic pages; the archivist (AI) suggests, a choice made here is kept
+                    \Filament\Forms\Components\CheckboxList::make('topics')->label(__('বিষয়ের পাতা'))->options(\App\Support\Topics::options())->columns(2)
+                        ->helperText(fn (?Post $record) => $record?->topics_by === 'ai' ? __('এআই সংগ্রাহক বেছেছে। বদলালে আপনার পছন্দই থাকবে।') : __('এখানে টিক দিলে লেখাটি সেই বিষয়ের পাতায় দেখা যাবে।')),
                     Select::make('format')->label(__('পড়ার ধরন'))->options(['poem' => __('কবিতা (লাইন ধরে)'), 'prose' => __('গদ্য')])->required()->default('prose'),
                     Select::make('language')->label(__('ভাষা'))->options(['bn' => __('বাংলা'), 'en' => __('ইংরেজি'), 'hi' => __('হিন্দি')])->required()->default('bn'),
                 ]),

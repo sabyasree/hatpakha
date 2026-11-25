@@ -60,6 +60,7 @@ class Post extends Model
             'plagiarism' => 'array',
             'own_match' => 'array',   // D248
             'plagiarism_at' => 'datetime',
+            'topics' => 'array',   // D293: topic pages (App\Support\Topics)
         ];
     }
 
@@ -118,6 +119,17 @@ class Post extends Model
             }
         });
         static::saving(function (self $post) {
+            // D293: topics chosen in the desk are the desk's; the archivist never changes them. Saving a piece that was
+            // never sorted, with no topic ticked, leaves it for the archivist.
+            if ($post->isDirty('topics') && ! $post->isDirty('topics_by')) {
+                $was = $post->getOriginal('topics');
+                if ($was === null && empty($post->topics)) {
+                    $post->topics = null;
+                } else {
+                    $post->topics_by = 'desk';
+                    \App\Support\Topics::forget();
+                }
+            }
             // D272 (audit): the status follows the date. "Published" for a later date waits as "scheduled" (it showed as
             // live and linked writers to a missing page); "scheduled" whose time has come is "published".
             if ($post->published_at && $post->status === 'published' && $post->published_at->isFuture()) {

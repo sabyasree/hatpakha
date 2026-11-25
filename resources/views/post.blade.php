@@ -193,6 +193,10 @@
             @endforeach
         @endforeach
 
+        @if ($post->isLive())
+            {{-- D293: this piece's topic pages --}}
+            @include('partials.topic-chips', ['topics' => \App\Support\Topics::forPost($post), 'heading' => 'এই বিষয়ের আরও লেখা', 'class' => 'mb-8'])
+        @endif
         @include('partials.after-piece')
     </article>
 

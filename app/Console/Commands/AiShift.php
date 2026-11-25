@@ -118,6 +118,10 @@ class AiShift extends Command
         }
         // D104: read the old submissions once (worth asking the writer, or too weak), 25 an hour until all are read.
         \App\Ai\BacklogScreen::backlog(25);
+        // D293: once the owner has started it, 100 pieces an hour onto the topic pages (new pieces too, once published).
+        if (\App\Ai\TopicSorter::started()) {
+            \App\Ai\TopicSorter::backlog(100);
+        }
         // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
         foreach (Post::published()->whereNull('seo_done_at')->when(! \App\Ai\SeoExpert::automatic(), fn ($q) => $q->whereNull('seo_proposal'))   // D273: a waiting proposal is not redone hourly
             ->orderByDesc('published_at')->limit(10)->get() as $p) {

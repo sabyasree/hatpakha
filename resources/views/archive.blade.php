@@ -9,6 +9,9 @@
             <p class="mt-6 font-serif text-lg">এই তাকে এখনও কোনো লেখা ওঠেনি। লেখার নিচে "পড়ে কেমন লাগল?" ছুঁয়ে আপনিও জানাতে পারেন।</p>
             <div class="max-w-[720px]">@include('partials.read-next')</div>
         @endif
+        @if (($section ?? null) && ($tg = \App\Support\Topics::groupForSection($section->slug)))
+            @include('partials.topic-chips', ['topics' => \App\Support\Topics::liveIn($tg), 'heading' => 'বিষয় ধরে পড়ুন'])
+        @endif
         @if ($section ?? null)
             {{-- D132: every new piece of this section, on the phone (no account needed) --}}
             <div class="mt-4"><x-push-button :topic="'section:'.$section->id" :off="'🔔 '.$section->name_bn.': নতুন লেখা এলে ফোনে জানান'" :on="'✓ '.$section->name_bn.': নতুন লেখা এলে ফোনে জানাব'" /></div>
@@ -50,5 +53,10 @@
         </div>
         @if ($posts->count() >= 6)<x-ad-slot spot="list" :height="250" />@endif
         <div class="mt-10">{{ $posts->links('pagination.hatpakha') }}</div>
+        @if ($topic ?? null)
+            {{-- D293: from one topic to the others --}}
+            @include('partials.topic-chips', ['topics' => \App\Support\Topics::liveIn(), 'heading' => 'আরও বিষয়', 'current' => $topic, 'class' => 'mt-10'])
+            <a href="{{ \App\Support\Url::to('/bishoy') }}" class="mt-4 inline-flex min-h-11 items-center font-bold text-sky-night underline">সব বিষয় →</a>
+        @endif
     </section>
 </x-layouts.app>
