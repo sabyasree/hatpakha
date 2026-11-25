@@ -16,6 +16,10 @@
     # Never execute or serve scripts from upload folders (docs/SECURITY.md §5).
     RewriteRule ^(wp-content/uploads|media)/.*\.(php\d?|phtml|phar|pl|py|cgi|sh|asp|aspx|jsp|htaccess)$ - [F,L,NC]
 
+    # D291: old WordPress PDFs go through the app, which serves one only if a live piece links to it (a pirated
+    # Feluda book was the site's most visited file). Must come before the real-file rule below.
+    RewriteRule ^wp-content/uploads/.+\.pdf$ index.php [L,NC]
+
     # Send requests to the front controller (except real files).
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
