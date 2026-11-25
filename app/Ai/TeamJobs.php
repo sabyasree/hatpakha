@@ -279,7 +279,7 @@ final class TeamJobs
         return match ("{$agent}.{$job}") {
             'editor.inbox' => [true, self::shift('inbox')],
             'editor.backlog' => [true, self::shift('backlog')],
-            'editor.review' => $done(app(ReviewService::class)->run($post, null, 'editor')->status === 'done', 'রিপোর্ট তৈরি: "'.$post->title.'"। লেখার পাতায় "এআই রিপোর্ট" দেখুন।', 'রিপোর্ট তৈরি হয়নি।'),
+            'editor.review' => $done(app(ReviewService::class)->run($post, null, 'editor', effort: ReviewService::DESK_EFFORT)->status === 'done', 'রিপোর্ট তৈরি: "'.$post->title.'"। লেখার পাতায় "এআই রিপোর্ট" দেখুন।', 'রিপোর্ট তৈরি হয়নি।'),
             'editor.issue' => (function () use ($owner) {
                 if (! IssuePlanner::due()) {   // D272: a proposal already there is the owner's to change or redo (issue page)
                     return [false, 'এই মাসের সংখ্যার প্রস্তাব আগেই আছে। নতুন চাইলে সংখ্যার পাতায় "নতুন প্রস্তাব" টিপুন।'];

@@ -19,7 +19,7 @@ OPENAI_API_KEY=…
 OPENAI_REVIEW_MODEL=…          # the OpenAI model to compare (check OpenAI's model list)
 OPENAI_PRICE_IN=… OPENAI_PRICE_OUT=… OPENAI_PRICE_CACHED=…   # USD per 1M tokens from OpenAI's pricing page
 ```
-Optional: `ANTHROPIC_REVIEW_MODEL` (default `claude-sonnet-5-5`, per the plan), `ANTHROPIC_REVIEW_EFFORT` (default `medium`), `AI_MIN_WORDS` (default 20).
+Optional: `ANTHROPIC_REVIEW_MODEL` (default `claude-sonnet-5-5`, per the plan), `ANTHROPIC_REVIEW_EFFORT` (default `medium`; since D297 submission reports run at `low` by themselves and `high` when the editor presses "এআই দিয়ে পড়ান", so this setting is only a fallback), `AI_MIN_WORDS` (default 20).
 
 ## Cost guards
 - Off unless `AI_ENABLED=true` **and** a key is set; nothing is sent otherwise.

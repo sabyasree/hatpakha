@@ -21,7 +21,25 @@ final class ReviewService
         };
     }
 
-    public function run(Post $post, ?string $provider = null, string $purpose = 'review', ?string $blindRun = null, ?string $label = null): AiReview
+    /**
+     * D297 (owner, 2026-11-25: "Lower effort on submission reports. Only more effort if from desk I click এআই দিয়ে পড়ান"):
+     * a report made by itself (a new submission, the hourly shift) thinks less; one the editor asks for thinks more.
+     */
+    public const AUTO_EFFORT = 'low';
+
+    public const DESK_EFFORT = 'high';
+
+    public function run(Post $post, ?string $provider = null, string $purpose = 'review', ?string $blindRun = null, ?string $label = null, ?string $effort = null): AiReview
+    {
+        AnthropicReviewer::$effortNow = $effort ?? self::AUTO_EFFORT;
+        try {
+            return $this->runNow($post, $provider, $purpose, $blindRun, $label);
+        } finally {
+            AnthropicReviewer::$effortNow = null;
+        }
+    }
+
+    private function runNow(Post $post, ?string $provider, string $purpose, ?string $blindRun, ?string $label): AiReview
     {
         $provider ??= (string) config('ai.provider');
         $reviewer = $this->reviewer($provider);

@@ -10,6 +10,9 @@ use App\Models\Post;
 /** Claude via the official SDK (D34). Structured output, cached rubric, server-side refusal fallback. */
 final class AnthropicReviewer implements Reviewer
 {
+    /** D297: how hard the AI thinks on this call; set by ReviewService (low by itself, high when the editor asks). */
+    public static ?string $effortNow = null;
+
     public function __construct(private ?Client $client = null) {}
 
     public function provider(): string
@@ -35,7 +38,7 @@ final class AnthropicReviewer implements Reviewer
                 system: [['type' => 'text', 'text' => trim(Knowledge::BRIEF)], ['type' => 'text', 'text' => Prompt::system(), 'cacheControl' => ['type' => 'ephemeral']]],   // D62: shared knowledge first
                 messages: [['role' => 'user', 'content' => Prompt::user($post)]],
                 outputConfig: [
-                    'effort' => (string) config('ai.anthropic.effort'),
+                    'effort' => self::$effortNow ?? (string) config('ai.anthropic.effort'),
                     'format' => ['type' => 'json_schema', 'schema' => ReviewSchema::schema($sections)],
                 ],
                 // If a safety classifier declines, the API retries on a suitable model within the same call.
