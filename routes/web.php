@@ -90,6 +90,8 @@ Route::get('/certificate/{code}', CertificateController::class)->where('code', '
 // Old WordPress attack surface → 410 Gone (docs/SECURITY.md §5)
 Route::any('/{path}', [LegacyController::class, 'gone'])
     ->where('path', 'wp-login\.php|xmlrpc\.php|wp-admin(/.*)?|wp-includes(/.*)?|wp-content/plugins(/.*)?|wp-content/themes(/.*)?');
+// D291: an old uploaded PDF opens only when a live piece links to it; anything else (others' books) is gone.
+Route::get('/wp-content/uploads/{path}', [LegacyController::class, 'uploadedPdf'])->where('path', '.+\.(?i:pdf)');
 // Owner (2026-11-12): old WordPress API addresses (/wp-json/…) were being read: an old piece's address goes to that piece,
 // everything else to the home page (301). Anything but a read is still refused.
 Route::any('/wp-json/{rest?}', [LegacyController::class, 'wpJson'])->where('rest', '.*');

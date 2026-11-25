@@ -304,7 +304,23 @@ class Post extends Model
         return $this->featured_image_path && ($this->featured_image_width ?? 0) >= 600;   // cards are ~300px wide: sharp at 2x
     }
 
-    public function metaTitle(): string { return $this->seo_title ?: $this->title; }
+    public function metaTitle(): string
+    {
+        return self::withoutOldBrand((string) ($this->seo_title ?: $this->title)) ?: $this->title;
+    }
+
+    /**
+     * D291: ~440 titles kept from the old site end in "| Hatpakha - An online Bengali English magazine" (or one of a dozen
+     * spellings), so Google showed the brand twice. The page adds " | হাতপাখা" itself; the old ending is dropped.
+     */
+    public static function withoutOldBrand(string $title): string
+    {
+        do {   // "X | HATPAKHA | An online magazine" has two old endings
+            $title = trim((string) preg_replace('/\s*[|\-–—]\s*(?:hatpakha[^|]*|an\s+(?:online|bengali)[^|]*magazine[^|]*|an\s+bengali\s*-\s*english\s+online[^|]*|online\s+magazine[^|]*)$/iu', '', $before = $title));
+        } while ($title !== $before);
+
+        return $title;
+    }
 
     public function metaDescription(): string
     {

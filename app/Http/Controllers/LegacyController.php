@@ -15,6 +15,33 @@ class LegacyController extends Controller
         abort(410);
     }
 
+    /**
+     * D291 (owner, 2026-11-25): Search Console showed two-thirds of Google's clicks going to a pirated Feluda PDF left in
+     * the WordPress uploads. A PDF there is served only if a published piece links to it (a writer's own piece kept as
+     * PDF); every other one answers 410. Never indexed either way: the piece is the page.
+     */
+    public const BLOCKED_PDFS = ['2015/10/Feluda-Samagra-Part-1Banglaebooksclassics.blogspot.com_.pdf'];
+
+    public function uploadedPdf(string $path)
+    {
+        $path = rawurldecode($path);
+        if (in_array($path, self::BLOCKED_PDFS, true)) {
+            abort(410);   // others' books: gone even if an old piece still links them
+        }
+        $base = realpath(public_path('wp-content/uploads'));
+        $file = $base ? realpath($base.'/'.$path) : false;
+        if (! $file || ! str_starts_with($file, $base.DIRECTORY_SEPARATOR) || ! is_file($file)) {
+            abort(404);
+        }
+        $linked = \Illuminate\Support\Facades\Cache::remember('upload-pdf:'.md5($path), 86400,
+            fn () => Post::published()->where('body_html', 'like', '%uploads/'.$path.'%')->exists() ? 1 : 0);
+        if (! $linked) {
+            abort(410);
+        }
+
+        return response()->file($file, ['Content-Type' => 'application/pdf', 'X-Robots-Tag' => 'noindex']);
+    }
+
     /** /wp-json/wp/v2/posts/{id} (or pages/{id}) → that piece or page by its old WordPress number; the rest → home. */
     public function wpJson(\Illuminate\Http\Request $request, ?string $rest = null)
     {
