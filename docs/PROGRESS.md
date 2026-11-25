@@ -407,3 +407,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] `/bishoy/` and 15 topic pages, desk field, archivist sorter, links from sections, pieces and footer, sitemap; English spellings in section titles; কবিতা কাকে বলে; Bengali Durga names (TopicPagesTest).
 - [ ] Owner, after deploy: /desk → এআই দল → সংগ্রাহক → "লেখাগুলো বিষয়ের পাতায় সাজান" (about $0.30 in all; then 100 an hour by itself, roughly a day for the archive).
 - [ ] Next: check the topic pages after the sort (move wrong ones in the desk); in 6–8 weeks compare Search Console for "ভূতের গল্প", "প্রেমের কবিতা" and the others.
+
+## Literary calendar and off-topic pieces (D294), 2026-11-25
+- [x] Calendar pieces and weekly readings written, fact-checked and published by themselves (LiteraryCalendarTest); 55 off-topic house pieces out of Google.
+- [ ] Watch the first pieces (Begum Rokeya, 6 December; the first Wednesday reading) and the audit log for held ones; nothing for the owner to do.
+- [ ] Later (owner decides): writers' own off-topic pieces (health tips, relationship advice) are left as they are.

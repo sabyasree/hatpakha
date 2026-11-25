@@ -60,7 +60,7 @@ final class Topics
     /** The pieces of a topic: the ones readers liked most first, then the newest. */
     public static function query(string $slug)
     {
-        return Post::published()->whereJsonContains('topics', $slug)->orderByDesc('likes_count')->orderByDesc('published_at');
+        return Post::published()->where('noindex', false)->whereJsonContains('topics', $slug)->orderByDesc('likes_count')->orderByDesc('published_at');
     }
 
     /** @return array<string, int> slug => published pieces, for topics with at least MIN (cached an hour) */
@@ -69,7 +69,7 @@ final class Topics
         return Cache::remember('topics:live:v1', 3600, function () {
             $out = [];
             foreach (array_keys(self::LIST) as $slug) {
-                $n = Post::published()->whereJsonContains('topics', $slug)->count();
+                $n = Post::published()->where('noindex', false)->whereJsonContains('topics', $slug)->count();
                 if ($n >= self::MIN) {
                     $out[$slug] = $n;
                 }

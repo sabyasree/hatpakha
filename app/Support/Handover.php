@@ -39,6 +39,8 @@ final class Handover
         'monthly' => ['মাসের ছোট কাজ', 'মাসের লেখক, সংকলন, পুরনো লেখার এসইও আর যন্ত্রকণ্ঠের পাঠ নিজে থেকে হয়।'],
         'publish' => ['ভালো লেখা প্রকাশ', 'এআই যে লেখা নিশ্চিন্তে প্রকাশ করতে বলে, তা ২৪ ঘণ্টা পরে নিজে থেকে মনোনীত হয়, আপনি না থামালে।'],
         // D214: the detective series only
+        // D294: the literary calendar and the weekly reading, written, fact-checked and published by the desk
+        'calendar' => ['সাহিত্যের ক্যালেন্ডার', 'লেখকের জন্মদিন আর উৎসবের আগে একটি লেখা, আর সপ্তাহে একটি বিখ্যাত লেখার আলোচনা: প্রতিটি তথ্য ওয়েবে যাচাই হয়ে "হাতপাখা ডেস্ক" নামে নিজে থেকে প্রকাশ হয়। যাচাই না হলে প্রকাশ হয় না।'],
         'cases' => ['গোয়েন্দা সিরিজ', 'একটি কেস শেষ হওয়ার আগে পরের কেসের পরিকল্পনা তৈরি হয়; আপনি সমাধান পড়ে শুরু করলে প্রতিটি পর্ব যাচাই হয়ে নিজে থেকে প্রকাশ হয়।'],
     ];
 
@@ -383,6 +385,12 @@ final class Handover
      *     reader, and is then given its day (the serial's weekday, 9am Kolkata, a week after the one before). An
      *     episode with a problem, or one that could not be checked, waits for the owner with the reason in a flag.
      */
+    /** D294 */
+    public static function calendar(): int
+    {
+        return \App\Ai\CalendarDesk::run();
+    }
+
     public static function cases(): int
     {
         $owner = self::owner();
