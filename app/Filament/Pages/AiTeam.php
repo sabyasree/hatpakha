@@ -417,6 +417,10 @@ class AiTeam extends Page
 
         return [
             'stats' => $stats,
+            // D296 (owner: "check right now where is costing more"): the last 30 days, job by job, costliest first.
+            'byJob' => \App\Models\AiUsage::where('created_at', '>=', now()->subDays(30))
+                ->selectRaw('purpose, model, count(*) as n, sum(cost_usd) as usd')->groupBy('purpose', 'model')->orderByDesc('usd')->limit(15)->get(),
+            'batchWaiting' => \App\Ai\Batch::counts(),
             'monthCost' => array_sum(array_column($stats, 'cost')),
             'monthJobs' => array_sum(array_column($stats, 'calls')),
             'forecast' => $week / 7 * now()->daysInMonth,

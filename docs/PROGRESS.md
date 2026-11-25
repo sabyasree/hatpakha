@@ -417,3 +417,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Fixed comment answer for "how do I share"; certificate share box with picture, copied words and tag tip; proper preview; e-mails point to it; piece share icon fixed on computers.
 - [x] Owner: Facebook offers the page as "@Hatpakha"; the tip says so everywhere.
 - [ ] Owner: if "certificate ready" or "piece live" were edited in /desk → ই-মেলের নমুনা, the new lines are not in the edited copy; add them there.
+
+## Lower AI cost (D296), 2026-11-25
+- [x] Overnight jobs (old-piece proofreading, old-submission screening, SEO details, topic sorting) go to the half-price batch; cost table per job on /desk → এআই দল (AiBatchTest).
+- [ ] Owner: after a week, send a screenshot of "খরচ কোথায় (গত ৩০ দিন)" so the costliest live jobs can be trimmed next.
+- [ ] Possible next savings (only if the table shows them high): serial and desk writers on the mid model or lower effort; the weekly strategist/scout searches less often.

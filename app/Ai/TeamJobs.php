@@ -339,9 +339,9 @@ final class TeamJobs
             'archivist.topics' => (function () {
                 $e = \App\Ai\TopicSorter::estimate();
                 \App\Ai\TopicSorter::start();
-                $n = \App\Ai\TopicSorter::backlog(100);
+                \App\Ai\Batch::queueTopics();   // D296: the whole archive in one half-price batch
 
-                return [true, 'বিষয়ের পাতায় সাজানো শুরু হয়েছে: এখন '.\App\Support\Bn::num((string) $n).'টি লেখা হলো, বাকি '.\App\Support\Bn::num((string) max(0, $e['pieces'] - $n)).'টি প্রতি ঘণ্টায় ১০০টি করে হবে (মোট খরচ আনুমানিক $'.$e['usd'].')। লেখার পাতায় "বিষয়" ঘরে বদলানো যায়।'];
+                return [true, 'বিষয়ের পাতায় সাজানো শুরু হয়েছে: '.\App\Support\Bn::num((string) $e['pieces']).'টি লেখা অর্ধেক দামের রাতের কাজে গেছে, কয়েক ঘণ্টার মধ্যে বিষয়ের পাতায় উঠবে (মোট খরচ আনুমানিক $'.round($e['usd'] / 2, 2).')। লেখার পাতায় "বিষয়ের পাতা" ঘরে বদলানো যায়।'];
             })(),
             'archivist.collection' => $done(Archivist::collection(null, $redo), 'সংকলনের প্রস্তাব আজকের কাজে আছে।'),
             'teacher.all' => $done(KidsTeacher::backlog(), 'ছোটদের লেখার বয়স আর শব্দের মানে তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখুন।'),
