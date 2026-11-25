@@ -307,7 +307,7 @@ class PostsTable
                 ->visible(fn (Post $record) => in_array($record->status, ['pending', 'changes'], true))
                 ->requiresConfirmation()->modalDescription(__('এআই একটি পরামর্শ-রিপোর্ট লিখবে (খরচ লগে থাকবে)। সিদ্ধান্ত আপনারই।'))
                 ->action(function (Post $record) {
-                    $review = app(\App\Ai\ReviewService::class)->run($record);
+                    $review = app(\App\Ai\ReviewService::class)->run($record, effort: \App\Ai\ReviewService::DESK_EFFORT);   // D297: the editor asked: think harder
                     $review->status === 'done'
                         ? Notification::make()->title(__('এআই রিপোর্ট তৈরি: ').$review->score.__('/১০'))->success()->send()
                         : Notification::make()->title(__('রিপোর্ট হয়নি'))->body($review->error)->warning()->send();

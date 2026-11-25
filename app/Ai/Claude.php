@@ -45,6 +45,15 @@ final class Claude
         return $result;
     }
 
+    /** D62: the team's shared knowledge first (the same for every job, so it is cached), then the task. Also used by Batch. */
+    public static function systemBlocks(string $purpose, string $system): array
+    {
+        return in_array($purpose, Knowledge::FOR, true)
+            ? [['type' => 'text', 'text' => trim(Knowledge::BRIEF), 'cacheControl' => ['type' => 'ephemeral']],
+                ['type' => 'text', 'text' => $system.(in_array($purpose, Knowledge::TRENDS_FOR, true) ? substr(Knowledge::forPurpose($purpose), strlen("\n\n".Knowledge::BRIEF)) : '')]]
+            : [['type' => 'text', 'text' => $system, 'cacheControl' => ['type' => 'ephemeral']]];
+    }
+
     public const CUT_OFF = 'the answer was too long and got cut off (max_tokens)';
 
     /** @return array{0: ?array, 1: ?string} */
@@ -57,11 +66,7 @@ final class Claude
             return [(self::$fake)($purpose, $user, $schema), null];
         }
         $model ??= (string) config('ai.anthropic.review_model');
-        // D62: the team's shared knowledge first (the same for every job, so it is cached), then the task.
-        $blocks = in_array($purpose, Knowledge::FOR, true)
-            ? [['type' => 'text', 'text' => trim(Knowledge::BRIEF), 'cacheControl' => ['type' => 'ephemeral']],
-                ['type' => 'text', 'text' => $system.(in_array($purpose, Knowledge::TRENDS_FOR, true) ? substr(Knowledge::forPurpose($purpose), strlen("\n\n".Knowledge::BRIEF)) : '')]]
-            : [['type' => 'text', 'text' => $system, 'cacheControl' => ['type' => 'ephemeral']]];
+        $blocks = self::systemBlocks($purpose, $system);
         // Long answers (the literary writers) are streamed: thinking is always on and counts toward maxTokens, so they
         // need a large limit, and a large non-streamed request times out (2026-11-08: serial plans were cut off).
         if ($maxTokens > 16000) {

@@ -25,6 +25,7 @@ Schedule::call($shift('daily'))->name('ai-shift daily')->dailyAt('09:30')->timez
 Schedule::call($shift('weekly'))->name('ai-shift weekly')->weeklyOn(1, '08:30')->timezone('Asia/Kolkata')->withoutOverlapping(60); // Monday: picks, health, plan, certificates
 Schedule::call($shift('newsletter'))->name('ai-shift newsletter')->weeklyOn(6, '18:00')->timezone('Asia/Kolkata');                // Saturday: Sunday newsletter draft
 Schedule::call($shift('monthly'))->name('ai-shift monthly')->monthlyOn(1, '08:15')->timezone('Asia/Kolkata');                     // 1st: report, insights, collection, team review
+Schedule::call(fn () => \App\Ai\Batch::run())->name('half-price AI batches')->hourlyAt(35)->withoutOverlapping(30);   // D296
 Schedule::call($shift('chief'))->name('ai-shift chief')->hourlyAt(45)->withoutOverlapping(30);                                  // editor-in-chief checks (no AI)
 Schedule::call($shift('brief'))->name('ai-shift brief')->dailyAt('08:00')->timezone('Asia/Kolkata');
 // Newsletters (D58): after the owner's click, a small batch every minute until all are sent.

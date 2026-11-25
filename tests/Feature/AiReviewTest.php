@@ -251,4 +251,22 @@ class AiReviewTest extends TestCase
         Http::assertSent(fn ($req) => $req->method() === 'GET');   // lookups only: no tokens, no cost
         Http::assertNotSent(fn ($req) => str_contains($req->url(), 'messages') || str_contains($req->url(), 'responses'));
     }
+
+    /** D297 (owner): a report made by itself thinks less; one the editor asks for from the desk thinks more. */
+    public function test_reports_by_themselves_use_low_effort_and_the_desk_button_high(): void
+    {
+        $this->enable();
+        $seen = [];
+        $this->app->instance(AnthropicReviewer::class, new class($seen) implements Reviewer {
+            public function __construct(private array &$seen) {}
+            public function provider(): string { return 'anthropic'; }
+            public function model(): string { return 'claude-sonnet-5-5'; }
+            public function review(Post $post, array $sections): ReviewOutcome { $this->seen[] = AnthropicReviewer::$effortNow; return new ReviewOutcome(AiReviewTest::reportFor()); }
+        });
+        $post = $this->piece();
+        app(ReviewService::class)->run($post, null, 'editor');
+        app(ReviewService::class)->run($post, effort: ReviewService::DESK_EFFORT);
+        $this->assertSame(['low', 'high'], $seen);
+        $this->assertNull(AnthropicReviewer::$effortNow, 'Reset after each call');
+    }
 }

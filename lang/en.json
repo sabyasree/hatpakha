@@ -2821,7 +2821,7 @@
     "কোনো ত্রুটি নেই": "No errors",
     "গত তিরিশ দিনে সাইট কোনো ভুলে পড়েনি, বা পড়লেও তা এখানে ওঠার মতো ছিল না।": "In the last thirty days the site ran into no error, or none worth listing here.",
     "কী হয়েছিল": "What happened",
-    "কতবার": "How many times",
+    "কতবার": "Times",
     "শেষ কবে": "Last seen",
     "ডেস্কে": "In the desk",
     "সাইটে": "On the site",
@@ -3156,5 +3156,10 @@
     "তথ্য যাচাই": "Fact check",
     "লেখার অংশ অন্য জায়গায় পাওয়া গেছে।": "Part of the text was found elsewhere.",
     "শংসাপত্র ও ফেসবুকে দিন": "Certificate & share on Facebook",
-    "“শংসাপত্র”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার শংসাপত্র। খুলে “ছবিসহ ফেসবুকে দিন” টিপুন; ফেসবুকে পোস্টে @Hatpakha লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।": "“Certificate”: Hatpakha's certificate for every published piece. Open it and tap “ছবিসহ ফেসবুকে দিন”; in your Facebook post, type @Hatpakha and pick our page so we see it too."
+    "“শংসাপত্র”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার শংসাপত্র। খুলে “ছবিসহ ফেসবুকে দিন” টিপুন; ফেসবুকে পোস্টে @Hatpakha লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।": "“Certificate”: Hatpakha's certificate for every published piece. Open it and tap “ছবিসহ ফেসবুকে দিন”; in your Facebook post, type @Hatpakha and pick our page so we see it too.",
+    "খরচ কোথায় (গত ৩০ দিন)": "Where the money goes (last 30 days)",
+    "কোন কাজে কত খরচ, বেশি থেকে কম। রাতের কাজ অর্ধেক দামে যায়।": "What each job cost, highest first. Overnight work goes at half price.",
+    "গত ৩০ দিনে কোনো খরচ নেই।": "No spending in the last 30 days.",
+    "মডেল": "Model",
+    "অর্ধেক দামের রাতের কাজে অপেক্ষায়: :n": "Waiting in the half-price overnight batch: :n"
 }

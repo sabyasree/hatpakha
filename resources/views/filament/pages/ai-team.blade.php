@@ -330,6 +330,32 @@
     </x-filament::section>
     </div>
 
+    {{-- D296: where the money goes, job by job (last 30 days), and what waits in the half-price batch --}}
+    <x-filament::section icon="heroicon-o-banknotes" collapsible persist-collapsed collapse-id="hp-ai-cost-1">
+        <x-slot name="heading">{{ __('খরচ কোথায় (গত ৩০ দিন)') }}</x-slot>
+        <x-slot name="description">{{ __('কোন কাজে কত খরচ, বেশি থেকে কম। রাতের কাজ অর্ধেক দামে যায়।') }}</x-slot>
+        @if ($d['byJob']->isEmpty())
+            <div class="hp-muted">{{ __('গত ৩০ দিনে কোনো খরচ নেই।') }}</div>
+        @else
+            <table class="w-full text-sm">
+                <thead><tr class="text-left"><th class="py-1">{{ __('কাজ') }}</th><th>{{ __('মডেল') }}</th><th class="text-right">{{ __('কতবার') }}</th><th class="text-right">{{ __('খরচ') }}</th></tr></thead>
+                <tbody>
+                    @foreach ($d['byJob'] as $row)
+                        <tr class="border-t border-gray-200 dark:border-white/10">
+                            <td class="py-1">{{ __(\App\Ai\Team::PURPOSES[$row->purpose] ?? $row->purpose) }}</td>
+                            <td>{{ $row->model }}</td>
+                            <td class="text-right">{{ $n((string) $row->n) }}</td>
+                            <td class="text-right">${{ $n(number_format((float) $row->usd, 2)) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+        @if ($d['batchWaiting'])
+            <div class="hp-muted mt-2">{{ __('অর্ধেক দামের রাতের কাজে অপেক্ষায়: :n', ['n' => $n((string) array_sum($d['batchWaiting']))]) }}</div>
+        @endif
+    </x-filament::section>
+
     {{-- 3. The team --}}
     <x-filament::section icon="heroicon-o-user-group" collapsible persist-collapsed collapse-id="hp-ai-team-5">
         <x-slot name="heading">{{ __('দল') }} ({{ $n(count($agents)) }})</x-slot>

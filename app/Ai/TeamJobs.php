@@ -279,7 +279,7 @@ final class TeamJobs
         return match ("{$agent}.{$job}") {
             'editor.inbox' => [true, self::shift('inbox')],
             'editor.backlog' => [true, self::shift('backlog')],
-            'editor.review' => $done(app(ReviewService::class)->run($post, null, 'editor')->status === 'done', 'রিপোর্ট তৈরি: "'.$post->title.'"। লেখার পাতায় "এআই রিপোর্ট" দেখুন।', 'রিপোর্ট তৈরি হয়নি।'),
+            'editor.review' => $done(app(ReviewService::class)->run($post, null, 'editor', effort: ReviewService::DESK_EFFORT)->status === 'done', 'রিপোর্ট তৈরি: "'.$post->title.'"। লেখার পাতায় "এআই রিপোর্ট" দেখুন।', 'রিপোর্ট তৈরি হয়নি।'),
             'editor.issue' => (function () use ($owner) {
                 if (! IssuePlanner::due()) {   // D272: a proposal already there is the owner's to change or redo (issue page)
                     return [false, 'এই মাসের সংখ্যার প্রস্তাব আগেই আছে। নতুন চাইলে সংখ্যার পাতায় "নতুন প্রস্তাব" টিপুন।'];
@@ -339,9 +339,9 @@ final class TeamJobs
             'archivist.topics' => (function () {
                 $e = \App\Ai\TopicSorter::estimate();
                 \App\Ai\TopicSorter::start();
-                $n = \App\Ai\TopicSorter::backlog(100);
+                \App\Ai\Batch::queueTopics();   // D296: the whole archive in one half-price batch
 
-                return [true, 'বিষয়ের পাতায় সাজানো শুরু হয়েছে: এখন '.\App\Support\Bn::num((string) $n).'টি লেখা হলো, বাকি '.\App\Support\Bn::num((string) max(0, $e['pieces'] - $n)).'টি প্রতি ঘণ্টায় ১০০টি করে হবে (মোট খরচ আনুমানিক $'.$e['usd'].')। লেখার পাতায় "বিষয়" ঘরে বদলানো যায়।'];
+                return [true, 'বিষয়ের পাতায় সাজানো শুরু হয়েছে: '.\App\Support\Bn::num((string) $e['pieces']).'টি লেখা অর্ধেক দামের রাতের কাজে গেছে, কয়েক ঘণ্টার মধ্যে বিষয়ের পাতায় উঠবে (মোট খরচ আনুমানিক $'.round($e['usd'] / 2, 2).')। লেখার পাতায় "বিষয়ের পাতা" ঘরে বদলানো যায়।'];
             })(),
             'archivist.collection' => $done(Archivist::collection(null, $redo), 'সংকলনের প্রস্তাব আজকের কাজে আছে।'),
             'teacher.all' => $done(KidsTeacher::backlog(), 'ছোটদের লেখার বয়স আর শব্দের মানে তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখুন।'),

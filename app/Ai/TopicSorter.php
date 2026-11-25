@@ -55,6 +55,19 @@ final class TopicSorter
     /** @param  Post[]  $posts  @return ?string error */
     public static function sort(array $posts): ?string
     {
+        $req = self::request($posts);
+        [$d, $err] = Claude::json($req['purpose'], $req['system'], $req['user'], $req['schema'], $req['model'], $req['max']);
+        if (! is_array($d)) {
+            return $err ?: 'no answer';
+        }
+        self::applyAnswers($posts, $d);
+
+        return null;
+    }
+
+    /** What is asked for a group of pieces (also sent in the half-price overnight batch). @param Post[] $posts */
+    public static function request(array $posts): array
+    {
         $slugs = array_keys(Topics::LIST);
         $list = collect(Topics::LIST)->map(fn ($t, $s) => "- {$s}: {$t[0]} ({$t[2]})")->implode("\n");
         $pieces = collect($posts)->map(function (Post $p) {
@@ -64,7 +77,7 @@ final class TopicSorter
                 .e(mb_substr($text, 0, 900)).'</text></piece>';
         })->implode("\n");
 
-        [$d, $err] = Claude::json('topics',
+        return ['purpose' => 'topics', 'model' => (string) config('ai.anthropic.tags_model'), 'max' => 4000, 'system' =>
             'You sort the pieces of হাতপাখা, a Bengali literary web magazine, onto its topic pages, so that readers searching '
             .'for, say, "ভূতের গল্প" find them. The topic pages (slug: name (page title)):'."\n".$list."\n\n"
             .'For each piece in DATA give 0 to 3 topic slugs. Choose a topic only when it is what the piece is mainly about '
@@ -73,17 +86,19 @@ final class TopicSorter
             .'"brishtir-kobita", "maa-ke-niye", "bondhutto", "pujor-lekha" and "kolkata" may be any form; "paharer-bhromon" is for travel writing. '
             .'Lists, how-to pieces, advertisements and pieces that are not literature get no topic. Most pieces fit 0 or 1 topic. '
             .'Never rewrite or judge the piece. Answer for every id given.',
-            '<pieces>'."\n".$pieces."\n".'</pieces>',
-            ['type' => 'object', 'additionalProperties' => false, 'required' => ['pieces'], 'properties' => [
+            'user' => '<pieces>'."\n".$pieces."\n".'</pieces>',
+            'schema' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['pieces'], 'properties' => [
                 'pieces' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['id', 'topics'], 'properties' => [
                     'id' => ['type' => 'integer'],
                     'topics' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $slugs]],
                 ]]],
-            ]], (string) config('ai.anthropic.tags_model'), 4000);
-        if (! is_array($d)) {
-            return $err ?: 'no answer';
-        }
+            ]]];
+    }
 
+    /** @param Post[] $posts */
+    public static function applyAnswers(array $posts, array $d): void
+    {
+        $slugs = array_keys(Topics::LIST);
         $answers = collect($d['pieces'] ?? [])->keyBy(fn ($a) => (int) ($a['id'] ?? 0));
         foreach ($posts as $p) {
             if (! $answers->has($p->id)) {
@@ -91,10 +106,10 @@ final class TopicSorter
             }
             $topics = array_values(array_slice(array_unique(array_intersect((array) $answers[$p->id]['topics'], $slugs)), 0, 3));
             // Only if the desk has not placed it meanwhile.
-            Post::whereKey($p->id)->whereNull('topics_by')->update(['topics' => json_encode($topics), 'topics_by' => 'ai']);
+            Post::whereKey($p->id)->where(fn ($q) => $q->whereNull('topics_by')->orWhere('topics_by', 'queued'))->update(['topics' => json_encode($topics), 'topics_by' => 'ai']);
         }
 
-        return null;
+        Topics::forget();
     }
 
     /** What sorting the whole archive should cost (USD), from its length; shown before the owner starts it. */

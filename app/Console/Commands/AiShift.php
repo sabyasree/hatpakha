@@ -112,21 +112,10 @@ class AiShift extends Command
             ->orderBy('backlog_tier')->orderByDesc('submitted_at')->limit(10)->get() as $p) {
             $service->run($p, null, 'editor');
         }
-        // Proofreader (D50): 10 unpublished old pieces an hour (published pieces are never proofread).
-        foreach (Post::where('status', 'pending')->whereNull('proof_at')->where(fn ($q) => $q->whereNotNull('submitted_by')->orWhere('relaunch_status', 'yes'))->orderBy('backlog_tier')->limit(10)->get() as $p) {
-            \App\Ai\Proofreader::run($p);
-        }
-        // D104: read the old submissions once (worth asking the writer, or too weak), 25 an hour until all are read.
-        \App\Ai\BacklogScreen::backlog(25);
-        // D293: once the owner has started it, 100 pieces an hour onto the topic pages (new pieces too, once published).
-        if (\App\Ai\TopicSorter::started()) {
-            \App\Ai\TopicSorter::backlog(100);
-        }
-        // SEO expert (D46): 10 old published pieces an hour, filling only missing details.
-        foreach (Post::published()->whereNull('seo_done_at')->when(! \App\Ai\SeoExpert::automatic(), fn ($q) => $q->whereNull('seo_proposal'))   // D273: a waiting proposal is not redone hourly
-            ->orderByDesc('published_at')->limit(10)->get() as $p) {
-            \App\Ai\SeoExpert::run($p, onlyMissing: true);
-        }
+        // D296 (owner: "move the overnight jobs and make less cost"): the proofreader's old pieces (D50), the old
+        // submissions' first read (D104), the topic pages (D293) and the SEO expert's missing details (D46) go to the
+        // half-price batch: queued here, sent and read back by App\Ai\Batch::run() every hour.
+        \App\Ai\Batch::queueOvernight();
         if (! Illustrator::blocked()) {
             foreach (Illustrator::candidates()->whereNull('proposed_image_error')->orderByDesc('published_at')->limit(10)->get() as $p) {
                 Illustrator::make($p);
