@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
+    public const TITLE = 'হাতপাখা — বাংলা অনলাইন সাহিত্য পত্রিকা | Bengali Online Magazine';
+
     public function __invoke(Request $request)
     {
         // Old WordPress "?p=123" links → the post's permanent URL.
@@ -121,8 +123,9 @@ class HomeController extends Controller
         ];
 
         $seo = new Seo(
-            title: 'হাতপাখা — বাংলা সাহিত্যের অনলাইন পত্রিকা',
-            description: 'হাতপাখা: ২০১২ থেকে বাংলা কবিতা, গল্প, প্রবন্ধ ও ভ্রমণকথার অনলাইন পত্রিকা। ISSN 2321-3035। লেখা পাঠান বিনামূল্যে।',
+            // 2026-11-25: people search in English too ("online Bengali magazine"); the page had no English words.
+            title: self::TITLE,
+            description: 'হাতপাখা: ২০১২ থেকে বাংলা কবিতা, গল্প, প্রবন্ধ ও ভ্রমণকথার অনলাইন সাহিত্য পত্রিকা। লেখা পাঠান বিনামূল্যে। Hatpakha, an online Bengali literary magazine.',
             jsonLd: [JsonLd::organization(), JsonLd::website(), JsonLd::periodical()],
         );
 
