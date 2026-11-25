@@ -26,7 +26,7 @@
                     <svg viewBox="0 0 48 48" class="h-14 w-14 -rotate-90"><circle cx="24" cy="24" r="20" fill="none" stroke="#E8DCCB" stroke-width="4"/><circle data-progress-ring cx="24" cy="24" r="20" fill="none" stroke="#CB1B32" stroke-width="4" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66"/></svg>
                     <span data-progress-pct class="absolute inset-0 flex items-center justify-center text-xs font-bold"></span>
                 </div>
-                <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}" rel="noopener" target="_blank" class="flex w-14 flex-col items-center gap-0.5 rounded-2xl border-2 border-navy py-1.5 text-xs font-bold hover:bg-peach-light" aria-label="শেয়ার করুন">
+                <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}" data-share-text="{{ $post->share_text }}" rel="noopener" target="_blank" class="flex w-14 flex-col items-center gap-0.5 rounded-2xl border-2 border-navy py-1.5 text-xs font-bold hover:bg-peach-light" aria-label="শেয়ার করুন">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span aria-hidden="true">শেয়ার</span></a>
                 @if ($post->isLive())
                     @auth
@@ -65,7 +65,7 @@
             </div>
             {{-- Share early: readers come from WhatsApp (mobile UX review). The phone's own share sheet when there is one. --}}
             @include('partials.reading-controls', ['where' => 'top'])
-            <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}"
+            <a href="{{ $waShare }}" data-share="{{ $post->url() }}" data-share-title="{{ $post->title }}" data-share-text="{{ $post->share_text }}"
                 rel="noopener" target="_blank" class="flex h-11 w-11 flex-none items-center justify-center rounded-full border-2 border-navy hover:bg-peach-light" aria-label="শেয়ার করুন" title="শেয়ার করুন">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
             </a>

@@ -108,7 +108,7 @@ class AccountRedesignTest extends TestCase
         $this->actingAs($user)->get('/account/')->assertOk()
             ->assertSee('নমস্কার, রিনা')->assertSee('আপনাকে দেখতে হবে')->assertSee('শেষ স্তবকটা আর একবার পড়ে দেখবেন?')
             ->assertSee('লেখাটি খুলে ঠিক করুন')->assertSee('১৮ বার খোলা হয়েছে')
-            ->assertSee('https://wa.me/?text=', false)->assertSee('সার্টিফিকেট')->assertSee('লিংক কপি')
+            ->assertSee('https://wa.me/?text=', false)->assertSee('শংসাপত্র')->assertSee('লিংক কপি')
             ->assertSee('ছবি ও নাম বদলান')->assertSee('grid-cols-4', false);
         $this->get('/')->assertSee('১টি কাজ আছে');   // the "আরও" sheet tells the writer
     }
