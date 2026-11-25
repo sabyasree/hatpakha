@@ -57,6 +57,9 @@
             @endif
             <button class="mt-6 h-14 w-full rounded-full bg-red text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">{{ __('সেভ করুন') }}</button>
         </form>
+        @if ($writer && $author && ! $author->is_desk)
+            @include('account.partials.pins', ['author' => $author])
+        @endif
         <a href="{{ Url::to('/account/settings') }}" class="mt-6 flex min-h-14 max-w-xl items-center justify-between gap-3 rounded-xl border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">
             <span>{{ __('ই-মেল বা নোটিফিকেশন বন্ধ করবেন? পাসওয়ার্ড বদলাবেন?') }}<span class="block text-sm font-medium text-ink2">{{ __('সেটিংস') }}</span></span><span aria-hidden="true">›</span></a>
         {{-- D243: titles and standing in the games --}}

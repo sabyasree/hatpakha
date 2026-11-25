@@ -38,7 +38,7 @@ class MoreForReadersTest extends TestCase
         $writer = User::factory()->create(['role' => Role::Writer, 'email_verified_at' => now()]);
         $this->post('/submit/word/', ['word' => $this->docx('<w:p/>')])->assertRedirect();   // not for guests
         $this->actingAs($writer);
-        $this->get('/submit/')->assertOk()->assertSee('ওয়ার্ড ফাইল থেকে লেখা আনুন')->assertSee('১৪ দিনের মধ্যে');
+        $this->get('/submit/')->assertOk()->assertSee('ওয়ার্ড ফাইল থেকে লেখা আনুন')->assertSee('২–৩ সপ্তাহের মধ্যে');
 
         $p = fn (string $runs) => '<w:p>'.$runs.'</w:p>';
         $r = fn (string $text, string $props = '') => '<w:r>'.($props ? '<w:rPr>'.$props.'</w:rPr>' : '').'<w:t xml:space="preserve">'.$text.'</w:t></w:r>';
@@ -85,12 +85,12 @@ class MoreForReadersTest extends TestCase
         $this->assertSame(0, ReadingHistory::streak($reader)['best']);
     }
 
-    public function test_the_desk_hears_when_a_writer_has_waited_ten_days(): void
+    public function test_the_desk_hears_when_a_writer_has_waited_fourteen_days(): void
     {
-        $this->makePost(['status' => 'pending', 'slug' => 'new', 'title' => 'নতুন লেখা', 'submitted_at' => now()->subDays(3)]);
+        $this->makePost(['status' => 'pending', 'slug' => 'new', 'title' => 'নতুন লেখা', 'submitted_at' => now()->subDays(12)]);
         Handover::replyDue();
         $this->assertFalse(\App\Models\EditorTask::where('key', 'handover.reply_due')->where('status', 'open')->exists());
-        $this->makePost(['status' => 'pending', 'slug' => 'old', 'title' => 'পুরনো জমা', 'submitted_at' => now()->subDays(11)]);
+        $this->makePost(['status' => 'pending', 'slug' => 'old', 'title' => 'পুরনো জমা', 'submitted_at' => now()->subDays(15)]);
         Handover::replyDue();
         $flag = \App\Models\EditorTask::where('key', 'handover.reply_due')->where('status', 'open')->firstOrFail();
         $this->assertStringContainsString('পুরনো জমা', $flag->payload['errors'][0]);

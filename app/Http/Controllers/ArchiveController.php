@@ -76,7 +76,10 @@ class ArchiveController extends Controller
             \App\Support\Ads::allow();   // D111
         }
 
-        return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner'));
+        // 2026-11-24: up to three pieces the writer pinned, shown first (page 1 only)
+        $pinned = $posts->currentPage() === 1 ? $author->pinnedPosts() : collect();
+
+        return view('author', compact('author', 'posts', 'seo', 'sections', 'since', 'isOwner', 'pinned'));
     }
 
     /**
@@ -103,7 +106,9 @@ class ArchiveController extends Controller
         // The archivist's approved themed collections (D55), in season first (D100).
         $collections = \App\Models\Collection::seasonOrder(\App\Models\Collection::where('kind', 'theme')->where('status', 'approved')->whereNotNull('slug')->get())->take(4);
 
-        return view('archive-index', compact('years', 'issues', 'latestIssue', 'olderIssues', 'sections', 'total', 'seo', 'collections'));
+        $shelves = ShelfController::live();   // C4
+
+        return view('archive-index', compact('years', 'issues', 'latestIssue', 'olderIssues', 'sections', 'total', 'seo', 'collections', 'shelves'));
     }
 
     /** /sonkha/: every issue, newest first, grouped by year (owner, 2026-11-12). */

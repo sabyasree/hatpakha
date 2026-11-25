@@ -85,6 +85,10 @@
             <div class="mt-2">
                 <a href="{{ Url::to('/search') }}" class="{{ $row }}">{!! $icon($I['search']) !!}<span class="flex-1">{{ __('সার্চ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
                 <a href="{{ Url::to('/archive') }}" class="{{ $row }}">{!! $icon($I['archive']) !!}<span class="flex-1">{{ __('পুরনো লেখা') }}<span class="block text-sm font-medium text-ink2">{{ __(':year থেকে, বছর ধরে (আর্কাইভ)', ['year' => \App\Support\Bn::num(2012)]) }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
+                <a href="{{ Url::to('/lekhok') }}" class="{{ $row }}">{!! $icon($I['person']) !!}<span class="flex-1">{{ __('লেখকেরা') }}<span class="block text-sm font-medium text-ink2">{{ __('সব লেখক, নাম ধরে') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
+                @foreach (\App\Http\Controllers\ShelfController::live() as $shelfSlug => $shelfName)
+                    <a href="{{ Url::to('/tak/'.$shelfSlug) }}" class="{{ $row }}">{!! $icon($I['stack']) !!}<span class="flex-1">{{ __($shelfName) }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
+                @endforeach
                 @if ($issue)<a href="{{ Url::to('/sonkha') }}" class="{{ $row }}">{!! $icon($I['issue']) !!}<span class="flex-1">{{ __('সব সংখ্যা') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>@endif
                 <a href="{{ Url::to('/contact-us') }}" class="{{ $row }}">{!! $icon($I['help']) !!}<span class="flex-1">{{ __('সাহায্য ও যোগাযোগ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
             </div>

@@ -19,6 +19,8 @@
     <link rel="preload" href="{{ asset('fonts/anek-bangla-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/noto-serif-bengali-bengali.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}?v=1">
+    {{-- C1/C2: this reader's own text size and night page, and "has seen the home page before", set before the page draws (no flash). Kept in this browser only. --}}
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">(function(){try{var d=document.documentElement,s=localStorage,z=s.getItem('hp.size');if(z==='1'||z==='2')d.setAttribute('data-read-size',z);if(s.getItem('hp.night')==='1')d.setAttribute('data-read-night','');}catch(e){}})();</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @if ($gaId = \App\Support\Analytics::id())
         {{-- D119: Google Analytics 4. Only the page's path (plus utm_ campaign labels) is sent, never the rest of the query: signed links stay private; no Google signals or ad
@@ -71,12 +73,19 @@
                 <img src="{{ asset('images/logo-wordmark.png') }}" alt="Hatpakha" width="367" height="90" class="h-9 w-auto max-[359px]:h-7 md:h-12">
                 <span class="-mt-1 text-[11px] font-bold max-[359px]:text-[9px]">ISSN: 2321-3035</span>
             </a>
-            @php $menu = \App\Models\Section::menu(); @endphp
+            @php
+                $menu = \App\Models\Section::menu();
+                $hpIssue = \App\Models\Issue::latestLive();
+                $hpIssueUrl = $hpIssue ? $hpIssue->url() : \App\Support\Url::to('/sonkha');
+            @endphp
             {{-- D95 (UX review): big screens show the chosen sections and "সব বিভাগ" for every section, grouped --}}
             <nav aria-label="{{ __('প্রধান বিভাগ') }}" class="hidden min-w-0 items-center gap-1 text-lg font-semibold lg:flex">
-                @foreach ($menu['top'] as [$name, $href, $lang])
-                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
+                {{-- C8 (research 2026-11): সংখ্যা and ধারাবাহিক always, before the games; the chosen sections fit around them --}}
+                @foreach (array_values(array_filter($menu['top'], fn ($l) => $l[1] !== \App\Support\Url::to('/dharabahik'))) as $i => [$name, $href, $lang])
+                    <a href="{{ $href }}" @if ($lang === 'en') lang="en" @endif class="{{ $i >= 3 ? 'hidden 2xl:inline-block' : ($i === 2 ? 'hidden xl:inline-block' : '') }} whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (url()->current().'/' === $href || url()->current() === rtrim($href, '/')) aria-current="page" @endif>{{ $name }}</a>
                 @endforeach
+                <a href="{{ $hpIssueUrl }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (request()->is('sonkha*')) aria-current="page" @endif>{{ __('সংখ্যা') }}</a>
+                <a href="{{ \App\Support\Url::to('/dharabahik') }}" class="whitespace-nowrap rounded-full px-3 py-2 hover:text-red" @if (request()->is('dharabahik*')) aria-current="page" @endif>{{ __('ধারাবাহিক') }}</a>
                 {{-- Owner, 2026-11-14: games and পাঠকের কলম in the top bar on wide screens (always in "সব বিভাগ" too) --}}
                 <a href="{{ \App\Support\Url::to('/khela/aaj') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('khela*')) aria-current="page" @endif>{{ __('খেলা') }}</a>
                 <a href="{{ \App\Support\Url::to('/kolom') }}" class="hidden whitespace-nowrap rounded-full px-3 py-2 hover:text-red xl:inline-block" @if (request()->is('kolom*')) aria-current="page" @endif>{{ __('পাঠকের কলম') }}</a>
@@ -109,7 +118,7 @@
                 @else
                     <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">{{ __('সাইন ইন') }}</a>
                 @endauth
-                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">{{ __('লেখা পাঠান') }}</a>
+                <a href="{{ \App\Support\Url::to('/submit') }}" class="hidden h-11 items-center whitespace-nowrap rounded-full border-2 border-navy bg-red px-5 font-bold text-white shadow-[4px_4px_0_#13212C] md:flex">{{ __('লেখা পাঠান') }}</a>
             </div>
         </div>
     </header>
@@ -123,24 +132,51 @@
     </footer>
     @else
     <footer class="mt-16 bg-navy text-paper">
-        <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 py-12">
+        <div class="mx-auto flex max-w-[1320px] flex-wrap items-end justify-between gap-8 px-5 pt-12">
             <div>
                 <div class="font-hand text-6xl leading-none text-sky md:text-8xl">আবার আসবেন</div>
-                <p class="mt-3 text-sm text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
+                <p class="mt-3 text-base text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
             </div>
             @if (! auth()->check() && ! request()->attributes->get('hp.newsletter.card'))<x-newsletter-signup variant="footer" />@endif
-            <nav aria-label="{{ __('ফুটার') }}" class="grid w-full grid-cols-2 gap-x-6 text-base sm:w-auto sm:grid-cols-3">
-                @foreach (\App\Models\Page::footerLinks() as [$t, $u])
-                    <a href="{{ $u }}" class="flex min-h-11 items-center hover:text-sky">{{ $t }}</a>
-                @endforeach
-                <a href="{{ \App\Support\Url::to('/archive') }}" class="flex min-h-11 items-center hover:text-sky">আর্কাইভ</a>
-                <a href="{{ \App\Support\Url::to('/feed') }}" class="flex min-h-11 items-center hover:text-sky">RSS</a>
-                @if (filled(config('services.support.upi')))<a href="{{ \App\Support\Url::to('/pashe-thakun') }}" class="flex min-h-11 items-center hover:text-sky">পাশে থাকুন (সাহায্য)</a>@endif
-                @if (filled($fb = config('services.social.facebook')))<a href="{{ $fb }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ফেসবুক</a>@endif
-                @if (filled($ig = config('services.social.instagram')))<a href="{{ $ig }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">ইনস্টাগ্রাম</a>@endif
-                @if (filled($wa = config('services.social.whatsapp')))<a href="{{ $wa }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">হোয়াটসঅ্যাপ চ্যানেল</a>@endif
-            </nav>
         </div>
+        {{-- A9 (research 2026-11): three columns on a computer, one under another on a phone: পড়ুন / লিখুন / হাতপাখা --}}
+        @php
+            $U = fn (string $p) => \App\Support\Url::to($p);
+            $fixed = [['আমাদের কথা', $U('/about-hatpakha')], ['যোগাযোগ', $U('/contact-us')], ['বিজ্ঞাপন', $U('/advertise')], ['গোপনীয়তা', $U('/privacy-policy')], ['শর্তাবলি', $U('/terms-conditions')]];
+            $fixedUrls = array_merge(array_column($fixed, 1), [$U('/submissions')]);
+            $footCols = [
+                'পড়ুন' => array_merge(
+                    array_map(fn ($l) => [$l[0], $l[1], $l[2]], array_values(array_filter($menu['top'], fn ($l) => $l[1] !== $U('/dharabahik')))),
+                    [['সংখ্যা', $hpIssueUrl], ['ধারাবাহিক', $U('/dharabahik')], ['লেখকেরা', $U('/lekhok')]],
+                    collect(\App\Http\Controllers\ShelfController::live())->map(fn ($t, $slug) => [$t, $U('/tak/'.$slug)])->values()->all(),
+                    [['পাঠকের পছন্দ', $U('/pathoker-pochhondo')], ['আর্কাইভ', $U('/archive')]],
+                ),
+                'লিখুন' => [['লেখা পাঠানোর নিয়ম', $U('/submissions')], ['লেখা পাঠান', $U('/submit')], ['পাঠকের কলম', $U('/kolom')], ['খেলা', $U('/khela/aaj')]],
+                'হাতপাখা' => array_merge($fixed,
+                    // pages the owner chose for the footer in /desk, that are not above
+                    array_values(array_filter(\App\Models\Page::footerLinks(), fn ($l) => ! in_array($l[1], $fixedUrls, true))),
+                    [['RSS', $U('/feed')]],
+                    filled(config('services.support.upi')) ? [['পাশে থাকুন (সাহায্য)', $U('/pashe-thakun')]] : []),
+            ];
+            $social = array_filter(['ফেসবুক' => config('services.social.facebook'), 'ইনস্টাগ্রাম' => config('services.social.instagram'), 'হোয়াটসঅ্যাপ চ্যানেল' => config('services.social.whatsapp')], 'filled');
+        @endphp
+        <nav data-footer-cols aria-label="{{ __('ফুটার') }}" class="mx-auto grid max-w-[1320px] gap-8 px-5 py-10 md:grid-cols-3">
+            @foreach ($footCols as $head => $links)
+                <div>
+                    <h2 class="border-b border-white/20 pb-2 font-display text-xl font-extrabold text-sky">{{ $head }}</h2>
+                    <ul class="mt-2 grid grid-cols-2 gap-x-6 text-base md:grid-cols-1">
+                        @foreach ($links as $l)
+                            <li><a href="{{ $l[1] }}" @if (($l[2] ?? 'bn') === 'en') lang="en" @endif class="flex min-h-11 items-center hover:text-sky">{{ $l[0] }}</a></li>
+                        @endforeach
+                        @if ($head === 'হাতপাখা')
+                            @foreach ($social as $name => $href)
+                                <li><a href="{{ $href }}" rel="noopener me" target="_blank" class="flex min-h-11 items-center hover:text-sky">{{ $name }}</a></li>
+                            @endforeach
+                        @endif
+                    </ul>
+                </div>
+            @endforeach
+        </nav>
         {{-- D128: always a way to keep Hatpakha on a phone, like the store buttons other sites show (hidden inside the app itself) --}}
         <div data-app-badges class="mx-auto max-w-[1320px] border-t border-white/20 px-5 pb-12 pt-8">
             <p class="font-bold text-peach-light">হাতপাখা ফোনে রাখুন, অ্যাপের মতো · বিনামূল্যে</p>
@@ -156,7 +192,9 @@
     </footer>
     @endif
 
-    {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, "লিখুন" as a raised sticker, safe-area padding. --}}
+    {{-- Mobile bottom tab bar (mobile UX review): icons, the current tab in red, the centre as a raised sticker, safe-area padding.
+         D287 (owner, after trying "সংখ্যা" there: "+ লিখুন is good, so writers will easily find it"): the raised centre stays
+         "+ লিখুন"; this month's issue is in the আরও sheet and in the computer's top menu. --}}
     @php
         $tabs = [
             [__('হোম'), url('/').'/', request()->is('/'), 'home'],
@@ -178,7 +216,7 @@
     <nav aria-label="{{ __('প্রধান') }}" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
             @if ($ic === 'write')
-                <a href="{{ $href }}" class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
+                <a href="{{ $href }}" data-tab-centre class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>
                     <span class="-mt-5 flex h-11 w-11 items-center justify-center rounded-full border-2 border-navy bg-red text-white shadow-[2px_2px_0_#13212C]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">{!! $icons[$ic] !!}</svg></span>
                     <span class="mt-0.5 text-red">{{ $label }}</span>
                 </a>
@@ -249,14 +287,42 @@
                 return;
             }
             const seen = new Set(read);
-            document.querySelectorAll('[data-rotate]').forEach((box) => {
+            // D289 (owner, UX review): the home shelves change per visit, not per load. The page holds a pool (the same for
+            // every guest, so it can be cached); this browser picks the order with a seed kept for the visit (sessionStorage),
+            // so going back shows the same order. A fresh piece in the first place stays there (data-pin). Read pieces last.
+            // "নতুন করে দেখান ↻" moves that shelf on to a new order for the rest of the visit.
+            const ss = { get: (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} } };
+            let seed = ss.get('hp.homeSeed');
+            if (!seed) { seed = String(Math.floor(Math.random() * 1e9)); ss.set('hp.homeSeed', seed); }
+            const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+            const rng = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+            const arrange = (box) => {
                 const max = parseInt(box.dataset.rotate, 10) || 4;
                 const items = [...box.querySelectorAll(':scope > [data-pid]')];
-                const order = [...items.filter((el) => !seen.has(el.dataset.pid)), ...items.filter((el) => seen.has(el.dataset.pid))];
+                items.sort((x, y) => (+x.dataset.pos || 0) - (+y.dataset.pos || 0));
+                const pin = parseInt(box.dataset.pin || '0', 10);
+                const shelf = box.dataset.shelf || '';
+                const rand = rng(hash(seed + '|' + shelf + '|' + (ss.get('hp.shuf.' + shelf) || '0')));
+                const rest = items.slice(pin);
+                for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+                let order = [...items.slice(0, pin), ...rest];
+                if (!box.hasAttribute('data-no-read')) order = [...order.filter((el) => !seen.has(el.dataset.pid)), ...order.filter((el) => seen.has(el.dataset.pid))];
                 const skip = box.hasAttribute('data-skip-first') ? 1 : 0;
                 items.forEach((el) => { el.hidden = true; el.removeAttribute('data-first'); });
                 order.slice(skip, skip + max).forEach((el, i) => { el.hidden = false; if (i === 0) el.setAttribute('data-first', ''); });
                 order.forEach((el) => box.appendChild(el));
+            };
+            document.querySelectorAll('[data-rotate]').forEach((box) => {
+                [...box.querySelectorAll(':scope > [data-pid]')].forEach((el, i) => { el.dataset.pos = String(i); });
+                // the phone list under the stories' taped card follows the cards' order (the same seed and shelf)
+                arrange(box);
+            });
+            document.addEventListener('click', (e) => {
+                const b = e.target.closest('[data-reshuffle]');
+                if (!b) return;
+                const shelf = b.dataset.reshuffle;
+                ss.set('hp.shuf.' + shelf, String((parseInt(ss.get('hp.shuf.' + shelf) || '0', 10) || 0) + 1));
+                document.querySelectorAll('[data-rotate][data-shelf="' + shelf + '"]').forEach(arrange);
             });
         })();
     </script>

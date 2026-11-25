@@ -88,7 +88,7 @@ final class HealthReport
             'approved' => $count('submission.approved'), 'changes' => $count('submission.changes'), 'rejected' => $count('submission.rejected'),
             'waiting' => (clone $waiting)->count(), 'oldest_days' => $oldestDays,
         ];
-        $publishing['status'] = $oldestDays > 21 ? self::URGENT : ($oldestDays > 10 ? self::LOOK : self::OK);
+        $publishing['status'] = $oldestDays > Review::REPLY_DAYS_MAX ? self::URGENT : ($oldestDays > Review::REPLY_WARN_DAYS ? self::LOOK : self::OK);   // writers are told 2–3 weeks
 
         // ---- Comments ----
         $pendingComments = Comment::where('status', 'pending')->count();
@@ -155,7 +155,7 @@ final class HealthReport
         // UX review: every flag says why it was raised.
         $num = fn ($v) => Bn::num((string) $v);
         $readers['why'] = array_filter([$readers['status'] !== self::OK ? __('আগের চেয়ে :n% কম পড়া হয়েছে', ['n' => $num(abs((int) $change))]) : null]);
-        $publishing['why'] = array_filter([$publishing['status'] !== self::OK ? __('একটি লেখা :n দিন ধরে পড়ার অপেক্ষায়; লেখকেরা দুই সপ্তাহের মধ্যে উত্তর আশা করেন', ['n' => $num($oldestDays)]) : null]);
+        $publishing['why'] = array_filter([$publishing['status'] !== self::OK ? __('একটি লেখা :n দিন ধরে পড়ার অপেক্ষায়; লেখকেরা ২–৩ সপ্তাহের মধ্যে উত্তর আশা করেন', ['n' => $num($oldestDays)]) : null]);
         $comments['why'] = array_filter([$pendingComments ? __(':nটি মন্তব্য অনুমোদনের অপেক্ষায়', ['n' => $num($pendingComments)]) : null]);
         $mail['why'] = array_filter([
             $failRate > 0.05 ? __(':nটি চিঠি পৌঁছায়নি', ['n' => $num($failed)]) : null,

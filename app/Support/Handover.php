@@ -130,11 +130,11 @@ final class Handover
             $waiting->take(8)->map(fn (Post $p) => $p->title.': '.(self::hold($p) ?? ''))->values()->all());
     }
 
-    /** D237: writers are told "usually within 14 days"; the desk hears when a piece has waited 10. */
+    /** Writers are told "usually within 2–3 weeks" (Review::REPLY_TEXT); the desk hears when a piece has waited 14 days. */
     public static function replyDue(): void
     {
         $late = Post::where('status', 'pending')->whereNotNull('submitted_at')->where('submitted_at', '<', now()->subDays(Review::REPLY_WARN_DAYS))->oldest('submitted_at')->limit(8)->get();
-        self::flag('reply_due', $late->isEmpty() ? null : __('লেখকদের বলা আছে ১৪ দিনের মধ্যে জানাব; এই লেখাগুলো ১০ দিনের বেশি অপেক্ষায় আছে'),
+        self::flag('reply_due', $late->isEmpty() ? null : __('লেখকদের বলা আছে ২–৩ সপ্তাহের মধ্যে জানাব; এই লেখাগুলো ১৪ দিনের বেশি অপেক্ষায় আছে'),
             $late->map(fn (Post $p) => $p->title.' · '.Bn::num((string) (int) $p->submitted_at->diffInDays(now())).' '.__('দিন'))->all());
     }
 

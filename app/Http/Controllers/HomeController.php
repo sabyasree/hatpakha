@@ -61,7 +61,7 @@ class HomeController extends Controller
                 'letters' => Comment::where('status', 'approved')->where('feature_opt_out', false)
                     ->latest()->limit(200)->get(['id', 'body'])
                     ->filter(fn ($c) => mb_strlen($c->body) >= 40 && mb_strlen($c->body) <= 260 && preg_match('/[\x{0985}-\x{09B9}]/u', $c->body))
-                    ->take(4)->pluck('id')->all(),
+                    ->take(12)->pluck('id')->all(),   // D289: a pool of 12, four shown, chosen per visit
                 'counts' => [
                     'years' => now()->year - 2012,
                     'writers' => Author::where('published_count', '>', 0)->count(),
@@ -102,7 +102,7 @@ class HomeController extends Controller
             'milestones' => \App\Support\Milestones::forHome(),
             // D97: the collection in season (else the newest)
             'collection' => $col = \App\Models\Collection::featured(),
-            'collectionPosts' => $col ? $col->posts()->take(3) : collect(),
+            'collectionPosts' => $col ? $col->posts()->take(9) : collect(),   // D289: three shown, chosen per visit
             'isPick' => (bool) $pickPost,
             // D108: running serials, the one with the newest episode first
             'serials' => \App\Models\Serial::live()->limit(3)->get(),
@@ -113,6 +113,11 @@ class HomeController extends Controller
             'issueEditorial' => $issue?->liveEditorial(),
             'issueCount' => $issue ? $issue->posts()->published()->count() : 0,
             'kidsPosts' => $kids ? $kids->posts()->published()->with('authors')->latest('published_at')->limit(2)->get() : collect(),
+            // D288: the newest pieces; four of them (not today's piece) in "আরও আজকের লেখা" under today's piece
+            'newest' => Post::published()->with(['authors', 'section'])->whereDoesntHave('section', fn ($q) => $q->where('slug', \App\Models\Section::KIDS))
+                ->latest('published_at')->limit(6)->get(),
+            // C1: "যেখানে থেমেছিলেন" for a signed-in reader who keeps a reading history (their pages are never shared, D65)
+            'resume' => ($u = $request->user()) && $u->reading_history ? \App\Support\ReadingHistory::unfinished($u, 1)->first() : null,
         ];
 
         $seo = new Seo(

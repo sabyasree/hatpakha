@@ -60,7 +60,7 @@
         <div role="status" class="mb-5 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
             <div class="font-hand text-2xl text-red">{{ __('লেখা পাঠানো হয়েছে!') }}</div>
             <div class="mt-1 font-serif text-xl font-bold">“{{ session('submitted') }}”</div>
-            <p class="mt-2 text-ink2">{{ __('সম্পাদকেরা পড়ে ই-মেলে জানাবেন। ধন্যবাদ!') }}</p>
+            <p class="mt-2 text-ink2">{{ __('সম্পাদকেরা পড়ে সাধারণত ২–৩ সপ্তাহের মধ্যে ই-মেলে জানাবেন। ধন্যবাদ!') }}</p>
             <div class="mt-4 flex flex-wrap gap-2">
                 <a href="{{ Url::to('/account') }}" class="flex h-11 items-center rounded-full bg-navy px-5 font-bold text-white">{{ __('আমার লেখা দেখুন') }}</a>
                 <a href="{{ Url::to('/submit') }}" class="flex h-11 items-center rounded-full border-2 border-navy px-5 font-bold">{{ __('আরেকটি লেখা পাঠান') }}</a>

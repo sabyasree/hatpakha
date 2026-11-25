@@ -11,7 +11,7 @@
             <span id="autosave-status" aria-live="polite" class="text-sm font-semibold text-sky-night"></span>
         </div>
         @if ($editable)
-        <p class="mt-1 text-sm text-ink2">লিখতে লিখতে নিজে থেকেই খসড়া রাখা হয়। <a href="{{ \App\Support\Url::to('/submissions') }}" class="font-bold underline" target="_blank">লেখা পাঠানোর নিয়ম</a></p>
+        <p class="mt-1 text-sm text-ink2">লিখতে লিখতে নিজে থেকেই খসড়া রাখা হয়। <a href="{{ \App\Support\Url::to('/submissions') }}" class="font-bold underline" target="_blank">লেখা পাঠানোর নিয়ম</a> · <a href="{{ \App\Support\Url::to('/lekhar-dak') }}" class="font-bold underline" target="_blank">লেখার ডাক</a></p>
         @endif
 
         @if (session('status'))
@@ -53,6 +53,12 @@
         @if (! $editable)
             <div class="mt-6 rounded-xl border-2 border-navy p-5">
                 <p class="text-ink2">অবস্থা: <strong class="text-ink">{{ \App\Http\Controllers\AccountController::STATUS[$post->status][0] ?? $post->status }}</strong></p>
+                @if (in_array($post->status, ['pending', 'confirm', 'scheduled'], true) && $post->submitted_at)
+                    @include('account.partials.tracker', ['p' => $post, 'class' => 'mt-3'])
+                @endif
+                @if ($post->status === 'pending')
+                    <p class="mt-2 text-sm text-ink2">{{ \App\Support\Review::REPLY_TEXT }} ই-মেলে জানাই।@if ($line = \App\Support\WriterJourney::replyLine()) {{ $line }}।@endif</p>
+                @endif
                 @if (in_array($post->status, \App\Http\Controllers\SubmissionController::TAKE_BACK, true) && ! $post->isLive())
                     @include('account.partials.take-back', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light p-4'])
                 @elseif ($post->status === 'published' || $post->isLive())
@@ -61,6 +67,10 @@
                     @include('account.partials.change-request', ['p' => $post, 'class' => 'mt-3 rounded-xl bg-peach-light'])
                 @endif
             </div>
+            @if ($post->status === 'rejected')
+                @include('account.partials.declined', ['p' => $post])
+                <h2 class="mt-8 font-display text-2xl font-extrabold">যে লেখাটি পাঠিয়েছিলেন</h2>
+            @endif
             @if ($post->featured_image_path)<img src="{{ asset($post->featured_image_path) }}" alt="" class="mt-6 w-full rounded-2xl">@endif
             <div class="{{ $post->format === 'poem' ? 'poem-bn text-center' : 'prose-bn' }} mt-6">{!! $post->body_html !!}</div>
         @else
@@ -116,7 +126,7 @@
                         <input type="hidden" name="for_issue" value="0">
                         <input type="checkbox" name="for_issue" value="1" @checked($forIssue) class="mt-1 h-6 w-6 shrink-0 accent-red">
                         <span><span class="block font-bold">এই লেখাটি “ফিরে আসা সংখ্যা”-র জন্য</span>
-                            <span class="block text-sm text-ink2">বিষয়: ফিরে আসা (কোনো জায়গায়, কোনো মানুষের কাছে, কোনো অভ্যাসে, বা লেখায় ফেরা)। পাঠানোর শেষ দিন {{ \App\Support\Bn::date(\Illuminate\Support\Carbon::parse(\App\Support\WriterInvites::LAST_DATE, 'Asia/Kolkata')) }}। টিক না দিলে লেখাটি সাধারণ লেখা হিসেবে যাবে।</span></span>
+                            <span class="block text-sm text-ink2">বিষয়: {{ \App\Support\WriterInvites::THEME_NOTE }}। পাঠানোর শেষ দিন {{ \App\Support\Bn::date(\Illuminate\Support\Carbon::parse(\App\Support\WriterInvites::LAST_DATE, 'Asia/Kolkata')) }}। টিক না দিলে লেখাটি সাধারণ লেখা হিসেবে যাবে।</span></span>
                     </label>
                 @endif
 
@@ -207,7 +217,7 @@
                                 <p class="font-bold">এরপর কী হবে</p>
                                 <ol class="mt-1 list-decimal space-y-0.5 ps-5">
                                     <li>এখন শুধু প্রথম পর্বটা পাঠান।</li>
-                                    <li>সম্পাদক পড়ে ই-মেলে জানাবেন।</li>
+                                    <li>সম্পাদক পড়ে সাধারণত ২–৩ সপ্তাহের মধ্যে ই-মেলে জানাবেন।</li>
                                     <li>প্রথম পর্ব প্রকাশ হলে ধারাবাহিক শুরু। পরের প্রতিটি পর্ব এই ফর্মেই লিখবেন, আর এই প্রশ্নে “আমার ধারাবাহিক …-এর পরের পর্ব” বেছে নেবেন।</li>
                                 </ol>
                             </div>
@@ -296,7 +306,7 @@
                         <span data-editor-hint hidden></span>
                         <span id="word-count" class="ml-auto"></span>
                     </div>
-                    <p class="border-t-2 border-rule px-4 py-3 text-sm font-semibold text-sky-night">জমা দিলে সাধারণত {{ \App\Support\Bn::num((string) \App\Support\Review::REPLY_DAYS) }} দিনের মধ্যে ই-মেলে জানাই। লেখা নিজে থেকেই সেভ হতে থাকে; পরে এসে শেষ করতে পারেন।</p>
+                    <p class="border-t-2 border-rule px-4 py-3 text-sm font-semibold text-sky-night">জমা দিলে {{ \App\Support\Review::REPLY_TEXT }} ই-মেলে জানাই।@if ($replyLine = \App\Support\WriterJourney::replyLine()) <span data-reply-time>{{ $replyLine }}।</span>@endif লেখা নিজে থেকেই সেভ হতে থাকে; পরে এসে শেষ করতে পারেন।</p>
                 </div>
                 <p data-error="body" hidden class="mt-2 text-sm font-bold text-red" role="alert">লেখাটি এখনও ফাঁকা।</p>
 

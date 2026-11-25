@@ -17,6 +17,13 @@
             @include('partials.bornomala')
         @endif
         @if ($page->slug === 'submissions')
+            {{-- Owner, 2026-11-24: the reply promise, proved by real decisions (shown from five decisions in 90 days) --}}
+            <div class="mt-8 rounded-2xl border-2 border-navy bg-sky-tint p-4 text-lg" data-reply-promise>
+                <p class="font-bold">উত্তর {{ \App\Support\Review::REPLY_TEXT }}</p>
+                @if ($replyLine = \App\Support\WriterJourney::replyLine())<p class="mt-1" data-reply-time>{{ $replyLine }}।</p>@endif
+            </div>
+            <a href="{{ \App\Support\Url::to('/lekhar-dak') }}" class="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-white px-4 py-2 font-bold hover:bg-peach-light">
+                <span>লেখার ডাক<span class="block text-sm font-medium text-ink2">সামনের সংখ্যা, এ সপ্তাহের পাঠকের কলম, প্রতিযোগিতা আর সম্পাদক যা খুঁজছেন</span></span><span aria-hidden="true">›</span></a>
             {{-- After the rules, the next step (mobile UX review) --}}
             <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a href="{{ \App\Support\Url::to('/submit') }}" class="flex h-14 w-full items-center justify-center rounded-full bg-red text-lg font-bold text-white shadow-[4px_4px_0_#13212C] sm:w-fit sm:px-10">লেখা পাঠান</a>

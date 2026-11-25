@@ -34,7 +34,7 @@ class SetPassword extends Command
             return self::FAILURE;
         }
 
-        $v = Validator::make(['password' => $password], ['password' => ['required', Password::min(12)->letters()->numbers()]]);
+        $v = Validator::make(['password' => $password], ['password' => ['required', $user->hasRole(\App\Enums\Role::Editor) ? Password::min(\App\Support\PasswordPolicy::DESK_MIN)->letters()->numbers() : Password::min(\App\Support\PasswordPolicy::MIN)]]);
         if ($v->fails()) {
             $this->error($v->errors()->first('password').' Nothing changed.');
 

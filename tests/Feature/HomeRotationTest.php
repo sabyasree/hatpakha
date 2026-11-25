@@ -104,4 +104,22 @@ class HomeRotationTest extends TestCase
         $this->assertContains('আজকের গল্প', $seen);
         $this->assertContains('আজকের লেখা', $seen);
     }
+
+    /** D289 (owner, UX review): a pool in the page, the same for every guest; the browser picks per visit; ↻ for a new set. */
+    public function test_the_page_holds_a_pool_the_browser_orders_per_visit(): void
+    {
+        Carbon::setTestNow('2026-11-25 10:00:00');
+        $sec = Section::where('slug', 'short-stories')->first();
+        $this->makePost(['slug' => 'fresh-1', 'title' => 'নতুন গল্প', 'format' => 'prose', 'section_id' => $sec->id, 'published_at' => now()->subDays(2)]);
+        $first = $this->get('/')->assertOk()->getContent();
+        $second = $this->get('/')->getContent();
+        $shelf = fn (string $html) => substr($html, strpos($html, 'data-shelf="stories"'), 4000);
+        $this->assertSame($shelf($first), $shelf($second), 'The same page for every guest (it can be cached); the browser picks the order');
+        $box = substr($first, strpos($first, 'data-shelf="stories"'));
+        $box = substr($box, 0, strpos($box, 'data-skip-first'));   // the cards, up to the phone list
+        $this->assertSame(HomeRotation::SPARE + 4, substr_count($box, 'data-pid='), 'A pool of 12 in the page');
+        $this->assertStringContainsString('data-pin="1"', substr($first, strpos($first, 'data-shelf="stories"') - 300, 600), 'The fresh piece keeps the first place');
+        $this->assertStringContainsString('data-reshuffle="stories"', $first);
+        $this->assertStringContainsString("sessionStorage", $first);
+    }
 }

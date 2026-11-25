@@ -1,4 +1,20 @@
 <x-layouts.app :seo="$seo">
+    @if ($resume)
+        {{-- C1: a signed-in reader with a reading history goes back to where they stopped (app.js opens it there, #resume-N) --}}
+        <section class="border-b-2 border-navy bg-peach-light" aria-labelledby="resume-h">
+            <a href="{{ $resume->url() }}#resume-{{ $resume->progress }}" class="mx-auto flex max-w-[1320px] items-center gap-4 px-5 py-4 hover:bg-white">
+                <span class="min-w-0 flex-1">
+                    <span id="resume-h" class="block font-hand text-xl text-red">যেখানে থেমেছিলেন</span>
+                    <span class="block font-serif text-xl font-bold leading-snug">{{ $resume->title }}</span>
+                    <span class="block text-sm text-ink2">{{ $resume->authors->first()?->publicName() }} · {{ \App\Support\Bn::num((string) $resume->progress) }}% পড়েছেন</span>
+                    <span class="mt-1.5 block h-2 max-w-[20rem] overflow-hidden rounded-full bg-white" aria-hidden="true"><span class="block h-full rounded-full bg-red" style="width: {{ $resume->progress }}%"></span></span>
+                </span>
+                <span class="flex h-12 flex-none items-center rounded-full bg-navy px-5 font-bold text-white">পড়া চালান →</span>
+            </a>
+        </section>
+    @endif
+
+    {{-- D288: one home page for everyone; on a phone the poster is a compact band (partials.hero) --}}
     @include('partials.hero')
 
     @if ($issue)
@@ -109,6 +125,20 @@
             </div>
         </div>
     </section>
+    @endif
+
+    @php
+        $moreToday = $newest->reject(fn ($p) => $p->id === $poemOfDay?->id)->take(4);
+    @endphp
+    @if ($moreToday->count() >= 2)
+        {{-- D288 (owner, UX review): four more new pieces under today's piece, each once, in a 2×2 grid (4 across on a computer) --}}
+        <section class="mx-auto max-w-[1320px] px-4 py-8 sm:px-5" aria-labelledby="more-today-h">
+            <h2 id="more-today-h" class="font-display text-3xl font-extrabold">আরও আজকের লেখা</h2>
+            <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+                @foreach ($moreToday as $p)<x-post-card-mini :post="$p" />@endforeach
+            </div>
+            <a href="{{ \App\Support\Url::to('/archive') }}" class="mt-3 inline-flex min-h-11 items-center font-bold underline">সব নতুন লেখা →</a>
+        </section>
     @endif
 
     @if ($serials->isNotEmpty())
@@ -233,9 +263,10 @@
         <div class="mx-auto max-w-[1320px] px-5 py-16">
             <div class="flex flex-wrap items-end justify-between gap-3">
                 <h2 class="font-display text-6xl font-extrabold leading-none md:text-7xl" style="font-stretch: 78%">গল্পের পাতা</h2>
-                <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="inline-flex min-h-11 items-center text-lg font-bold"><span class="border-b-[3px] border-red">সব গল্প</span></a>
+                <span class="flex flex-wrap items-center gap-3">@if ($stories->count() > 4)<button type="button" data-reshuffle="stories" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-bold">নতুন করে দেখান ↻</button>@endif
+                <a href="{{ \App\Support\Url::to('/category/short-stories') }}" class="inline-flex min-h-11 items-center text-lg font-bold"><span class="border-b-[3px] border-red">সব গল্প</span></a></span>
             </div>
-            <div class="hp-first-only mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4" data-rotate="4">
+            <div class="hp-first-only mt-9 grid gap-7 sm:grid-cols-2 lg:grid-cols-4" data-rotate="4" data-shelf="stories" aria-live="polite" @if (in_array($stories->first()?->id, $freshIds, true)) data-pin="1" @endif>
                 @foreach ($stories as $i => $story)
                     <a href="{{ $story->url() }}" data-pid="{{ $story->id }}" @if ($i === 0) data-first @endif @if ($i >= 4) hidden @endif class="lift relative flex flex-col gap-3 border-2 border-navy bg-white p-4 shadow-[6px_6px_0_#13212C] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                         <span class="absolute -top-3 left-6 h-5 w-20 -rotate-6 bg-peach/90" aria-hidden="true"></span>
@@ -248,7 +279,7 @@
             </div>
             {{-- Phones: one taped card, then compact rows (mobile UX review); wider screens: four cards. --}}
             @if ($stories->count() > 1)
-                <ul class="mt-6 divide-y divide-rule border-y border-navy/20 sm:hidden" data-rotate="3" data-skip-first>
+                <ul class="mt-6 divide-y divide-rule border-y border-navy/20 sm:hidden" data-rotate="3" data-skip-first data-shelf="stories" @if (in_array($stories->first()?->id, $freshIds, true)) data-pin="1" @endif>
                     @foreach ($stories as $i => $story)
                         <li data-pid="{{ $story->id }}" @if ($i === 0 || $i > 3) hidden @endif><x-post-row :post="$story" /></li>
                     @endforeach
@@ -267,9 +298,9 @@
                 <div class="font-hand text-2xl text-red">সংকলন</div>
                 <h2 id="col-h" class="font-display text-4xl font-extrabold leading-tight md:text-5xl"><a href="{{ $collection->url() }}" class="hover:text-red">{{ $collection->title }}</a></h2>
                 @if ($collection->intro)<p class="mt-3 line-clamp-2 max-w-[65ch] font-serif text-lg text-ink2 md:line-clamp-none">{{ \Illuminate\Support\Str::limit($collection->intro, 220) }}</p>@endif
-                <ul class="mt-5 divide-y divide-rule border-y border-rule bg-paper px-3 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0">
-                    @foreach ($collectionPosts as $p)
-                        <li class="sm:border-b sm:border-rule"><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->section ? ' · '.$p->section->name_bn : '')" /></li>
+                <ul class="mt-5 divide-y divide-rule border-y border-rule bg-paper px-3 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0" data-rotate="3" data-shelf="col">
+                    @foreach ($collectionPosts as $i => $p)
+                        <li data-pid="{{ $p->id }}" @if ($i >= 3) hidden @endif class="sm:border-b sm:border-rule"><x-post-row :post="$p" :meta="($p->authors->first()?->publicName() ?? '').($p->section ? ' · '.$p->section->name_bn : '')" /></li>
                     @endforeach
                 </ul>
                 <a href="{{ $collection->url() }}" class="mt-5 inline-flex h-12 items-center rounded-full bg-navy px-6 font-bold text-white">পুরো সংকলন ({{ \App\Support\Bn::num((string) count((array) $collection->post_ids)) }}টি লেখা) →</a>
@@ -305,10 +336,10 @@
     @if ($letters->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 py-16">
         <div class="font-hand text-3xl text-red">ডাকবাক্স থেকে</div>
-        <h2 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">পাঠকের চিঠি</h2>
-        <div class="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="flex flex-wrap items-end justify-between gap-3"><h2 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">পাঠকের চিঠি</h2>@if ($letters->count() > 4)<button type="button" data-reshuffle="letters" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-bold">নতুন করে দেখান ↻</button>@endif</div>
+        <div class="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-4" data-rotate="4" data-shelf="letters" data-no-read aria-live="polite">
             @foreach ($letters as $i => $letter)
-                <figure class="lined relative m-0 border-[1.5px] border-navy bg-white px-5 pb-5 pt-7 shadow-[4px_5px_0_rgba(19,33,44,.85)] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
+                <figure data-pid="c{{ $letter->id }}" @if ($i >= 4) hidden @endif class="lined relative m-0 border-[1.5px] border-navy bg-white px-5 pb-5 pt-7 shadow-[4px_5px_0_rgba(19,33,44,.85)] {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                     <span class="absolute -top-3 left-1/2 h-5 w-20 -translate-x-1/2 -rotate-3 bg-sky/55" aria-hidden="true"></span>
                     <blockquote class="font-serif text-lg leading-relaxed">“{{ $letter->body }}”</blockquote>
                     <figcaption class="mt-3"><span class="font-hand text-2xl text-red">— {{ $letter->author_name }}</span><span class="block text-xs text-ink2">“{{ $letter->post?->title }}” পড়ে · {{ \App\Support\Bn::num((string) $letter->created_at->year) }}</span></figcaption>
@@ -369,8 +400,8 @@
     {{-- Travel stamps. Owner (2026-11-08): new first, then archive pieces that change daily; read ones swapped out. --}}
     @if ($travel->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 pb-12">
-        <h2 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">ভ্রমণের ডাকটিকিট</h2>
-        <div class="mt-6 flex snap-x gap-6 overflow-x-auto pb-4 pt-4" data-rotate="5">
+        <div class="flex flex-wrap items-end justify-between gap-3"><h2 class="font-display text-6xl font-extrabold leading-none" style="font-stretch: 78%">ভ্রমণের ডাকটিকিট</h2>@if ($travel->count() > 5)<button type="button" data-reshuffle="travel" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy bg-white px-4 font-bold">নতুন করে দেখান ↻</button>@endif</div>
+        <div class="mt-6 flex snap-x gap-6 overflow-x-auto pb-4 pt-4" data-rotate="5" data-shelf="travel" aria-live="polite" @if (in_array($travel->first()?->id, $freshIds, true)) data-pin="1" @endif>
             @foreach ($travel as $i => $t)
                 <a href="{{ $t->url() }}" data-pid="{{ $t->id }}" @if ($i >= 5) hidden @endif class="lift relative flex h-[300px] w-[240px] flex-none snap-start flex-col bg-white p-3 outline-4 outline-dotted outline-navy {{ $i % 2 ? 'tilt-b' : 'tilt-a' }}">
                     @include('partials.shelf-badge', ['p' => $t])
@@ -392,6 +423,7 @@
         </div>
     </section>
     @endif
+    @include('partials.debut-strip')
     {{-- D111: the second home ad, after the travel stamps, before the footer --}}
     <x-ad-slot spot="home_2" :height="250" class="mx-auto max-w-[1100px] px-5" />
 </x-layouts.app>

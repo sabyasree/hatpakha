@@ -21,7 +21,7 @@ final class HomeRotation
     /** @var array<string, array{0:string, 1:int}> shelf => [section slug, how many to show] */
     public const SHELVES = ['stories' => ['short-stories', 4], 'travel' => ['travel', 5]];
 
-    public const SPARE = 3;
+    public const SPARE = 8;   // D289: a bigger pool in the page, the browser picks per visit
 
     /** @return array{stories: list<int>, travel: list<int>, fresh: list<int>} */
     public static function today(?\DateTimeInterface $now = null): array

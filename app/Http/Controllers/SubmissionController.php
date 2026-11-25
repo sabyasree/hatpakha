@@ -314,7 +314,7 @@ class SubmissionController extends Controller
 
         RateLimiter::hit('submit:'.$request->user()->id, 86400);
         $wasChanges = $post->status === 'changes';
-        $post->forceFill(['status' => 'pending', 'submitted_at' => now(), 'originality_confirmed_at' => now()])->save();
+        $post->forceFill(['status' => 'pending', 'submitted_at' => now(), 'originality_confirmed_at' => now(), 'desk_opened_at' => null])->save();   // a new round: "সম্পাদক পড়ছেন" once an editor opens it again
         \App\Support\Handover::reset($post);
         // D171: a copy of what was sent, with the writer's note on a second round, so the desk sees what changed
         \App\Models\PostVersion::snap($post, $wasChanges ? 'resubmitted' : 'submitted', $wasChanges ? ($data['writer_note'] ?? null) : null, $request->user()->id);
@@ -330,7 +330,7 @@ class SubmissionController extends Controller
         $what = $serial && $serial->user_id === $request->user()->id
             ? ($serial->status === 'proposed' ? 'নতুন ধারাবাহিক “'.$serial->title.'”-এর প্রথম পর্ব ' : 'ধারাবাহিক “'.$serial->title.'”-এর পর্ব '.\App\Support\Bn::num((string) $post->fresh()->episode_no).' ') : '';
 
-        return redirect(Url::to('/account'))->with('status', $what.'"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে সাধারণত '.\App\Support\Bn::num((string) \App\Support\Review::REPLY_DAYS).' দিনের মধ্যে ই-মেলে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
+        return redirect(Url::to('/account'))->with('status', $what.'"'.$post->title.'" জমা পড়েছে। সম্পাদকমণ্ডলী পড়ে দেখে '.\App\Support\Review::REPLY_TEXT.' ই-মেলে জানাবেন। কিছু বাদ পড়লে বা বদলাতে চাইলে নতুন করে পাঠাবেন না: "আমার লেখা"-য় এই লেখার পাশে "বদলান" টিপুন। ধন্যবাদ!')->with('submitted', $post->title);
     }
 
     /** D237: a Word file is read into the writing box; the writer checks it and sends as usual. Nothing is kept. */

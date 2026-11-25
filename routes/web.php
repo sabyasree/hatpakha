@@ -68,6 +68,8 @@ Route::get('/category/{slug}', [ArchiveController::class, 'section'])->name('sec
 Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
+Route::get('/lekhok', \App\Http\Controllers\WritersController::class)->name('writers');   // A2: every writer, অ to হ
+Route::get('/tak/{slug}', [\App\Http\Controllers\ShelfController::class, 'show'])->whereIn('slug', array_keys(\App\Http\Controllers\ShelfController::SHELVES))->name('shelf');   // C4: shelves
 Route::get('/archive/{year}', [ArchiveController::class, 'archiveYear'])->where('year', '(19|20)\d\d')->name('archive.year');
 // Owner (2026-11-12): /sonkha/ is the page of all the issues, by year.
 Route::get('/sonkha', [ArchiveController::class, 'issues'])->name('issues');
@@ -107,6 +109,9 @@ Route::get('/sitemap.html', fn () => redirect(url('/').'/', 301));
 // D97: themed collections (সংকলন)
 // D108: serial stories
 Route::get('/pashe-thakun', [\App\Http\Controllers\FeelingsController::class, 'support']);   // D237
+// Writer features (2026-11-24): the calls page and a writer's printable portfolio (noindex)
+Route::get('/lekhar-dak', [\App\Http\Controllers\WriterPagesController::class, 'calls'])->name('calls');
+Route::get('/lekhok-porichiti/{slug}', [\App\Http\Controllers\WriterPagesController::class, 'profile'])->where('slug', '[^/]+')->middleware('throttle:30,1')->name('author.porichiti');
 Route::post('/feel/{post}', [\App\Http\Controllers\FeelingsController::class, 'later'])->whereNumber('post')->middleware('throttle:20,1');   // D241
 Route::get('/pathoker-pochhondo', [\App\Http\Controllers\FeelingsController::class, 'index']);   // D232
 Route::get('/chhobi/{post}', [\App\Http\Controllers\FeelingsController::class, 'card'])->whereNumber('post');   // D252: a piece's picture card
@@ -174,6 +179,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::get('/account/profile', [\App\Http\Controllers\AccountController::class, 'profile'])->name('account.profile');
     Route::post('/account/name', [\App\Http\Controllers\AccountController::class, 'updateName']);
     Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->middleware('throttle:10,1');
+    Route::post('/account/pins', [\App\Http\Controllers\AccountController::class, 'updatePins'])->middleware('throttle:10,1');   // নির্বাচিত লেখা (2026-11-24)
     Route::post('/account/audio/{post}', [\App\Http\Controllers\AccountController::class, 'audio'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/change/{post}', [\App\Http\Controllers\AccountController::class, 'requestChange'])->whereNumber('post')->middleware('throttle:10,1');   // D94
     Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
@@ -201,6 +207,13 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class, 'thr
     Route::post('/save/{post}', [\App\Http\Controllers\ReaderController::class, 'save'])->whereNumber('post')->name('save');
     Route::post('/follow/{author}', [\App\Http\Controllers\ReaderController::class, 'follow'])->whereNumber('author')->name('follow');
 });
+
+// ---- C6 (research 2026-11): saved lines. A signed-in reader keeps a line from a piece; removes it from their library. ----
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->group(function () {
+    Route::post('/line/{post}', [\App\Http\Controllers\SavedLineController::class, 'store'])->whereNumber('post')->middleware('throttle:20,1')->name('lines.store');
+    Route::post('/account/lines/{line}/remove', [\App\Http\Controllers\SavedLineController::class, 'destroy'])->whereNumber('line')->middleware('throttle:30,1')->name('lines.destroy');
+});
+// ---- end C6 ----
 
 // D108: one-click stop for a serial's new-episode e-mails, no sign-in needed.
 Route::match(['get', 'post'], '/newsletter/unsubscribe/s/{serial}/{user}', function (\App\Models\Serial $serial, \App\Models\User $user) {

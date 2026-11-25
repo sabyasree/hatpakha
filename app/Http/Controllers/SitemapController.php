@@ -127,6 +127,8 @@ class SitemapController extends Controller
                 ->push(['loc' => Url::to('/khela/dhadha'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/dhadha/kothin'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/probad'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/aaj'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D177
                 ->push(['loc' => Url::to('/khela/shobdojobdo/sohoj'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo/kothin'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D201
                 ->push(['loc' => Url::to('/kolom'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D175: পাঠকের কলম
+                ->when(WritersController::index() !== [], fn ($c) => $c->push(['loc' => Url::to('/lekhok'), 'lastmod' => null, 'image' => null]))   // A2: all writers
+                ->merge(collect(array_keys(ShelfController::live()))->map(fn ($slug) => ['loc' => Url::to('/tak/'.$slug), 'lastmod' => null, 'image' => null]))   // C4: shelves
                 ->merge(\App\Models\ReaderPrompt::where('status', 'published')->get()->map(fn ($p) => ['loc' => $p->url(), 'lastmod' => $p->published_at, 'image' => null]))
                 ->merge(collect(array_keys(ArchiveController::yearCounts()))->map(fn ($y) => ['loc' => Url::to("/archive/{$y}"), 'lastmod' => null, 'image' => null])),
             $type === 'authors' => Author::where('published_count', '>=', 3)->get()->map(fn ($a) => ['loc' => $a->url(), 'lastmod' => $a->updated_at, 'image' => null]),
@@ -134,7 +136,8 @@ class SitemapController extends Controller
                 // D97: collection pages live with the pages
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
                 ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null]))
-                ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null]),   // D128
+                ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null])   // D128
+                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null]),   // লেখার ডাক (2026-11-24)
             $type === 'issues' => Issue::live()->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 

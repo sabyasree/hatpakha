@@ -163,6 +163,8 @@ class AccountController extends Controller
             'serials' => \App\Models\Serial::whereIn('id', $db::table('serial_follows')->where('user_id', $user->id)->select('serial_id'))->get(),
             'liked' => Post::published()->with('authors', 'section')->whereIn('id', $likedIds)->get()->sortBy(fn ($p) => $likedIds->search($p->id))->values(),
             'recent' => $user->reading_history ? \App\Support\ReadingHistory::recent($user) : collect(),
+            // C6: lines kept from pieces that are still live, newest first
+            'lines' => \App\Models\SavedLine::with('post.authors')->where('user_id', $user->id)->whereHas('post', fn ($q) => $q->published())->latest('created_at')->latest('id')->limit(100)->get(),
         ]);
     }
 
@@ -244,6 +246,24 @@ class AccountController extends Controller
         $author->forceFill($changes)->save();
 
         return redirect(Url::to('/account/profile'))->with('status', \App\Support\AccountMenu::for($user)['writer'] ? __('সেভ হয়েছে। পাঠকেরা এখন এভাবেই আপনাকে দেখবেন।') : __('সেভ হয়েছে। এখন থেকে আপনার নাম “:name”।', ['name' => strip_tags($data['name'])]));
+    }
+
+    /**
+     * 2026-11-24: the writer pins up to three of their own published pieces as "নির্বাচিত লেখা" on their page. Only ids
+     * of pieces that are live and carry this writer's byline are kept; anything else is dropped without a word.
+     */
+    public function updatePins(Request $request)
+    {
+        $data = $request->validate(['pins' => ['nullable', 'array', 'max:'.\App\Models\Author::PINS], 'pins.*' => ['integer']],
+            ['pins.max' => __('তিনটির বেশি লেখা বাছা যায় না।')]);
+        $author = \App\Models\Author::where('user_id', $request->user()->id)->where('is_desk', false)->first();
+        abort_unless($author, 403);
+        $wanted = array_values(array_unique(array_map('intval', (array) ($data['pins'] ?? []))));
+        $own = Post::published()->whereIn('id', $wanted)->whereHas('authors', fn ($q) => $q->whereKey($author->id))->pluck('id')->all();
+        $keep = array_values(array_filter($wanted, fn ($id) => in_array($id, $own, true)));
+        $author->forceFill(['pinned_post_ids' => $keep ?: null])->save();
+
+        return redirect(Url::to('/account/profile').'#pins')->with('status', $keep ? __('সেভ হয়েছে। লেখক-পাতায় এই লেখাগুলো সবার আগে দেখা যাবে।') : __('সেভ হয়েছে। কোনো লেখা বাছা নেই।'));
     }
 
     /** D67: the writer adds (or removes) their own reading of a piece. Waits for the owner. */
@@ -351,7 +371,7 @@ class AccountController extends Controller
     {
         $request->validate([
             'current_password' => self::proofRule($request),
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()->uncompromised()],
+            'password' => ['required', 'confirmed', \App\Support\PasswordPolicy::rule()],
         ], ['current_password.current_password' => __('এখনকার পাসওয়ার্ড মিলছে না।'), 'password.confirmed' => __('দুটি পাসওয়ার্ড মেলেনি।'),
             'password.uncompromised' => __('এই পাসওয়ার্ডটি অন্য কোনো সাইট থেকে ফাঁস হয়ে গেছে। অন্য একটি পাসওয়ার্ড দিন।')]);
         $request->user()->forceFill(['password' => $request->input('password'), 'legacy_password' => null])->save();

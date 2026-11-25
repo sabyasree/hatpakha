@@ -16,7 +16,7 @@ Sources: ThePrint and Quartz on Pratilipi; Parabaas and Wikipedia pages for Kaur
 
 ## 2. Why people will come to Hatpakha (our promise)
 
-**For writers: "Every piece is read by an editor, and you hear back within a week."**
+**For writers: "Every piece is read by an editor, and you hear back in 2–3 weeks."**
 1. **Edited, not just posted.** An editor reads every piece; small copy-edits are offered and the writer agrees to any word change. No other free platform does this.
 2. **A fast, kind answer** with a reason, even when the answer is "not this time". The status tracker shows where the piece is.
 3. **A real credential.** An ISSN-registered magazine since 2012, a verifiable certificate for each published piece, a proper author page with photo, cover and bio.

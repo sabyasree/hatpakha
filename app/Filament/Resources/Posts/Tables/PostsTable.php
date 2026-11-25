@@ -48,6 +48,8 @@ class PostsTable
                     // D279: a serial's episode says so ("নতুন ধারাবাহিকের প্রস্তাব · পর্ব ১" / "ধারাবাহিক ‘…’ · পর্ব ৩")
                     ->description(fn (Post $p) => trim(($p->serial_id && $p->serial ? ($p->serial->status === 'proposed' ? __('নতুন ধারাবাহিকের প্রস্তাব').' ‘'.$p->serial->title.'’' : __('ধারাবাহিক').' ‘'.$p->serial->title.'’').' · '.__('পর্ব').' '.\App\Support\Bn::num((string) $p->episode_no).' · ' : '')
                         .($p->status === 'draft' && $p->ai_drafted_at ? __('এআই খসড়া').' · ' : '')
+                        // নতুন কলম (2026-11-24): a submission from a writer with nothing published here yet
+                        .(in_array($p->status, ['pending', 'changes', 'confirm', 'scheduled'], true) && \App\Support\Debut::firstFromWriter($p) ? __('প্রথম লেখা').' · ' : '')
                         .($p->authors->first()?->publicName() ?? '').' · '.($p->section?->name_bn ?? ''), ' ·')),
                 TextColumn::make('status')->label(__('অবস্থা'))->badge()
                     ->formatStateUsing(fn ($state) => __(self::STATUS[$state] ?? $state))

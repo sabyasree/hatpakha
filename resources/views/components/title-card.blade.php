@@ -1,5 +1,6 @@
 @props(['post', 'size' => 'md'])
-{{-- Auto-generated title card for posts without a usable image (docs/DB-AUDIT.md: 244 posts have none, most are <800px). --}}
+{{-- Auto-generated title card for posts without a usable image (docs/DB-AUDIT.md: 244 posts have none, most are <800px).
+     size="sm" (A7): a small tile beside a title that is already written next to it (lists): the colours and the fan only. --}}
 @php
     $slug = $post->section?->slug;
     [$bg, $fg] = match (true) {
@@ -14,12 +15,15 @@
     $font = $len <= 6 ? 'text-[min(15cqw,3.4rem)]' : ($len <= 14 ? 'text-[min(11.5cqw,2.6rem)]' : ($len <= 28 ? 'text-[min(9cqw,2rem)]' : 'text-[min(7.5cqw,1.6rem)]'));
     $useImage = $post->hasCardImage();
 @endphp
-<div {{ $attributes->merge(['class' => '@container relative overflow-hidden aspect-[4/3] rounded-2xl']) }} style="background: {{ $bg }}; color: {{ $fg }}">
+<div {{ $attributes->merge(['class' => '@container relative overflow-hidden aspect-[4/3] rounded-2xl']) }} style="background: {{ $bg }}; color: {{ $fg }}" @if ($size === 'sm') aria-hidden="true" @endif>
     @if ($useImage)
         <picture>
             @if ($set = \App\Support\Images::srcset('/'.$post->featured_image_path))<source type="image/webp" srcset="{{ $set }}" sizes="(max-width: 640px) 100vw, 420px">@endif
             <img src="{{ asset($post->featured_image_path) }}" alt="" loading="lazy" decoding="async" width="{{ $post->featured_image_width }}" height="{{ $post->featured_image_height }}" class="absolute inset-0 h-full w-full object-cover">
         </picture>
+    @elseif ($size === 'sm')
+        <x-fan class="absolute -right-[18%] -bottom-[6%] w-[110%] opacity-40" :colors="[$fg === '#FFFFFF' ? '#FFFFFF' : '#CB1B32', '#EFC08D']" :hub="null" />
+        <span class="absolute left-[10%] top-[8%] font-hand text-[min(20cqw,1.1rem)] leading-none opacity-90">হাতপাখা</span>
     @else
         <x-fan class="absolute -right-[12%] bottom-0 w-[78%] opacity-30" :colors="[$fg === '#FFFFFF' ? '#FFFFFF' : '#CB1B32', '#EFC08D']" :hub="null" />
         <div class="absolute inset-x-[6cqw] top-[4cqw] flex justify-between gap-2 text-[min(4.2cqw,.8rem)] font-bold"><span>{{ $post->section?->name_bn }}</span><span class="font-hand text-[min(5.5cqw,1rem)] opacity-90">হাতপাখা</span></div>

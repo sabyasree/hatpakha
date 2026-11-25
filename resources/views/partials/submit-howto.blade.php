@@ -30,7 +30,7 @@
                 </li>
                 <li class="flex gap-3">
                     <span aria-hidden="true" class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-red text-lg font-bold text-white">৩</span>
-                    <span><strong class="block text-xl leading-snug">“জমা দিন” টিপুন</strong><span class="text-lg">লেখা আমাদের কাছে পৌঁছে যাবে। সম্পাদক পড়ে ই-মেলে জানাবেন।</span></span>
+                    <span><strong class="block text-xl leading-snug">“জমা দিন” টিপুন</strong><span class="text-lg">লেখা আমাদের কাছে পৌঁছে যাবে। সম্পাদক পড়ে সাধারণত ২–৩ সপ্তাহের মধ্যে ই-মেলে জানাবেন।</span></span>
                 </li>
             </ol>
             @if ($google)

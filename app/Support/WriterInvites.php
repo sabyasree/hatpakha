@@ -40,6 +40,9 @@ final class WriterInvites
 
     public const THEME = 'ফিরে আসা';
 
+    /** The theme as writers are told it (the submit form and লেখার ডাক). */
+    public const THEME_NOTE = 'ফিরে আসা (কোনো জায়গায়, কোনো মানুষের কাছে, কোনো অভ্যাসে, বা লেখায় ফেরা)';
+
     public const ISSUE_SLUG = 'phire-asha';
 
     public const LAST_DATE = '2026-12-07';      // pieces by this day (Kolkata)
