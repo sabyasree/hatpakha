@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 /**
  * D95: until real writers join ঐতিহ্য ও উৎসব and রান্নাঘরের গল্প, the copywriter drafts pieces for them on the
  * owner's request. Always a DRAFT under the house byline "হাতপাখা ডেস্ক"; never a made-up person, never
- * published by itself (D42). Facts the owner must check are kept in the desk-only `ai_note`, and publishing an
+ * published by itself (D42), except the literary-calendar pieces, which App\Ai\CalendarDesk fact-checks and publishes (D294). Facts the owner must check are kept in the desk-only `ai_note`, and publishing an
  * AI draft needs the owner to confirm they edited it and checked the facts.
  */
 final class DeskWriter
@@ -49,15 +49,16 @@ final class DeskWriter
             .'In facts_to_check, say where the legend is told and in which collections it appears, so the editor can check it.',
     ];
 
-    public static function draft(string $section, string $topic): array
+    /** $style: D294's calendar and reading pieces bring their own brief instead of the section's. */
+    public static function draft(string $section, string $topic, ?string $style = null): array
     {
         $sec = Section::where('slug', $section)->first();
         $desk = Author::where('slug', 'hatpakha-desk')->first();
-        if (! $sec || ! $desk || ! isset(self::SECTIONS[$section]) || trim($topic) === '') {
+        if (! $sec || ! $desk || ! ($style ?? self::SECTIONS[$section] ?? null) || trim($topic) === '') {
             return [null, 'বিভাগ বা বিষয় পাওয়া যায়নি।'];
         }
         $system = 'You write for Hatpakha (হাতপাখা), a Bengali literary web magazine, as its editorial desk (byline: হাতপাখা ডেস্ক). '
-            .self::SECTIONS[$section].' '
+            .($style ?? self::SECTIONS[$section]).' '
             // What makes it literature rather than information (owner, 2026-11-08).
             .Prompt::LITERARY.FeedbackLessons::forPrompt($section).' '
             .'Show the scene in present tense or a remembered "সেই সময়" in the plural ("আমরা", "পাড়ায়"). '
