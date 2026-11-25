@@ -35,7 +35,7 @@ class SearchFindabilityTest extends TestCase
     {
         $this->makePost(['slug' => 'kobita-ek', 'status' => 'published']);   // makes the poetry section with one piece
         $html = $this->get('/category/poetry/')->assertOk()->getContent();
-        $this->assertStringContainsString('<title>বাংলা কবিতা: নতুন ও চেনা কবিদের কবিতা | হাতপাখা</title>', $html);
+        $this->assertStringContainsString('<title>বাংলা কবিতা (Bangla Kobita): নতুন ও চেনা কবিদের কবিতা | হাতপাখা</title>', $html);
         $this->assertStringContainsString('content="হাতপাখার বাংলা কবিতা', $html);
 
         // A section's own introduction (written in the desk) still wins over the default description.

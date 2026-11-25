@@ -745,7 +745,6 @@
     "প্রতিযোগিতা ব্যবস্থাপক": "Contest manager",
     "প্রতিযোগিতার নিয়ম, জমা পড়া লেখার বাছাই তালিকা, ফলাফলের খসড়া; বিজয়ী আপনি বাছেন": "Contest rules, a shortlist of entries, a draft of the results; you choose the winners",
     "সংগ্রাহক": "Archivist",
-    "পুরনো লেখা থেকে বিষয়ভিত্তিক সংকলন, আর্কাইভের বাছাই, ট্যাগ গোছানোর প্রস্তাব": "Themed collections from old pieces, archive picks, tag tidy-up suggestions",
     "বিশ্লেষক": "Analyst",
     "কোন লেখা কত পড়া হচ্ছে, কোথা থেকে পাঠক আসছেন; মাসিক অন্তর্দৃষ্টি": "Which pieces are read and how much, where readers come from; monthly insights",
     "পুরো দলের কাজ দেখে: কেউ আটকে আছে কি না, ভুল বা বাড়তি খরচ, প্রকাশের দিন খালি কি না; মাসিক দল-পর্যালোচনা ও খরচের পূর্বাভাস": "Watches the whole team: anyone stuck, errors or extra cost, empty publishing days; monthly team review and cost forecast",
@@ -3146,5 +3145,11 @@
     "পাঠকের মন ছুঁয়েছে": "Pieces that moved readers",
     "পাসওয়ার্ড অন্তত ৮ অক্ষরের হতে হবে।": "The password needs at least 8 characters.",
     "কমপক্ষে ৮ অক্ষর। যে-কোনো অক্ষর, সংখ্যা বা চিহ্ন চলবে।": "At least 8 characters. Any letters, numbers or symbols.",
-    "কমপক্ষে ৮ অক্ষর। যে-কোনো অক্ষর, সংখ্যা বা চিহ্ন চলবে। অন্য সাইটের পাসওয়ার্ড এখানে দেবেন না।": "At least 8 characters. Any letters, numbers or symbols. Don't reuse a password from another site."
+    "কমপক্ষে ৮ অক্ষর। যে-কোনো অক্ষর, সংখ্যা বা চিহ্ন চলবে। অন্য সাইটের পাসওয়ার্ড এখানে দেবেন না।": "At least 8 characters. Any letters, numbers or symbols. Don't reuse a password from another site.",
+    "পুরনো লেখা থেকে বিষয়ভিত্তিক সংকলন, আর্কাইভের বাছাই, ট্যাগ গোছানোর প্রস্তাব, লেখাগুলো বিষয়ের পাতায় সাজানো": "Themed collections from old pieces, archive picks, tag tidy-up suggestions, sorting pieces onto the topic pages",
+    "লেখাগুলো বিষয়ের পাতায় সাজান (ভূতের গল্প, প্রেমের কবিতা…)": "Sort the pieces onto the topic pages (ghost stories, love poems…)",
+    "বিষয়ের পাতায় সাজানো": "Sorting onto topic pages",
+    "বিষয়ের পাতা": "Topic pages",
+    "এআই সংগ্রাহক বেছেছে। বদলালে আপনার পছন্দই থাকবে।": "Chosen by the AI archivist. If you change it, your choice is kept.",
+    "এখানে টিক দিলে লেখাটি সেই বিষয়ের পাতায় দেখা যাবে।": "Tick a topic to show this piece on that topic page."
 }

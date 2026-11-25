@@ -402,3 +402,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - Mock-ups made: daytime illustrated walk (gate, lane, stall, map), dusk "more real" version, open fair with prices.
 - Owner so far: anyone can take a stall (writers, publishers, shops), prices and buy link shown, WhatsApp buying, runs by itself.
 - Open: the safeguards (phone check, AI hold for doubtful stalls, reports hide a stall), a legal check of India's marketplace rules, daytime or dusk look.
+
+## Topic pages (D293), 2026-11-25
+- [x] `/bishoy/` and 15 topic pages, desk field, archivist sorter, links from sections, pieces and footer, sitemap; English spellings in section titles; কবিতা কাকে বলে; Bengali Durga names (TopicPagesTest).
+- [ ] Owner, after deploy: /desk → এআই দল → সংগ্রাহক → "লেখাগুলো বিষয়ের পাতায় সাজান" (about $0.30 in all; then 100 an hour by itself, roughly a day for the archive).
+- [ ] Next: check the topic pages after the sort (move wrong ones in the desk); in 6–8 weeks compare Search Console for "ভূতের গল্প", "প্রেমের কবিতা" and the others.

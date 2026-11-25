@@ -111,6 +111,8 @@ final class TeamJobs
             // D97: a collection page from the whole archive (a seed such as "শীতের লেখা", or any theme)
             'themed' => ['সংকলনের প্রস্তাব: পুরো আর্কাইভ থেকে (বিষয় লিখুন, যেমন "শীতের লেখা")', 'topic', 'today'],
             'tags' => ['ট্যাগ গোছানোর প্রস্তাব', null, 'today'],
+            // D293: start sorting the archive onto the topic pages (owner-approved; the hourly shift carries on)
+            'topics' => ['লেখাগুলো বিষয়ের পাতায় সাজান (ভূতের গল্প, প্রেমের কবিতা…)', null, 'today'],
         ],
         'strategist' => [
             'strategy' => ['নতুন মাসিক কৌশল', null, 'team'],
@@ -334,6 +336,13 @@ final class TeamJobs
             'copywriter.letter' => $done(EditorJobs::topicLetter($topic, 'both', $owner), 'চিঠির খসড়া তৈরি; চিঠি পাতায় দেখে পাঠান।', 'চিঠি তৈরি হয়নি।'),
             'contest.shortlist' => ($c = \App\Models\Contest::whereIn('status', ['open', 'judging'])->latest('id')->first())
                 ? $err(ContestManager::shortlist($c), 'বাছাই তালিকা তৈরি: '.$c->title.'। প্রতিযোগিতার পাতায় দেখুন।') : [false, 'চলতি কোনো প্রতিযোগিতা নেই।'],
+            'archivist.topics' => (function () {
+                $e = \App\Ai\TopicSorter::estimate();
+                \App\Ai\TopicSorter::start();
+                $n = \App\Ai\TopicSorter::backlog(100);
+
+                return [true, 'বিষয়ের পাতায় সাজানো শুরু হয়েছে: এখন '.\App\Support\Bn::num((string) $n).'টি লেখা হলো, বাকি '.\App\Support\Bn::num((string) max(0, $e['pieces'] - $n)).'টি প্রতি ঘণ্টায় ১০০টি করে হবে (মোট খরচ আনুমানিক $'.$e['usd'].')। লেখার পাতায় "বিষয়" ঘরে বদলানো যায়।'];
+            })(),
             'archivist.collection' => $done(Archivist::collection(null, $redo), 'সংকলনের প্রস্তাব আজকের কাজে আছে।'),
             'teacher.all' => $done(KidsTeacher::backlog(), 'ছোটদের লেখার বয়স আর শব্দের মানে তৈরি; ডেস্ক → ছোটদের হাতপাখা-য় দেখুন।'),
             'teacher.post' => $err(KidsTeacher::prepare($post), 'বয়স আর শব্দের মানে তৈরি: "'.$post?->title.'"।'),
