@@ -33,7 +33,7 @@ class CertificateTest extends TestCase
         $c = Certificate::sole();
         $this->assertSame('মেঘলা দাস', $c->author_name_snapshot);
         if (\App\Support\NewsletterSender::realMail()) {
-            Notification::assertSentTo($writer, \App\Notifications\TemplateMail::class, fn ($n) => $n->key === 'certificate_ready' && $n->url === $c->verifyUrl());
+            Notification::assertSentTo($writer, \App\Notifications\TemplateMail::class, fn ($n) => $n->key === 'certificate_ready' && $n->url === $c->verifyUrl().'?share=1');
         }
         $this->assertSame([], Certificate::issueFor($post->fresh()), 'Never twice');
 
@@ -150,5 +150,25 @@ class CertificateTest extends TestCase
         Livewire::test(\App\Filament\Pages\Certificates::class)->call('restore', $b->id);
         $this->assertNull($b->fresh()->revoked_at);
         Livewire::test(EditPost::class, ['record' => $plain->getRouteKey()])->assertSee('শংসাপত্রের পাতা খুলুন');
+    }
+
+    /** Owner (2026-11-25): writers did not share certificates, and the Facebook page was never tagged. */
+    public function test_the_certificate_page_helps_the_writer_post_it_on_facebook_with_a_proper_preview(): void
+    {
+        $writer = User::factory()->create(['email_verified_at' => now()]);
+        $author = Author::create(['user_id' => $writer->id, 'display_name' => 'মেঘলা দাস', 'slug' => 'meghla']);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'sondhya', 'title' => 'সন্ধ্যার নদী', 'published_at' => now()->subDay()], $author);
+        $c = Certificate::issueFor($post)[0];
+
+        // A visitor: the share buttons, the piece's picture and title in the Facebook preview, no step-by-step.
+        $html = $this->get($c->verifyUrl())->assertOk()->assertSee('ছবিসহ ফেসবুকে দিন')->assertSee('পোস্টের লেখা কপি করুন')
+            ->assertDontSee('শংসাপত্রটি ফেসবুকে দিন')->getContent();
+        $this->assertStringContainsString('<meta property="og:image" content="'.\App\Support\ShareImage::forPost($post).'"', $html);
+        $this->assertStringContainsString('সন্ধ্যার নদী · হাতপাখায় প্রকাশিত লেখার শংসাপত্র', $html);
+        $this->assertStringContainsString('#হাতপাখা', $html);
+
+        // The writer: the three steps, including how to tag the page (only a person can tag it).
+        $this->actingAs($writer)->get($c->verifyUrl().'?share=1')->assertOk()->assertSee('শংসাপত্রটি ফেসবুকে দিন')->assertSee('@Hatpakha');
+        $this->actingAs($writer)->get('/account/')->assertSee('শংসাপত্র ও ফেসবুকে দিন');
     }
 }

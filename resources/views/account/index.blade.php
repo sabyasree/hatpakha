@@ -81,15 +81,15 @@
                     <div class="mt-3 flex flex-wrap gap-2">
                         <a href="{{ $wa(__('“:title”, হাতপাখায় আমার লেখা: :url', ['title' => $p->title, 'url' => $p->url()])) }}" target="_blank" rel="noopener" class="{{ $chip }}">{{ __('WhatsApp-এ পাঠান') }}</a>
                         @if ($c = $certs->get($p->id))
-                            <a href="{{ $c->verifyUrl() }}" class="{{ $chip }}">{{ __('সার্টিফিকেট') }}</a>
+                            <a href="{{ $c->verifyUrl() }}?share=1" class="{{ $chip }}">{{ __('শংসাপত্র ও ফেসবুকে দিন') }}</a>
                         @else
-                            <form method="POST" action="{{ Url::to('/account/certificate/'.$p->id) }}">@csrf<button class="{{ $chip }}">{{ __('সার্টিফিকেট') }}</button></form>
+                            <form method="POST" action="{{ Url::to('/account/certificate/'.$p->id) }}">@csrf<button class="{{ $chip }}">{{ __('শংসাপত্র') }}</button></form>
                         @endif
                         <a href="{{ $p->url() }}" class="{{ $chip }}">{{ __('পড়ে দেখুন') }}</a>
                     </div>
                 </div>
             @endforeach
-            <p class="mt-3 text-sm text-ink2">{{ __('“সার্টিফিকেট”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার একটি ফ্রি সার্টিফিকেট। ডাউনলোড করে বা স্ক্রিনশট নিয়ে WhatsApp বা ফেসবুকে শেয়ার করতে পারেন।') }}</p>
+            <p class="mt-3 text-sm text-ink2">{{ __('“শংসাপত্র”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার শংসাপত্র। খুলে “ছবিসহ ফেসবুকে দিন” টিপুন; ফেসবুকে পোস্টে @Hatpakha লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।') }}</p>
 
             <div class="mt-8 rounded-2xl border-2 border-navy bg-peach-light p-4">
                 <div class="flex items-baseline justify-between gap-3"><h2 class="font-display text-2xl font-extrabold">{{ __('আমার পাঠক') }}</h2><a href="{{ Url::to('/account/stats') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ __('বিস্তারিত') }}</a></div>

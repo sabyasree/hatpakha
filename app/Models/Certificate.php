@@ -147,7 +147,7 @@ class Certificate extends Model
         $user = $this->author?->user;
         if ($user && $user->email_verified_at && \App\Support\NewsletterSender::realMail()) {
             $user->notify(new \App\Notifications\TemplateMail('certificate_ready',
-                ['{নাম}' => (string) $this->author_name_snapshot, '{লেখা}' => (string) $this->title_snapshot], $this->verifyUrl()));   // D123
+                ['{নাম}' => (string) $this->author_name_snapshot, '{লেখা}' => (string) $this->title_snapshot], $this->verifyUrl().'?share=1'));   // D123; straight to the share box (2026-11-25)
         }
     }
 }

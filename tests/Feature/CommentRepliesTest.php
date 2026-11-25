@@ -154,6 +154,16 @@ class CommentRepliesTest extends TestCase
         $this->assertStringContainsString('আপনার লেখা পাঠান হাতপাখায়', $asked, 'The answer is written knowing what the post said');
         $this->assertSame('replied', $new->fresh()->status);
 
+        // Owner (2026-11-25): "how do I put my published piece on Facebook" gets its own fixed answer.
+        $share = SocialComment::create(['network' => 'facebook', 'remote_id' => 'o7', 'text' => 'লেখা প্রকাশিত হয়েছে, ফেসবুকে পোস্ট করবো কি ভাবে', 'status' => 'new']);
+        $share->forceFill(['created_at' => now()->subMinutes(20)])->save();
+        Claude::$fake = fn (...$a) => ['answers' => [['id' => $share->id, 'action' => 'share', 'reply' => 'নিজের কথা', 'reason' => '']]];
+        CommentReplies::answer();
+        $this->assertSame(CommentReplies::HOW_TO_SHARE, $share->fresh()->reply, 'The fixed words, whatever the AI wrote');
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/o7/comments') && $r['message'] === CommentReplies::HOW_TO_SHARE);
+        $this->assertStringContainsString('@Hatpakha', CommentReplies::HOW_TO_SHARE);
+        $this->assertDoesNotMatchRegularExpression('/টাকা|খরচ|বিনা পয়সা/u', CommentReplies::HOW_TO_SHARE);
+
         // Facebook refuses: the owner is told, and told again no more once it works.
         Http::swap(new \Illuminate\Http\Client\Factory);
         Http::fake(['graph.facebook.com/*/111/published_posts*' => Http::response(['error' => ['message' => '(#200) Requires pages_read_engagement']], 403), 'graph.facebook.com/*' => Http::response(['data' => []])]);

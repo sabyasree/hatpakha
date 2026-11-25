@@ -221,12 +221,21 @@ if (progress && readArticle) {
     update();
 }
 
-// Share: the phone's own share sheet when it has one; otherwise the WhatsApp link works as it is.
+// Share (UX review, 2026-11-25): a phone opens its own share sheet, with our share line. A computer never does (its share
+// sheet confused readers, and without one the icon silently opened WhatsApp): it goes to the worded buttons under the piece.
+const shareBlock = document.querySelector('[data-share-block]');
 document.querySelectorAll('[data-share]').forEach((a) => {
-    if (!navigator.share) return;
+    const phone = navigator.share && matchMedia('(pointer: coarse)').matches;
+    if (!phone && !shareBlock) return;   // no buttons on this page: the WhatsApp link works as it is
     a.addEventListener('click', (e) => {
         e.preventDefault();
-        navigator.share({ title: a.dataset.shareTitle || document.title, url: a.dataset.share }).catch(() => {});
+        if (phone) {
+            navigator.share({ title: a.dataset.shareTitle || document.title, text: a.dataset.shareText || undefined, url: a.dataset.share }).catch(() => {});
+            return;
+        }
+        shareBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        shareBlock.classList.add('shadow-[0_0_0_4px_#2DAAE2]');
+        setTimeout(() => shareBlock.classList.remove('shadow-[0_0_0_4px_#2DAAE2]'), 1600);
     });
 });
 

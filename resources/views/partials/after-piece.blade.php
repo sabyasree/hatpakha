@@ -127,7 +127,7 @@
 @endif
 
 {{-- 3. Sending it on: worded buttons; red outline here, so the one solid red button on screen is "মতামত পাঠান" --}}
-<div data-md-skip class="mt-6">
+<div data-md-skip id="share" data-share-block class="mt-6 scroll-mt-24 rounded-2xl transition-shadow">
     <p class="text-center text-sm font-bold text-ink2">ভালো লাগলে বন্ধুকে পাঠান</p>
     <a href="https://wa.me/?text={{ rawurlencode(($post->share_text ?: $post->title).' — '.$post->url()) }}" rel="noopener" target="_blank" class="mt-2 flex h-12 w-full items-center justify-center rounded-full border-2 border-red bg-white px-5 text-lg font-bold text-red">হোয়াটসঅ্যাপে পাঠান</a>
     <div class="mt-2 grid grid-cols-2 gap-2">
