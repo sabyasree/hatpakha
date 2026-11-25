@@ -55,4 +55,18 @@ class SearchFindabilityTest extends TestCase
         // A word that only appears in a link, never in a picture's file name, finds no piece.
         $this->get('/about-hatpakha-old/')->assertNotFound();
     }
+
+    public function test_section_introductions_fill_only_empty_ones_and_show_on_the_page(): void
+    {
+        $this->makePost(['slug' => 'kobita-dui', 'status' => 'published']);   // the poetry section, with a piece
+        Section::firstOrCreate(['slug' => 'travel'], ['name_bn' => 'ভ্রমণ', 'format' => 'prose'])->update(['about' => 'সম্পাদকের নিজের লেখা।']);
+
+        $migration = require database_path('migrations/2026_11_25_000200_section_introductions.php');
+        $migration->up();
+
+        $this->get('/category/poetry/')->assertOk()
+            ->assertSee('এক দশকের বেশি সময় ধরে হাতপাখায় ছাপা বাংলা কবিতা')
+            ->assertSee('<meta name="description" content="এক দশকের বেশি সময় ধরে', false);
+        $this->assertSame('সম্পাদকের নিজের লেখা।', Section::where('slug', 'travel')->value('about'));   // the desk's text stays
+    }
 }

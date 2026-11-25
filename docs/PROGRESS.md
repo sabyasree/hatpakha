@@ -394,6 +394,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [ ] Owner: Search Console query report (Performance → Queries) for "Bengali magazine", "বাংলা অনলাইন পত্রিকা" etc., before and 4–8 weeks after.
 - [x] Owner: Wikidata entry Q142281102 (linked from the site).
 - [x] Pirated PDFs gone (410), old title endings dropped, four top pieces retitled (D291).
+- [x] Section introductions for eight sections (D292).
 - [ ] Owner: Search Console → Removals → the Feluda PDF address, so Google drops it fast.
 - [ ] Owner: writers' bio links; press for নতুন কলম ১০; Kavya Kishor list. (w3newspapers already lists Hatpakha.)
 
