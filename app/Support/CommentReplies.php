@@ -41,7 +41,7 @@ final class CommentReplies
      * Facebook". Posted as it stands, never reworded by the AI. It also says how to share the certificate and how to tag
      * the page (a website cannot tag the page for anyone; only the person can).
      */
-    public const HOW_TO_SHARE = 'অভিনন্দন! 🙂 hatpakha.com-এ আপনার লেখাটি খুলে একেবারে শেষে "ফেসবুকে শেয়ার" টিপুন, লেখার ছবি আর নাম নিজে থেকেই বসে যাবে। ফোনে লেখার নামের নিচের শেয়ার চিহ্ন টিপে Facebook বেছে নিলেও হবে। শংসাপত্র দিতে চাইলে নিজের অ্যাকাউন্টে "শংসাপত্র" খুলে "ছবিসহ ফেসবুকে দিন" টিপুন। পোস্টে @হাতপাখা লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।';
+    public const HOW_TO_SHARE = 'অভিনন্দন! 🙂 hatpakha.com-এ আপনার লেখাটি খুলে একেবারে শেষে "ফেসবুকে শেয়ার" টিপুন, লেখার ছবি আর নাম নিজে থেকেই বসে যাবে। ফোনে লেখার নামের নিচের শেয়ার চিহ্ন টিপে Facebook বেছে নিলেও হবে। শংসাপত্র দিতে চাইলে নিজের অ্যাকাউন্টে "শংসাপত্র" খুলে "ছবিসহ ফেসবুকে দিন" টিপুন। পোস্টে @Hatpakha লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।';
 
     public const STATUSES = ['new' => 'নতুন', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'উত্তর লাগে না', 'flagged' => 'আপনি দেখুন', 'failed' => 'উত্তর যায়নি', 'deleted' => 'উত্তর মুছে ফেলা হয়েছে'];
 

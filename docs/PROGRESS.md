@@ -415,5 +415,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## Sharing and certificates on Facebook (D295), 2026-11-25
 - [x] Fixed comment answer for "how do I share"; certificate share box with picture, copied words and tag tip; proper preview; e-mails point to it; piece share icon fixed on computers.
-- [ ] Owner: check what name Facebook offers when you type "@" (হাতপাখা or Hatpakha) and that the page allows tagging (Page settings → Privacy → Tagging); tell me if the tip should say another name.
+- [x] Owner: Facebook offers the page as "@Hatpakha"; the tip says so everywhere.
 - [ ] Owner: if "certificate ready" or "piece live" were edited in /desk → ই-মেলের নমুনা, the new lines are not in the edited copy; add them there.

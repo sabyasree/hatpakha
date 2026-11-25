@@ -168,7 +168,7 @@ class CertificateTest extends TestCase
         $this->assertStringContainsString('#হাতপাখা', $html);
 
         // The writer: the three steps, including how to tag the page (only a person can tag it).
-        $this->actingAs($writer)->get($c->verifyUrl().'?share=1')->assertOk()->assertSee('শংসাপত্রটি ফেসবুকে দিন')->assertSee('@হাতপাখা');
+        $this->actingAs($writer)->get($c->verifyUrl().'?share=1')->assertOk()->assertSee('শংসাপত্রটি ফেসবুকে দিন')->assertSee('@Hatpakha');
         $this->actingAs($writer)->get('/account/')->assertSee('শংসাপত্র ও ফেসবুকে দিন');
     }
 }

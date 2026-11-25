@@ -161,7 +161,7 @@ class CommentRepliesTest extends TestCase
         CommentReplies::answer();
         $this->assertSame(CommentReplies::HOW_TO_SHARE, $share->fresh()->reply, 'The fixed words, whatever the AI wrote');
         Http::assertSent(fn ($r) => str_contains($r->url(), '/o7/comments') && $r['message'] === CommentReplies::HOW_TO_SHARE);
-        $this->assertStringContainsString('@হাতপাখা', CommentReplies::HOW_TO_SHARE);
+        $this->assertStringContainsString('@Hatpakha', CommentReplies::HOW_TO_SHARE);
         $this->assertDoesNotMatchRegularExpression('/টাকা|খরচ|বিনা পয়সা/u', CommentReplies::HOW_TO_SHARE);
 
         // Facebook refuses: the owner is told, and told again no more once it works.

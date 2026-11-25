@@ -89,7 +89,7 @@
                     </div>
                 </div>
             @endforeach
-            <p class="mt-3 text-sm text-ink2">{{ __('“শংসাপত্র”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার শংসাপত্র। খুলে “ছবিসহ ফেসবুকে দিন” টিপুন; ফেসবুকে পোস্টে @হাতপাখা লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।') }}</p>
+            <p class="mt-3 text-sm text-ink2">{{ __('“শংসাপত্র”: প্রতিটি প্রকাশিত লেখার জন্য হাতপাখার শংসাপত্র। খুলে “ছবিসহ ফেসবুকে দিন” টিপুন; ফেসবুকে পোস্টে @Hatpakha লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।') }}</p>
 
             <div class="mt-8 rounded-2xl border-2 border-navy bg-peach-light p-4">
                 <div class="flex items-baseline justify-between gap-3"><h2 class="font-display text-2xl font-extrabold">{{ __('আমার পাঠক') }}</h2><a href="{{ Url::to('/account/stats') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ __('বিস্তারিত') }}</a></div>
