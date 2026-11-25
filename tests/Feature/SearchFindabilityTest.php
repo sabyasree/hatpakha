@@ -24,10 +24,11 @@ class SearchFindabilityTest extends TestCase
         preg_match_all('#<script type="application/ld\+json"[^>]*>(.*?)</script>#s', $html, $m);
         $ld = json_decode(implode('', $m[1]), true);
         $this->assertNotNull($ld);
-        $flat = json_encode($ld, JSON_UNESCAPED_UNICODE);
+        $flat = json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $this->assertStringContainsString('"foundingDate":"2012"', $flat);
         $this->assertStringContainsString('Hatpakha Bengali Magazine', $flat);
         $this->assertStringContainsString('"issn":"2321-3035"', $flat);
+        $this->assertStringContainsString('wikidata.org/wiki/Q142281102', $flat);
     }
 
     public function test_main_sections_use_the_words_people_search_for(): void
