@@ -12,6 +12,9 @@ final class JsonLd
 {
     public const ISSN = '2321-3035';
 
+    /** D290: Hatpakha's Wikidata entry (made by the owner, 2026-11-25), so Google ties the site to it. */
+    public const WIKIDATA = 'https://www.wikidata.org/wiki/Q142281102';
+
     public static function organization(): array
     {
         return [
@@ -23,7 +26,7 @@ final class JsonLd
             'foundingDate' => '2012',
             'url' => Url::to('/'),
             'logo' => asset('images/logo.png'),
-            'sameAs' => array_values(array_filter([config('services.social.facebook'), config('services.social.instagram'), config('services.social.whatsapp')], fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
+            'sameAs' => array_values(array_filter([self::WIKIDATA, config('services.social.facebook'), config('services.social.instagram'), config('services.social.whatsapp')], fn ($u) => is_string($u) && str_starts_with($u, 'https://'))) ?: null,
             // D126 (keeps D89): how to reach the desk is the contact form, never a public address or phone number.
             'contactPoint' => [
                 ['@type' => 'ContactPoint', 'contactType' => 'editorial', 'url' => Url::to('/contact-us'), 'availableLanguage' => ['bn', 'en']],
@@ -43,6 +46,7 @@ final class JsonLd
             'genre' => 'Literature',
             'startDate' => '2012',
             'issn' => self::ISSN,
+            'sameAs' => [self::WIKIDATA],
             'inLanguage' => 'bn',
             'url' => Url::to('/'),
             'publisher' => ['@id' => Url::to('/').'#org'],
