@@ -18,17 +18,23 @@ use Carbon\CarbonImmutable;
  *
  *   1. A piece is drafted (DeskWriter, house byline হাতপাখা ডেস্ক) up to WINDOW days before its day, or once a week
  *      for the reading. At most one draft a day: a draft is long and costs about $0.40.
- *   2. Every fact the writer listed is checked on the web (FACT_SEARCHES searches). A wrong or unverifiable claim is
+ *   2. Every fact the writer listed is checked on the web (FACT_SEARCHES searches; the copy check COPY_SEARCHES). A wrong or unverifiable claim is
  *      taken out by a second pass (the rest of the text kept), then checked again; the copy check (PlagiarismCheck)
  *      must be clear too. A piece that still fails is never published: it stays a draft, noted in the audit log.
  *   3. A checked piece gets its cover (when drawn), its Google details (SEO expert) and its date (LEAD_DAYS before
- *      the day, 9am India; the reading on the next Wednesday). It goes out under the house byline, never a person.
+ *      the day, 9am India; the reading on the next Wednesday, every second week). It goes out under the house byline, never a person.
  */
 final class CalendarDesk
 {
     public const WINDOW = 12;
 
-    public const FACT_SEARCHES = 5;
+    /** Owner (2026-11-25: "reduce the cost"): three searches for the facts, three for the copy check, the mid model. */
+    public const FACT_SEARCHES = 3;
+
+    public const COPY_SEARCHES = 3;
+
+    /** The weekly reading every second week. */
+    public const STUDY_EVERY_DAYS = 14;
 
     public const STUDY = 'Write a reader\'s guide (আলোচনা) in Bengali to ONE famous Bengali work, for students and readers who search for '
         .'its meaning: open with the scene, image or line readers remember; then, in flowing paragraphs (each may begin with a short label such as '
@@ -78,8 +84,9 @@ final class CalendarDesk
                 break;
             }
         }
-        $week = $now->format('o-W');
-        if (! $job && Setting::get('calendar.study.week') !== $week) {
+        $week = $now->toDateString();
+        $last = Setting::get('calendar.study.week');
+        if (! $job && (! $last || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $last) || CarbonImmutable::parse($last, 'Asia/Kolkata')->addDays(self::STUDY_EVERY_DAYS - 1)->lessThanOrEqualTo($now))) {
             $i = (int) Setting::get('calendar.study.next', '0') % count(LiteraryCalendar::WORKS);
             [, $work, $writer] = LiteraryCalendar::WORKS[$i];
             $job = ['kind' => 'study', 'key' => 'calendar.study.week', 'value' => $week, 'next' => $i + 1, 'section' => 'phire-pora',
@@ -89,7 +96,7 @@ final class CalendarDesk
             return null;
         }
         Setting::put('calendar.tried', $today);
-        [$post, $err] = DeskWriter::draft($job['section'], $job['topic'], $job['style']);
+        [$post, $err] = DeskWriter::draft($job['section'], $job['topic'], $job['style'], (string) config('ai.anthropic.review_model'), 24000);
         if (! $post) {
             AuditLog::record('calendar.draft_failed', null, ['topic' => $job['topic'], 'error' => mb_substr((string) $err, 0, 200)]);
 
@@ -132,7 +139,7 @@ final class CalendarDesk
         }
         // 2. Copy check (the AI must not have reproduced someone else's text).
         if (empty($post->plagiarism['verdict'])) {
-            PlagiarismCheck::run($post);
+            PlagiarismCheck::run($post, self::COPY_SEARCHES);
             $post->refresh();
             if (empty($post->plagiarism['verdict'])) {
                 return false;   // not checked yet: next run

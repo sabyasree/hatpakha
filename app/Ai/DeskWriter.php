@@ -50,7 +50,7 @@ final class DeskWriter
     ];
 
     /** $style: D294's calendar and reading pieces bring their own brief instead of the section's. */
-    public static function draft(string $section, string $topic, ?string $style = null): array
+    public static function draft(string $section, string $topic, ?string $style = null, ?string $model = null, int $maxTokens = 48000): array
     {
         $sec = Section::where('slug', $section)->first();
         $desk = Author::where('slug', 'hatpakha-desk')->first();
@@ -78,7 +78,7 @@ final class DeskWriter
                 'paragraphs' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'facts_to_check' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'photo_ideas' => ['type' => 'array', 'items' => ['type' => 'string']],
-            ]], (string) config('ai.anthropic.writer_model'), 48000);   // thinking + Bengali prose; streamed
+            ]], $model ?? (string) config('ai.anthropic.writer_model'), $maxTokens);   // thinking + Bengali prose; streamed
         if (! is_array($d) || empty($d['paragraphs'])) {
             return [null, $err ?: 'খসড়া তৈরি হয়নি।'];
         }

@@ -115,6 +115,15 @@ class LiteraryCalendarTest extends TestCase
         $this->assertSame(CarbonImmutable::WEDNESDAY, $post->published_at->timezone('Asia/Kolkata')->dayOfWeek);
         $this->assertSame('1', \App\Models\Setting::get('calendar.study.next'));
 
+        // Owner ("reduce the cost"): the reading every second week, not every week.
+        \App\Models\Setting::put('calendar.tried', null);
+        CalendarDesk::run($now->addDays(7));
+        $this->assertSame(1, Post::count());
+        \App\Models\Setting::put('calendar.tried', null);
+        CalendarDesk::run($now->addDays(14));
+        $this->assertSame(2, Post::count());
+        $this->assertSame('2', \App\Models\Setting::get('calendar.study.next'));
+
         Handover::set('calendar', false);
         Post::query()->delete();
         \App\Models\Setting::put('calendar.tried', null);
