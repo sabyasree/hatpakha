@@ -36,6 +36,13 @@ final class CommentReplies
      */
     public const HOW_TO_SEND = 'ধন্যবাদ, আপনার লেখা পেলে আমাদের ভালো লাগবে 🙂 লেখা পাঠানো হয় শুধু ওয়েবসাইটের ফর্ম দিয়ে, ই-মেল বা মেসেঞ্জারে নয়। hatpakha.com/submit/ খুলে ই-মেল দিয়ে একটা অ্যাকাউন্ট করুন, তারপর ফর্মে লেখাটা বসিয়ে পাঠিয়ে দিন। পাঠানোর পর লেখাটা কোন অবস্থায় আছে, নিজের অ্যাকাউন্টেই দেখতে পাবেন। নিয়মগুলো এখানে: hatpakha.com/submissions/';
 
+    /**
+     * Owner (2026-11-25: "yes, add it as auto answer"): the one answer to "my piece is published, how do I put it on
+     * Facebook". Posted as it stands, never reworded by the AI. It also says how to share the certificate and how to tag
+     * the page (a website cannot tag the page for anyone; only the person can).
+     */
+    public const HOW_TO_SHARE = 'অভিনন্দন! 🙂 hatpakha.com-এ আপনার লেখাটি খুলে একেবারে শেষে "ফেসবুকে শেয়ার" টিপুন, লেখার ছবি আর নাম নিজে থেকেই বসে যাবে। ফোনে লেখার নামের নিচের শেয়ার চিহ্ন টিপে Facebook বেছে নিলেও হবে। শংসাপত্র দিতে চাইলে নিজের অ্যাকাউন্টে "সার্টিফিকেট" খুলে "ফেসবুকে দিন" টিপুন। পোস্টে @হাতপাখা লিখে আমাদের পেজটি বেছে নিলে আমরাও দেখতে পাব।';
+
     public const STATUSES = ['new' => 'নতুন', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'উত্তর লাগে না', 'flagged' => 'আপনি দেখুন', 'failed' => 'উত্তর যায়নি', 'deleted' => 'উত্তর মুছে ফেলা হয়েছে'];
 
     public static function auto(): bool
@@ -165,7 +172,7 @@ final class CommentReplies
             "<facts>\n".e(self::facts())."\n</facts>\n<comments>\n".e(json_encode($items, JSON_UNESCAPED_UNICODE))."\n</comments>",
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['answers'], 'properties' => ['answers' => ['type' => 'array', 'items' => [
                 'type' => 'object', 'additionalProperties' => false, 'required' => ['id', 'action', 'reply', 'reason'],
-                'properties' => ['id' => ['type' => 'integer'], 'action' => ['type' => 'string', 'enum' => ['reply', 'send', 'skip', 'flag']], 'reply' => ['type' => 'string'], 'reason' => ['type' => 'string']]]]]],
+                'properties' => ['id' => ['type' => 'integer'], 'action' => ['type' => 'string', 'enum' => ['reply', 'send', 'share', 'skip', 'flag']], 'reply' => ['type' => 'string'], 'reason' => ['type' => 'string']]]]]],
             config('ai.anthropic.review_model'), 3000);
         if (! $d) {
             return 0;   // the AI is resting: the comments wait
@@ -175,8 +182,8 @@ final class CommentReplies
         $sent = 0;
         foreach ($batch as $c) {
             $a = $byId[$c->id] ?? null;
-            $fixed = ($a['action'] ?? '') === 'send';
-            $reply = $fixed ? self::HOW_TO_SEND : trim((string) ($a['reply'] ?? ''));
+            $fixed = in_array($a['action'] ?? '', ['send', 'share'], true);
+            $reply = $fixed ? (($a['action'] ?? '') === 'share' ? self::HOW_TO_SHARE : self::HOW_TO_SEND) : trim((string) ($a['reply'] ?? ''));
             $reason = mb_substr(trim((string) ($a['reason'] ?? '')), 0, 190) ?: null;
             if (! $a || $a['action'] === 'flag') {
                 $c->forceFill(['status' => 'flagged', 'reason' => $reason])->save();
@@ -241,6 +248,7 @@ final class CommentReplies
         .'For each comment decide one action: '
         ."\n- \"reply\": the comment is a kind word, a reader's own memory or thought, an answer to the question our post asked, or a simple question that the facts given can answer. "
         ."\n- \"send\": the comment only asks how or where to send writing, or says the person wants to send writing (\"লেখা কীভাবে পাঠাব\", \"আমি লেখা পাঠাতে চাই\"). The site then posts its own fixed answer; leave `reply` empty. If the same comment also asks anything else (what kinds are taken, payment, deadlines, a word limit, their own piece), it is not \"send\": flag it. "
+        ."\n- \"share\": the comment only asks how to put their published piece or their certificate on Facebook, or how to share it (\"লেখা ফেসবুকে কীভাবে দেব\", \"শেয়ার করব কীভাবে\", \"সার্টিফিকেট পোস্ট করব কীভাবে\"). The site then posts its own fixed answer; leave `reply` empty. If it also asks anything else, flag it. "
         ."\n- \"skip\": spam, an advert, a link, only names or tags, greetings with nothing to answer (\"nice\", \"ভালো\" alone may get a short thanks: your choice), or a comment not meant for us. "
         ."\n- \"flag\": a complaint, anger, abuse, sarcasm you cannot read surely, anything about politics, religion, caste or a named person, a question the facts cannot answer, a request about one's own submission or account, any question that needs more than one plain fact to answer (two questions in one comment, \"why\", \"how much\", \"when will\", anything about money, rules or decisions), or anything you are not sure about. The editor answers those himself. When in doubt, flag. Never mention money, fees or that something is free. "
         ."\n\nA reply: one or two short sentences in everyday Bengali (চলিত), as a warm, well-read person at the magazine would write to a reader. Answer what THIS person said: pick up their own word or memory; never a stock thank-you that could go under any comment. "
