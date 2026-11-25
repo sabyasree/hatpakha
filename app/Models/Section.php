@@ -17,6 +17,31 @@ class Section extends Model
     /** D101: the children's section. */
     public const KIDS = 'chhotoder';
 
+    /**
+     * What people type into Google for a section (2026-11-25: "কবিতা | হাতপাখা" matched nobody's search):
+     * slug => [page title, description used when the section has no introduction of its own].
+     */
+    public const SEARCH = [
+        'poetry' => ['বাংলা কবিতা: নতুন ও চেনা কবিদের কবিতা', 'হাতপাখার বাংলা কবিতা: ২০১২ থেকে নতুন ও চেনা কবিদের কবিতা, এক জায়গায়। পড়ুন, আর নিজের কবিতা পাঠান বিনামূল্যে।'],
+        'short-stories' => ['বাংলা ছোটগল্প: নতুন লেখকদের গল্প', 'হাতপাখার বাংলা ছোটগল্প: ২০১২ থেকে নতুন ও চেনা লেখকদের গল্প, এক জায়গায়। পড়ুন, আর নিজের গল্প পাঠান বিনামূল্যে।'],
+        'literature' => ['বাংলা প্রবন্ধ ও নিবন্ধ', 'হাতপাখার বাংলা প্রবন্ধ: সাহিত্য, সমাজ আর মানুষ নিয়ে লেখা, ২০১২ থেকে। পড়ুন, আর নিজের প্রবন্ধ পাঠান বিনামূল্যে।'],
+        'travel' => ['বাংলা ভ্রমণকাহিনি ও ভ্রমণকথা', 'হাতপাখার বাংলা ভ্রমণকাহিনি: লেখকদের নিজের চোখে দেখা পাহাড়, সমুদ্র, শহর আর গ্রাম। পড়ুন, আর নিজের ভ্রমণের গল্প পাঠান।'],
+        'translated' => ['অনুবাদ সাহিত্য: বাংলায় অনুবাদ', 'হাতপাখার অনুবাদ: নানা ভাষার কবিতা, গল্প আর প্রবন্ধ, বাংলায়। পড়ুন, আর নিজের অনুবাদ পাঠান বিনামূল্যে।'],
+        'anugolpo' => ['বাংলা অণুগল্প', null],
+        'english' => ['English poems, stories and essays', 'Poems, stories and essays in English from Hatpakha (হাতপাখা), an online Bengali literary magazine. ISSN 2321-3035.'],
+    ];
+
+    /** The page title for Google (without " | হাতপাখা"). */
+    public function searchTitle(): string
+    {
+        return self::SEARCH[$this->slug][0] ?? $this->name_bn;
+    }
+
+    public function searchDescription(): string
+    {
+        return $this->about ?: (self::SEARCH[$this->slug][1] ?? "হাতপাখার {$this->name_bn} — সব লেখা।");
+    }
+
     public function posts(): HasMany { return $this->hasMany(Post::class); }
 
     public function url(): string { return \App\Support\Url::to('/category/'.rawurlencode($this->slug)); }

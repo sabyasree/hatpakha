@@ -73,6 +73,13 @@ class LegacyController extends Controller
     }
 
     /** Looks the path up in the redirects table (docs/SEO.md §1); otherwise 404. */
+    /** Common addresses with no page of their own → the page they mean. */
+    public const ALIASES = [
+        '/about/' => '/about-hatpakha/',
+        '/about-us/' => '/about-hatpakha/',
+        '/contact/' => '/contact-us/',
+    ];
+
     public function fallback(Request $request)
     {
         $path = '/'.trim(Slug::normalize($request->getPathInfo()), '/').'/';
@@ -84,6 +91,10 @@ class LegacyController extends Controller
             }
 
             return redirect(Url::to($hit->to_path), $hit->status_code);
+        }
+        // Short names people type or other sites link to (2026-11-25: /about/ went to a poem that links to /about-hatpakha/).
+        if (isset(self::ALIASES[$path])) {
+            return redirect(Url::to(self::ALIASES[$path]), 301);
         }
         // Old WordPress image pages ("/img_20190731_092351_057/", "/images-4-2/"): the piece that shows that picture.
         if ($post = self::pieceWithPicture($path)) {
@@ -110,10 +121,16 @@ class LegacyController extends Controller
                     continue;
                 }
                 $like = fn (string $tail) => '%/'.$name.$tail.'%';   // the name is letters, digits, _ and - only; an _ matching any one letter is harmless
-                $hit = Post::published()->where(fn ($q) => $q->where('featured_image_path', 'like', $like('.'))->orWhere('featured_image_path', 'like', $like('-'))
-                    ->orWhere('body_html', 'like', $like('.'))->orWhere('body_html', 'like', $like('-')))->orderBy('published_at')->value('id');
-                if ($hit) {
-                    return $hit;
+                // The database finds candidates; only a real picture file of that name counts ("name.jpg" or WordPress's
+                // "name-1024x768.jpg"), never a link like "/about-hatpakha/" (2026-11-25: /about/ went to a poem).
+                $file = '~/'.preg_quote($name, '~').'(?:-\d+x\d+)?\.(?:jpe?g|png|gif|webp|avif)~i';
+                $hits = Post::published()->where(fn ($q) => $q->where('featured_image_path', 'like', $like('.'))->orWhere('featured_image_path', 'like', $like('-'))
+                    ->orWhere('body_html', 'like', $like('.'))->orWhere('body_html', 'like', $like('-')))->orderBy('published_at')
+                    ->limit(20)->get(['id', 'featured_image_path', 'body_html']);
+                foreach ($hits as $hit) {
+                    if (preg_match($file, '/'.$hit->featured_image_path) || preg_match($file, (string) $hit->body_html)) {
+                        return $hit->id;
+                    }
                 }
             }
 

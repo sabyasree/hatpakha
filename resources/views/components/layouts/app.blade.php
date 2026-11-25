@@ -136,6 +136,7 @@
             <div>
                 <div class="font-hand text-6xl leading-none text-sky md:text-8xl">আবার আসবেন</div>
                 <p class="mt-3 text-base text-peach-light">ISSN 2321-3035 · ২০১২ থেকে · লেখা প্রকাশ সবসময় বিনামূল্যে</p>
+                <p lang="en" class="mt-1 text-sm text-peach-light">Hatpakha: an online Bengali literary magazine</p>
             </div>
             @if (! auth()->check() && ! request()->attributes->get('hp.newsletter.card'))<x-newsletter-signup variant="footer" />@endif
         </div>

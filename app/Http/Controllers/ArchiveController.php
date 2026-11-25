@@ -29,9 +29,9 @@ class ArchiveController extends Controller
             ->latest('published_at')->paginate(24)->withQueryString();
 
         // D96: an empty new section still has a page: its introduction and an invitation to write (kept out of Google until it has a piece).
-        return $this->list($request, $section->name_bn, $section->about ?: "হাতপাখার {$section->name_bn} — সব লেখা।", $posts, [
+        return $this->list($request, $section->name_bn, $section->searchDescription(), $posts, [
             JsonLd::breadcrumbs([['হাতপাখা', url('/').'/'], [$section->name_bn, $section->url()]]),
-        ], noindex: $posts->total() === 0 || $age, kicker: 'বিভাগ', section: $section, age: $age);
+        ], noindex: $posts->total() === 0 || $age, kicker: 'বিভাগ', section: $section, age: $age, seoTitle: $section->searchTitle());
     }
 
     public function tag(Request $request, string $slug)
@@ -263,10 +263,10 @@ class ArchiveController extends Controller
         return view('issue', compact('issue', 'posts', 'seo'));
     }
 
-    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null, ?string $age = null)
+    private function list(Request $request, string $title, string $description, $posts, array $jsonLd, bool $noindex = false, string $kicker = '', ?Section $section = null, ?string $age = null, ?string $seoTitle = null)
     {
         $seo = new Seo(
-            title: $title.($posts->currentPage() > 1 ? " — পাতা {$posts->currentPage()}" : ''),
+            title: ($seoTitle ?? $title).($posts->currentPage() > 1 ? " — পাতা {$posts->currentPage()}" : ''),
             description: $description,
             canonical: $age ? $section?->url() : ($posts->currentPage() > 1 ? $request->fullUrl() : null),
             noindex: $noindex || $posts->currentPage() > 1,

@@ -388,3 +388,13 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Owner report (2026-11-12): issue page cover read as a broken red line and the button shadow looked broken: cover redesigned (cream edge, fan in its corner, name on a navy panel), clean পত্রিকা খুলুন + সূচি দেখুন; the magazine crashed phone browsers on long issues: only the leaves around the open page are drawn (427-page test issue: 2–4 drawn), pictures load lazily, "পাতা সাজানো হচ্ছে…" while laying out
  → turn on "Add visitor location headers" (for city names in the desk health report)
 - [ ] Listen with an AI voice: not now (owner, 2026-11-12: Bengali voices not good enough yet)
+
+## Search findability (D290), 2026-11-25 ✅
+- [x] Home title and description in Bengali and English; English line in the footer; section titles in search words; structured data (founding year, English names); `/about/` fixed (SearchFindabilityTest).
+- [ ] Owner: Search Console query report (Performance → Queries) for "Bengali magazine", "বাংলা অনলাইন পত্রিকা" etc., before and 4–8 weeks after.
+- [ ] Owner: Wikidata entry with ISSN 2321-3035; writers' bio links; press for নতুন কলম ১০; Kavya Kishor list. (w3newspapers already lists Hatpakha.)
+
+## বইমেলার অনলাইন স্টল: on hold (owner, 2026-11-25: "will discuss later")
+- Mock-ups made: daytime illustrated walk (gate, lane, stall, map), dusk "more real" version, open fair with prices.
+- Owner so far: anyone can take a stall (writers, publishers, shops), prices and buy link shown, WhatsApp buying, runs by itself.
+- Open: the safeguards (phone check, AI hold for doubtful stalls, reports hide a stall), a legal check of India's marketplace rules, daytime or dusk look.
