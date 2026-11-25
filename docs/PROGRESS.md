@@ -222,6 +222,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] D276: the serial box works on paper (words, address, QR code on the print page)
 - [x] D275: a serial in an issue carries its month of episodes and ends with “চলবে… সব পর্ব” (magazine, e-book, issue page)
 - [x] D274: an empty editorial (ফিরে আসা) can be written by the AI from the owner's words
+- [x] D289: home shelves change per visit (pool in the page, order in the browser), "নতুন করে দেখান ↻"; serials fixed
 - [x] D288: one home page for everyone; compact phone top; "আরও আজকের লেখা" grid
 - [x] D283–D286: research items built (all of A and C; from B: declined letter, reply-time figure, opened step, লেখার ডাক, নতুন কলম, portfolio); reply time 2–3 weeks; passwords ≥8
 - [ ] Owner: write the editor's wish list (desk → প্রতিযোগিতা → সম্পাদক যা খুঁজছেন); check pages you edited in /desk for the old reply time; confirm the shelf addresses /tak/panch-minute/ and /tak/mon-chhuyeche/ and leaving poems out of the 5-minute shelf

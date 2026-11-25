@@ -61,7 +61,7 @@ class HomeController extends Controller
                 'letters' => Comment::where('status', 'approved')->where('feature_opt_out', false)
                     ->latest()->limit(200)->get(['id', 'body'])
                     ->filter(fn ($c) => mb_strlen($c->body) >= 40 && mb_strlen($c->body) <= 260 && preg_match('/[\x{0985}-\x{09B9}]/u', $c->body))
-                    ->take(4)->pluck('id')->all(),
+                    ->take(12)->pluck('id')->all(),   // D289: a pool of 12, four shown, chosen per visit
                 'counts' => [
                     'years' => now()->year - 2012,
                     'writers' => Author::where('published_count', '>', 0)->count(),
@@ -102,7 +102,7 @@ class HomeController extends Controller
             'milestones' => \App\Support\Milestones::forHome(),
             // D97: the collection in season (else the newest)
             'collection' => $col = \App\Models\Collection::featured(),
-            'collectionPosts' => $col ? $col->posts()->take(3) : collect(),
+            'collectionPosts' => $col ? $col->posts()->take(9) : collect(),   // D289: three shown, chosen per visit
             'isPick' => (bool) $pickPost,
             // D108: running serials, the one with the newest episode first
             'serials' => \App\Models\Serial::live()->limit(3)->get(),

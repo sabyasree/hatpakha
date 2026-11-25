@@ -287,14 +287,42 @@
                 return;
             }
             const seen = new Set(read);
-            document.querySelectorAll('[data-rotate]').forEach((box) => {
+            // D289 (owner, UX review): the home shelves change per visit, not per load. The page holds a pool (the same for
+            // every guest, so it can be cached); this browser picks the order with a seed kept for the visit (sessionStorage),
+            // so going back shows the same order. A fresh piece in the first place stays there (data-pin). Read pieces last.
+            // "নতুন করে দেখান ↻" moves that shelf on to a new order for the rest of the visit.
+            const ss = { get: (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} } };
+            let seed = ss.get('hp.homeSeed');
+            if (!seed) { seed = String(Math.floor(Math.random() * 1e9)); ss.set('hp.homeSeed', seed); }
+            const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+            const rng = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+            const arrange = (box) => {
                 const max = parseInt(box.dataset.rotate, 10) || 4;
                 const items = [...box.querySelectorAll(':scope > [data-pid]')];
-                const order = [...items.filter((el) => !seen.has(el.dataset.pid)), ...items.filter((el) => seen.has(el.dataset.pid))];
+                items.sort((x, y) => (+x.dataset.pos || 0) - (+y.dataset.pos || 0));
+                const pin = parseInt(box.dataset.pin || '0', 10);
+                const shelf = box.dataset.shelf || '';
+                const rand = rng(hash(seed + '|' + shelf + '|' + (ss.get('hp.shuf.' + shelf) || '0')));
+                const rest = items.slice(pin);
+                for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+                let order = [...items.slice(0, pin), ...rest];
+                if (!box.hasAttribute('data-no-read')) order = [...order.filter((el) => !seen.has(el.dataset.pid)), ...order.filter((el) => seen.has(el.dataset.pid))];
                 const skip = box.hasAttribute('data-skip-first') ? 1 : 0;
                 items.forEach((el) => { el.hidden = true; el.removeAttribute('data-first'); });
                 order.slice(skip, skip + max).forEach((el, i) => { el.hidden = false; if (i === 0) el.setAttribute('data-first', ''); });
                 order.forEach((el) => box.appendChild(el));
+            };
+            document.querySelectorAll('[data-rotate]').forEach((box) => {
+                [...box.querySelectorAll(':scope > [data-pid]')].forEach((el, i) => { el.dataset.pos = String(i); });
+                // the phone list under the stories' taped card follows the cards' order (the same seed and shelf)
+                arrange(box);
+            });
+            document.addEventListener('click', (e) => {
+                const b = e.target.closest('[data-reshuffle]');
+                if (!b) return;
+                const shelf = b.dataset.reshuffle;
+                ss.set('hp.shuf.' + shelf, String((parseInt(ss.get('hp.shuf.' + shelf) || '0', 10) || 0) + 1));
+                document.querySelectorAll('[data-rotate][data-shelf="' + shelf + '"]').forEach(arrange);
             });
         })();
     </script>
