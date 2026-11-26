@@ -53,7 +53,8 @@ class JanunController extends Controller
     public function section(string $section)
     {
         $pages = self::live()[$section] ?? collect();
-        abort_if($pages->isEmpty(), 404);
+        // the puja part opens as soon as the times page does (that page links here), even before its first guide is live
+        abort_if($pages->isEmpty() && ! ($section === 'puja' && FestivalPlan::pageLive()), 404);
         [$name, $kicker, $intro] = JanunPlan::SECTIONS[$section];
         $seo = new Seo(title: $name.': '.$kicker, description: JanunPlan::clip($intro),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], [$name, Url::to('/janun/'.$section)]])]);

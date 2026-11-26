@@ -439,3 +439,6 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Today, month and year pages for both Bengals; Bangladesh by arithmetic, West Bengal calculated and checked against two published calendars; home-page line, /janun/ card, footer, sitemap (BanglaCalendarTest).
 - [ ] After deploy: within a few hours the desk checks 1433 and 1434; watch the audit log (calendar.checked). Months that stay held show the "being checked" note.
 - [ ] Later, if the calendar draws visitors: the tithi of the day (checked the same way).
+
+## First round of জেনে রাখুন at once, 2026-11-26
+- [x] `php artisan hatpakha:janun-run --pages=3`: the West Bengal months, every festival's times, and the first three pages drafted, checked and given their dates, in one go (same checks; nothing goes live early). The deploy runs it when the release PR's title has the run-janun tag in square brackets (JanunRunTest). Festival searches skip the current year from November.

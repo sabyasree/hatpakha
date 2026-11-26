@@ -103,7 +103,8 @@ class FestivalTimesTest extends TestCase
         foreach (range(1, 70) as $h) {
             FestivalDesk::run($now->addHours($h));
         }
-        $this->assertSame(3, (int) \App\Models\Setting::get('festival.tries.saraswati.2026'));
+        $this->assertSame(3, (int) \App\Models\Setting::get('festival.tries.saraswati.2027'), 'in November only next year\'s festivals');
+        $this->assertNull(\App\Models\Setting::get('festival.tries.saraswati.2026'));
         $this->assertFalse(FestivalDesk::run($now->addHours(200)), 'everything tried three times');
     }
 
@@ -127,6 +128,10 @@ class FestivalTimesTest extends TestCase
         $this->assertStringContainsString('js/hp-tz.js', $html);
         $this->assertSame(1, substr_count($html, 'js/hp-tz.js'));
         $this->assertStringContainsString('/janun/puja/pujor-somoy/', $this->get('/sitemap-pages.xml')->getContent());
+        // the times page links to the puja part: it opens before its first guide is live (owner, 2026-11-26)
+        $this->get('/janun/puja/')->assertOk()->assertSee('শিগগির আসছে')->assertSee('/janun/puja/pujor-somoy/', false);
+        $this->assertStringContainsString('/janun/puja/</loc>', $this->get('/sitemap-pages.xml')->getContent());
+        $this->get('/janun/pathshala/')->assertNotFound();
         // the past is not shown, but the page stays (an indexed address is not taken away between years)
         Carbon::setTestNow('2027-03-20 09:00:00');
         $this->get('/janun/puja/pujor-somoy/')->assertOk()->assertDontSee('পঞ্চমী তিথি')->assertSee('শিগগির এখানে দেওয়া হবে');
