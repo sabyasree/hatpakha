@@ -171,4 +171,28 @@ class CertificateTest extends TestCase
         $this->actingAs($writer)->get($c->verifyUrl().'?share=1')->assertOk()->assertSee('শংসাপত্রটি ফেসবুকে দিন')->assertSee('@Hatpakha');
         $this->actingAs($writer)->get('/account/')->assertSee('শংসাপত্র ও ফেসবুকে দিন');
     }
+
+    /** 2026-11-26: on a computer Facebook posts only a link, so the link's preview is the certificate itself, sent by its writer. */
+    public function test_the_writer_sends_the_certificate_picture_once_and_it_becomes_the_facebook_preview(): void
+    {
+        $writer = User::factory()->create(['email_verified_at' => now()]);
+        $author = Author::create(['user_id' => $writer->id, 'display_name' => 'মেঘলা দাস', 'slug' => 'meghla']);
+        $post = $this->makePost(['status' => 'published', 'slug' => 'sondhya', 'title' => 'সন্ধ্যার নদী', 'published_at' => now()->subDay()], $author);
+        $c = Certificate::issueFor($post)[0];
+        $img = imagecreatetruecolor(1600, 1131);
+        ob_start(); imagepng($img); $png = 'data:image/png;base64,'.base64_encode((string) ob_get_clean());
+        $url = '/certificate/'.$c->code.'/picture';
+        @unlink(public_path(\App\Http\Controllers\CertificateController::picturePath($c)));
+
+        $this->actingAs($writer)->get($c->verifyUrl())->assertSee('data-pic-url', false)->assertSee('sharer.php?u=', false);
+        $this->actingAs(User::factory()->create())->postJson($url, ['png' => $png])->assertForbidden();
+        $this->actingAs($writer)->postJson($url, ['png' => 'data:image/png;base64,'.base64_encode('not a picture')])->assertStatus(422);
+        $this->actingAs($writer)->postJson($url, ['png' => $png])->assertOk();
+
+        $html = $this->get($c->verifyUrl())->getContent();
+        $this->assertStringContainsString('media/og/cert-'.$c->code.'.jpg', $html);
+        $this->assertSame([1200, 630], array_slice(getimagesize(public_path(\App\Http\Controllers\CertificateController::picturePath($c))), 0, 2));
+        $this->actingAs($writer)->get($c->verifyUrl())->assertDontSee('data-pic-url', false);   // sent once
+        @unlink(public_path(\App\Http\Controllers\CertificateController::picturePath($c)));
+    }
 }
