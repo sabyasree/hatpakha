@@ -147,7 +147,8 @@ final class JsonLd
             'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
         ]];
         if ($p->kind === 'poem' && filled($p->body['poet'] ?? '')) {   // D302: the poem itself, by its poet; our page carries the translation
-            $nodes[0]['about'] = ['@type' => 'CreativeWork', 'name' => trim(explode(':', $p->title)[0]), 'inLanguage' => 'bn', 'author' => ['@type' => 'Person', 'name' => (string) $p->body['poet']]];
+            $nodes[0]['about'] = ['@type' => 'CreativeWork', 'name' => trim(explode(':', $p->title)[0]), 'inLanguage' => 'bn', 'author' => ['@type' => 'Person', 'name' => (string) $p->body['poet']],
+                'workTranslation' => ['@type' => 'CreativeWork', 'inLanguage' => 'en', 'translator' => ['@id' => Url::to('/').'#org'], 'url' => $p->url()]];
         }
                 if ($p->kind === 'list') {
             $nodes[] = ['@type' => 'DefinedTermSet', 'name' => $p->title, 'url' => $p->url(),

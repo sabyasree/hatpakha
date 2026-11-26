@@ -2,7 +2,7 @@
     <section class="mx-auto max-w-[1000px] px-5 py-10">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', \App\Support\Url::to('/')], ['জেনে রাখুন', \App\Support\Url::to('/janun')], [$name, '']], 'kicker' => 'জেনে রাখুন', 'title' => $name])
         <p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed">{{ $intro }}</p>
-        @if ($section === 'puja' && \App\Support\FestivalPlan::upcoming()->pluck(0)->unique()->count() >= 2)
+        @if ($section === 'puja' && \App\Support\FestivalPlan::pageLive())
             {{-- D302 --}}
             <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">🕰️ পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
         @endif

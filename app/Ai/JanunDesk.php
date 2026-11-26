@@ -140,7 +140,7 @@ final class JanunDesk
         }
         $thin = match ($p->kind) {
             'list' => count((array) ($body['entries'] ?? [])) < self::MIN_LIST,
-            'poem' => empty($body['text_checked_on']) || blank($body['english'] ?? ''),
+            'poem' => empty($body['text_checked_on']) || blank($body['english'] ?? '') || empty($body['about']) || empty($body['words']),
             'guide' => collect((array) ($body['sections'] ?? []))->filter(fn ($s) => ! empty($s['paragraphs']) || ! empty($s['steps']) || ! empty($s['mantras']))->count() < 2,
             default => collect((array) ($body['sections'] ?? []))->filter(fn ($s) => ! empty($s['paragraphs']))->count() < 2,
         };

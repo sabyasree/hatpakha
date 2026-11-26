@@ -8,7 +8,8 @@
     let zone = guess;
     try { zone = localStorage.getItem(KEY) || guess; } catch (e) {}
     const all = (Intl.supportedValuesOf && Intl.supportedValuesOf('timeZone')) || [];
-    const part = (h) => (h >= 4 && h < 12) ? 'সকাল' : (h >= 12 && h < 16) ? 'দুপুর' : (h >= 16 && h < 18) ? 'বিকেল' : (h >= 18 && h < 20) ? 'সন্ধ্যা' : 'রাত';
+    // "বৃহস্পতিবার রাত ১২:৫০" reads as Thursday night (really Friday): after midnight says so (UX review)
+    const part = (h) => h < 4 ? 'মধ্যরাতের পর' : h < 6 ? 'ভোর' : h < 12 ? 'সকাল' : (h >= 12 && h < 16) ? 'দুপুর' : (h >= 16 && h < 18) ? 'বিকেল' : (h >= 18 && h < 20) ? 'সন্ধ্যা' : 'রাত';
     const valid = (z) => { try { new Intl.DateTimeFormat('en', { timeZone: z }); return true; } catch (e) { return false; } };
     if (!valid(zone)) zone = 'Asia/Kolkata';
 
@@ -22,11 +23,21 @@
         return `${get('day')} ${get('month')} ${get('year')}, ${get('weekday')}, ${part(h)} ${hm}`;
     };
 
+    const ymd = (iso, z) => new Intl.DateTimeFormat('en-CA', { timeZone: z, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+    const offset = (z) => { try { return (new Intl.DateTimeFormat('en-US', { timeZone: z, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((p) => p.type === 'timeZoneName') || {}).value || ''; } catch (e) { return ''; } };
+    const nice = (z) => `${z.split('/').pop().replace(/_/g, ' ')} · ${z.split('/')[0].replace(/_/g, ' ')} (${offset(z).replace('GMT', 'UTC') || 'UTC'})`;
+
     const fill = () => boxes.forEach((box) => {
         box.querySelectorAll('time[data-utc]').forEach((t) => { t.textContent = show(t.dataset.utc, zone); });
+        // a date abroad that is not Kolkata's date: say so under that festival (UX review)
+        box.querySelectorAll('[data-festival]').forEach((f) => {
+            const differs = zone !== 'Asia/Kolkata' && [...f.querySelectorAll('time[data-utc]')].some((t) => ymd(t.dataset.utc, zone) !== ymd(t.dataset.utc, 'Asia/Kolkata'));
+            const n = f.querySelector('[data-tz-differs]');
+            if (n) n.hidden = !differs;
+        });
         const sel = box.querySelector('[data-tz]');
         if (sel) {
-            if (![...sel.options].some((o) => o.value === zone)) sel.add(new Option(zone.replace(/_/g, ' '), zone), sel.options[0]);
+            if (![...sel.options].some((o) => o.value === zone)) sel.add(new Option(nice(zone), zone), sel.options[0]);
             sel.value = zone;
         }
         box.querySelectorAll('[data-tz-name]').forEach((n) => { n.textContent = (sel && sel.selectedOptions[0] ? sel.selectedOptions[0].text : zone); });
@@ -37,8 +48,16 @@
         if (!sel) return;
         const more = document.createElement('optgroup');
         more.label = 'সব দেশ ও শহর';
-        all.filter((z) => ![...sel.options].some((o) => o.value === z)).forEach((z) => more.appendChild(new Option(z.replace(/_/g, ' '), z)));
+        all.filter((z) => ![...sel.options].some((o) => o.value === z)).forEach((z) => more.appendChild(new Option(nice(z), z)));
         if (more.children.length) sel.appendChild(more);
+        box.querySelectorAll('[data-tz-js]').forEach((el) => { el.hidden = false; });
+        box.querySelectorAll('[data-tz-nojs]').forEach((el) => { el.hidden = true; });
+        const find = box.querySelector('[data-tz-find]');
+        find?.addEventListener('input', () => {
+            const q = find.value.trim().toLowerCase();
+            const hit = [...sel.querySelectorAll('option')].filter((o) => { const ok = !q || (o.text + ' ' + o.value.replace(/_/g, ' ')).toLowerCase().includes(q); o.hidden = !ok; return ok; });
+            if (q && hit.length) { sel.value = hit[0].value; sel.dispatchEvent(new Event('change')); }
+        });
         sel.addEventListener('change', () => {
             zone = sel.value;
             try { localStorage.setItem(KEY, zone); } catch (e) {}

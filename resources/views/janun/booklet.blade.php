@@ -12,7 +12,7 @@
         @page { size: A5; margin: 12mm 11mm 14mm; }
         body { background: #fff; color: #13212C; font-family: 'Noto Serif Bengali', serif; }
         .sheet { max-width: 148mm; margin: 0 auto; padding: 16px; }
-        .mantra, .steps li, figure { break-inside: avoid; }
+        .mantra, .steps li, figure { break-inside: avoid; } h2 { break-after: avoid; }
         @media print { .no-print { display: none !important; } .sheet { padding: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     </style>
 </head>

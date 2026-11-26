@@ -127,9 +127,21 @@ class FestivalTimesTest extends TestCase
         $this->assertStringContainsString('js/hp-tz.js', $html);
         $this->assertSame(1, substr_count($html, 'js/hp-tz.js'));
         $this->assertStringContainsString('/janun/puja/pujor-somoy/', $this->get('/sitemap-pages.xml')->getContent());
-        // the past is not shown
-        Carbon::setTestNow('2027-02-20 09:00:00');
-        $this->get('/janun/puja/pujor-somoy/')->assertNotFound();
+        // the past is not shown, but the page stays (an indexed address is not taken away between years)
+        Carbon::setTestNow('2027-03-20 09:00:00');
+        $this->get('/janun/puja/pujor-somoy/')->assertOk()->assertDontSee('পঞ্চমী তিথি')->assertSee('শিগগির এখানে দেওয়া হবে');
+    }
+
+    public function test_after_midnight_is_not_read_as_the_night_before(): void
+    {
+        // 08:50 UTC = 00:50 in Los Angeles: shown in India time here, the same rule in hp-tz.js
+        $this->assertSame('মধ্যরাতের পর', FestivalPlan::part(0));
+        $this->assertSame('ভোর', FestivalPlan::part(5));
+        $this->assertSame('সকাল', FestivalPlan::part(6));
+        $this->assertSame('রাত', FestivalPlan::part(23));
+        $this->assertStringContainsString('মধ্যরাতের পর ১২:৩০', FestivalPlan::show(CarbonImmutable::parse('2027-03-06 19:00', 'UTC')));
+        $js = file_get_contents(public_path('js/hp-tz.js'));
+        $this->assertStringContainsString("h < 4 ? 'মধ্যরাতের পর' : h < 6 ? 'ভোর'", $js);
     }
 
     public function test_the_puja_page_shows_its_times_and_the_booklet(): void

@@ -39,6 +39,12 @@ final class FestivalPlan
         'Europe/Berlin' => 'জার্মানি', 'Pacific/Auckland' => 'নিউজিল্যান্ড',
     ];
 
+    /** The times page exists once two festivals have ever had checked times (it then stays, with a "coming soon" note between years). */
+    public static function pageLive(): bool
+    {
+        return \App\Models\FestivalTime::where('status', 'verified')->distinct()->count('festival') >= 2;
+    }
+
     /**
      * The coming festivals with checked times, soonest first: list of [key, name, cycle, rows].
      *
@@ -66,7 +72,7 @@ final class FestivalPlan
     public static function part(int $hour): string
     {
         return match (true) {
-            $hour >= 4 && $hour < 12 => 'সকাল', $hour >= 12 && $hour < 16 => 'দুপুর', $hour >= 16 && $hour < 18 => 'বিকেল', $hour >= 18 && $hour < 20 => 'সন্ধ্যা', default => 'রাত',
+            $hour < 4 => 'মধ্যরাতের পর', $hour < 6 => 'ভোর', $hour < 12 => 'সকাল', $hour >= 12 && $hour < 16 => 'দুপুর', $hour >= 16 && $hour < 18 => 'বিকেল', $hour >= 18 && $hour < 20 => 'সন্ধ্যা', default => 'রাত',
         };
     }
 }
