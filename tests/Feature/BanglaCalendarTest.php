@@ -20,6 +20,8 @@ class BanglaCalendarTest extends TestCase
 
     private array $answer = [];
 
+    private array $published = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +30,9 @@ class BanglaCalendarTest extends TestCase
         JanunDesk::$resolve = fn ($host) => ['93.184.216.34'];
         Claude::$fake = fn ($purpose, $user) => $this->answer;
         BanglaDate::flush();
+        Http::preventStrayRequests();
+        $this->published = [];
+        Http::fake(['https://myastrology.in/*' => fn ($r) => isset($this->published[$r->url()]) ? Http::response($this->published[$r->url()]) : Http::response('', 404)]);
     }
 
     protected function tearDown(): void
@@ -196,5 +201,44 @@ class BanglaCalendarTest extends TestCase
         $this->answer = ['months' => array_map(fn ($i) => ['month' => BanglaDate::MONTHS[$i], 'first_day' => $claimed[$i]], range(0, 11)), 'sources' => [['url' => 'https://a.org/c']]];
         $this->assertSame(11, BanglaCalendarDesk::check(1433));
         $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 3])->value('status'), 'a day away from the calculation needs two pages');
+    }
+
+    public function test_months_are_checked_against_the_published_panjika_page(): void
+    {
+        BanglaCalendarDesk::seed(1433);
+        BanglaCalendarDesk::seed(1434);
+        $page = fn ($name, $d, $w) => '<h1>'.$name.' ১৪৩৩</h1><p>১ '.$name.' ১৪৩৩ বঙ্গাব্দ শুরু '.$w.' '.$d.' — মোট ৩০ দিন।</p>';
+        $this->published = [
+            'https://myastrology.in/bangla-calendar/agrahayan-1433' => $page('অগ্রহায়ণ', '১৭ নভেম্বর', 'মঙ্গলবার'),
+            'https://myastrology.in/bangla-calendar/shrabon-1433' => $page('শ্রাবণ', '১৮ জুলাই', 'শনিবার'),   // a day after our calculation (সংক্রান্তি 33 minutes before midnight)
+            'https://myastrology.in/bangla-calendar/poush-1433' => $page('পৌষ', '২৫ ডিসেম্বর', 'শুক্রবার'),   // far off: never taken
+        ];
+        $this->answer = ['months' => [], 'sources' => []];
+        $this->assertSame(2, BanglaCalendarDesk::check(1433));
+        $this->assertSame('verified', BanglaMonth::where(['year' => 1433, 'month' => 8])->value('status'));
+        $this->assertSame('2026-11-17', BanglaMonth::where(['year' => 1433, 'month' => 8])->first()->starts_on->toDateString());
+        $this->assertSame('2026-07-18', BanglaMonth::where(['year' => 1433, 'month' => 4])->first()->starts_on->toDateString(), 'the published day is kept');
+        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 9])->value('status'));
+
+        // a confirmed month is never checked again, whatever a later page or search says
+        $this->published = [];
+        BanglaCalendarDesk::check(1433);
+        $this->assertSame('verified', BanglaMonth::where(['year' => 1433, 'month' => 8])->value('status'));
+    }
+
+    public function test_festival_times_are_found_near_their_own_date_on_the_month_page(): void
+    {
+        // the real page's layout (2026-11-26): the date on one line, that day's times on the next, then the festival
+        $day = fn ($d, $txt, $fest = '') => '<div><div>২৭ মাঘ'.$d.'</div><div>বুধবার · '.$txt.'</div>'.($fest ? '<div>🪔 '.$fest.'</div>' : '').'</div>';
+        $this->published['https://myastrology.in/bangla-calendar/magh-1433'] = $day('৯ ফেব্রুয়ারি ২০২৭', 'শুক্লপক্ষ তৃতীয়া রাত ১১:৪০ পর্যন্ত')
+            .$day('১০ ফেব্রুয়ারি ২০২৭', 'শুক্লপক্ষ চতুর্থী রাত ৩:০৪ (পরদিন) পর্যন্ত, তারপর পঞ্চমী')
+            .$day('১১ ফেব্রুয়ারি ২০২৭', 'শুক্লপক্ষ পঞ্চমী রাত ৩:১৮ (পরদিন) পর্যন্ত, তারপর ষষ্ঠী', 'সরস্বতী পূজা')
+            .$day('১২ ফেব্রুয়ারি ২০২৭', 'শুক্লপক্ষ ষষ্ঠী রাত ১১:৪০ (পরদিন) পর্যন্ত');
+        $this->answer = ['events' => [['label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11', 'start' => '2027-02-11 03:04', 'end' => '2027-02-12 03:18']], 'sources' => []];
+        $this->assertSame(1, \App\Ai\FestivalDesk::find('saraswati', 2027));
+        // the same times claimed for another day: they do not stand near that day on the page
+        \App\Models\FestivalTime::query()->delete();
+        $this->answer = ['events' => [['label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11', 'start' => '2027-02-11 23:40', 'end' => '2027-02-12 23:40']], 'sources' => []];
+        $this->assertSame(0, \App\Ai\FestivalDesk::find('saraswati', 2027));
     }
 }
