@@ -4,7 +4,7 @@
         <p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed">{{ $intro }}</p>
         @if ($section === 'puja' && \App\Support\FestivalPlan::pageLive())
             {{-- D302 --}}
-            <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">🕰️ পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
+            <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
         @endif
         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
             @foreach ($pages as $pg)

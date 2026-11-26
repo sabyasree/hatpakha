@@ -10,13 +10,19 @@
         <section class="mt-5 rounded-2xl bg-navy p-5 text-white" aria-label="আজকের তারিখ">
             <p class="text-sm font-bold">আজ, {{ $B::WEEKDAYS[$d->dayOfWeek] }}</p>
             @if ($wb)
-                <p class="mt-1 font-display text-4xl font-extrabold leading-tight">{{ $B::text($wb) }}</p>
-                <p class="mt-1">পশ্চিমবঙ্গ@if ($wb !== $bd) · বাংলাদেশে {{ $B::text($bd) }}@else ও বাংলাদেশ@endif</p>
+                <div data-today="wb">
+                    <p class="mt-1 font-display text-4xl font-extrabold leading-tight">{{ $B::text($wb) }}</p>
+                    <p class="mt-1">পশ্চিমবঙ্গ@if ($wb !== $bd) · বাংলাদেশে {{ $B::text($bd) }}@else ও বাংলাদেশ@endif</p>
+                </div>
+                <div data-today="bd" hidden>
+                    <p class="mt-1 font-display text-4xl font-extrabold leading-tight">{{ $B::text($bd) }}</p>
+                    <p class="mt-1">বাংলাদেশ@if ($wb !== $bd) · পশ্চিমবঙ্গে {{ $B::text($wb) }}@else ও পশ্চিমবঙ্গ@endif</p>
+                </div>
             @else
                 <p class="mt-1 font-display text-4xl font-extrabold leading-tight">{{ $B::text($bd) }}</p>
                 <p class="mt-1">বাংলাদেশ (পশ্চিমবঙ্গের তারিখ মিলিয়ে দেখা হচ্ছে)</p>
             @endif
-            <p class="mt-2 text-sm">{{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }} · ঋতু: {{ $B::SEASONS[($wb ?? $bd)[1] - 1] }}</p>
+            <p class="mt-2 text-sm">{{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }} · ঋতু: {{ $B::SEASONS[($wb ?? $bd)[1] - 1] }} · দিন বদলায় ভারতীয় সময়ে</p>
         </section>
         @include('janun.calendar.grids', ['grids' => $grids, 'year' => $year, 'month' => $month])
         <x-ad-slot spot="list" :height="250" />

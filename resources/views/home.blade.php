@@ -20,7 +20,7 @@
     @if ($bnToday = rescue(fn () => \App\Http\Controllers\BanglaCalendarController::todayLine(), null, false))
     {{-- D303: today's Bengali date, a slim line under the poster --}}
     <a href="{{ \App\Support\BanglaDate::url() }}" class="block border-b-2 border-navy bg-peach-light">
-        <span class="mx-auto flex min-h-11 max-w-[1320px] items-center gap-2 px-5 text-sm font-bold"><span aria-hidden="true">📅</span> {{ $bnToday }} <span class="ml-auto whitespace-nowrap text-sky-night underline">বাংলা ক্যালেন্ডার →</span></span>
+        <span class="mx-auto flex min-h-11 max-w-[1320px] items-center gap-2 px-5 text-sm font-bold"><svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 flex-none" fill="none" stroke="#13212C" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> {{ $bnToday[0] }} <span class="hidden font-semibold sm:inline">{{ $bnToday[1] }}</span> <span class="ml-auto whitespace-nowrap text-sky-night underline">ক্যালেন্ডার →</span></span>
     </a>
     @endif
 
