@@ -8,12 +8,13 @@
         @foreach (\App\Support\FestivalPlan::ZONES as $z => $label)<option value="{{ $z }}">{{ $label }}</option>@endforeach
     </select>
     <input type="search" data-tz-find data-tz-js hidden aria-label="শহর বা দেশের নাম (ইংরেজিতে) লিখে খুঁজুন" placeholder="শহর খুঁজুন (ইংরেজিতে), যেমন Chicago, London, Tokyo" class="mt-2 block min-h-11 w-full rounded-xl border-2 border-rule bg-white px-3 text-base print:hidden">
+    <p data-tz-none hidden class="mt-1 text-sm font-bold text-red">মেলেনি; শহরের নাম ইংরেজিতে লিখুন (যেমন London)।</p>
     <p class="mt-1 text-sm text-ink2">সময় দেখানো হচ্ছে: <b data-tz-name aria-live="polite">ভারত</b></p>
     @if ($festivals->isEmpty())<p class="mt-4 rounded-xl bg-white p-3">এ বছরের পুজোর সময় মিলিয়ে দেখা হচ্ছে; শিগগির এখানে দেওয়া হবে।</p>@endif
     @foreach ($festivals as [$key, $name, $cycle, $rows])
         <div data-festival class="mt-4 rounded-xl bg-white p-3">
             <h3 class="font-display text-lg font-extrabold">
-                @if ($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null)<a href="{{ $pg->url() }}" class="underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
+                @if ($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null)<a href="{{ $pg->url() }}" class="inline-flex min-h-11 items-center underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
             </h3>
             <dl class="mt-2 space-y-3">
                 @foreach ($rows as $t)
@@ -33,5 +34,5 @@
     <p class="mt-3 text-sm text-ink2">সময়: বিশুদ্ধ সিদ্ধান্ত পঞ্জিকা (কলকাতা), প্রকাশিত সূত্রে মিলিয়ে, আপনার দেশের ঘড়িতে বদলে দেখানো। তিথি একই মুহূর্তে সারা পৃথিবীতে শুরু হয়, তাই কোনো দেশে তারিখ এক দিন আগে-পরে পড়তে পারে। বিদেশের অনেক পুজো কমিটি সপ্তাহান্তে পুজো করেন; নিজের এলাকার সময় তাঁদের কাছে জেনে নিন।</p>
 </section>
 @once
-    <script src="{{ asset('js/hp-tz.js') }}?v=3" defer></script>
+    <script src="{{ asset('js/hp-tz.js') }}?v=4" defer></script>
 @endonce

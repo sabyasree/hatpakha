@@ -140,7 +140,7 @@ class BanglaCalendarTest extends TestCase
     {
         $this->checkAll();
         cache()->flush();
-        $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩')->assertSee('(বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩)')->assertSee(BanglaDate::url(), false);
+        $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩ (পশ্চিমবঙ্গ)')->assertSee('· বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩')->assertSee(BanglaDate::url(), false);
         $this->get('/janun/')->assertOk()->assertSee('বাংলা ক্যালেন্ডার');
     }
 
@@ -165,7 +165,9 @@ class BanglaCalendarTest extends TestCase
         preg_match('/data-cal-panel="wb".*?<h2[^>]*>([^<]+)/s', $html, $wb);
         $this->assertStringContainsString('ভাদ্র ১৪৩৩', $bd[1]);
         $this->assertStringContainsString('শ্রাবণ ১৪৩৩', $wb[1]);
-        $this->assertSame(2, substr_count($html, 'aria-current="date"'), 'today marked in both grids');
+        $this->assertSame(2, preg_match_all('/role="cell"\s+aria-current="date"/', $html), 'today marked in both grids');
+        $this->assertStringContainsString('data-cal-day', $html, 'days can be tapped (owner, 2026-11-27)');
+        $this->assertStringContainsString('data-detail="রবিবার, ১৬ আগস্ট ২০২৬ · পশ্চিমবঙ্গে', $html, 'a Bangladesh day says the West Bengal date');
     }
 
     public function test_month_descriptions_carry_the_month_s_own_facts(): void

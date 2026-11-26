@@ -7,6 +7,9 @@
     const guess = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
     let zone = guess;
     try { zone = localStorage.getItem(KEY) || guess; } catch (e) {}
+    // browsers still report some old names (Chromium: Asia/Calcutta) (UX review)
+    const ALIAS = { 'Asia/Calcutta': 'Asia/Kolkata', 'Asia/Dacca': 'Asia/Dhaka', 'Asia/Katmandu': 'Asia/Kathmandu', 'Asia/Rangoon': 'Asia/Yangon' };
+    zone = ALIAS[zone] || zone;
     const all = (Intl.supportedValuesOf && Intl.supportedValuesOf('timeZone')) || [];
     // "বৃহস্পতিবার রাত ১২:৫০" reads as Thursday night (really Friday): after midnight says so (UX review)
     const part = (h) => h < 4 ? 'মধ্যরাতের পর' : h < 6 ? 'ভোর' : h < 12 ? 'সকাল' : (h >= 12 && h < 16) ? 'দুপুর' : (h >= 16 && h < 18) ? 'বিকেল' : (h >= 18 && h < 20) ? 'সন্ধ্যা' : 'রাত';
@@ -54,9 +57,14 @@
         box.querySelectorAll('[data-tz-nojs]').forEach((el) => { el.hidden = true; });
         const find = box.querySelector('[data-tz-find]');
         find?.addEventListener('input', () => {
+            // English city or country names only, two letters at least; no match keeps the zone and says so (UX review)
             const q = find.value.trim().toLowerCase();
-            const hit = [...sel.querySelectorAll('option')].filter((o) => { const ok = !q || (o.text + ' ' + o.value.replace(/_/g, ' ')).toLowerCase().includes(q); o.hidden = !ok; return ok; });
-            if (q && hit.length) { sel.value = hit[0].value; sel.dispatchEvent(new Event('change')); }
+            const msg = box.querySelector('[data-tz-none]');
+            const opts = [...sel.querySelectorAll('option')];
+            const hit = q.length < 2 ? opts : opts.filter((o) => o.value.replace(/_/g, ' ').toLowerCase().includes(q));
+            opts.forEach((o) => { o.hidden = q.length >= 2 && !hit.includes(o); });
+            if (msg) msg.hidden = !(q.length >= 2 && !hit.length);
+            if (q.length >= 2 && hit.length && sel.value !== hit[0].value) { sel.value = hit[0].value; sel.dispatchEvent(new Event('change')); }
         });
         sel.addEventListener('change', () => {
             zone = sel.value;

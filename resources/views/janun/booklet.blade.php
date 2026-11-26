@@ -21,8 +21,8 @@
         <div class="rounded-2xl border-2 border-sky-deep bg-sky-tint p-4 font-sans">
             <p class="font-bold">বিনামূল্যে ছাপুন, বিলি করুন: বাড়ির পুজোয়, পাড়ার বা বিদেশের পুজো কমিটিতে।</p>
             <p class="mt-1 text-sm">ফোনে বা কম্পিউটারে "ছাপুন / PDF হিসেবে রাখুন" টিপুন। কাগজের মাপ A5 (বা A4-এ দুই পাতা এক শিটে)।</p>
-            <button type="button" data-print class="mt-3 min-h-11 rounded-full bg-red px-5 font-bold text-white">ছাপুন / PDF হিসেবে রাখুন</button>
-            <a href="{{ $p->url() }}" class="ml-3 underline">← পাতায় ফিরুন</a>
+            <button type="button" data-print hidden class="mt-3 min-h-11 rounded-full bg-red px-5 font-bold text-white">ছাপুন / PDF হিসেবে রাখুন</button>
+            <a href="{{ $p->url() }}" class="ml-3 inline-flex min-h-11 items-center whitespace-nowrap underline">← পাতায় ফিরুন</a>
         </div>
     </div>
     <main class="sheet">
@@ -51,11 +51,11 @@
             @if ($qr)<img src="{{ $qr }}" alt="" width="96" height="96" class="h-24 w-24 flex-none">@endif
             <figcaption class="text-sm leading-relaxed">
                 <b class="font-display text-red">হাতপাখা</b>: বাংলা সাহিত্যের ওয়েব পত্রিকা, ২০১২ থেকে।<br>
-                পুরো পাতা, আরও পুজোর নিয়ম ও মন্ত্র: <b>{{ preg_replace('~^https?://(www\.)?~', '', rtrim($p->url(), '/')) }}</b><br>
+                পুরো পাতা, আরও পুজোর নিয়ম ও মন্ত্র: <b class="break-all">{{ preg_replace('~^https?://(www\.)?~', '', rtrim($p->url(), '/')) }}</b><br>
                 মন্ত্র দুটি নির্ভরযোগ্য সূত্রে মিলিয়ে দেওয়া। বিনামূল্যে ছাপা ও বিলি করা যায়।
             </figcaption>
         </figure>
     </main>
-    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">document.querySelector('[data-print]')?.addEventListener('click', () => window.print());</script>
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">const pb = document.querySelector('[data-print]'); if (pb) { pb.hidden = false; pb.addEventListener('click', () => window.print()); }</script>
 </body>
 </html>

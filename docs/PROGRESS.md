@@ -443,3 +443,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 ## First round of জেনে রাখুন at once, 2026-11-26
 - [x] `php artisan hatpakha:janun-run --pages=3`: the West Bengal months, every festival's times, and the first three pages drafted, checked and given their dates, in one go (same checks; nothing goes live early). The deploy runs it when the release PR's title has the run-janun tag in square brackets (JanunRunTest). Festival searches skip the current year from November.
 - [x] First run on the live site confirmed nothing (calendar sites show dates with scripts): checks changed to one readable page (D304); run again with the release.
+
+## Calendar and জেনে রাখুন: UX review fixes, 2026-11-27
+- [x] Previous/next month on every calendar page; a tapped day shows its details (both calendars, weekday, season, festivals); home line names whose date it is on phones; year-page and breadcrumb tap targets; no double month nav (owner: "dont have option to go next or previous month", "not able to click different dates"; two UX reviews).
+- [x] জেনে রাখুন: search stays in view when typed far down a list; India shows as ভারত (Chromium's Asia/Calcutta); city search in English only with a "not found" note; booklet fits a phone; search and print buttons hidden without JavaScript; summaries, contents and trust-line links ≥ 44px.

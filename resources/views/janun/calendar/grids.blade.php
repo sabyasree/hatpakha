@@ -33,7 +33,7 @@
                 <h2 class="min-w-0 text-center font-display text-xl font-extrabold leading-tight sm:text-2xl">{{ $name }} <span class="block text-sm font-bold text-ink2 sm:inline sm:text-base">· {{ $label }}</span></h2>
                 @if ($C::offered($next[0]))<a href="{{ $B::url(...$next) }}" class="flex min-h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy px-3 text-sm font-bold hover:bg-peach-light" aria-label="পরের মাস: {{ $B::MONTHS[$next[1] - 1] }} {{ $N($next[0]) }}">{{ $B::MONTHS[$next[1] - 1] }} →</a>@else<span></span>@endif
             </nav>
-            <p class="mt-1 text-center text-sm text-ink2">{{ $C::short($g['days'][0]['g']) }} {{ $N($g['days'][0]['g']->year) }} থেকে {{ $C::short(end($g['days'])['g']) }} {{ $N(end($g['days'])['g']->year) }} · {{ $N(count($g['days'])) }} দিন · ঋতু: {{ $B::SEASONS[$g['month'] - 1] }}</p>
+            <p class="mt-1 text-center text-sm text-ink2"><span class="whitespace-nowrap">{{ $C::short($g['days'][0]['g']) }} {{ $N($g['days'][0]['g']->year) }}</span> থেকে <span class="whitespace-nowrap">{{ $C::short(end($g['days'])['g']) }} {{ $N(end($g['days'])['g']->year) }}</span> · <span class="whitespace-nowrap">{{ $N(count($g['days'])) }} দিন</span> · <span class="whitespace-nowrap">ঋতু: {{ $B::SEASONS[$g['month'] - 1] }}</span></p>
             <div class="mt-3 grid grid-cols-7 gap-1 text-center" role="table" aria-label="{{ $name }}, {{ $label }}">
                 <div role="row" class="contents">
                     @foreach (['র', 'সো', 'ম', 'বু', 'বৃ', 'শু', 'শ'] as $i => $w)<div role="columnheader" aria-label="{{ $B::WEEKDAYS[$i] }}" class="py-1 text-sm font-bold {{ $i === 0 ? 'text-red' : 'text-ink2' }}">{{ $w }}</div>@endforeach
@@ -42,17 +42,33 @@
                     <div role="row" class="contents">
                         @foreach ($week as $day)
                             @if ($day === null)<div role="cell" aria-hidden="true"></div>@else
-                            <div role="cell" @if ($day['today']) aria-current="date" @endif
-                                aria-label="{{ $B::WEEKDAYS[$day['g']->dayOfWeek] }}, {{ $N($day['n']) }} {{ $mn }}, {{ $C::short($day['g']) }}{{ $day['today'] ? ', আজ' : '' }}{{ $day['events'] ? ': '.collect($day['events'])->pluck(0)->implode(', ') : '' }}"
-                                class="relative min-h-14 rounded-lg border p-1 {{ $day['today'] ? 'border-2 border-red bg-peach-light' : 'border-rule bg-white' }} {{ $day['g']->dayOfWeek === 0 ? 'text-red' : '' }}">
-                                <span aria-hidden="true" class="block font-display text-lg font-extrabold leading-tight">{{ $N($day['n']) }}</span>
-                                <span aria-hidden="true" class="block text-xs leading-tight text-ink2">{{ $N($day['g']->day) }}/{{ $N($day['g']->month) }}</span>
-                                @if ($day['events'])<span aria-hidden="true" class="absolute right-1 top-1 h-2 w-2 rounded-full bg-red"></span>@endif
+                            @php
+                                $other = $day['other'];
+                                $otherName = $k === 'wb' ? 'বাংলাদেশে' : 'পশ্চিমবঙ্গে';
+                                $detail = $B::WEEKDAYS[$day['g']->dayOfWeek].', '.$C::short($day['g']).' '.$N($day['g']->year)
+                                    .($other ? ' · '.$otherName.' '.$B::text($other) : '').' · ঋতু: '.$B::SEASONS[$g['month'] - 1];
+                                $events = collect($day['events'])->pluck(0)->implode(' · ');
+                            @endphp
+                            {{-- a day can be tapped: its details show under the grid (owner, 2026-11-27: "not able to click different dates") --}}
+                            <div role="cell" @if ($day['today']) aria-current="date" @endif class="relative">
+                                <button type="button" data-cal-day data-title="{{ $N($day['n']) }} {{ $mn }} {{ $N($g['year']) }}{{ $day['today'] ? ' · আজ' : '' }}" data-detail="{{ $detail }}" data-events="{{ $events }}"
+                                    aria-label="{{ $B::WEEKDAYS[$day['g']->dayOfWeek] }}, {{ $N($day['n']) }} {{ $mn }}, {{ $C::short($day['g']) }}{{ $day['today'] ? ', আজ' : '' }}{{ $events ? ': '.$events : '' }}"
+                                    class="block min-h-14 w-full rounded-lg border p-1 text-center aria-pressed:outline aria-pressed:outline-2 aria-pressed:outline-navy {{ $day['today'] ? 'border-2 border-red bg-peach-light' : 'border-rule bg-white hover:bg-peach-light' }} {{ $day['g']->dayOfWeek === 0 ? 'text-red' : '' }}">
+                                    <span aria-hidden="true" class="block font-display text-lg font-extrabold leading-tight">{{ $N($day['n']) }}</span>
+                                    <span aria-hidden="true" class="block text-xs leading-tight text-ink2">{{ $N($day['g']->day) }}/{{ $N($day['g']->month) }}</span>
+                                    @if ($day['events'])<span aria-hidden="true" class="absolute right-1 top-1 h-2 w-2 rounded-full bg-red"></span>@endif
+                                </button>
                             </div>
                             @endif
                         @endforeach
                     </div>
                 @endforeach
+            </div>
+            @php($start = collect($g['days'])->firstWhere('today', true) ?? $g['days'][0])
+            <div data-cal-detail aria-live="polite" class="mt-3 rounded-xl border-2 border-navy bg-white p-3" hidden>
+                <p class="font-display text-lg font-extrabold" data-d-title></p>
+                <p class="text-sm" data-d-detail></p>
+                <p class="mt-1 text-sm font-bold text-red" data-d-events></p>
             </div>
             @php($ev = collect($g['days'])->filter(fn ($d) => $d['events']))
             @if ($ev->isNotEmpty())
@@ -72,6 +88,20 @@
 @once
 <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
     (() => {
+        // tapping a day shows its details under that grid; today (or the first day) to begin with
+        document.querySelectorAll('[data-cal-panel]').forEach((panel) => {
+            const days = [...panel.querySelectorAll('[data-cal-day]')], out = panel.querySelector('[data-cal-detail]');
+            if (!out || !days.length) return;
+            const pick = (b) => {
+                days.forEach((d) => d.setAttribute('aria-pressed', String(d === b)));
+                out.querySelector('[data-d-title]').textContent = b.dataset.title;
+                out.querySelector('[data-d-detail]').textContent = b.dataset.detail;
+                out.querySelector('[data-d-events]').textContent = b.dataset.events || '';
+                out.hidden = false;
+            };
+            days.forEach((d) => d.addEventListener('click', () => pick(d)));
+            pick(panel.querySelector('[aria-current="date"] [data-cal-day]') || days[0]);
+        });
         document.querySelectorAll('[data-cal]').forEach((box) => {
             const tabs = [...box.querySelectorAll('[data-cal-tab]')], panels = [...box.querySelectorAll('[data-cal-panel]')];
             if (tabs.length < 2) return;
@@ -86,8 +116,9 @@
             tabs.forEach((t, i) => {
                 t.addEventListener('click', () => { show(t.dataset.calTab); try { localStorage.setItem('hp-cal', t.dataset.calTab); } catch (e) {} });
                 t.addEventListener('keydown', (e) => {
-                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-                    const n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                    const n = { ArrowRight: tabs[(i + 1) % tabs.length], ArrowLeft: tabs[(i + tabs.length - 1) % tabs.length], Home: tabs[0], End: tabs[tabs.length - 1] }[e.key];
+                    if (!n) return;
+                    e.preventDefault();
                     n.focus(); n.click();
                 });
             });

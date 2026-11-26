@@ -36,7 +36,9 @@ class BanglaCalendarController extends Controller
             $wb = BanglaDate::wb($d);
             $bd = BanglaDate::bd($d);
 
-            return $wb ? ['আজ '.BanglaDate::text($wb), $wb !== $bd ? '(বাংলাদেশে '.BanglaDate::text($bd).')' : ''] : ['আজ '.BanglaDate::text($bd).' (বাংলাদেশ)', ''];   // until West Bengal is checked, say whose date it is on every screen
+            // whose date it is shows on every screen; the other Bengal's date only where there is room (UX review)
+            return $wb ? ($wb !== $bd ? ['আজ '.BanglaDate::text($wb).' (পশ্চিমবঙ্গ)', '· বাংলাদেশে '.BanglaDate::text($bd)] : ['আজ '.BanglaDate::text($wb), ''])
+                : ['আজ '.BanglaDate::text($bd).' (বাংলাদেশ)', ''];   // until West Bengal is checked, say whose date it is on every screen
         });
     }
 
