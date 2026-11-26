@@ -244,4 +244,17 @@ class BanglaCalendarTest extends TestCase
         $this->answer = ['events' => [['label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11', 'start' => '2027-02-11 23:40', 'end' => '2027-02-12 23:40']], 'sources' => []];
         $this->assertSame(0, \App\Ai\FestivalDesk::find('saraswati', 2027));
     }
+
+    public function test_a_country_s_own_days_show_only_in_its_own_calendar(): void
+    {
+        $this->checkAll();
+        // 16 December 2026: ৩০ অগ্রহায়ণ in West Bengal, ১ পৌষ in Bangladesh; বিজয় দিবস belongs to Bangladesh only (owner, 2026-11-27)
+        $g = \App\Http\Controllers\BanglaCalendarController::grids(1433, 8);
+        $this->assertSame([], collect($g['wb']['days'])->firstWhere('n', 30)['events']);
+        $g = \App\Http\Controllers\BanglaCalendarController::grids(1433, 9);
+        $this->assertSame('বাংলাদেশের বিজয় দিবস', collect($g['bd']['days'])->firstWhere('n', 1)['events'][0][0]);
+        $this->assertSame([], collect($g['wb']['days'])->filter(fn ($d) => $d['events'])->all(), 'nothing of Bangladesh in West Bengal\'s পৌষ');
+        // the year page lists both, saying whose day it is
+        $this->get('/janun/bangla-calendar/1433/')->assertSee('বাংলাদেশের বিজয় দিবস (বাংলাদেশ)')->assertSee('রবীন্দ্রজয়ন্তী (পঁচিশে বৈশাখ) (পশ্চিমবঙ্গ)');
+    }
 }

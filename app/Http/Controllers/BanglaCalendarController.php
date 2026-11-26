@@ -129,14 +129,16 @@ class BanglaCalendarController extends Controller
         $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events) {
             $g = $start->addDays($i);
 
+            $cal = $other === 'bd' ? 'wb' : 'bd';   // a calendar shows its own days and the shared ones
+
             return ['n' => $i + 1, 'g' => $g, 'today' => $g->equalTo(self::today()), 'other' => $other === 'bd' ? BanglaDate::bd($g) : BanglaDate::wb($g),
-                'events' => $events[$g->toDateString()] ?? []];
+                'events' => array_values(array_filter($events[$g->toDateString()] ?? [], fn ($e) => in_array($e[2], ['both', $cal], true)))];
         })->all()];
 
         return ['wb' => $wbStart ? $grid($wbStart, $wbLen, 'bd') : null, 'bd' => $grid($bdStart, $bdLen, 'wb')];
     }
 
-    /** date => list of [name, link|null] between two days: checked festival days and the fixed days. */
+    /** date => list of [name, link|null, where (both|wb|bd)] between two days: checked festival days (by the Kolkata পঞ্জিকা: wb) and the fixed days. */
     public static function events(CarbonImmutable $from, CarbonImmutable $to): array
     {
         $out = [];
@@ -145,12 +147,12 @@ class BanglaCalendarController extends Controller
             [$name, $pageKey] = FestivalPlan::FESTIVALS[$t->festival] ?? [null, null];
             if ($name) {
                 $label = $t->festival === 'durga' || count(FestivalPlan::FESTIVALS[$t->festival][2]) > 1 ? $name.': '.$t->label : $name;
-                $out[$t->day->toDateString()][] = [$label, isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null];
+                $out[$t->day->toDateString()][] = [$label, isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null, 'wb'];
             }
         }
         for ($g = $from; $g->lte($to); $g = $g->addDay()) {
-            foreach (BanglaDate::fixedDays($g, BanglaDate::wb($g), BanglaDate::bd($g)) as $name) {
-                $out[$g->toDateString()][] = [$name, null];
+            foreach (BanglaDate::fixedDays($g, BanglaDate::wb($g), BanglaDate::bd($g)) as [$name, $where]) {
+                $out[$g->toDateString()][] = [$name, null, $where];
             }
         }
 

@@ -164,29 +164,35 @@ final class BanglaDate
     }
 
     /**
-     * Days kept on a Bengali or English date that need no checking (every year the same), for one Gregorian day.
+     * Days kept on a Bengali or English date that need no checking (every year the same), for one Gregorian day, each
+     * with where it is kept: 'both', 'wb' or 'bd'. A country's own days show only in its own calendar (owner, 2026-11-27:
+     * বিজয় দিবস appeared in the West Bengal calendar).
      *
-     * @return list<string>
+     * @return list<array{0: string, 1: string}> [name, where]
      */
     public static function fixedDays(\DateTimeInterface $date, ?array $wb, array $bd): array
     {
-        $out = [];
-        $md = CarbonImmutable::instance($date)->format('m-d');
-        $out = array_merge($out, match ($md) {
-            '02-21' => ['শহিদ দিবস ও আন্তর্জাতিক মাতৃভাষা দিবস'],
-            '03-26' => ['বাংলাদেশের স্বাধীনতা দিবস'],
-            '12-16' => ['বাংলাদেশের বিজয় দিবস'],
+        $out = match (CarbonImmutable::instance($date)->format('m-d')) {
+            '02-21' => [['শহিদ দিবস ও আন্তর্জাতিক মাতৃভাষা দিবস', 'both']],
+            '03-26' => [['বাংলাদেশের স্বাধীনতা দিবস', 'bd']],
+            '12-16' => [['বাংলাদেশের বিজয় দিবস', 'bd']],
             default => [],
-        });
-        foreach (['পশ্চিমবঙ্গ' => $wb, 'বাংলাদেশ' => $bd] as $where => $d) {
+        };
+        foreach (['wb' => $wb, 'bd' => $bd] as $where => $d) {
             $day = $d ? match ([$d[1], $d[2]]) {
                 [1, 1] => 'পয়লা বৈশাখ', [1, 25] => 'রবীন্দ্রজয়ন্তী (পঁচিশে বৈশাখ)', [2, 11] => 'নজরুলজয়ন্তী (এগারোই জ্যৈষ্ঠ)', [4, 22] => 'বাইশে শ্রাবণ (রবীন্দ্রনাথের প্রয়াণদিবস)', default => null,
             } : null;
             if ($day) {
-                $out[] = $day.' ('.$where.')';
+                $out[] = [$day, $where];
             }
         }
 
         return $out;
+    }
+
+    /** " (পশ্চিমবঙ্গ)" / " (বাংলাদেশ)" for a list that shows both Bengals (the year page). */
+    public static function whereLabel(string $where): string
+    {
+        return match ($where) { 'wb' => ' (পশ্চিমবঙ্গ)', 'bd' => ' (বাংলাদেশ)', default => '' };
     }
 }
