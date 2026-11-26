@@ -65,6 +65,7 @@ class FestivalTimesTest extends TestCase
         $this->assertSame('2027-02-11 08:50', $t->starts_at->format('Y-m-d H:i'), 'stored in UTC');
         $this->assertSame(['https://a.org/p', 'https://b.in/p'], $t->sources);
 
+        FestivalTime::query()->delete();   // a confirmed time is never taken back, so start afresh for the next cases
         $this->saraswati(['c.net', 'd.org']);
         FestivalDesk::find('saraswati', 2027);
         $this->assertSame('held', FestivalTime::first()->status, 'no page that shows the times: held');
@@ -204,5 +205,16 @@ class FestivalTimesTest extends TestCase
             ->assertSee('Amader chhoto nodi')->assertSee('অনুবাদ: হাতপাখা ডেস্ক')->getContent();
         $this->assertStringContainsString('"CreativeWork"', $html);
         $this->assertStringContainsString('রবীন্দ্রনাথ ঠাকুর', $html);
+    }
+
+    public function test_a_festival_with_some_times_confirmed_is_searched_again_and_confirmed_times_stay(): void
+    {
+        $this->verified('durga', 'মহাষ্টমী', '2027-10-14 10:00', '2027-10-15 11:00', '2027-10-14');
+        $this->assertFalse(FestivalDesk::complete('durga', 2027), 'one of seven');
+        $this->saraswati(['c.net']);   // a later search that shows nothing
+        $this->answer['events'][] = ['label' => 'মহাষ্টমী', 'day' => '2027-10-14', 'start' => '', 'end' => ''];
+        FestivalDesk::find('durga', 2027);
+        $this->assertSame('verified', FestivalTime::where('label', 'মহাষ্টমী')->value('status'), 'a confirmed time is not taken back');
+        $this->assertTrue(FestivalDesk::complete('saraswati', 2026) === false);
     }
 }

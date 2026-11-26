@@ -211,14 +211,17 @@ class BanglaCalendarTest extends TestCase
         $this->published = [
             'https://myastrology.in/bangla-calendar/agrahayan-1433' => $page('অগ্রহায়ণ', '১৭ নভেম্বর', 'মঙ্গলবার'),
             'https://myastrology.in/bangla-calendar/shrabon-1433' => $page('শ্রাবণ', '১৮ জুলাই', 'শনিবার'),   // a day after our calculation (সংক্রান্তি 33 minutes before midnight)
-            'https://myastrology.in/bangla-calendar/poush-1433' => $page('পৌষ', '২৫ ডিসেম্বর', 'শুক্রবার'),   // far off: never taken
+            'https://myastrology.in/bangla-calendar/magh-1433' => $page('মাঘ', '২৫ জানুয়ারি', 'সোমবার'),   // far off: never taken
         ];
         $this->answer = ['months' => [], 'sources' => []];
+        $before = \App\Http\Controllers\BanglaCalendarController::todayLine();   // cached: Bangladesh, nothing checked yet
+        BanglaMonth::where(['year' => 1433, 'month' => 9])->update(['status' => 'verified']);   // the month after অগ্রহায়ণ, so today's date is known
         $this->assertSame(2, BanglaCalendarDesk::check(1433));
+        $this->assertNotSame($before, \App\Http\Controllers\BanglaCalendarController::todayLine(), 'the home line changes at once, not after its hour in the cache');
         $this->assertSame('verified', BanglaMonth::where(['year' => 1433, 'month' => 8])->value('status'));
         $this->assertSame('2026-11-17', BanglaMonth::where(['year' => 1433, 'month' => 8])->first()->starts_on->toDateString());
         $this->assertSame('2026-07-18', BanglaMonth::where(['year' => 1433, 'month' => 4])->first()->starts_on->toDateString(), 'the published day is kept');
-        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 9])->value('status'));
+        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 10])->value('status'));
 
         // a confirmed month is never checked again, whatever a later page or search says
         $this->published = [];
@@ -240,5 +243,18 @@ class BanglaCalendarTest extends TestCase
         \App\Models\FestivalTime::query()->delete();
         $this->answer = ['events' => [['label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11', 'start' => '2027-02-11 23:40', 'end' => '2027-02-12 23:40']], 'sources' => []];
         $this->assertSame(0, \App\Ai\FestivalDesk::find('saraswati', 2027));
+    }
+
+    public function test_a_country_s_own_days_show_only_in_its_own_calendar(): void
+    {
+        $this->checkAll();
+        // 16 December 2026: ৩০ অগ্রহায়ণ in West Bengal, ১ পৌষ in Bangladesh; বিজয় দিবস belongs to Bangladesh only (owner, 2026-11-27)
+        $g = \App\Http\Controllers\BanglaCalendarController::grids(1433, 8);
+        $this->assertSame([], collect($g['wb']['days'])->firstWhere('n', 30)['events']);
+        $g = \App\Http\Controllers\BanglaCalendarController::grids(1433, 9);
+        $this->assertSame('বাংলাদেশের বিজয় দিবস', collect($g['bd']['days'])->firstWhere('n', 1)['events'][0][0]);
+        $this->assertSame([], collect($g['wb']['days'])->filter(fn ($d) => $d['events'])->all(), 'nothing of Bangladesh in West Bengal\'s পৌষ');
+        // the year page lists both, saying whose day it is
+        $this->get('/janun/bangla-calendar/1433/')->assertSee('বাংলাদেশের বিজয় দিবস (বাংলাদেশ)')->assertSee('রবীন্দ্রজয়ন্তী (পঁচিশে বৈশাখ) (পশ্চিমবঙ্গ)');
     }
 }

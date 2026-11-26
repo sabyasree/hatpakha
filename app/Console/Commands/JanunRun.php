@@ -65,7 +65,7 @@ class JanunRun extends Command
         $this->line('2. Festival times');
         foreach (FestivalDesk::years($now) as $y) {
             foreach (array_keys(FestivalPlan::FESTIVALS) as $key) {
-                if (FestivalTime::where('festival', $key)->where('cycle', $y)->where('status', 'verified')->exists()) {
+                if (FestivalDesk::complete($key, $y)) {
                     continue;
                 }
                 Setting::put("festival.tries.{$key}.{$y}", 0);
