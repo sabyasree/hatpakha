@@ -211,14 +211,17 @@ class BanglaCalendarTest extends TestCase
         $this->published = [
             'https://myastrology.in/bangla-calendar/agrahayan-1433' => $page('অগ্রহায়ণ', '১৭ নভেম্বর', 'মঙ্গলবার'),
             'https://myastrology.in/bangla-calendar/shrabon-1433' => $page('শ্রাবণ', '১৮ জুলাই', 'শনিবার'),   // a day after our calculation (সংক্রান্তি 33 minutes before midnight)
-            'https://myastrology.in/bangla-calendar/poush-1433' => $page('পৌষ', '২৫ ডিসেম্বর', 'শুক্রবার'),   // far off: never taken
+            'https://myastrology.in/bangla-calendar/magh-1433' => $page('মাঘ', '২৫ জানুয়ারি', 'সোমবার'),   // far off: never taken
         ];
         $this->answer = ['months' => [], 'sources' => []];
+        $before = \App\Http\Controllers\BanglaCalendarController::todayLine();   // cached: Bangladesh, nothing checked yet
+        BanglaMonth::where(['year' => 1433, 'month' => 9])->update(['status' => 'verified']);   // the month after অগ্রহায়ণ, so today's date is known
         $this->assertSame(2, BanglaCalendarDesk::check(1433));
+        $this->assertNotSame($before, \App\Http\Controllers\BanglaCalendarController::todayLine(), 'the home line changes at once, not after its hour in the cache');
         $this->assertSame('verified', BanglaMonth::where(['year' => 1433, 'month' => 8])->value('status'));
         $this->assertSame('2026-11-17', BanglaMonth::where(['year' => 1433, 'month' => 8])->first()->starts_on->toDateString());
         $this->assertSame('2026-07-18', BanglaMonth::where(['year' => 1433, 'month' => 4])->first()->starts_on->toDateString(), 'the published day is kept');
-        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 9])->value('status'));
+        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 10])->value('status'));
 
         // a confirmed month is never checked again, whatever a later page or search says
         $this->published = [];

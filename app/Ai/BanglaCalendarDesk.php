@@ -130,6 +130,7 @@ final class BanglaCalendarDesk
         if ($months->isEmpty()) {
             AuditLog::record('calendar.checked', null, ['year' => $year, 'verified' => $ok, 'source' => 'published page']);
             \App\Support\BanglaDate::flush();
+            cache()->forget('bangla:today2:'.CarbonImmutable::now('Asia/Kolkata')->toDateString());   // the home line
 
             return $ok;
         }
@@ -169,7 +170,7 @@ final class BanglaCalendarDesk
         }
         AuditLog::record('calendar.checked', null, ['year' => $year, 'verified' => $ok, 'pages' => $pages->count()]);
         \App\Support\BanglaDate::flush();
-        cache()->forget('bangla:today:'.CarbonImmutable::now('Asia/Kolkata')->toDateString());
+        cache()->forget('bangla:today2:'.CarbonImmutable::now('Asia/Kolkata')->toDateString());
 
         return $ok;
     }
