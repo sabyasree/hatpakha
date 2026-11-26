@@ -165,7 +165,7 @@ final class WriterInvites
             'The first special issue after the return is the "ফিরে আসা সংখ্যা". Theme: ফিরে আসা (coming back: to a place, a person, a habit, to writing itself). Any form: poem, story, memoir, essay.',
             'Last date for pieces: '.Bn::date($last).'. Writing is sent through the website (the button under the letter leads there). A reply to this e-mail reaches the editor.',
         ]));
-        $model = config('ai.anthropic.writer_model');
+        $model = config('ai.anthropic.review_model');   // D300 (owner, 2026-11-26: "switch to cheaper model"): the mid model, about half the cost
         $ask = function (string $extra = '') use ($facts, $piece, $text, $model) {
             return Claude::json('copy', self::VOICE.$extra,
                 "<facts>\n".e($facts)."\n</facts>\n<their_piece title=\"".e($piece->title)."\">\n".e(mb_substr($text, 0, 5000))."\n</their_piece>",

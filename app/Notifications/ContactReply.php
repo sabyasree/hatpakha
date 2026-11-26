@@ -18,9 +18,11 @@ class ContactReply extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return \App\Support\WriterLetters::mark((new MailMessage)->subject('হাতপাখা: আপনার বার্তার উত্তর ('.$this->topic.')')
-            ->greeting('নমস্কার, '.$this->name)
-            ->line($this->message)
+        $mail = (new MailMessage)->subject('হাতপাখা: আপনার বার্তার উত্তর ('.$this->topic.')')
+            ->greeting('নমস্কার, '.$this->name);
+        \App\Support\MailText::add($mail, $this->message);   // the editor's own line breaks are kept (2026-11-26)
+
+        return \App\Support\WriterLetters::mark($mail
             ->action('হাতপাখা', Url::to('/'))
             ->salutation('— হাতপাখা সম্পাদকমণ্ডলী'), 'contact_reply');
     }

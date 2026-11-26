@@ -44,7 +44,7 @@
                     </ol>
                 @endif
                 <div class="mt-4 flex flex-wrap gap-3">
-                    <button type="button" data-cert-fb="{{ $file }}.png" data-caption="{{ $caption }}" class="flex h-12 items-center rounded-full bg-red px-6 font-bold text-white">ছবিসহ ফেসবুকে দিন</button>
+                    <button type="button" data-cert-fb="{{ $file }}.png" data-caption="{{ $caption }}" data-fb-share="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($c->verifyUrl()) }}" @if ($mine && ! \App\Http\Controllers\CertificateController::pictureUrl($c)) data-pic-url="{{ \App\Support\Url::to('/certificate/'.$c->code.'/picture') }}" data-pic-token="{{ csrf_token() }}" @endif class="flex h-12 items-center rounded-full bg-red px-6 font-bold text-white">ছবিসহ ফেসবুকে দিন</button>
                     <button type="button" data-copy="{{ $caption }}" data-done="✓ কপি হয়েছে, এবার ফেসবুকে পেস্ট করুন" class="flex h-12 items-center rounded-full border-2 border-navy bg-white px-6 font-bold">পোস্টের লেখা কপি করুন</button>
                     <a href="https://wa.me/?text={{ rawurlencode($caption) }}" rel="noopener" target="_blank" class="flex h-12 items-center rounded-full border-2 border-navy bg-white px-6 font-bold">হোয়াটসঅ্যাপে পাঠান</a>
                     <button type="button" data-copy="{{ $c->verifyUrl() }}" data-done="✓ লিংক কপি হয়েছে" class="flex h-12 items-center rounded-full border-2 border-navy bg-white px-6 font-bold">লিংক কপি</button>
@@ -64,5 +64,5 @@
         @endif
     </section>
     <script src="{{ asset('js/hp-card.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-cert.js') }}?v=2" defer></script>
+    <script src="{{ asset('js/hp-cert.js') }}?v=3" defer></script>
 </x-layouts.app>

@@ -18,9 +18,11 @@ class WriterNote extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        return \App\Support\WriterLetters::mark((new MailMessage)->subject($this->subject)
-            ->greeting('নমস্কার, '.$notifiable->name)
-            ->line($this->message)
+        $mail = (new MailMessage)->subject($this->subject)
+            ->greeting('নমস্কার, '.$notifiable->name);
+        \App\Support\MailText::add($mail, $this->message);   // the editor's own line breaks are kept (2026-11-26)
+
+        return \App\Support\WriterLetters::mark($mail
             ->action($this->button, $this->link ?: Url::to('/account'))
             ->salutation('— হাতপাখা সম্পাদকমণ্ডলী'), 'writer_note');
     }

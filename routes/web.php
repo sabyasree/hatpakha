@@ -186,6 +186,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailVerified::class])->gr
     Route::post('/account/pins', [\App\Http\Controllers\AccountController::class, 'updatePins'])->middleware('throttle:10,1');   // নির্বাচিত লেখা (2026-11-24)
     Route::post('/account/audio/{post}', [\App\Http\Controllers\AccountController::class, 'audio'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/change/{post}', [\App\Http\Controllers\AccountController::class, 'requestChange'])->whereNumber('post')->middleware('throttle:10,1');   // D94
+    Route::post('/certificate/{code}/picture', [CertificateController::class, 'picture'])->where('code', '[A-Z0-9]{6,16}')->middleware('throttle:10,1');   // the certificate's own share picture (2026-11-26)
     Route::post('/account/certificate/{post}', [\App\Http\Controllers\AccountController::class, 'requestCertificate'])->whereNumber('post')->middleware('throttle:10,1');
     Route::post('/account/newsletter', [\App\Http\Controllers\AccountController::class, 'updateNewsletter']);
     // D166: "আমার পড়া": how far a signed-in reader read a piece (only while their switch is on), the switch, and clearing it.
