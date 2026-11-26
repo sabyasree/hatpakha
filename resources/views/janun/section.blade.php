@@ -6,6 +6,7 @@
             {{-- D302 --}}
             <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
         @endif
+        @if ($pages->isEmpty())<p class="mt-6 rounded-xl bg-peach-light p-4">পুজোর নিয়ম, উপকরণ আর মন্ত্রের পাতা শিগগির আসছে; প্রথমটি সরস্বতী পুজো।</p>@endif
         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
             @foreach ($pages as $pg)
                 <li><a href="{{ $pg->url() }}" class="block rounded-2xl border-2 border-navy bg-paper p-4 hover:bg-peach-light">

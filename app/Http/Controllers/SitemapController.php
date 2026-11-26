@@ -162,7 +162,7 @@ class SitemapController extends Controller
                 $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
             }
         }
-        $live = array_filter(JanunController::live(), fn ($pages) => $pages->isNotEmpty());
+        $live = array_filter(JanunController::live(), fn ($pages, $s) => $pages->isNotEmpty() || ($s === 'puja' && $times !== []), ARRAY_FILTER_USE_BOTH);
         if ($live === []) {
             return $cal->concat($times);
         }

@@ -128,6 +128,10 @@ class FestivalTimesTest extends TestCase
         $this->assertStringContainsString('js/hp-tz.js', $html);
         $this->assertSame(1, substr_count($html, 'js/hp-tz.js'));
         $this->assertStringContainsString('/janun/puja/pujor-somoy/', $this->get('/sitemap-pages.xml')->getContent());
+        // the times page links to the puja part: it opens before its first guide is live (owner, 2026-11-26)
+        $this->get('/janun/puja/')->assertOk()->assertSee('শিগগির আসছে')->assertSee('/janun/puja/pujor-somoy/', false);
+        $this->assertStringContainsString('/janun/puja/</loc>', $this->get('/sitemap-pages.xml')->getContent());
+        $this->get('/janun/pathshala/')->assertNotFound();
         // the past is not shown, but the page stays (an indexed address is not taken away between years)
         Carbon::setTestNow('2027-03-20 09:00:00');
         $this->get('/janun/puja/pujor-somoy/')->assertOk()->assertDontSee('পঞ্চমী তিথি')->assertSee('শিগগির এখানে দেওয়া হবে');
