@@ -17,6 +17,13 @@
     {{-- D288: one home page for everyone; on a phone the poster is a compact band (partials.hero) --}}
     @include('partials.hero')
 
+    @if ($bnToday = rescue(fn () => \App\Http\Controllers\BanglaCalendarController::todayLine(), null, false))
+    {{-- D303: today's Bengali date, a slim line under the poster --}}
+    <a href="{{ \App\Support\BanglaDate::url() }}" class="block border-b-2 border-navy bg-peach-light">
+        <span class="mx-auto flex min-h-11 max-w-[1320px] items-center gap-2 px-5 text-sm font-bold"><span aria-hidden="true">📅</span> {{ $bnToday }} <span class="ml-auto whitespace-nowrap text-sky-night underline">বাংলা ক্যালেন্ডার →</span></span>
+    </a>
+    @endif
+
     @if ($issue)
     {{-- The month's issue, as a magazine on the stand: cover, name, editorial, and "পত্রিকা খুলুন" (owner, 2026-11-12) --}}
     <section class="border-b-2 border-navy bg-navy text-paper" aria-labelledby="issue-h">

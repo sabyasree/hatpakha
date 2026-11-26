@@ -422,3 +422,20 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Overnight jobs (old-piece proofreading, old-submission screening, SEO details, topic sorting) go to the half-price batch; cost table per job on /desk → এআই দল (AiBatchTest).
 - [ ] Owner: after a week, send a screenshot of "খরচ কোথায় (গত ৩০ দিন)" so the costliest live jobs can be trimmed next.
 - [ ] Possible next savings (only if the table shows them high): serial and desk writers on the mid model or lower effort; the weekly strategist/scout searches less often.
+
+## জেনে রাখুন (D301), 2026-11-26
+- [x] `/janun/` hub, three parts, page template (list with search and letter bar; guide with facts, steps, mantras with Roman reading and English meaning; study with summary), JSON-LD, sitemap once live, AI writer + fact check + two-source mantra check + thin-page hold + Mon/Wed/Fri 10am schedule (JanunPagesTest).
+- [x] 39 pages planned (6 added after the US/UK diaspora research, 10 after the SEO review), published three a week: about 13 weeks.
+- [x] UX review applied (search finds য়/ড় typed either way, no ads during a search or beside steps/mantras, sticky search, bigger tap targets). SEO review applied (links from footer/llms.txt/game/topic page once live, dateModified fix, every list entry fact-checked, mantra pages opened by the server, cannibalisation fixed, related pages, descriptions cut between words, একুশে moved before February).
+- [ ] Nothing for the owner: after deploy the desk drafts about one page an hour and schedules them; the first goes live on the next Monday/Wednesday/Friday. Held pages appear in the audit log (janun.held).
+- [ ] Later, from the US/UK research (owner decides): Durga Puja and Saraswati Puja times in US/UK time each year; Tagore/Nazrul/Sukumar poems for children with our own English translation; a free printable puja booklet for Bengali associations abroad; বাংলা শিখি pack with English notes for parents (paid, needs a payment gateway).
+
+## Puja times worldwide, children's poems, puja booklet (D302), 2026-11-26
+- [x] Festival times found and checked on two pages by the desk; `/janun/puja/pujor-somoy/` and a box on each puja page in the reader's time zone (any zone in the world); 13 children's poems with our English translation (`/janun/chhora/`); free A5 booklet per puja page (FestivalTimesTest).
+- [ ] Owner, when the Saraswati page is live (about two weeks after deploy): send the booklet link to Bengali associations abroad (a ready message is in the conversation of 2026-11-26).
+- [ ] Watch the audit log (festival.found) in the first days: if pages rarely confirm the times (sites blocking the server), times stay hidden and the check needs another source.
+
+## বাংলা ক্যালেন্ডার (D303), 2026-11-26
+- [x] Today, month and year pages for both Bengals; Bangladesh by arithmetic, West Bengal calculated and checked against two published calendars; home-page line, /janun/ card, footer, sitemap (BanglaCalendarTest).
+- [ ] After deploy: within a few hours the desk checks 1433 and 1434; watch the audit log (calendar.checked). Months that stay held show the "being checked" note.
+- [ ] Later, if the calendar draws visitors: the tithi of the day (checked the same way).

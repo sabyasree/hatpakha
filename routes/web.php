@@ -68,6 +68,14 @@ Route::get('/category/{slug}', [ArchiveController::class, 'section'])->name('sec
 Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
+Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->name('janun');   // D301: জেনে রাখুন
+Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
+Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
+Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+Route::get('/janun/puja/pujor-somoy', [\App\Http\Controllers\JanunController::class, 'times'])->name('janun.times');   // D302: tithi times in any time zone
+Route::get('/janun/puja/{slug}/chhapun', [\App\Http\Controllers\JanunController::class, 'booklet'])->where('slug', '[a-z0-9-]+');   // D302: printable puja booklet
+Route::get('/janun/{section}', [\App\Http\Controllers\JanunController::class, 'section'])->whereIn('section', array_keys(\App\Support\JanunPlan::SECTIONS));
+Route::get('/janun/{section}/{slug}', [\App\Http\Controllers\JanunController::class, 'page'])->whereIn('section', array_keys(\App\Support\JanunPlan::SECTIONS))->where('slug', '[a-z0-9-]+');
 Route::get('/bishoy', [\App\Http\Controllers\TopicController::class, 'index'])->name('topics');   // D293: topic pages
 Route::get('/bishoy/{slug}', [\App\Http\Controllers\TopicController::class, 'show'])->whereIn('slug', array_keys(\App\Support\Topics::LIST))->name('topic');
 Route::get('/lekhok', \App\Http\Controllers\WritersController::class)->name('writers');   // A2: every writer, অ to হ
@@ -297,7 +305,7 @@ Route::get('/{slug}', PostController::class)
 
 // Old attachment pages /{post}/{attachment}/ → the post (registered after every fixed 2-segment route)
 Route::get('/{slug}/{child}', [LegacyController::class, 'toPost'])
-    ->where(['slug' => '(?!(desk|livewire|filament|storage|build|fonts|images|up|wp-content|wp-admin|wp-includes|wp-json|category|tag|author|sonkha|certificate)$)[^/]+', 'child' => '[^/]+']);
+    ->where(['slug' => '(?!(desk|livewire|filament|storage|build|fonts|images|up|wp-content|wp-admin|wp-includes|wp-json|category|tag|author|sonkha|certificate|janun|bishoy)$)[^/]+', 'child' => '[^/]+']);
 
 // Anything else: check the redirects table, then 404.
 Route::fallback([LegacyController::class, 'fallback']);

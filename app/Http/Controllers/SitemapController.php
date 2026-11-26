@@ -85,6 +85,8 @@ class SitemapController extends Controller
             ...collect(Page::footerLinks())->map(fn ($l) => $md($l[0], $l[1]))->all(),
             $md('আর্কাইভ (archive, by year)', Url::to('/archive')),
             $md('সব সংখ্যা (all issues)', Url::to('/sonkha')),
+            ...(JanunController::anyLive() ? [$md('জেনে রাখুন (reference: Bengali proverbs, spelling, puja rules and mantras with meaning, school essays)', Url::to('/janun'))] : []),   // D301
+            $md('বাংলা ক্যালেন্ডার (today\'s Bengali date in West Bengal and Bangladesh, months and festivals)', \App\Support\BanglaDate::url()),   // D303
             '',
             '## Recent pieces',
             ...$recent->all(),
@@ -106,7 +108,7 @@ class SitemapController extends Controller
                 ['sitemap-sections.xml', $max(Section::where('is_active', true)->max('updated_at'), Post::published()->max('published_at'))],
                 ['sitemap-authors.xml', $max(Author::where('published_count', '>=', 3)->max('updated_at'))],
                 ['sitemap-issues.xml', $max(Issue::live()->max('updated_at'))],
-                ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'))],
+                ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'), \App\Models\JanunPage::live()->max('publish_at'))],
             ]);
 
         return response()->view('sitemap.index', ['files' => $files])->header('Content-Type', 'application/xml; charset=UTF-8');
@@ -139,10 +141,39 @@ class SitemapController extends Controller
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
                 ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null]))
                 ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null])   // D128
-                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null]),   // লেখার ডাক (2026-11-24)
+                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null])   // লেখার ডাক (2026-11-24)
+                ->concat(self::janun()),   // D301: জেনে রাখুন, only what is live
             $type === 'issues' => Issue::live()->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 
         return response()->view('sitemap.urls', ['urls' => $urls])->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    /** D301: the জেনে রাখুন hub, its sections and pages, once something there is live. */
+    private static function janun(): \Illuminate\Support\Collection
+    {
+        $times = \App\Support\FestivalPlan::pageLive()
+            ? [['loc' => Url::to('/janun/puja/pujor-somoy'), 'lastmod' => \App\Models\FestivalTime::where('status', 'verified')->max('updated_at'), 'image' => null]] : [];   // D302
+        // D303: the calendar (hub, this year and next, their months) is always there, and so is the জেনে রাখুন hub
+        $cal = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null], ['loc' => \App\Support\BanglaDate::url(), 'lastmod' => now()->startOfDay(), 'image' => null]]);
+        foreach (range(BanglaCalendarController::FIRST_YEAR, \App\Support\BanglaDate::bd(BanglaCalendarController::today())[0] + 1) as $y) {
+            $cal->push(['loc' => \App\Support\BanglaDate::url($y), 'lastmod' => null, 'image' => null]);
+            foreach (range(1, 12) as $m) {
+                $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
+            }
+        }
+        $live = array_filter(JanunController::live(), fn ($pages) => $pages->isNotEmpty());
+        if ($live === []) {
+            return $cal->concat($times);
+        }
+        $out = $cal;
+        foreach ($live as $section => $pages) {
+            $out->push(['loc' => Url::to('/janun/'.$section), 'lastmod' => null, 'image' => null]);
+            foreach ($pages as $p) {
+                $out->push(['loc' => $p->url(), 'lastmod' => $p->modifiedAt(), 'image' => null]);
+            }
+        }
+
+        return $out->concat($times);
     }
 }

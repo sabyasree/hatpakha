@@ -150,6 +150,8 @@
                     array_map(fn ($l) => [$l[0], $l[1], $l[2]], array_values(array_filter($menu['top'], fn ($l) => $l[1] !== $U('/dharabahik')))),
                     [['সংখ্যা', $hpIssueUrl], ['ধারাবাহিক', $U('/dharabahik')], ['লেখকেরা', $U('/lekhok')]],
                     \App\Support\Topics::live() !== [] ? [['বিষয় ধরে পড়ুন', $U('/bishoy')]] : [],   // D293
+                    \App\Http\Controllers\JanunController::anyLive() ? [['জেনে রাখুন', $U('/janun')]] : [],   // D301
+                    [['বাংলা ক্যালেন্ডার', $U('/janun/bangla-calendar')]],   // D303
                     collect(\App\Http\Controllers\ShelfController::live())->map(fn ($t, $slug) => [$t, $U('/tak/'.$slug)])->values()->all(),
                     [['পাঠকের পছন্দ', $U('/pathoker-pochhondo')], ['আর্কাইভ', $U('/archive')]],
                 ),
