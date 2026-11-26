@@ -14,7 +14,8 @@
     @foreach ($festivals as [$key, $name, $cycle, $rows])
         <div data-festival class="mt-4 rounded-xl bg-white p-3">
             <h3 class="font-display text-lg font-extrabold">
-                @if ($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null)<a href="{{ $pg->url() }}" class="inline-flex min-h-11 items-center underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
+                @php($fp = \App\Support\FestivalPlan::yearRows($key, $cycle) && ($links ?? true) ? \App\Support\FestivalPlan::pageUrl($key, $cycle) : (($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null) ? $pg->url() : null))
+                @if ($fp)<a href="{{ $fp }}" class="inline-flex min-h-11 items-center underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
             </h3>
             <dl class="mt-2 space-y-3">
                 @foreach ($rows as $t)

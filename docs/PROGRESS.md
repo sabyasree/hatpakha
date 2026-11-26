@@ -447,3 +447,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 ## Calendar and জেনে রাখুন: UX review fixes, 2026-11-27
 - [x] Previous/next month on every calendar page; a tapped day shows its details (both calendars, weekday, season, festivals); home line names whose date it is on phones; year-page and breadcrumb tap targets; no double month nav (owner: "dont have option to go next or previous month", "not able to click different dates"; two UX reviews).
 - [x] জেনে রাখুন: search stays in view when typed far down a list; India shows as ভারত (Chromium's Asia/Calcutta); city search in English only with a "not found" note; booklet fits a phone; search and print buttons hidden without JavaScript; summaries, contents and trust-line links ≥ 44px.
+- [x] Festival pages per year and year lists, made by themselves from checked times (D308, FestivalPagesTest).

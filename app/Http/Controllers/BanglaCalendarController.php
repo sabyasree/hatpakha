@@ -115,7 +115,9 @@ class BanglaCalendarController extends Controller
         $day = $rows->map(fn ($t) => $t->day)->filter()->min();
         $page = \App\Models\JanunPage::live()->where('key', FestivalPlan::FESTIVALS[$key][1] ?? '')->first(['id', 'section', 'slug']);
 
-        return $day ? [$name, CarbonImmutable::parse($day->toDateString()), $page?->url() ?? Url::to('/janun/puja/pujor-somoy')] : null;
+        $link = FestivalPlan::yearRows($key, $f[2]) ? FestivalPlan::pageUrl($key, $f[2]) : ($page?->url() ?? Url::to('/janun/puja/pujor-somoy'));   // D308
+
+        return $day ? [$name, CarbonImmutable::parse($day->toDateString()), $link] : null;
     }
 
     /** Years with pages: from launch to next year. */
@@ -164,7 +166,8 @@ class BanglaCalendarController extends Controller
             [$name, $pageKey] = FestivalPlan::FESTIVALS[$t->festival] ?? [null, null];
             if ($name) {
                 $label = $t->festival === 'durga' || count(FestivalPlan::FESTIVALS[$t->festival][2]) > 1 ? $name.': '.$t->label : $name;
-                $out[$t->day->toDateString()][] = [$label, isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null, 'wb'];
+                $link = FestivalPlan::yearRows($t->festival, $t->cycle) ? FestivalPlan::pageUrl($t->festival, $t->cycle) : (isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null);   // D308
+                $out[$t->day->toDateString()][] = [$label, $link, 'wb'];
             }
         }
         for ($g = $from; $g->lte($to); $g = $g->addDay()) {
