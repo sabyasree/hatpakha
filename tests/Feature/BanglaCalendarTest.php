@@ -135,7 +135,7 @@ class BanglaCalendarTest extends TestCase
     {
         $this->checkAll();
         cache()->flush();
-        $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩ (বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩)')->assertSee(BanglaDate::url(), false);
+        $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩')->assertSee('(বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩)')->assertSee(BanglaDate::url(), false);
         $this->get('/janun/')->assertOk()->assertSee('বাংলা ক্যালেন্ডার');
     }
 
@@ -147,5 +147,34 @@ class BanglaCalendarTest extends TestCase
         $this->assertFalse(BanglaCalendarDesk::run($now));
         $this->assertSame(25, BanglaMonth::count(), 'this year and next, and the বৈশাখ after');
         $this->assertSame(0, BanglaMonth::where('status', 'verified')->count());
+    }
+
+    public function test_each_calendar_shows_its_own_month_on_the_days_they_differ(): void
+    {
+        $this->checkAll();
+        Carbon::setTestNow('2026-08-16 06:00:00');   // Bangladesh 1 ভাদ্র, West Bengal still শ্রাবণ
+        BanglaDate::flush();
+        $this->assertSame([1433, 5, 1], BanglaDate::bd(new \DateTime('2026-08-16')));
+        $html = $this->get('/janun/bangla-calendar/')->assertOk()->getContent();
+        preg_match('/data-cal-panel="bd".*?<h2[^>]*>([^<]+)/s', $html, $bd);
+        preg_match('/data-cal-panel="wb".*?<h2[^>]*>([^<]+)/s', $html, $wb);
+        $this->assertStringContainsString('ভাদ্র ১৪৩৩', $bd[1]);
+        $this->assertStringContainsString('শ্রাবণ ১৪৩৩', $wb[1]);
+        $this->assertSame(2, substr_count($html, 'aria-current="date"'), 'today marked in both grids');
+    }
+
+    public function test_month_descriptions_carry_the_month_s_own_facts(): void
+    {
+        $this->checkAll();
+        $a = $this->get('/janun/bangla-calendar/1433/ogrohayon/')->assertOk()->assertSee('Agrahayan 1433 Bengali calendar')->getContent();
+        $b = $this->get('/janun/bangla-calendar/1433/poush/')->assertOk()->getContent();
+        preg_match('/<meta name="description" content="([^"]+)"/', $a, $da);
+        preg_match('/<meta name="description" content="([^"]+)"/', $b, $db);
+        $this->assertStringContainsString('পশ্চিমবঙ্গে ১৭ নভেম্বর', $da[1]);
+        $this->assertStringContainsString('হেমন্ত', $da[1]);
+        $this->assertStringContainsString('বাংলাদেশের বিজয় দিবস', html_entity_decode($db[1]));
+        $this->assertLessThanOrEqual(160, mb_strlen(html_entity_decode($da[1])));
+        preg_match('/<meta name="description" content="([^"]+)"/', $this->get('/janun/bangla-calendar/')->getContent(), $di);
+        $this->assertStringNotContainsString('১০ অগ্রহায়ণ', $di[1], 'no date in a snippet Google keeps for days');
     }
 }

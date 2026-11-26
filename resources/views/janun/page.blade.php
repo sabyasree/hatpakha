@@ -105,7 +105,7 @@
                 <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-2 inline-flex min-h-11 items-center font-bold text-sky-night underline">সব পুজোর তিথি ও সময় →</a>
             @endif
             @if ($printable ?? false)
-                <a href="{{ \App\Support\Url::to('/janun/puja/'.$p->slug.'/chhapun') }}" class="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy px-4 font-bold hover:bg-peach-light">🖨️ ছাপার পুস্তিকা: মন্ত্র, অর্থ ও নিয়ম (বিনামূল্যে)</a>
+                <a href="{{ \App\Support\Url::to('/janun/puja/'.$p->slug.'/chhapun') }}" class="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy px-4 font-bold hover:bg-peach-light">ছাপার পুস্তিকা: মন্ত্র, অর্থ ও নিয়ম (বিনামূল্যে)</a>
             @endif
             @if ($sections->count() > 2)
                 <details class="mt-5 rounded-2xl border-2 border-navy p-4" open>

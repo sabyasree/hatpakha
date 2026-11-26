@@ -9,6 +9,7 @@
     <article class="mx-auto max-w-[760px] px-5 py-8">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা ক্যালেন্ডার', $B::url()], ['বঙ্গাব্দ '.$N($year), '']],
             'kicker' => 'বাংলা ক্যালেন্ডার', 'title' => 'বঙ্গাব্দ '.$N($year).' ('.$N($year + 593).'-'.$N($year + 594).')'])
+        <p lang="en" class="mt-1 text-sm text-ink2">{{ $latin }}</p>
         <div class="mt-5 overflow-x-auto">
             <table class="w-full text-left">
                 <thead><tr class="border-b-2 border-navy text-sm"><th class="py-2 pr-2">মাস</th><th class="py-2 pr-2">পশ্চিমবঙ্গে ১ তারিখ</th><th class="py-2">বাংলাদেশে ১ তারিখ</th></tr></thead>

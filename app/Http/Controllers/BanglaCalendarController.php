@@ -27,16 +27,16 @@ class BanglaCalendarController extends Controller
         return CarbonImmutable::create($t->year, $t->month, $t->day);
     }
 
-    /** "আজ ১০ অগ্রহায়ণ ১৪৩৩" for the home page (cached for the day), or null. */
-    public static function todayLine(): ?string
+    /** ["আজ ১০ অগ্রহায়ণ ১৪৩৩", "(বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩)"] for the home page (cached for the day). */
+    public static function todayLine(): array
     {
         $d = self::today();
 
-        return cache()->remember('bangla:today:'.$d->toDateString(), 3600, function () use ($d) {
+        return cache()->remember('bangla:today2:'.$d->toDateString(), 3600, function () use ($d) {
             $wb = BanglaDate::wb($d);
             $bd = BanglaDate::bd($d);
 
-            return $wb ? 'আজ '.BanglaDate::text($wb).($wb !== $bd ? ' (বাংলাদেশে '.BanglaDate::text($bd).')' : '') : 'আজ '.BanglaDate::text($bd).' (বাংলাদেশ)';
+            return $wb ? ['আজ '.BanglaDate::text($wb), $wb !== $bd ? '(বাংলাদেশে '.BanglaDate::text($bd).')' : ''] : ['আজ '.BanglaDate::text($bd), '(বাংলাদেশ)'];
         });
     }
 
@@ -47,12 +47,15 @@ class BanglaCalendarController extends Controller
         $bd = BanglaDate::bd($d);
         [$y, $m] = $wb ? [$wb[0], $wb[1]] : [$bd[0], $bd[1]];
         $title = 'বাংলা ক্যালেন্ডার '.Bn::num((string) $bd[0]).': আজ বাংলা কত তারিখ';
+        // each calendar shows its own current month (on the days they fall in different months, the review found the Bangladesh tab a month behind)
+        $grids = ['wb' => $wb ? self::grids($wb[0], $wb[1])['wb'] : null, 'bd' => self::grids($bd[0], $bd[1])['bd']];
+        // timeless: Google keeps a snippet for days (SEO review)
         $seo = new Seo(title: $title,
-            description: 'আজ '.($wb ? BanglaDate::text($wb).' (পশ্চিমবঙ্গ), ' : '').BanglaDate::text($bd).' (বাংলাদেশ)। বাংলা মাস, তারিখ, ঋতু আর পুজো-পার্বণ, দুই বাংলার ক্যালেন্ডার পাশাপাশি।',
+            description: 'আজ বাংলা কত তারিখ: পশ্চিমবঙ্গ আর বাংলাদেশের বাংলা ক্যালেন্ডার পাশাপাশি, মাস, ঋতু আর পুজো-পার্বণ। Bangla calendar '.$bd[0].' ('.($bd[0] + 593).'-'.substr((string) ($bd[0] + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()]])]);
         Ads::allow();
 
-        return view('janun.calendar.index', ['d' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => self::grids($y, $m), 'year' => $y, 'month' => $m, 'seo' => $seo]);
+        return view('janun.calendar.index', ['d' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
     }
 
     public function year(int $year)
@@ -68,11 +71,11 @@ class BanglaCalendarController extends Controller
         $to = BanglaDate::bdStart($year + 1, 1)->addDays(2);
         $gy = Bn::num((string) ($year + 593)).'-'.Bn::num(substr((string) ($year + 594), 2));
         $seo = new Seo(title: 'বাংলা ক্যালেন্ডার '.Bn::num((string) $year).' ('.$gy.'): মাস, তারিখ ও পার্বণ',
-            description: 'বঙ্গাব্দ '.Bn::num((string) $year).': বৈশাখ থেকে চৈত্র, প্রতিটি মাস কবে শুরু, কত দিনের, পশ্চিমবঙ্গ আর বাংলাদেশের ক্যালেন্ডারে; পুজো-পার্বণ আর বিশেষ দিন।',
+            description: 'বঙ্গাব্দ '.Bn::num((string) $year).': বৈশাখ থেকে চৈত্র, প্রতিটি মাস কবে শুরু, কত দিনের, পশ্চিমবঙ্গ আর বাংলাদেশে; পুজো-পার্বণ। Bangla Calendar '.$year.' ('.($year + 593).'-'.substr((string) ($year + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)]])]);
         Ads::allow();
 
-        return view('janun.calendar.year', ['year' => $year, 'rows' => $rows, 'days' => self::events($from, $to), 'seo' => $seo]);
+        return view('janun.calendar.year', ['latin' => 'Bangla Calendar '.$year.' ('.($year + 593).'-'.substr((string) ($year + 594), 2).')', 'year' => $year, 'rows' => $rows, 'days' => self::events($from, $to), 'seo' => $seo]);
     }
 
     public function month(int $year, string $slug)
@@ -83,12 +86,19 @@ class BanglaCalendarController extends Controller
         $name = BanglaDate::MONTHS[$m - 1];
         $bdStart = BanglaDate::bdStart($year, $m);
         $span = self::EN_MONTHS[$bdStart->month - 1].'-'.self::EN_MONTHS[$bdStart->addDays(29)->month - 1].' '.Bn::num((string) $bdStart->addDays(29)->year);
+        $grids = self::grids($year, $m);
+        // the month's own facts, so no two month pages read alike (SEO review)
+        $range = fn ($g) => self::short($g['days'][0]['g']).'–'.self::short(end($g['days'])['g']).' ('.Bn::num((string) count($g['days'])).' দিন)';
+        $first = collect($grids['wb']['days'] ?? [])->concat($grids['bd']['days'])->filter(fn ($d) => $d['events'])->sortBy(fn ($d) => $d['g']->toDateString())->first();
+        $latin = BanglaDate::EN[$m - 1].' '.$year.' Bengali calendar';
+        $desc = $name.' '.Bn::num((string) $year).': '.($grids['wb'] ? 'পশ্চিমবঙ্গে '.$range($grids['wb']).', ' : '').'বাংলাদেশে '.$range($grids['bd']).', ঋতু '.BanglaDate::SEASONS[$m - 1].'।'
+            .($first ? ' '.$first['events'][0][0].'।' : '').' '.$latin.'.';
         $seo = new Seo(title: $name.' '.Bn::num((string) $year).': বাংলা ক্যালেন্ডার ('.$span.')',
-            description: $name.' '.Bn::num((string) $year).' মাসের বাংলা ক্যালেন্ডার: প্রতিদিনের বাংলা ও ইংরেজি তারিখ, পশ্চিমবঙ্গ আর বাংলাদেশ পাশাপাশি, আর এ মাসের পুজো-পার্বণ ও বিশেষ দিন।',
+            description: \App\Support\JanunPlan::clip($desc, 160),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)], [$name, BanglaDate::url($year, $m)]])]);
         Ads::allow();
 
-        return view('janun.calendar.month', ['year' => $year, 'month' => $m, 'grids' => self::grids($year, $m), 'seo' => $seo]);
+        return view('janun.calendar.month', ['latin' => $latin, 'year' => $year, 'month' => $m, 'grids' => $grids, 'seo' => $seo]);
     }
 
     /** Years with pages: from launch to next year. */
@@ -116,7 +126,7 @@ class BanglaCalendarController extends Controller
         $bdStart = BanglaDate::bdStart($year, $month);
         $bdLen = BanglaDate::bdLengths($year + 594)[$month - 1];
         $events = self::events(($wbStart ?? $bdStart)->min($bdStart), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32));
-        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events) {
+        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events) {
             $g = $start->addDays($i);
 
             return ['n' => $i + 1, 'g' => $g, 'today' => $g->equalTo(self::today()), 'other' => $other === 'bd' ? BanglaDate::bd($g) : BanglaDate::wb($g),
