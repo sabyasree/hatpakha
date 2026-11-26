@@ -19,15 +19,17 @@
 
         @if ($p->kind === 'list')
             @php($groups = collect((array) ($b['entries'] ?? []))->groupBy(fn ($e) => mb_substr(trim((string) $e['term']), 0, 1)))
-            <label for="janun-q" class="mt-6 block font-bold">খুঁজুন</label>
+            <div class="sticky top-0 z-10 -mx-5 mt-6 bg-paper px-5 pb-2 pt-2">
+            <label for="janun-q" class="block font-bold">খুঁজুন</label>
             <input id="janun-q" type="search" data-janun-q autocomplete="off" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg" placeholder="যেমন: লোভ">
             <p data-janun-count role="status" aria-live="polite" class="mt-1 min-h-5 text-sm text-ink2"></p>
-            <nav aria-label="অক্ষর ধরে" class="mt-3 flex flex-wrap gap-2">
-                @foreach ($groups->keys() as $l)<a href="#l-{{ $loop->index }}" class="grid h-11 w-11 place-items-center rounded-xl border-2 border-navy font-bold hover:bg-peach-light">{{ $l }}</a>@endforeach
+            <nav aria-label="অক্ষর ধরে" class="mt-2 flex flex-nowrap gap-2 overflow-x-auto pb-1">
+                @foreach ($groups->keys() as $l)<a href="#l-{{ $loop->index }}" data-janun-letter class="grid h-11 w-11 flex-none place-items-center rounded-xl border-2 border-navy bg-white font-bold hover:bg-peach-light">{{ $l }}</a>@endforeach
             </nav>
+            </div>
             @php($seen = 0)
             @foreach ($groups as $letter => $entries)
-                <h2 id="l-{{ $loop->index }}" data-janun-group class="mt-8 scroll-mt-24 inline-block border-b-2 border-red font-display text-2xl font-extrabold text-red">{{ $letter }}</h2>
+                <h2 id="l-{{ $loop->index }}" data-janun-group class="mt-8 scroll-mt-48 inline-block border-b-2 border-red font-display text-2xl font-extrabold text-red">{{ $letter }}</h2>
                 @foreach ($entries as $e)
                     <div data-janun-item class="border-b border-rule py-3">
                         <h3 class="font-display text-lg font-extrabold">{{ $e['term'] }}</h3>
@@ -37,19 +39,25 @@
                 @endforeach
                 @php($before = $seen)
                 @php($seen += $entries->count())
-                @if (($before < 15 && $seen >= 15) || ($before >= 15 && intdiv($seen - 15, 25) > intdiv($before - 15, 25)))<x-ad-slot spot="list" :height="250" />@endif
+                @if (($before < 15 && $seen >= 15) || ($before >= 15 && intdiv($seen - 15, 25) > intdiv($before - 15, 25)))<div data-janun-ad><x-ad-slot spot="list" :height="250" /></div>@endif
             @endforeach
             <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
                 (() => {
                     const q = document.querySelector('[data-janun-q]'), out = document.querySelector('[data-janun-count]');
                     const items = [...document.querySelectorAll('[data-janun-item]')], groups = [...document.querySelectorAll('[data-janun-group]')];
+                    const ads = [...document.querySelectorAll('[data-janun-ad]')], letters = [...document.querySelectorAll('[data-janun-letter]')];
                     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
+                    // য়/ড়/ঢ় come as one character from some keyboards and as two from others: compare in one form (UX review)
+                    const norm = (s) => s.normalize('NFC').replace(/[\u200c\u200d]/g, '');
+                    items.forEach((el) => { el.dataset.t = norm(el.textContent); });
                     q?.addEventListener('input', () => {
-                        const t = q.value.trim();
+                        const t = norm(q.value.trim());
                         let n = 0;
-                        items.forEach((el) => { const hit = !t || el.textContent.includes(t); el.hidden = !hit; n += hit ? 1 : 0; });
+                        items.forEach((el) => { const hit = !t || el.dataset.t.includes(t); el.hidden = !hit; n += hit ? 1 : 0; });
                         groups.forEach((g) => { let s = g.nextElementSibling, any = false; while (s && !s.matches('[data-janun-group]')) { if (s.matches('[data-janun-item]') && !s.hidden) any = true; s = s.nextElementSibling; } g.hidden = !any; });
-                        out.textContent = t ? bn(n) + 'টি মিলেছে' : '';
+                        groups.forEach((g, i) => { if (letters[i]) letters[i].hidden = g.hidden; });
+                        ads.forEach((a) => { a.hidden = !!t; });   // no ad beside a search answer
+                        out.textContent = !t ? '' : (n ? bn(n) + 'টি মিলেছে' : 'কিছু মেলেনি। অন্য কোনো শব্দে খুঁজে দেখুন।');
                     });
                 })();
             </script>
@@ -80,10 +88,10 @@
                         @if (filled($m['roman'] ?? ''))<p lang="sa-Latn" class="mt-1 text-base italic text-ink2">{{ $m['roman'] }}</p>@endif
                         <p class="mt-2 font-serif text-base leading-relaxed"><b>অর্থ:</b> {{ $m['meaning'] }}</p>
                         @if (filled($m['english'] ?? ''))<p lang="en" class="mt-1 text-base leading-relaxed text-ink2">{{ $m['english'] }}</p>@endif
-                        @if (! empty($m['checked_on']))<p class="mt-1 text-xs text-ink2">মিলিয়ে দেখা হয়েছে: {{ implode(', ', (array) $m['checked_on']) }}</p>@endif
+                        @if (! empty($m['checked_on']))<p class="mt-1 text-sm text-ink2">মিলিয়ে দেখা হয়েছে: {{ implode(', ', (array) $m['checked_on']) }}</p>@endif
                     </div>
                 @endforeach
-                @if ($loop->iteration === 1 || ($loop->iteration === 3 && $loop->remaining > 0))<x-ad-slot spot="article_mid" :height="250" />@endif
+                @if (($loop->iteration === 1 || ($loop->iteration === 3 && $loop->remaining > 0)) && empty($s['steps']) && empty($s['mantras']))<x-ad-slot spot="article_mid" :height="250" />@endif
             @endforeach
         @endif
 
