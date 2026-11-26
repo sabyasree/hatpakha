@@ -69,6 +69,8 @@ Route::get('/author/{slug}', [ArchiveController::class, 'author'])->name('author
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag');
 Route::get('/archive', [ArchiveController::class, 'archiveIndex'])->name('archive');
 Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->name('janun');   // D301: জেনে রাখুন
+Route::get('/janun/puja/pujor-somoy', [\App\Http\Controllers\JanunController::class, 'times'])->name('janun.times');   // D302: tithi times in any time zone
+Route::get('/janun/puja/{slug}/chhapun', [\App\Http\Controllers\JanunController::class, 'booklet'])->where('slug', '[a-z0-9-]+');   // D302: printable puja booklet
 Route::get('/janun/{section}', [\App\Http\Controllers\JanunController::class, 'section'])->whereIn('section', array_keys(\App\Support\JanunPlan::SECTIONS));
 Route::get('/janun/{section}/{slug}', [\App\Http\Controllers\JanunController::class, 'page'])->whereIn('section', array_keys(\App\Support\JanunPlan::SECTIONS))->where('slug', '[a-z0-9-]+');
 Route::get('/bishoy', [\App\Http\Controllers\TopicController::class, 'index'])->name('topics');   // D293: topic pages

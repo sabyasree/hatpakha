@@ -6,6 +6,7 @@ use App\Models\JanunPage;
 use App\Seo\JsonLd;
 use App\Seo\Seo;
 use App\Support\Ads;
+use App\Support\FestivalPlan;
 use App\Support\JanunPlan;
 use App\Support\Url;
 
@@ -61,6 +62,34 @@ class JanunController extends Controller
         return view('janun.section', ['section' => $section, 'name' => $name, 'intro' => $intro, 'pages' => $pages, 'live' => self::live(), 'seo' => $seo]);
     }
 
+    /** D302: the coming festivals' checked times, live once two festivals have them. */
+    public function times()
+    {
+        $festivals = FestivalPlan::upcoming();
+        abort_if($festivals->pluck(0)->unique()->count() < 2, 404);
+        $url = Url::to('/janun/puja/pujor-somoy');
+        $seo = new Seo(title: 'পুজোর তিথি ও সময়: পৃথিবীর যে কোনো দেশের ঘড়িতে',
+            description: JanunPlan::clip('দুর্গাপুজো, সরস্বতী পুজো, কালীপুজো, লক্ষ্মী পুজোর তিথি শুরু ও শেষের সময়, আমেরিকা, ব্রিটেন, জাপান বা যে কোনো দেশের নিজের সময়ে। দুটি সূত্রে মিলিয়ে দেখা।'),
+            jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['পুজো-পার্বণ', Url::to('/janun/puja')], ['পুজোর তিথি ও সময়', $url]])]);
+        Ads::allow();
+
+        return view('janun.times', ['festivals' => $festivals, 'seo' => $seo]);
+    }
+
+    /** D302: a free printable booklet of a puja page (steps, checked mantras, times, QR), for homes and associations. */
+    public function booklet(string $slug)
+    {
+        $p = JanunPage::live()->where('section', 'puja')->where('slug', $slug)->where('kind', 'guide')->firstOrFail();
+        $b = (array) $p->body;
+        $sections = collect((array) ($b['sections'] ?? []))->filter(fn ($s) => ! empty($s['steps']) || ! empty($s['mantras']))->values();
+        abort_if($sections->isEmpty(), 404);
+        $festival = collect(FestivalPlan::FESTIVALS)->search(fn ($f) => $f[1] === $p->key);
+
+        return response()->view('janun.booklet', ['p' => $p, 'b' => $b, 'sections' => $sections,
+            'times' => $festival ? FestivalPlan::upcoming($festival)->take(1) : collect(), 'qr' => \App\Support\IssueBook::qr($p->url())])
+            ->header('X-Robots-Tag', 'noindex, follow');
+    }
+
     public function page(string $section, string $slug)
     {
         $p = JanunPage::live()->where('section', $section)->where('slug', $slug)->firstOrFail();
@@ -74,7 +103,10 @@ class JanunController extends Controller
             ->concat(JanunPage::live()->where('section', $section)->whereKeyNot($p->id)->whereNotIn('key', $related)->orderByDesc('publish_at')->limit(4)->get(['id', 'key', 'section', 'slug', 'title']))
             ->take(5)->values();
         $desk = \App\Models\Author::where('is_desk', true)->where('slug', 'hatpakha-desk')->first();
+        $festival = collect(FestivalPlan::FESTIVALS)->search(fn ($f) => $f[1] === $p->key);
+        $times = $festival ? FestivalPlan::upcoming($festival)->take(1) : collect();
+        $printable = $section === 'puja' && $p->kind === 'guide' && collect((array) ($p->body['sections'] ?? []))->contains(fn ($s) => ! empty($s['steps']) || ! empty($s['mantras']));
 
-        return view('janun.page', ['p' => $p, 'b' => (array) $p->body, 'siblings' => $siblings, 'seo' => $seo, 'deskUrl' => $desk?->url() ?? Url::to('/about')]);
+        return view('janun.page', ['times' => $times, 'printable' => $printable, 'p' => $p, 'b' => (array) $p->body, 'siblings' => $siblings, 'seo' => $seo, 'deskUrl' => $desk?->url() ?? Url::to('/about')]);
     }
 }

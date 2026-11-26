@@ -61,11 +61,51 @@
                     });
                 })();
             </script>
+        @elseif ($p->kind === 'poem')
+            {{-- D302: the poem (checked letter for letter on two pages), its Roman reading, our English translation, the hard words --}}
+            <figure class="mt-6 rounded-2xl bg-peach-light p-5">
+                <figcaption class="text-sm font-bold text-ink2">{{ $b['poet'] ?? '' }}@if (filled($b['book'] ?? '')) · {{ $b['book'] }}@endif</figcaption>
+                <p class="mt-2 whitespace-pre-line font-serif text-xl leading-loose">{{ trim((string) $b['text']) }}</p>
+                @if (! empty($b['text_checked_on']))
+                    <p class="mt-3 text-sm text-ink2">মূল লেখার সঙ্গে মিলিয়ে দেখা হয়েছে:
+                        @foreach ((array) $b['text_checked_on'] as $i => $site)@if (! $loop->first), @endif @if (filled($b['text_checked_urls'][$i] ?? null))<a href="{{ $b['text_checked_urls'][$i] }}" rel="nofollow noopener" target="_blank" class="underline">{{ $site }}</a>@else{{ $site }}@endif @endforeach
+                    </p>
+                @endif
+            </figure>
+            <section lang="en" class="mt-6 rounded-2xl border-2 border-navy p-5">
+                <h2 class="font-display text-xl font-extrabold"><span lang="bn">ইংরেজি অনুবাদ</span> · English translation</h2>
+                <p class="mt-2 whitespace-pre-line text-lg leading-relaxed">{{ trim((string) ($b['english'] ?? '')) }}</p>
+                <p class="mt-2 text-sm text-ink2"><span lang="bn">অনুবাদ: হাতপাখা ডেস্ক</span> · Translated by Hatpakha</p>
+            </section>
+            @if (filled($b['roman'] ?? ''))
+                <details class="mt-4 rounded-2xl border-2 border-rule p-4">
+                    <summary class="cursor-pointer font-bold">রোমান হরফে পড়ুন · Read in Roman letters</summary>
+                    <p lang="bn-Latn" class="mt-2 whitespace-pre-line text-lg italic leading-relaxed">{{ trim((string) $b['roman']) }}</p>
+                </details>
+            @endif
+            @if (! empty($b['words']))
+                <h2 class="mt-8 font-display text-2xl font-extrabold">কঠিন শব্দের মানে</h2>
+                <dl class="mt-3 divide-y divide-rule">
+                    @foreach ($b['words'] as $w)<div class="py-2"><dt class="font-bold">{{ $w['term'] }}</dt><dd class="font-serif">{{ $w['meaning'] }} <span lang="en" class="text-ink2">· {{ $w['english'] }}</span></dd></div>@endforeach
+                </dl>
+            @endif
+            @if (! empty($b['about']))
+                <h2 class="mt-8 font-display text-2xl font-extrabold">কবিতাটি নিয়ে</h2>
+                @foreach ($b['about'] as $para)<p class="mt-3 font-serif text-lg leading-relaxed">{{ $para }}</p>@endforeach
+                <x-ad-slot spot="article_mid" :height="250" />
+            @endif
         @else
             @if ($p->kind === 'guide' && ! empty($b['facts']))
                 <dl class="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-2xl border-l-4 border-sky-deep bg-sky-tint p-4">
                     @foreach ($b['facts'] as $f)<dt class="text-ink2">{{ $f['label'] }}</dt><dd class="font-bold">{{ $f['value'] }}</dd>@endforeach
                 </dl>
+            @endif
+            @if (isset($times) && $times->isNotEmpty())
+                @include('janun.partials.times', ['festivals' => $times, 'heading' => 'এবারের তিথি ও সময়', 'links' => false])
+                <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-2 inline-flex min-h-11 items-center font-bold text-sky-night underline">সব পুজোর তিথি ও সময় →</a>
+            @endif
+            @if ($printable ?? false)
+                <a href="{{ \App\Support\Url::to('/janun/puja/'.$p->slug.'/chhapun') }}" class="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy px-4 font-bold hover:bg-peach-light">🖨️ ছাপার পুস্তিকা: মন্ত্র, অর্থ ও নিয়ম (বিনামূল্যে)</a>
             @endif
             @if ($sections->count() > 2)
                 <details class="mt-5 rounded-2xl border-2 border-navy p-4" open>

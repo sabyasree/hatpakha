@@ -151,9 +151,11 @@ class SitemapController extends Controller
     /** D301: the জেনে রাখুন hub, its sections and pages, once something there is live. */
     private static function janun(): \Illuminate\Support\Collection
     {
+        $times = \App\Support\FestivalPlan::upcoming()->pluck(0)->unique()->count() >= 2
+            ? [['loc' => Url::to('/janun/puja/pujor-somoy'), 'lastmod' => null, 'image' => null]] : [];   // D302
         $live = array_filter(JanunController::live(), fn ($pages) => $pages->isNotEmpty());
         if ($live === []) {
-            return collect();
+            return collect($times);
         }
         $out = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null]]);
         foreach ($live as $section => $pages) {
@@ -163,6 +165,6 @@ class SitemapController extends Controller
             }
         }
 
-        return $out;
+        return $out->concat($times);
     }
 }

@@ -44,7 +44,7 @@ class JanunPagesTest extends TestCase
             if ($purpose === 'factcheck') {
                 return str_contains($user, '<mantra')
                     ? ['exact_matches' => array_map(fn ($s) => ['url' => 'https://'.$s.'/x', 'site' => $s], array_shift($this->mantraSites) ?? [])]
-                    : ['problems' => (++$this->factSearches && true) ? $this->problems : []];
+                    : (str_contains($user, '<festival') ? ['events' => [], 'sources' => []] : ['problems' => (++$this->factSearches && true) ? $this->problems : []]);
             }
 
             return null;
@@ -96,7 +96,7 @@ class JanunPagesTest extends TestCase
         $slugs = [];
         foreach (JanunPlan::PAGES as $key => [$section, $kind, $slug, $title, $seo, $brief]) {
             $this->assertArrayHasKey($section, JanunPlan::SECTIONS, $key);
-            $this->assertContains($kind, ['list', 'guide', 'study'], $key);
+            $this->assertContains($kind, ['list', 'guide', 'study', 'poem'], $key);
             $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $slug, $key);
             $this->assertNotContains($section.'/'.$slug, $slugs, $key);
             $slugs[] = $section.'/'.$slug;

@@ -146,7 +146,10 @@ final class JsonLd
             'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => $p->modifiedAt()?->toIso8601String(),
             'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
         ]];
-        if ($p->kind === 'list') {
+        if ($p->kind === 'poem' && filled($p->body['poet'] ?? '')) {   // D302: the poem itself, by its poet; our page carries the translation
+            $nodes[0]['about'] = ['@type' => 'CreativeWork', 'name' => trim(explode(':', $p->title)[0]), 'inLanguage' => 'bn', 'author' => ['@type' => 'Person', 'name' => (string) $p->body['poet']]];
+        }
+                if ($p->kind === 'list') {
             $nodes[] = ['@type' => 'DefinedTermSet', 'name' => $p->title, 'url' => $p->url(),
                 'hasDefinedTerm' => collect((array) ($p->body['entries'] ?? []))->take(200)->map(fn ($e) => ['@type' => 'DefinedTerm', 'name' => (string) $e['term'], 'description' => (string) $e['meaning']])->values()->all()];
         }

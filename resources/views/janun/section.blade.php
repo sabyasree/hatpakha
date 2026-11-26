@@ -2,10 +2,15 @@
     <section class="mx-auto max-w-[1000px] px-5 py-10">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', \App\Support\Url::to('/')], ['জেনে রাখুন', \App\Support\Url::to('/janun')], [$name, '']], 'kicker' => 'জেনে রাখুন', 'title' => $name])
         <p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed">{{ $intro }}</p>
+        @if ($section === 'puja' && \App\Support\FestivalPlan::upcoming()->pluck(0)->unique()->count() >= 2)
+            {{-- D302 --}}
+            <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">🕰️ পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
+        @endif
         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
             @foreach ($pages as $pg)
                 <li><a href="{{ $pg->url() }}" class="block rounded-2xl border-2 border-navy bg-paper p-4 hover:bg-peach-light">
                     <span class="block font-display text-lg font-extrabold">{{ $pg->title }}</span>
+                    @if ($pg->kind === 'poem')<span class="mt-1 block text-sm text-ink2">পুরো কবিতা · শব্দের মানে · English translation</span>@endif
                     @if ($pg->kind === 'list')<span class="mt-1 block text-sm text-ink2">{{ \App\Support\Bn::num((string) count((array) ($pg->body['entries'] ?? []))) }}টি, অর্থ আর উদাহরণসহ</span>@endif
                 </a></li>
                 @if ($loop->iteration === 6 && $loop->remaining > 2)<li class="sm:col-span-2"><x-ad-slot spot="list" :height="250" class="!my-2" /></li>@endif

@@ -429,3 +429,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] UX review applied (search finds য়/ড় typed either way, no ads during a search or beside steps/mantras, sticky search, bigger tap targets). SEO review applied (links from footer/llms.txt/game/topic page once live, dateModified fix, every list entry fact-checked, mantra pages opened by the server, cannibalisation fixed, related pages, descriptions cut between words, একুশে moved before February).
 - [ ] Nothing for the owner: after deploy the desk drafts about one page an hour and schedules them; the first goes live on the next Monday/Wednesday/Friday. Held pages appear in the audit log (janun.held).
 - [ ] Later, from the US/UK research (owner decides): Durga Puja and Saraswati Puja times in US/UK time each year; Tagore/Nazrul/Sukumar poems for children with our own English translation; a free printable puja booklet for Bengali associations abroad; বাংলা শিখি pack with English notes for parents (paid, needs a payment gateway).
+
+## Puja times worldwide, children's poems, puja booklet (D302), 2026-11-26
+- [x] Festival times found and checked on two pages by the desk; `/janun/puja/pujor-somoy/` and a box on each puja page in the reader's time zone (any zone in the world); 13 children's poems with our English translation (`/janun/chhora/`); free A5 booklet per puja page (FestivalTimesTest).
+- [ ] Owner, when the Saraswati page is live (about two weeks after deploy): send the booklet link to Bengali associations abroad (a ready message is in the conversation of 2026-11-26).
+- [ ] Watch the audit log (festival.found) in the first days: if pages rarely confirm the times (sites blocking the server), times stay hidden and the check needs another source.

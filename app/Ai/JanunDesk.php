@@ -34,6 +34,7 @@ final class JanunDesk
         if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || AiSwitch::paused()) {
             return $n;
         }
+        FestivalDesk::run($now);   // D302: tithi times for the time-zone page, one search an hour at most
         if ($p = JanunPage::where('status', 'drafted')->orderBy('id')->first()) {
             self::check($p, $now);
         } elseif (Setting::get('janun.drafted_hour') !== $now->format('Y-m-d H')) {
@@ -74,7 +75,7 @@ final class JanunDesk
         $base = ['description' => $str, 'sources' => ['type' => 'array', 'items' => $str], 'faq' => $faq];
 
         return ['type' => 'object', 'additionalProperties' => false, 'required' => array_merge(array_keys($base), match ($kind) {
-            'list' => ['intro', 'entries'], 'guide' => ['intro', 'facts', 'sections'], default => ['summary', 'sections'],
+            'list' => ['intro', 'entries'], 'guide' => ['intro', 'facts', 'sections'], 'poem' => ['intro', 'poet', 'book', 'text', 'roman', 'english', 'words', 'about'], default => ['summary', 'sections'],
         }), 'properties' => $base + match ($kind) {
             'list' => ['intro' => $str, 'entries' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false,
                 'required' => ['term', 'meaning', 'example'], 'properties' => ['term' => $str, 'meaning' => $str, 'example' => $str]]]],
@@ -84,6 +85,8 @@ final class JanunDesk
                     'heading' => $str, 'paragraphs' => ['type' => 'array', 'items' => $str], 'steps' => ['type' => 'array', 'items' => $str],
                     'mantras' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['name', 'text', 'roman', 'meaning', 'english'], 'properties' => ['name' => $str, 'text' => $str, 'roman' => $str, 'meaning' => $str, 'english' => $str]]],
                 ]]]],
+            'poem' => ['intro' => $str, 'poet' => $str, 'book' => $str, 'text' => $str, 'roman' => $str, 'english' => $str, 'about' => ['type' => 'array', 'items' => $str],
+                'words' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['term', 'meaning', 'english'], 'properties' => ['term' => $str, 'meaning' => $str, 'english' => $str]]]],
             default => ['summary' => $str, 'sections' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false,
                 'required' => ['heading', 'paragraphs'], 'properties' => ['heading' => $str, 'paragraphs' => ['type' => 'array', 'items' => $str]]]]],
         }];
@@ -98,6 +101,9 @@ final class JanunDesk
             .'Never copy wording from other websites or books: explanations and example sentences are your own. Festival days only by the Bengali calendar (তিথি, মাস), never a Gregorian date. '
             .'A mantra only in its standard, widely published form in Bengali script, exactly; if you are not certain of every word, do not give it. Meanings of mantras in simple Bengali; also roman (a plain Roman-letter reading, e.g. "Om Saraswati Mahabhage") and english (the meaning in one or two plain English sentences), for families abroad whose children read Bengali slowly. '
             .'description: 120-155 characters for Google, inviting and exact. sources: the kinds of standard references a reader could check (e.g. বাংলা একাডেমি প্রমিত বানানের নিয়ম, a standard dictionary or পুরোহিত দর্পণ); never invented titles or links. '
+            .'Poem pages (D302): text = the complete poem exactly as in its standard edition, every line, line breaks kept, stanzas separated by an empty line; if you are not certain of every word, give an empty text. '
+            .'book = the collection it first appeared in, only if certain (else empty). roman = the poem read in plain Roman letters, line by line. english = our own faithful English translation, line by line, simple enough for a child abroad; never copy a published translation. '
+            .'words = the harder words with a simple Bengali meaning and an English word. about = 2-3 short paragraphs for parents and children: what the poem shows, how to read it aloud. intro = one short paragraph about the poet for children. '
             .'faq: 3-5 short questions people really ask, with short answers. Lists: no numbering in the text, no duplicates. Study pages: headings such as মূলভাব, সম্প্রসারিত ভাব, মন্তব্য, or ভূমিকা … উপসংহার for a রচনা.';
         [$d, $err] = Claude::json('janun', $system, "<page>\n<title>".e($p->title)."</title>\n<brief>".e($brief)."</brief>\n</page>",
             self::schema($p->kind), (string) config('ai.anthropic.review_model'), 48000);
@@ -126,12 +132,19 @@ final class JanunDesk
         if ($mantras === null) {
             return;
         }
+        if ($p->kind === 'poem') {   // D302: the whole poem, letter for letter, on two independent pages, or the page is held
+            $poem = self::checkPoem($body);
+            if ($poem === null) {
+                return;
+            }
+        }
         $thin = match ($p->kind) {
             'list' => count((array) ($body['entries'] ?? [])) < self::MIN_LIST,
+            'poem' => empty($body['text_checked_on']) || blank($body['english'] ?? ''),
             'guide' => collect((array) ($body['sections'] ?? []))->filter(fn ($s) => ! empty($s['paragraphs']) || ! empty($s['steps']) || ! empty($s['mantras']))->count() < 2,
             default => collect((array) ($body['sections'] ?? []))->filter(fn ($s) => ! empty($s['paragraphs']))->count() < 2,
         };
-        $check = ['problems' => array_slice($problems, 0, 20), 'removed' => $removed, 'mantras' => $mantras, 'at' => now()->toIso8601String()];
+        $check = ['problems' => array_slice($problems, 0, 20), 'removed' => $removed, 'mantras' => $mantras, 'poem' => $poem ?? null, 'at' => now()->toIso8601String()];
         if ($thin) {
             $p->forceFill(['body' => $body, 'check' => $check, 'status' => 'held', 'checked_at' => now()])->save();
             AuditLog::record('janun.held', null, ['key' => $p->key]);
@@ -173,6 +186,7 @@ final class JanunDesk
             return [$all, null];
         }
         $text = match ($p->kind) {
+            'poem' => collect([(string) ($body['intro'] ?? ''), 'কবিতা: '.($body['poet'] ?? '').(filled($body['book'] ?? '') ? ', বই: '.$body['book'] : '')])->merge((array) ($body['about'] ?? []))->implode("\n"),
             'guide' => collect((array) ($body['facts'] ?? []))->map(fn ($f) => '• '.$f['label'].': '.$f['value'])
                 ->merge(collect((array) ($body['sections'] ?? []))->flatMap(fn ($s) => array_merge((array) $s['paragraphs'], (array) $s['steps'])))->implode("\n"),
             default => collect((array) ($body['sections'] ?? []))->flatMap(fn ($s) => (array) $s['paragraphs'])->implode("\n"),
@@ -222,6 +236,13 @@ final class JanunDesk
         };
         if (isset($body['entries'])) {
             $body['entries'] = $drop((array) $body['entries'], fn ($e) => $e['term'].' — '.$e['meaning']);
+        }
+        if (isset($body['about'])) {
+            $body['about'] = $drop((array) $body['about'], fn ($t) => (string) $t);
+        }
+        if (filled($body['intro'] ?? '') && $hit((string) $body['intro'])) {
+            $body['intro'] = '';
+            $n++;
         }
         if (isset($body['facts'])) {
             $body['facts'] = $drop((array) $body['facts'], fn ($f) => $f['label'].': '.$f['value']);
@@ -293,21 +314,62 @@ final class JanunDesk
     /** Opens a public https page (no private addresses, no redirects, 2 MB at most) and looks for the mantra, letter for letter. */
     public static function pageHas(string $url, string $mantra): bool
     {
+        $want = self::letters($mantra);
+        $text = self::fetchText($url);
+
+        return $text !== null && mb_strlen($want) >= 8 && str_contains(self::letters($text), $want);
+    }
+
+    /** The visible text of a public https page (no private addresses, no redirects, 2 MB at most), or null. */
+    public static function fetchText(string $url): ?string
+    {
         $u = parse_url($url);
         if (($u['scheme'] ?? '') !== 'https' || empty($u['host']) || isset($u['user']) || isset($u['port'])) {
-            return false;
+            return null;
         }
         $ips = self::$resolve ? (self::$resolve)($u['host']) : (gethostbynamel($u['host']) ?: []);
         if ($ips === [] || collect($ips)->contains(fn ($ip) => ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))) {
-            return false;
+            return null;
         }
         $res = rescue(fn () => Http::timeout(12)->withOptions(['allow_redirects' => false])->withUserAgent('Mozilla/5.0 (compatible; HatpakhaCheck/1.0)')->get($url), null, false);
         if (! $res || ! $res->successful() || strlen($res->body()) > 2_000_000) {
-            return false;
+            return null;
         }
-        $want = self::letters($mantra);
-        $page = self::letters(strip_tags((string) preg_replace('#<(script|style)\b.*?</\1>#is', '', $res->body())));
 
-        return mb_strlen($want) >= 8 && str_contains($page, $want);
+        return html_entity_decode(strip_tags((string) preg_replace('#<(script|style)\b.*?</\1>#is', ' ', str_replace(['<br', '</p', '</div', '</li', '</td'], ["\n<br", "\n</p", "\n</div", "\n</li", " </td"], $res->body()))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    /** @return array|null what was found, or null when the search did not work (tried next run) */
+    private static function checkPoem(array &$body): ?array
+    {
+        $text = trim((string) ($body['text'] ?? ''));
+        if (mb_strlen(self::letters($text)) < 40) {
+            return ['poem' => 'no text'];
+        }
+        [$d] = Claude::search('factcheck',
+            'Find this Bengali poem in full on independent, reliable web pages (e.g. Wikisource, publishers, well-known literature sites; not hatpakha.com; not forums or video pages). '
+            .'Answer ONLY with JSON: {"pages":[{"url":"https://..."}]}',
+            '<poem poet="'.e((string) ($body['poet'] ?? '')).'">'.e(mb_substr($text, 0, 3000)).'</poem>', 4);
+        if (! Claude::$fake && (Claude::$lastSearch['ok'] ?? 0) === 0) {
+            return null;
+        }
+        $found = [];
+        foreach (collect((array) ($d['pages'] ?? []))->pluck('url')->filter()->unique()->take(6) as $url) {
+            $host = preg_replace('/^www\./', '', strtolower((string) parse_url((string) $url, PHP_URL_HOST)));
+            if ($host === '' || str_contains($host, 'hatpakha') || isset($found[$host])) {
+                continue;
+            }
+            $page = self::fetchText((string) $url);
+            if ($page !== null && str_contains(self::letters($page), self::letters($text))) {
+                $found[$host] = (string) $url;
+            }
+            if (count($found) >= 2) {
+                break;
+            }
+        }
+        $body['text_checked_on'] = count($found) >= 2 ? array_keys($found) : [];
+        $body['text_checked_urls'] = count($found) >= 2 ? array_values($found) : [];
+
+        return ['poem' => count($found) >= 2 ? 'matched' : 'not matched', 'sites' => array_keys($found)];
     }
 }
