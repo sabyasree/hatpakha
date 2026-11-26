@@ -177,4 +177,10 @@ class BanglaCalendarTest extends TestCase
         preg_match('/<meta name="description" content="([^"]+)"/', $this->get('/janun/bangla-calendar/')->getContent(), $di);
         $this->assertStringNotContainsString('১০ অগ্রহায়ণ', $di[1], 'no date in a snippet Google keeps for days');
     }
+
+    public function test_home_line_says_whose_date_until_west_bengal_is_checked(): void
+    {
+        cache()->flush();
+        $this->assertSame(['আজ ১১ অগ্রহায়ণ ১৪৩৩ (বাংলাদেশ)', ''], \App\Http\Controllers\BanglaCalendarController::todayLine());
+    }
 }
