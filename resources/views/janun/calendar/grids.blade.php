@@ -23,8 +23,17 @@
             $cells = array_merge(array_fill(0, $g['lead'], null), $g['days']);
         @endphp
         <section data-cal-panel="{{ $k }}" id="{{ $uid }}-p-{{ $k }}" @if (count($tabs) > 1) role="tabpanel" aria-labelledby="{{ $uid }}-t-{{ $k }}" @endif class="mt-4">
-            <h2 class="font-display text-2xl font-extrabold">{{ $name }} <span class="text-base font-bold text-ink2">· {{ $label }}</span></h2>
-            <p class="text-sm text-ink2">{{ $C::short($g['days'][0]['g']) }} {{ $N($g['days'][0]['g']->year) }} থেকে {{ $C::short(end($g['days'])['g']) }} {{ $N(end($g['days'])['g']->year) }} · {{ $N(count($g['days'])) }} দিন · ঋতু: {{ $B::SEASONS[$g['month'] - 1] }}</p>
+            @php
+                $prev = $g['month'] === 1 ? [$g['year'] - 1, 12] : [$g['year'], $g['month'] - 1];
+                $next = $g['month'] === 12 ? [$g['year'] + 1, 1] : [$g['year'], $g['month'] + 1];
+            @endphp
+            {{-- previous / next month on every calendar page (owner, 2026-11-27) --}}
+            <nav class="flex items-center justify-between gap-2" aria-label="আগের ও পরের মাস">
+                @if ($C::offered($prev[0]))<a href="{{ $B::url(...$prev) }}" class="flex min-h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy px-3 text-sm font-bold hover:bg-peach-light" aria-label="আগের মাস: {{ $B::MONTHS[$prev[1] - 1] }} {{ $N($prev[0]) }}">← {{ $B::MONTHS[$prev[1] - 1] }}</a>@else<span></span>@endif
+                <h2 class="min-w-0 text-center font-display text-xl font-extrabold leading-tight sm:text-2xl">{{ $name }} <span class="block text-sm font-bold text-ink2 sm:inline sm:text-base">· {{ $label }}</span></h2>
+                @if ($C::offered($next[0]))<a href="{{ $B::url(...$next) }}" class="flex min-h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy px-3 text-sm font-bold hover:bg-peach-light" aria-label="পরের মাস: {{ $B::MONTHS[$next[1] - 1] }} {{ $N($next[0]) }}">{{ $B::MONTHS[$next[1] - 1] }} →</a>@else<span></span>@endif
+            </nav>
+            <p class="mt-1 text-center text-sm text-ink2">{{ $C::short($g['days'][0]['g']) }} {{ $N($g['days'][0]['g']->year) }} থেকে {{ $C::short(end($g['days'])['g']) }} {{ $N(end($g['days'])['g']->year) }} · {{ $N(count($g['days'])) }} দিন · ঋতু: {{ $B::SEASONS[$g['month'] - 1] }}</p>
             <div class="mt-3 grid grid-cols-7 gap-1 text-center" role="table" aria-label="{{ $name }}, {{ $label }}">
                 <div role="row" class="contents">
                     @foreach (['র', 'সো', 'ম', 'বু', 'বৃ', 'শু', 'শ'] as $i => $w)<div role="columnheader" aria-label="{{ $B::WEEKDAYS[$i] }}" class="py-1 text-sm font-bold {{ $i === 0 ? 'text-red' : 'text-ink2' }}">{{ $w }}</div>@endforeach
