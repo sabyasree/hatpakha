@@ -61,7 +61,11 @@ final class FestivalDesk
         if (! is_array($d)) {
             return 0;
         }
-        $pages = collect((array) ($d['sources'] ?? []))->pluck('url')->filter()->unique()->take(5)
+        // also the published বিশুদ্ধ সিদ্ধান্ত month pages around each event: they list every day's tithi times as text
+        $extra = collect((array) ($d['events'] ?? []))->flatMap(fn ($e) => [(string) ($e['day'] ?? ''), substr((string) ($e['start'] ?? ''), 0, 10), substr((string) ($e['end'] ?? ''), 0, 10)])
+            ->filter(fn ($x) => preg_match('/^\d{4}-\d\d-\d\d$/', $x))->unique()
+            ->map(fn ($x) => BanglaCalendarDesk::sourceUrlFor(CarbonImmutable::parse($x)))->filter()->unique()->values();
+        $pages = collect((array) ($d['sources'] ?? []))->pluck('url')->filter()->unique()->take(5)->concat($extra)->unique()
             ->reject(fn ($u) => str_contains(strtolower((string) parse_url((string) $u, PHP_URL_HOST)), 'hatpakha'))
             ->mapWithKeys(fn ($u) => [(string) $u => JanunDesk::fetchText((string) $u)])->filter()->map(fn ($t) => self::digits($t));
         $kept = 0;
@@ -98,7 +102,9 @@ final class FestivalDesk
         }
         $found = [];
         foreach ($pages as $url => $text) {
-            $has = self::hasDate($text, $day) && (! $start || (self::hasTime($text, $start) && self::hasTime($text, $end)));
+            // each time must stand near its own date (a month page lists about ninety times)
+            $has = self::hasDate($text, $day) && (! $start || (self::hasTime(self::near($text, $start), $start) && self::hasTime(self::near($text, $end), $end)
+                || self::hasTime(self::near($text, $start->subDay()), $start) && self::hasTime(self::near($text, $end->subDay()), $end)));
             if ($has) {
                 $found[preg_replace('/^www\./', '', strtolower((string) parse_url($url, PHP_URL_HOST)))] = $url;
             }
@@ -132,6 +138,40 @@ final class FestivalDesk
         }
 
         return false;
+    }
+
+    /** The line around each mention of a date (a day's line on a calendar page). */
+    public static function near(string $text, CarbonImmutable $d): string
+    {
+        $out = '';
+        foreach (self::datePatterns($d) as $re) {
+            if (preg_match_all($re, $text, $m, PREG_OFFSET_CAPTURE)) {
+                foreach ($m[0] as [$hit, $at]) {
+                    // the day's block: its date line and the line after it (a calendar page puts the date on one line and
+                    // that day's tithi times on the next), at most 600 bytes either side
+                    $nl = strrpos(substr($text, 0, $at), "\n");
+                    $from = max($nl === false ? 0 : $nl, $at - 600);
+                    $first = strpos($text, "\n", $at + strlen($hit));
+                    $second = $first === false ? false : strpos($text, "\n", $first + 1);
+                    $to = min($second === false ? strlen($text) : $second, $at + strlen($hit) + 600);
+                    $out .= "\n".substr($text, $from, $to - $from);
+                }
+            }
+        }
+
+        return $out === '' ? '' : mb_convert_encoding($out, 'UTF-8', 'UTF-8');
+    }
+
+    /** @return list<string> regexes for one date written the usual ways */
+    private static function datePatterns(CarbonImmutable $d): array
+    {
+        $day = $d->day;
+        $en = self::MONTHS_EN[$d->month - 1];
+        $bn = preg_replace('/ি$/u', '[িী]', \Normalizer::normalize(self::MONTHS_BN[$d->month - 1], \Normalizer::FORM_C));
+        $months = '(?:'.$en.'|'.substr($en, 0, 3).'\.?|'.$bn.')';
+
+        return ['/(?<!\d)0?'.$day.'(?:st|nd|rd|th)?\s*(?:of\s*)?'.$months.'/iu', '/'.$months.'\s*0?'.$day.'(?!\d)/iu',
+            '/'.preg_quote($d->format('d/m/Y'), '/').'/', '/'.preg_quote($d->format('Y-m-d'), '/').'/'];
     }
 
     /** 14 April, April 14, ১৪ এপ্রিল, 14/04/2027 or 2027-04-14. */
