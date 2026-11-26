@@ -18,5 +18,6 @@
                 @if ($loop->first)<x-ad-slot spot="list" :height="250" />@endif
             @endif
         @endforeach
+        @if (collect($live)->flatten()->count() >= 6)<x-ad-slot spot="list" :height="250" />@endif   {{-- at the end, once the hub has a few pages (owner, 2026-11-27) --}}
     </section>
 </x-layouts.app>

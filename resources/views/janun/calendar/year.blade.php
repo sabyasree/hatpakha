@@ -36,6 +36,7 @@
                     @endforeach
                 @endforeach
             </ul>
+            @if (count($days) >= 6)<x-ad-slot spot="list" :height="250" />@endif   {{-- after the year's festival list, when it is long enough (owner, 2026-11-27) --}}
         @endif
         <a href="{{ $B::url() }}" class="mt-6 inline-flex min-h-11 items-center font-bold text-sky-night underline">আজকের বাংলা তারিখ →</a>
     </article>

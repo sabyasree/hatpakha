@@ -110,9 +110,11 @@ final class BanglaCalendarDesk
         $computed = BanglaDate::wbComputed($year);
         $ok = 0;
         $unanswered = [];
-        foreach (BanglaMonth::where('year', $year)->where('status', '!=', 'verified')->orderBy('month')->get() as $m) {
-            $calc = $computed[$m->month - 1];
-            $pub = self::published($year, $m->month, $calc);
+        // this year's months and the next year's ১ বৈশাখ (চৈত্র's last day depends on it; live site, 2026-11-27)
+        foreach (BanglaMonth::where('status', '!=', 'verified')->where(fn ($q) => $q->where('year', $year)->orWhere(fn ($n) => $n->where('year', $year + 1)->where('month', 1)))
+            ->orderBy('year')->orderBy('month')->get() as $m) {
+            $calc = $m->year === $year ? $computed[$m->month - 1] : $computed[12];
+            $pub = self::published($m->year, $m->month, $calc);
             if (! $pub) {
                 $unanswered[] = $m->id;   // the page did not answer: the web search below tries this month
 
@@ -122,7 +124,7 @@ final class BanglaCalendarDesk
             // the same পঞ্জিকা we follow: a day apart only near midnight, where its own day is kept
             $good = abs($diff) <= 1;
             $m->forceFill(['status' => $good ? 'verified' : 'held', 'starts_on' => $good ? $pub->toDateString() : $calc->toDateString(),
-                'sources' => [self::SOURCE.self::SOURCE_SLUGS[$m->month - 1].'-'.$year],
+                'sources' => [self::SOURCE.self::SOURCE_SLUGS[$m->month - 1].'-'.$m->year],
                 'note' => $good ? ($diff ? 'calculation said '.$calc->toDateString() : null) : 'published calendar says '.$pub->toDateString()])->save();
             $ok += $good ? 1 : 0;
         }

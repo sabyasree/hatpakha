@@ -10,6 +10,9 @@
         <h2 class="mt-8 font-display text-2xl font-extrabold">বিদেশে পুজোর দিন ঠিক করবেন কীভাবে?</h2>
         <p class="mt-3 font-serif text-lg leading-relaxed">তিথি চাঁদ আর সূর্যের অবস্থান ধরে একই মুহূর্তে সারা পৃথিবীতে শুরু আর শেষ হয়। তাই আমেরিকায় একটি তিথি অনেক সময় আগের দিনের তারিখে পড়ে, জাপান বা অস্ট্রেলিয়ায় পরের দিনে। যে দিনের বেশির ভাগ সময় জুড়ে তিথি থাকে, বা যে দিন সকালে তিথি থাকে, সাধারণত সেই দিনই পুজো হয়; তবে নিয়ম পুজো অনুযায়ী আলাদা, আর অনেক পুজো কমিটি সপ্তাহান্তে পুজো রাখেন। নিজের এলাকার পুরোহিত বা পুজো কমিটির কাছে জেনে নেওয়াই ভালো।</p>
         <p class="mt-3 font-serif text-lg leading-relaxed">বাংলাদেশে পয়লা বৈশাখ প্রতি বছর একই দিনে (১৪ এপ্রিল) পালিত হয়; পশ্চিমবঙ্গে পঞ্জিকা অনুযায়ী দিনটি এক দিন আগে-পরে হতে পারে।</p>
+        {{-- a second ad after the reading text, far from the calendar and its buttons (owner, 2026-11-27: "can i add some more ads"; D111/D167: at most 3 on a phone page) --}}
+        <x-ad-slot spot="list" :height="250" />
+
         <a href="{{ $U('/janun/puja') }}" class="mt-6 inline-flex min-h-11 items-center font-bold text-sky-night underline">পুজোর নিয়ম ও মন্ত্র: সব পাতা →</a>
     </article>
 </x-layouts.app>

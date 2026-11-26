@@ -6,7 +6,9 @@
 @endphp
 <x-layouts.app :seo="$seo">
     <article class="mx-auto max-w-[760px] px-5 py-8">
-        @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা ক্যালেন্ডার', '']], 'kicker' => 'জেনে রাখুন', 'title' => 'বাংলা ক্যালেন্ডার'])
+        @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা ক্যালেন্ডার', '']], 'kicker' => 'বাংলা ক্যালেন্ডার '.\App\Support\Bn::num((string) $bd[0]), 'title' => 'আজ বাংলা কত তারিখ?'])
+        {{-- the answer in one plain sentence, in the page as sent (SEO review: what Google shows as the answer) --}}
+        <p class="mt-3 font-serif text-lg leading-relaxed">আজ {{ $B::WEEKDAYS[$d->dayOfWeek] }}, {{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }}: @if ($wb)পশ্চিমবঙ্গে <b>{{ $B::text($wb) }}</b>, বাংলাদেশে <b>{{ $B::text($bd) }}</b>@else বাংলাদেশে <b>{{ $B::text($bd) }}</b>@endif বঙ্গাব্দ।</p>
         <section class="mt-5 rounded-2xl bg-navy p-5 text-white" aria-label="আজকের তারিখ">
             <p class="text-sm font-bold">আজ, {{ $B::WEEKDAYS[$d->dayOfWeek] }}</p>
             @if ($wb)
@@ -25,6 +27,7 @@
             <p class="mt-2 text-sm">{{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }} · ঋতু: {{ $B::SEASONS[($wb ?? $bd)[1] - 1] }} · দিন বদলায় ভারতীয় সময়ে</p>
         </section>
         @include('janun.calendar.grids', ['grids' => $grids, 'year' => $year, 'month' => $month])
+        @include('janun.calendar.next', ['festival' => $nextFestival])
         <x-ad-slot spot="list" :height="250" />
         <h2 class="mt-8 font-display text-2xl font-extrabold">বছরের ক্যালেন্ডার</h2>
         <div class="mt-3 flex flex-wrap gap-2">
@@ -34,5 +37,7 @@
         <h2 class="mt-8 font-display text-2xl font-extrabold">দুই বাংলার তারিখ আলাদা কেন?</h2>
         <p class="mt-3 font-serif text-lg leading-relaxed">বাংলাদেশে ১৯৮৭ সাল থেকে সংশোধিত বাংলা ক্যালেন্ডার চলে: পয়লা বৈশাখ প্রতি বছর ১৪ এপ্রিল, আর প্রতিটি মাসের দিনসংখ্যা বাঁধা (সর্বশেষ সংশোধন ২০১৯)। পশ্চিমবঙ্গে মাস শুরু হয় পঞ্জিকা মেনে, সূর্য যখন এক রাশি থেকে পরের রাশিতে যায় (সংক্রান্তি), তার পরের দিন; তাই মাসের দৈর্ঘ্য ২৯ থেকে ৩২ দিন, আর তারিখ বাংলাদেশের চেয়ে এক-আধ দিন আলাদা হয়।</p>
         <p class="mt-3 text-sm text-ink2">পশ্চিমবঙ্গের মাস: সংক্রান্তির হিসেব কষে, তারপর প্রকাশিত ক্যালেন্ডারের সঙ্গে মিলিয়ে দেখানো। পুজোর দিন: বিশুদ্ধ সিদ্ধান্ত পঞ্জিকা অনুযায়ী, প্রকাশিত সূত্রে মিলিয়ে।</p>
+        {{-- a second ad after the reading text, far from the calendar and its buttons (owner, 2026-11-27: "can i add some more ads"; D111/D167: at most 3 on a phone page) --}}
+        <x-ad-slot spot="list" :height="250" />
     </article>
 </x-layouts.app>

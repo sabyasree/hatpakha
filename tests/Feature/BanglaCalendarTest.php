@@ -259,4 +259,25 @@ class BanglaCalendarTest extends TestCase
         // the year page lists both, saying whose day it is
         $this->get('/janun/bangla-calendar/1433/')->assertSee('বাংলাদেশের বিজয় দিবস (বাংলাদেশ)')->assertSee('রবীন্দ্রজয়ন্তী (পঁচিশে বৈশাখ) (পশ্চিমবঙ্গ)');
     }
+
+    public function test_checking_a_year_also_checks_the_next_first_of_boishakh(): void
+    {
+        BanglaCalendarDesk::seed(1434);
+        $this->published['https://myastrology.in/bangla-calendar/baishakh-1435'] = '<p>১ বৈশাখ ১৪৩৫ বঙ্গাব্দ শুরু শুক্রবার ১৪ এপ্রিল — মোট ৩১ দিন।</p>';
+        $this->answer = ['months' => [], 'sources' => []];
+        BanglaCalendarDesk::check(1434);
+        $this->assertSame('verified', BanglaMonth::where(['year' => 1435, 'month' => 1])->value('status'), 'so চৈত্র ১৪৩৪ can show West Bengal dates');
+    }
+
+    public function test_seo_headings_the_answer_sentence_and_the_next_puja(): void
+    {
+        $this->checkAll();
+        \App\Models\FestivalTime::create(['festival' => 'saraswati', 'cycle' => 2027, 'label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11',
+            'starts_at' => '2027-02-10 21:34:00', 'ends_at' => '2027-02-11 21:48:00', 'status' => 'verified', 'sources' => ['https://a.org/p']]);
+        $this->get('/janun/bangla-calendar/')->assertOk()->assertSee('<h1', false)->assertSee('আজ বাংলা কত তারিখ?')
+            ->assertSee('পশ্চিমবঙ্গে <b>১০ অগ্রহায়ণ ১৪৩৩</b>, বাংলাদেশে <b>১১ অগ্রহায়ণ ১৪৩৩</b>', false)
+            ->assertSee('পরের পুজো:')->assertSee('সরস্বতী পুজো')->assertSee('১১ ফেব্রুয়ারি ২০২৭');
+        $this->get('/janun/bangla-calendar/1433/')->assertSee('<title>Bengali Calendar 2026-27 · বাংলা ক্যালেন্ডার ১৪৩৩', false);
+        $this->get('/janun/bangla-calendar/1433/ogrohayon/')->assertSee('অগ্রহায়ণ ১৪৩৩ (নভেম্বর-ডিসেম্বর ২০২৬)')->assertSee('পরের পুজো:');
+    }
 }

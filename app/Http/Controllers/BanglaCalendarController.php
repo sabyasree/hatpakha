@@ -57,7 +57,7 @@ class BanglaCalendarController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()]])]);
         Ads::allow();
 
-        return view('janun.calendar.index', ['d' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
+        return view('janun.calendar.index', ['nextFestival' => self::nextFestival(), 'd' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
     }
 
     public function year(int $year)
@@ -72,7 +72,8 @@ class BanglaCalendarController extends Controller
         $from = $rows->first()['bd']->min($rows->first()['wb'] ?? $rows->first()['bd']);
         $to = BanglaDate::bdStart($year + 1, 1)->addDays(2);
         $gy = Bn::num((string) ($year + 593)).'-'.Bn::num(substr((string) ($year + 594), 2));
-        $seo = new Seo(title: 'বাংলা ক্যালেন্ডার '.Bn::num((string) $year).' ('.$gy.'): মাস, তারিখ ও পার্বণ',
+        // English years first: people search "bengali calendar 2027" (SEO review, 2026-11-27)
+        $seo = new Seo(title: 'Bengali Calendar '.($year + 593).'-'.substr((string) ($year + 594), 2).' · বাংলা ক্যালেন্ডার '.Bn::num((string) $year).': মাস ও পার্বণ',
             description: 'বঙ্গাব্দ '.Bn::num((string) $year).': বৈশাখ থেকে চৈত্র, প্রতিটি মাস কবে শুরু, কত দিনের, পশ্চিমবঙ্গ আর বাংলাদেশে; পুজো-পার্বণ। Bangla Calendar '.$year.' ('.($year + 593).'-'.substr((string) ($year + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)]])]);
         Ads::allow();
@@ -100,7 +101,21 @@ class BanglaCalendarController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)], [$name, BanglaDate::url($year, $m)]])]);
         Ads::allow();
 
-        return view('janun.calendar.month', ['latin' => $latin, 'year' => $year, 'month' => $m, 'grids' => $grids, 'seo' => $seo]);
+        return view('janun.calendar.month', ['nextFestival' => self::nextFestival(), 'span' => $span, 'latin' => $latin, 'year' => $year, 'month' => $m, 'grids' => $grids, 'seo' => $seo]);
+    }
+
+    /** The next festival with a checked day: [name, day (Carbon), link to its page or the times page], or null. */
+    public static function nextFestival(): ?array
+    {
+        $f = FestivalPlan::upcoming()->first();
+        if (! $f) {
+            return null;
+        }
+        [$key, $name, , $rows] = $f;
+        $day = $rows->map(fn ($t) => $t->day)->filter()->min();
+        $page = \App\Models\JanunPage::live()->where('key', FestivalPlan::FESTIVALS[$key][1] ?? '')->first(['id', 'section', 'slug']);
+
+        return $day ? [$name, CarbonImmutable::parse($day->toDateString()), $page?->url() ?? Url::to('/janun/puja/pujor-somoy')] : null;
     }
 
     /** Years with pages: from launch to next year. */
