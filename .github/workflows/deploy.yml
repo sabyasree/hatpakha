@@ -198,7 +198,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
             "cd '${DEPLOY_PATH}' && (nohup php artisan hatpakha:janun-run --pages=3 --no-ansi > storage/logs/janun-run.log 2>&1 < /dev/null &) && \
-             sleep 20 && cat storage/logs/janun-run.log && echo '... continues in the background: storage/logs/janun-run.log'"
+             for i in \$(seq 1 60); do sleep 15; grep -q '^3\\.' storage/logs/janun-run.log && break; done; cat storage/logs/janun-run.log; \
+             echo '... the pages continue in the background: storage/logs/janun-run.log'"
 
       - name: AI editor batch (on request)
         if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-editor]')

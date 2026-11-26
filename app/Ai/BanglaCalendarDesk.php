@@ -57,7 +57,7 @@ final class BanglaCalendarDesk
         $ask = $months->map(fn ($m) => '- '.BanglaDate::MONTHS[$m->month - 1].' ('.BanglaDate::EN[$m->month - 1].')')->implode("\n");
         [$d] = Claude::search('factcheck',
             'You check the West Bengal Bengali calendar (as in the Bisuddha Siddhanta panjika and the West Bengal Bengali calendars published online). '
-            .'For each month of the given Bengali year, give the Gregorian date (YYYY-MM-DD) of its FIRST day (১ তারিখ) in West Bengal. Give the URLs of at least two independent web pages that show these dates (not hatpakha.com). '
+            .'For each month of the given Bengali year, give the Gregorian date (YYYY-MM-DD) of its FIRST day (১ তারিখ) in West Bengal. Give the URLs of web pages (not hatpakha.com) that show these dates as plain text (for example a news article or a list of the year\'s months); not pages that draw a calendar with scripts or pictures. '
             .'If you are not sure of a month, leave it out. Answer ONLY with JSON: {"months":[{"month":"বৈশাখ","first_day":"YYYY-MM-DD"}],"sources":[{"url":"https://..."}]}',
             "<year>বঙ্গাব্দ {$year}</year>\n<months>\n".e($ask)."\n</months>", 5);
         if (! is_array($d)) {
@@ -80,8 +80,11 @@ final class BanglaCalendarDesk
             }
             $found = $pages->filter(fn ($text) => FestivalDesk::hasDate($text, CarbonImmutable::parse($said)))->keys()
                 ->unique(fn ($u) => preg_replace('/^www\./', '', strtolower((string) parse_url($u, PHP_URL_HOST))))->values();
-            $good = $found->count() >= 2;
             $differs = $said !== $m->starts_on->toDateString();
+            // our own সংক্রান্তি calculation is one independent source: when the published day matches it, one page that
+            // shows the date is the second (calendar sites mostly draw dates with JavaScript or pictures, so two pages with
+            // the date as text were rarely found; live site, 2026-11-26). A published day that differs needs two pages.
+            $good = $found->count() >= ($differs ? 2 : 1);
             $m->forceFill(['status' => $good ? 'verified' : 'held', 'sources' => $found->take(3)->all(), 'starts_on' => $good ? $said : $m->starts_on,
                 'note' => $good ? ($differs ? 'calculation said '.$m->starts_on->toDateString() : null) : 'found on '.$found->count().' page(s)'])->save();
             $ok += $good ? 1 : 0;

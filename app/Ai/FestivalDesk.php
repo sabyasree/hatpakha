@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 
 /**
  * D302: finds each festival's tithi times for this year and next, and keeps a time only when the server finds it,
- * with its day, on at least two independent pages it opens itself. A time that fails is held and never shown.
+ * with its day, on a page it opens itself (most panjika sites draw times with JavaScript, so two were rarely found). A time that fails is held and never shown.
  * Part of the "janun" handover job; one search an hour at most, each festival and year tried three times at most.
  */
 final class FestivalDesk
@@ -55,7 +55,7 @@ final class FestivalDesk
         [$d] = Claude::search('factcheck',
             'You find Hindu/Bengali festival dates and tithi times for a Bengali magazine. Use the Bisuddha Siddhanta panjika as followed in Kolkata (as on most published Bengali calendars) and Indian Standard Time. '
             .'For each event give: day = the Gregorian date (YYYY-MM-DD) on which it is kept in Kolkata; start and end = when the tithi (or the event) begins and ends, "YYYY-MM-DD HH:MM" in IST, 24-hour; for a day-only event leave start and end empty. '
-            .'Give the URLs of at least two independent web pages that state these times (not hatpakha.com); a page must really show them. If you are not sure of an event, leave it out. Answer ONLY with JSON: '
+            .'Give the URLs of web pages (not hatpakha.com) that state these dates and times as plain text in the page (news articles, almanac pages); not pages that draw a calendar with scripts. A page must really show them. If you are not sure of an event, leave it out. Answer ONLY with JSON: '
             .'{"events":[{"label":"exactly as asked","day":"YYYY-MM-DD","start":"","end":""}],"sources":[{"url":"https://..."}]}',
             "<festival year=\"{$year}\">".e($name)."</festival>\n<events>\n".e($want)."\n</events>", 5);
         if (! is_array($d)) {
@@ -103,7 +103,9 @@ final class FestivalDesk
                 $found[preg_replace('/^www\./', '', strtolower((string) parse_url($url, PHP_URL_HOST)))] = $url;
             }
         }
-        $ok = count($found) >= 2;
+        // one page the server opens that shows the day and both times as text (most panjika sites draw them with
+        // JavaScript, so two such pages were rarely found; live site, 2026-11-26): the time is published, not invented
+        $ok = count($found) >= 1;
 
         return [$ok, $start?->utc(), $end?->utc(), $day->toDateString(), array_values($found), $ok ? null : 'found on '.count($found).' page(s)'];
     }

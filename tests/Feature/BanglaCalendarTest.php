@@ -183,4 +183,18 @@ class BanglaCalendarTest extends TestCase
         cache()->flush();
         $this->assertSame(['আজ ১১ অগ্রহায়ণ ১৪৩৩ (বাংলাদেশ)', ''], \App\Http\Controllers\BanglaCalendarController::todayLine());
     }
+
+    public function test_a_month_matching_the_calculation_needs_one_page_a_different_day_needs_two(): void
+    {
+        BanglaCalendarDesk::seed(1433);
+        BanglaCalendarDesk::seed(1434);
+        $computed = collect(BanglaDate::wbComputed(1433))->take(12)->map->toDateString()->all();
+        $claimed = $computed;
+        $claimed[2] = CarbonImmutable::parse($computed[2])->addDay()->toDateString();
+        // only one page, and it shows every claimed date
+        Http::fake(['https://a.org/*' => Http::response('<p>'.implode(' ', array_map(fn ($d) => CarbonImmutable::parse($d)->format('j F Y'), $claimed)).'</p>'), '*' => Http::response('', 404)]);
+        $this->answer = ['months' => array_map(fn ($i) => ['month' => BanglaDate::MONTHS[$i], 'first_day' => $claimed[$i]], range(0, 11)), 'sources' => [['url' => 'https://a.org/c']]];
+        $this->assertSame(11, BanglaCalendarDesk::check(1433));
+        $this->assertSame('held', BanglaMonth::where(['year' => 1433, 'month' => 3])->value('status'), 'a day away from the calculation needs two pages');
+    }
 }

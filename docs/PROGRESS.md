@@ -442,3 +442,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## First round of জেনে রাখুন at once, 2026-11-26
 - [x] `php artisan hatpakha:janun-run --pages=3`: the West Bengal months, every festival's times, and the first three pages drafted, checked and given their dates, in one go (same checks; nothing goes live early). The deploy runs it when the release PR's title has the run-janun tag in square brackets (JanunRunTest). Festival searches skip the current year from November.
+- [x] First run on the live site confirmed nothing (calendar sites show dates with scripts): checks changed to one readable page (D304); run again with the release.

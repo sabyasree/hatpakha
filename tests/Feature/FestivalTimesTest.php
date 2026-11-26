@@ -56,7 +56,7 @@ class FestivalTimesTest extends TestCase
             'sources' => array_map(fn ($s) => ['url' => 'https://'.$s.'/p'], $sources)];
     }
 
-    public function test_a_time_is_kept_only_when_two_pages_show_it(): void
+    public function test_a_time_is_kept_only_when_a_page_shows_it(): void
     {
         $this->saraswati(['a.org', 'b.in', 'c.net']);
         $this->assertSame(1, FestivalDesk::find('saraswati', 2027));
@@ -65,9 +65,13 @@ class FestivalTimesTest extends TestCase
         $this->assertSame('2027-02-11 08:50', $t->starts_at->format('Y-m-d H:i'), 'stored in UTC');
         $this->assertSame(['https://a.org/p', 'https://b.in/p'], $t->sources);
 
-        $this->saraswati(['a.org', 'c.net']);
+        $this->saraswati(['c.net', 'd.org']);
         FestivalDesk::find('saraswati', 2027);
-        $this->assertSame('held', FestivalTime::first()->status, 'one page is not enough');
+        $this->assertSame('held', FestivalTime::first()->status, 'no page that shows the times: held');
+
+        $this->saraswati(['c.net', 'b.in']);
+        FestivalDesk::find('saraswati', 2027);
+        $this->assertSame('verified', FestivalTime::first()->status, 'one page that shows the day and both times is enough (2026-11-26)');
     }
 
     public function test_times_that_make_no_sense_are_held(): void
