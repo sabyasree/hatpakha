@@ -4,12 +4,12 @@
 @php
     $U = fn ($p) => \App\Support\Url::to($p);
     $crumbs = [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], [$p->sectionName(), $U('/janun/'.$p->section)], [$p->title, '']];
-    $trust = ($p->kind === 'list' ? \App\Support\Bn::num((string) count((array) ($b['entries'] ?? []))).'টি · ' : '').'শেষ যাচাই: '.\App\Support\Bn::date($p->checked_at ?? $p->publish_at).' · হাতপাখা ডেস্ক';
+    $trust = ($p->kind === 'list' ? \App\Support\Bn::num((string) count((array) ($b['entries'] ?? []))).'টি · ' : '').'শেষ যাচাই: '.\App\Support\Bn::date($p->modifiedAt());
     $sections = collect((array) ($b['sections'] ?? []))->filter(fn ($s) => ! empty($s['paragraphs']) || ! empty($s['steps']) || ! empty($s['mantras']))->values();
 @endphp
 <x-layouts.app :seo="$seo">
     <article class="mx-auto max-w-[760px] px-5 py-8">
-        @include('janun.partials.head', ['crumbs' => $crumbs, 'kicker' => 'জেনে রাখুন · '.$p->sectionName(), 'title' => $p->title, 'trust' => $trust])
+        @include('janun.partials.head', ['crumbs' => $crumbs, 'kicker' => 'জেনে রাখুন · '.$p->sectionName(), 'title' => $p->title, 'trust' => $trust, 'trustBy' => $deskUrl ?? null])
 
         @if ($p->kind === 'study' && ! empty($b['summary']))
             <div class="mt-5 rounded-2xl border-l-4 border-sky-deep bg-sky-tint p-4 font-serif text-lg leading-relaxed"><b class="font-display">এক নজরে:</b> {{ $b['summary'] }}</div>
@@ -88,7 +88,11 @@
                         @if (filled($m['roman'] ?? ''))<p lang="sa-Latn" class="mt-1 text-base italic text-ink2">{{ $m['roman'] }}</p>@endif
                         <p class="mt-2 font-serif text-base leading-relaxed"><b>অর্থ:</b> {{ $m['meaning'] }}</p>
                         @if (filled($m['english'] ?? ''))<p lang="en" class="mt-1 text-base leading-relaxed text-ink2">{{ $m['english'] }}</p>@endif
-                        @if (! empty($m['checked_on']))<p class="mt-1 text-sm text-ink2">মিলিয়ে দেখা হয়েছে: {{ implode(', ', (array) $m['checked_on']) }}</p>@endif
+                        @if (! empty($m['checked_on']))
+                            <p class="mt-1 text-sm text-ink2">মিলিয়ে দেখা হয়েছে:
+                                @foreach ((array) $m['checked_on'] as $i => $site)@if (! $loop->first), @endif @if (filled($m['checked_urls'][$i] ?? null))<a href="{{ $m['checked_urls'][$i] }}" rel="nofollow noopener" target="_blank" class="underline">{{ $site }}</a>@else{{ $site }}@endif @endforeach
+                            </p>
+                        @endif
                     </div>
                 @endforeach
                 @if (($loop->iteration === 1 || ($loop->iteration === 3 && $loop->remaining > 0)) && empty($s['steps']) && empty($s['mantras']))<x-ad-slot spot="article_mid" :height="250" />@endif

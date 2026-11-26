@@ -7,6 +7,7 @@ use App\Models\JanunPage;
 use App\Models\Setting;
 use App\Support\JanunPlan;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Http;
 
 /**
  * D301: writes, checks and schedules the "জেনে রাখুন" pages by itself (owner: "mantras fully automatic… build
@@ -21,6 +22,9 @@ use Carbon\CarbonImmutable;
 final class JanunDesk
 {
     public const MIN_LIST = 40;   // a list page with fewer entries after the check is held
+
+    /** Tests replace the DNS lookup: host => its addresses. */
+    public static ?\Closure $resolve = null;
 
     public static function run(?CarbonImmutable $now = null): int
     {
@@ -56,7 +60,7 @@ final class JanunDesk
     {
         $n = JanunPage::where('status', 'scheduled')->where('publish_at', '<=', now())->update(['status' => 'published', 'updated_at' => now()]);
         if ($n) {
-            cache()->forget('janun:live');
+            cache()->forget('janun:any');
             AuditLog::record('janun.published', null, ['count' => $n]);
         }
 
@@ -104,7 +108,7 @@ final class JanunDesk
 
             return false;
         }
-        $p->forceFill(['body' => $d, 'seo_description' => mb_substr(trim((string) ($d['description'] ?? '')), 0, 160) ?: null, 'status' => 'drafted'])->save();
+        $p->forceFill(['body' => $d, 'seo_description' => JanunPlan::clip((string) ($d['description'] ?? '')) ?: null, 'status' => 'drafted'])->save();
 
         return true;
     }
@@ -156,12 +160,30 @@ final class JanunDesk
     /** @return array{0: ?array, 1: ?string} */
     private static function factProblems(JanunPage $p, array $body): array
     {
+        if ($p->kind === 'list') {   // every entry, 25 to a search (SEO review: a sample is not a check)
+            $all = [];
+            foreach (collect((array) ($body['entries'] ?? []))->chunk(25) as $chunk) {
+                [$found, $err] = self::searchProblems($p, $chunk->map(fn ($e) => '• '.$e['term'].' — '.$e['meaning'])->implode("\n"));
+                if ($found === null) {
+                    return [null, $err];
+                }
+                $all = array_merge($all, $found);
+            }
+
+            return [$all, null];
+        }
         $text = match ($p->kind) {
-            'list' => collect((array) ($body['entries'] ?? []))->shuffle()->take(25)->map(fn ($e) => '• '.$e['term'].' — '.$e['meaning'])->implode("\n"),
             'guide' => collect((array) ($body['facts'] ?? []))->map(fn ($f) => '• '.$f['label'].': '.$f['value'])
                 ->merge(collect((array) ($body['sections'] ?? []))->flatMap(fn ($s) => array_merge((array) $s['paragraphs'], (array) $s['steps'])))->implode("\n"),
             default => collect((array) ($body['sections'] ?? []))->flatMap(fn ($s) => (array) $s['paragraphs'])->implode("\n"),
         };
+
+        return self::searchProblems($p, $text);
+    }
+
+    /** @return array{0: ?array, 1: ?string} */
+    private static function searchProblems(JanunPage $p, string $text): array
+    {
         [$d, $err] = Claude::search('factcheck',
             'You check a Bengali reference page before it is published by a literary magazine. Search the web to verify the factual claims (meanings of proverbs and words, spellings by Bangla Academy rules, dates by the Bengali calendar, customs, names). '
             .'A claim is "wrong" if reliable sources contradict it, "unsure" if you find no reliable support. Opinions and general advice are not claims. Do not check mantras here. '
@@ -232,12 +254,24 @@ final class JanunDesk
                 if (! Claude::$fake && (Claude::$lastSearch['ok'] ?? 0) === 0) {
                     return null;
                 }
-                $sites = collect((array) ($d['exact_matches'] ?? []))->map(fn ($x) => strtolower((string) ($x['site'] ?? parse_url((string) ($x['url'] ?? ''), PHP_URL_HOST))))
-                    ->map(fn ($h) => preg_replace('/^www\./', '', (string) $h))->filter(fn ($h) => $h !== '' && ! str_contains($h, 'hatpakha'))->unique();
-                $ok = $sites->count() >= 2;
-                $out[] = ['name' => $m['name'], 'kept' => $ok, 'sites' => $sites->values()->all()];
+                // SEO review: the model's word is not enough; the server opens each page and finds the mantra in it
+                $found = [];
+                foreach (collect((array) ($d['exact_matches'] ?? []))->pluck('url')->filter()->unique()->take(6) as $url) {
+                    $host = preg_replace('/^www\./', '', strtolower((string) parse_url((string) $url, PHP_URL_HOST)));
+                    if ($host === '' || str_contains($host, 'hatpakha') || isset($found[$host])) {
+                        continue;
+                    }
+                    if (self::pageHas((string) $url, (string) $m['text'])) {
+                        $found[$host] = (string) $url;
+                    }
+                    if (count($found) >= 2) {
+                        break;
+                    }
+                }
+                $ok = count($found) >= 2;
+                $out[] = ['name' => $m['name'], 'kept' => $ok, 'sites' => array_keys($found)];
                 if ($ok) {
-                    $keep[] = $m + ['checked_on' => $sites->values()->all()];
+                    $keep[] = $m + ['checked_on' => array_keys($found), 'checked_urls' => array_values($found)];
                 }
             }
             if (isset($s['mantras'])) {
@@ -246,5 +280,34 @@ final class JanunDesk
         }
 
         return $out;
+    }
+
+    /** Bengali letters and signs only: punctuation, spaces, dandas and line breaks do not count. */
+    public static function letters(string $text): string
+    {
+        $text = \Normalizer::normalize(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'), \Normalizer::FORM_C) ?: $text;
+
+        return (string) preg_replace('/[^\x{0980}-\x{09FF}]|[\x{09E6}-\x{09EF}]/u', '', $text);
+    }
+
+    /** Opens a public https page (no private addresses, no redirects, 2 MB at most) and looks for the mantra, letter for letter. */
+    public static function pageHas(string $url, string $mantra): bool
+    {
+        $u = parse_url($url);
+        if (($u['scheme'] ?? '') !== 'https' || empty($u['host']) || isset($u['user']) || isset($u['port'])) {
+            return false;
+        }
+        $ips = self::$resolve ? (self::$resolve)($u['host']) : (gethostbynamel($u['host']) ?: []);
+        if ($ips === [] || collect($ips)->contains(fn ($ip) => ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE))) {
+            return false;
+        }
+        $res = rescue(fn () => Http::timeout(12)->withOptions(['allow_redirects' => false])->withUserAgent('Mozilla/5.0 (compatible; HatpakhaCheck/1.0)')->get($url), null, false);
+        if (! $res || ! $res->successful() || strlen($res->body()) > 2_000_000) {
+            return false;
+        }
+        $want = self::letters($mantra);
+        $page = self::letters(strip_tags((string) preg_replace('#<(script|style)\b.*?</\1>#is', '', $res->body())));
+
+        return mb_strlen($want) >= 8 && str_contains($page, $want);
     }
 }

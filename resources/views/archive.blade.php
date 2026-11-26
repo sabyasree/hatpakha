@@ -53,6 +53,10 @@
         </div>
         @if ($posts->count() >= 6)<x-ad-slot spot="list" :height="250" />@endif
         <div class="mt-10">{{ $posts->links('pagination.hatpakha') }}</div>
+        @if (($topic ?? null) === 'pujor-lekha' && \App\Http\Controllers\JanunController::anyLive() && \App\Models\JanunPage::live()->where('section', 'puja')->exists())
+            {{-- D301: from the puja stories to the puja rules and mantras --}}
+            <a href="{{ \App\Support\Url::to('/janun/puja') }}" class="mt-8 flex min-h-11 items-center rounded-xl border-2 border-navy px-4 font-bold hover:bg-peach-light">পুজোর নিয়ম, উপকরণ ও মন্ত্র (অর্থসহ): জেনে রাখুন →</a>
+        @endif
         @if ($topic ?? null)
             {{-- D293: from one topic to the others --}}
             @include('partials.topic-chips', ['topics' => \App\Support\Topics::liveIn(), 'heading' => 'আরও বিষয়', 'current' => $topic, 'class' => 'mt-10'])

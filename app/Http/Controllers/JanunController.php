@@ -20,6 +20,23 @@ class JanunController extends Controller
         return collect(JanunPlan::SECTIONS)->keys()->mapWithKeys(fn ($s) => [$s => $pages->where('section', $s)->values()])->all();
     }
 
+    /** Whether any page is live (cached ten minutes; the footer and other pages link only then). */
+    public static function anyLive(): bool
+    {
+        return (bool) cache()->remember('janun:any', 600, fn () => JanunPage::live()->exists());
+    }
+
+    /** The live page for a plan key, or null (for links from other pages). */
+    public static function liveUrl(string $key): ?string
+    {
+        if (! self::anyLive()) {
+            return null;
+        }
+        $p = JanunPage::live()->where('key', $key)->first(['id', 'section', 'slug']);
+
+        return $p?->url();
+    }
+
     public function index()
     {
         $live = self::live();
@@ -37,7 +54,7 @@ class JanunController extends Controller
         $pages = self::live()[$section] ?? collect();
         abort_if($pages->isEmpty(), 404);
         [$name, $kicker, $intro] = JanunPlan::SECTIONS[$section];
-        $seo = new Seo(title: $name.': '.$kicker, description: $intro,
+        $seo = new Seo(title: $name.': '.$kicker, description: JanunPlan::clip($intro),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], [$name, Url::to('/janun/'.$section)]])]);
         Ads::allow();
 
@@ -51,8 +68,13 @@ class JanunController extends Controller
             jsonLd: array_merge([JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], [$p->sectionName(), Url::to('/janun/'.$section)], [$p->title, $p->url()]])], JsonLd::janunPage($p)),
             publishedAt: $p->publish_at?->toIso8601String());
         Ads::allow();
-        $siblings = JanunPage::live()->where('section', $section)->whereKeyNot($p->id)->orderByDesc('publish_at')->limit(4)->get(['id', 'section', 'slug', 'title']);
+        // pages on the same subject first, from any part (SEO review), then the newest of this part
+        $related = JanunPlan::related($p->key);
+        $siblings = JanunPage::live()->whereIn('key', $related)->get(['id', 'key', 'section', 'slug', 'title'])->sortBy(fn ($x) => array_search($x->key, $related, true))
+            ->concat(JanunPage::live()->where('section', $section)->whereKeyNot($p->id)->whereNotIn('key', $related)->orderByDesc('publish_at')->limit(4)->get(['id', 'key', 'section', 'slug', 'title']))
+            ->take(5)->values();
+        $desk = \App\Models\Author::where('is_desk', true)->where('slug', 'hatpakha-desk')->first();
 
-        return view('janun.page', ['p' => $p, 'b' => (array) $p->body, 'siblings' => $siblings, 'seo' => $seo]);
+        return view('janun.page', ['p' => $p, 'b' => (array) $p->body, 'siblings' => $siblings, 'seo' => $seo, 'deskUrl' => $desk?->url() ?? Url::to('/about')]);
     }
 }

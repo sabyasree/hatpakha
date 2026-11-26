@@ -9,6 +9,7 @@ use App\Support\JanunPlan;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /** D301: the "জেনে রাখুন" pages: written, checked and scheduled by the desk; readers see only what is live. */
@@ -20,11 +21,22 @@ class JanunPagesTest extends TestCase
 
     private array $problems = [];
 
+    private int $factSearches = 0;
+
     protected function setUp(): void
     {
         parent::setUp();
         Carbon::setTestNow('2026-11-26 09:00:00');   // a Thursday
         config(['ai.enabled' => true, 'ai.anthropic.key' => 'k', 'ai.openai.key' => null]);
+        JanunDesk::$resolve = fn ($host) => $host === 'inside.test' ? ['10.0.0.5'] : ['93.184.216.34'];
+        // a.org and b.in really have the mantra (one with dandas, spacing and the one-character য়); c.net does not
+        Http::fake([
+            'https://a.org/*' => Http::response('<html><body><p>ওঁ সরস্বতী, মহাভাগে।</p></body></html>'),
+            'https://www.b.in/*' => Http::response('<div>ওঁ সরস্বতী মহাভাগে ॥</div>'),
+            'https://c.net/*' => Http::response('<p>অন্য কোনো মন্ত্র</p>'),
+            'https://inside.test/*' => Http::response('<p>ওঁ সরস্বতী মহাভাগে</p>'),
+            '*' => Http::response('', 404),
+        ]);
         Claude::$fake = function ($purpose, $user) {
             if ($purpose === 'janun') {
                 return str_contains($user, 'প্রবাদ') && ! str_contains($user, 'মন্ত্র') ? $this->listBody(45) : $this->guideBody();
@@ -32,7 +44,7 @@ class JanunPagesTest extends TestCase
             if ($purpose === 'factcheck') {
                 return str_contains($user, '<mantra')
                     ? ['exact_matches' => array_map(fn ($s) => ['url' => 'https://'.$s.'/x', 'site' => $s], array_shift($this->mantraSites) ?? [])]
-                    : ['problems' => $this->problems];
+                    : ['problems' => (++$this->factSearches && true) ? $this->problems : []];
             }
 
             return null;
@@ -42,6 +54,7 @@ class JanunPagesTest extends TestCase
     protected function tearDown(): void
     {
         Claude::$fake = null;
+        JanunDesk::$resolve = null;
         Carbon::setTestNow();
         parent::tearDown();
     }
@@ -115,6 +128,7 @@ class JanunPagesTest extends TestCase
         $p->refresh();
         $this->assertSame('scheduled', $p->status);
         $this->assertCount(44, $p->body['entries'], 'the wrong entry is taken out');
+        $this->assertSame(2, $this->factSearches, 'all 45 entries are checked, 25 to a search');
         // Thursday 26 Nov → Friday 27 Nov, 10am India
         $this->assertSame('2026-11-27 10:00', $p->publish_at->timezone('Asia/Kolkata')->format('Y-m-d H:i'));
         $this->get('/janun/bhasha/probad/')->assertNotFound();
@@ -143,7 +157,8 @@ class JanunPagesTest extends TestCase
         JanunDesk::seed();
         $p = JanunPage::where('key', 'saraswati-mantra')->first();
         JanunDesk::draft($p);
-        $this->mantraSites = [['a.org', 'www.b.in', 'hatpakha.com'], ['a.org', 'hatpakha.com']];
+        // the first mantra: the model names four pages, two really have it; the second: one real page, one without it, one private address
+        $this->mantraSites = [['a.org', 'www.b.in', 'hatpakha.com', 'c.net'], ['a.org', 'c.net', 'inside.test']];
         JanunDesk::check($p->fresh(), CarbonImmutable::now('Asia/Kolkata'));
         $p->refresh();
         $this->assertSame('scheduled', $p->status);
@@ -151,6 +166,8 @@ class JanunPagesTest extends TestCase
         $this->assertCount(1, $mantras);
         $this->assertSame('প্রণাম মন্ত্র', $mantras[0]['name']);
         $this->assertSame(['a.org', 'b.in'], $mantras[0]['checked_on']);
+        $this->assertSame([], $p->check['mantras'][1]['sites'], 'the model\'s claim is not enough; a private address is never opened');
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'inside.test') || str_contains($r->url(), 'hatpakha'));
         $this->assertFalse($p->check['mantras'][1]['kept']);
     }
 
@@ -199,5 +216,42 @@ class JanunPagesTest extends TestCase
         $this->assertStringContainsString('lang="sa"', $html);
         // no ad block inside a mantra box
         $this->assertDoesNotMatchRegularExpression('/bg-peach-light p-4">(?:(?!<\/div>\s*<\/div>).)*ad-slot/s', $html);
+    }
+
+    public function test_dates_links_and_related_pages(): void
+    {
+        $p = $this->live('probad', $this->listBody(45));
+        $p->forceFill(['checked_at' => now()->subDays(3), 'publish_at' => now()->subDay()])->save();
+        $html = $this->get('/janun/bhasha/probad/')->assertOk()->getContent();
+        $this->assertStringContainsString('"dateModified":"'.$p->publish_at->toIso8601String().'"', str_replace('\\/', '/', $html), 'never before datePublished');
+        $b = $this->live('bagdhara', $this->listBody(45));
+        $this->live('ki-kii', $this->guideBody());
+        $sib = $this->get('/janun/bhasha/probad/')->viewData('siblings');
+        $this->assertSame('bagdhara', $sib->first()->key, 'a page on the same subject comes first');
+        // the rest of the site links in once something is live
+        cache()->forget('janun:any');
+        $this->get('/')->assertSee(\App\Support\Url::to('/janun'), false);
+        $this->assertStringContainsString('জেনে রাখুন', $this->get('/llms.txt')->getContent());
+    }
+
+    public function test_no_links_while_nothing_is_live(): void
+    {
+        JanunDesk::seed();
+        cache()->forget('janun:any');
+        $this->get('/')->assertDontSee(\App\Support\Url::to('/janun'), false);
+    }
+
+    public function test_descriptions_are_cut_between_words(): void
+    {
+        $long = str_repeat('বাংলা প্রবাদের অর্থ ', 20);
+        $c = JanunPlan::clip($long);
+        $this->assertLessThanOrEqual(155, mb_strlen($c));
+        $this->assertStringEndsWith('…', $c);
+        $this->assertMatchesRegularExpression('/(বাংলা|প্রবাদের|অর্থ)…$/u', $c);
+        foreach (JanunPlan::SECTIONS as [$name, $kicker, $intro]) {
+            $this->assertLessThanOrEqual(155, mb_strlen($intro), $name);
+        }
+        $this->assertSame(JanunDesk::letters('ওঁ সরস্বতী, মহাভাগে।'), JanunDesk::letters("ওঁ সরস্বতী\nমহাভাগে ॥"));
+        $this->assertSame(JanunDesk::letters("\u{09DF}"), JanunDesk::letters("\u{09AF}\u{09BC}"));
     }
 }

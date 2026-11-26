@@ -143,7 +143,7 @@ final class JsonLd
         $nodes = [[
             '@type' => 'Article', '@id' => $p->url().'#article', 'headline' => $p->title, 'description' => (string) $p->seo_description,
             'inLanguage' => 'bn', 'url' => $p->url(), 'mainEntityOfPage' => $p->url(),
-            'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => ($p->checked_at ?? $p->updated_at)?->toIso8601String(),
+            'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => $p->modifiedAt()?->toIso8601String(),
             'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
         ]];
         if ($p->kind === 'list') {

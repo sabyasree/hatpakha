@@ -425,7 +425,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 
 ## জেনে রাখুন (D301), 2026-11-26
 - [x] `/janun/` hub, three parts, page template (list with search and letter bar; guide with facts, steps, mantras with Roman reading and English meaning; study with summary), JSON-LD, sitemap once live, AI writer + fact check + two-source mantra check + thin-page hold + Mon/Wed/Fri 10am schedule (JanunPagesTest).
-- [x] 29 pages planned (6 added after the US/UK diaspora research).
-- [x] UX and SEO review of the build.
+- [x] 39 pages planned (6 added after the US/UK diaspora research, 10 after the SEO review), published three a week: about 13 weeks.
+- [x] UX review applied (search finds য়/ড় typed either way, no ads during a search or beside steps/mantras, sticky search, bigger tap targets). SEO review applied (links from footer/llms.txt/game/topic page once live, dateModified fix, every list entry fact-checked, mantra pages opened by the server, cannibalisation fixed, related pages, descriptions cut between words, একুশে moved before February).
 - [ ] Nothing for the owner: after deploy the desk drafts about one page an hour and schedules them; the first goes live on the next Monday/Wednesday/Friday. Held pages appear in the audit log (janun.held).
 - [ ] Later, from the US/UK research (owner decides): Durga Puja and Saraswati Puja times in US/UK time each year; Tagore/Nazrul/Sukumar poems for children with our own English translation; a free printable puja booklet for Bengali associations abroad; বাংলা শিখি pack with English notes for parents (paid, needs a payment gateway).

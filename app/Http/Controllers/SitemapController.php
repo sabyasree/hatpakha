@@ -85,6 +85,7 @@ class SitemapController extends Controller
             ...collect(Page::footerLinks())->map(fn ($l) => $md($l[0], $l[1]))->all(),
             $md('আর্কাইভ (archive, by year)', Url::to('/archive')),
             $md('সব সংখ্যা (all issues)', Url::to('/sonkha')),
+            ...(JanunController::anyLive() ? [$md('জেনে রাখুন (reference: Bengali proverbs, spelling, puja rules and mantras with meaning, school essays)', Url::to('/janun'))] : []),   // D301
             '',
             '## Recent pieces',
             ...$recent->all(),
@@ -158,7 +159,7 @@ class SitemapController extends Controller
         foreach ($live as $section => $pages) {
             $out->push(['loc' => Url::to('/janun/'.$section), 'lastmod' => null, 'image' => null]);
             foreach ($pages as $p) {
-                $out->push(['loc' => $p->url(), 'lastmod' => $p->checked_at ?? $p->publish_at, 'image' => null]);
+                $out->push(['loc' => $p->url(), 'lastmod' => $p->modifiedAt(), 'image' => null]);
             }
         }
 

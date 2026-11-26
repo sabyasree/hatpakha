@@ -26,6 +26,12 @@ class JanunPage extends Model
         return Url::to('/janun/'.$this->section.'/'.$this->slug);
     }
 
+    /** The later of going live and the last check: what Google is told as the page's date (SEO review). */
+    public function modifiedAt(): ?\Carbon\CarbonInterface
+    {
+        return collect([$this->publish_at, $this->checked_at])->filter()->max();
+    }
+
     public function sectionName(): string
     {
         return JanunPlan::SECTIONS[$this->section][0] ?? $this->section;

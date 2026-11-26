@@ -6,4 +6,4 @@
 </nav>
 <span class="mt-3 inline-block rounded-full bg-sky-tint px-3 py-1 text-sm font-bold text-sky-night">{{ $kicker }}</span>
 <h1 class="mt-2 font-display text-3xl font-extrabold leading-tight sm:text-5xl">{{ $title }}</h1>
-@if ($trust ?? null)<p class="mt-2 text-sm text-ink2">{{ $trust }}</p>@endif
+@if ($trust ?? null)<p class="mt-2 text-sm text-ink2">{{ $trust }}@if ($trustBy ?? null) · <a href="{{ $trustBy }}" class="underline hover:text-navy">হাতপাখা ডেস্ক</a>@endif</p>@endif

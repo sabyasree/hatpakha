@@ -63,6 +63,9 @@
             </ul>
         </details>
         @unless ($locked)<script type="application/json" data-probad-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>@endunless
+        @if ($probadPage = \App\Http\Controllers\JanunController::liveUrl('probad'))
+            <a href="{{ $probadPage }}" class="mt-8 flex min-h-11 items-center rounded-xl border-2 border-navy px-4 font-bold hover:bg-peach-light">বাংলা প্রবাদ-প্রবচন ও তার অর্থ: পুরো তালিকা →</a>   {{-- D301 --}}
+        @endif
         {{-- far below the words a player taps, so no ad is touched by mistake --}}
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
