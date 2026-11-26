@@ -137,6 +137,23 @@ final class JsonLd
         ]);
     }
 
+    /** D301: a "জেনে রাখুন" page: an Article by the house; a list page also as a DefinedTermSet of its entries. */
+    public static function janunPage(\App\Models\JanunPage $p): array
+    {
+        $nodes = [[
+            '@type' => 'Article', '@id' => $p->url().'#article', 'headline' => $p->title, 'description' => (string) $p->seo_description,
+            'inLanguage' => 'bn', 'url' => $p->url(), 'mainEntityOfPage' => $p->url(),
+            'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => ($p->checked_at ?? $p->updated_at)?->toIso8601String(),
+            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
+        ]];
+        if ($p->kind === 'list') {
+            $nodes[] = ['@type' => 'DefinedTermSet', 'name' => $p->title, 'url' => $p->url(),
+                'hasDefinedTerm' => collect((array) ($p->body['entries'] ?? []))->take(200)->map(fn ($e) => ['@type' => 'DefinedTerm', 'name' => (string) $e['term'], 'description' => (string) $e['meaning']])->values()->all()];
+        }
+
+        return $nodes;
+    }
+
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */
     public static function breadcrumbs(array $crumbs): array
     {

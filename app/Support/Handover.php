@@ -41,6 +41,8 @@ final class Handover
         // D214: the detective series only
         // D294: the literary calendar and the weekly reading, written, fact-checked and published by the desk
         'calendar' => ['সাহিত্যের ক্যালেন্ডার', 'লেখকের জন্মদিন আর উৎসবের আগে একটি লেখা, আর সপ্তাহে একটি বিখ্যাত লেখার আলোচনা: প্রতিটি তথ্য ওয়েবে যাচাই হয়ে "হাতপাখা ডেস্ক" নামে নিজে থেকে প্রকাশ হয়। যাচাই না হলে প্রকাশ হয় না।'],
+        // D301: the "জেনে রাখুন" reference pages, written, checked and given their dates by the desk
+        'janun' => ['জেনে রাখুন', 'ভাষা, পুজো আর পাঠশালার পাতা লেখা হয়, ওয়েবে তথ্য যাচাই হয় (মন্ত্র দুটি সূত্রে হুবহু না মিললে বাদ), তারপর সপ্তাহে তিনটি করে নিজে থেকে প্রকাশ হয়।'],
         'cases' => ['গোয়েন্দা সিরিজ', 'একটি কেস শেষ হওয়ার আগে পরের কেসের পরিকল্পনা তৈরি হয়; আপনি সমাধান পড়ে শুরু করলে প্রতিটি পর্ব যাচাই হয়ে নিজে থেকে প্রকাশ হয়।'],
     ];
 
@@ -385,6 +387,12 @@ final class Handover
      *     reader, and is then given its day (the serial's weekday, 9am Kolkata, a week after the one before). An
      *     episode with a problem, or one that could not be checked, waits for the owner with the reason in a flag.
      */
+    /** D301 */
+    public static function janun(): int
+    {
+        return \App\Ai\JanunDesk::run();
+    }
+
     /** D294 */
     public static function calendar(): int
     {

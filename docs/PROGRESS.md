@@ -422,3 +422,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Overnight jobs (old-piece proofreading, old-submission screening, SEO details, topic sorting) go to the half-price batch; cost table per job on /desk → এআই দল (AiBatchTest).
 - [ ] Owner: after a week, send a screenshot of "খরচ কোথায় (গত ৩০ দিন)" so the costliest live jobs can be trimmed next.
 - [ ] Possible next savings (only if the table shows them high): serial and desk writers on the mid model or lower effort; the weekly strategist/scout searches less often.
+
+## জেনে রাখুন (D301), 2026-11-26
+- [x] `/janun/` hub, three parts, page template (list with search and letter bar; guide with facts, steps, mantras with Roman reading and English meaning; study with summary), JSON-LD, sitemap once live, AI writer + fact check + two-source mantra check + thin-page hold + Mon/Wed/Fri 10am schedule (JanunPagesTest).
+- [x] 29 pages planned (6 added after the US/UK diaspora research).
+- [x] UX and SEO review of the build.
+- [ ] Nothing for the owner: after deploy the desk drafts about one page an hour and schedules them; the first goes live on the next Monday/Wednesday/Friday. Held pages appear in the audit log (janun.held).
+- [ ] Later, from the US/UK research (owner decides): Durga Puja and Saraswati Puja times in US/UK time each year; Tagore/Nazrul/Sukumar poems for children with our own English translation; a free printable puja booklet for Bengali associations abroad; বাংলা শিখি pack with English notes for parents (paid, needs a payment gateway).

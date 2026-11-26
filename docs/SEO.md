@@ -14,6 +14,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 | Issue | `/sonkha/{yyyy-mm}/` and `/sonkha/{yyyy-mm}/read/` (flipbook) | New |
 | Archive | `/archive/` and `/archive/{yyyy}/` | New (D31). Old date archives `/yyyy/`, `/yyyy/mm/`, `/yyyy/mm/dd/` 301 here ✅test |
 | Topic | `/bishoy/` and `/bishoy/{slug}/` | New (D293). The topics are fixed in `App\Support\Topics` (owner-approved names, titles, introductions); a topic appears in menus, sitemap and Google only with 8 or more pieces |
+| Reference (জেনে রাখুন) | `/janun/`, `/janun/{bhasha\|puja\|pathshala}/`, `/janun/{part}/{slug}/` | New (D301). Pages in `App\Support\JanunPlan`; a page, its part and the hub exist (and enter the sitemap) only once a page is published; at most three new pages a week |
 | Tag | `/tag/{slug}/` | Only the ~150 controlled tags. Merged or removed tags → 301 to the section |
 - **Trailing slash, always** (as on WordPress). A URL without the slash → 301 to the slashed version. ✅test
 - `?p=123`, `/amp/`, `/feed/`, date archives, `/wp-content/plugins/...` and other legacy paths → 301 through the `redirects` table. Removed spam → **410**. ✅test

@@ -106,7 +106,7 @@ class SitemapController extends Controller
                 ['sitemap-sections.xml', $max(Section::where('is_active', true)->max('updated_at'), Post::published()->max('published_at'))],
                 ['sitemap-authors.xml', $max(Author::where('published_count', '>=', 3)->max('updated_at'))],
                 ['sitemap-issues.xml', $max(Issue::live()->max('updated_at'))],
-                ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'))],
+                ['sitemap-pages.xml', $max(Page::published()->max('updated_at'), \App\Models\Collection::where('status', 'approved')->max('updated_at'), \App\Models\Serial::live()->max('updated_at'), \App\Models\JanunPage::live()->max('publish_at'))],
             ]);
 
         return response()->view('sitemap.index', ['files' => $files])->header('Content-Type', 'application/xml; charset=UTF-8');
@@ -139,10 +139,29 @@ class SitemapController extends Controller
                 ->concat(\App\Models\Collection::where('status', 'approved')->whereNotNull('slug')->get()->map(fn ($c) => ['loc' => $c->url(), 'lastmod' => $c->updated_at, 'image' => null]))
                 ->concat(\App\Models\Serial::live()->get()->map(fn ($s) => ['loc' => $s->url(), 'lastmod' => $s->last_episode_at ? \Illuminate\Support\Carbon::parse($s->last_episode_at) : null, 'image' => null]))
                 ->push(['loc' => Url::to('/app'), 'lastmod' => null, 'image' => null])   // D128
-                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null]),   // লেখার ডাক (2026-11-24)
+                ->push(['loc' => Url::to('/lekhar-dak'), 'lastmod' => now()->startOfDay(), 'image' => null])   // লেখার ডাক (2026-11-24)
+                ->concat(self::janun()),   // D301: জেনে রাখুন, only what is live
             $type === 'issues' => Issue::live()->get()->map(fn ($i) => ['loc' => $i->url(), 'lastmod' => $i->updated_at, 'image' => null]),
         };
 
         return response()->view('sitemap.urls', ['urls' => $urls])->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    /** D301: the জেনে রাখুন hub, its sections and pages, once something there is live. */
+    private static function janun(): \Illuminate\Support\Collection
+    {
+        $live = array_filter(JanunController::live(), fn ($pages) => $pages->isNotEmpty());
+        if ($live === []) {
+            return collect();
+        }
+        $out = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null]]);
+        foreach ($live as $section => $pages) {
+            $out->push(['loc' => Url::to('/janun/'.$section), 'lastmod' => null, 'image' => null]);
+            foreach ($pages as $p) {
+                $out->push(['loc' => $p->url(), 'lastmod' => $p->checked_at ?? $p->publish_at, 'image' => null]);
+            }
+        }
+
+        return $out;
     }
 }
