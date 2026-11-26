@@ -27,7 +27,7 @@ final class FestivalDesk
         foreach (self::years($now) as $year) {
             foreach (FestivalPlan::FESTIVALS as $key => $f) {
                 $tries = (int) Setting::get("festival.tries.{$key}.{$year}", 0);
-                if ($tries >= 3 || FestivalTime::where('festival', $key)->where('cycle', $year)->where('status', 'verified')->exists()) {
+                if ($tries >= 3 || self::complete($key, $year)) {
                     continue;
                 }
                 Setting::put('festival.hour', $now->format('Y-m-d H'));
@@ -39,6 +39,12 @@ final class FestivalDesk
         }
 
         return false;
+    }
+
+    /** Every event of a festival's year is confirmed (দুর্গাপুজো has seven; one confirmed is not the end). */
+    public static function complete(string $key, int $year): bool
+    {
+        return FestivalTime::where('festival', $key)->where('cycle', $year)->where('status', 'verified')->count() >= count(FestivalPlan::FESTIVALS[$key][2]);
     }
 
     /** The years worth searching: from November this year's festivals are over (ভাইফোঁটা is the last), so only next year's. */
@@ -72,8 +78,9 @@ final class FestivalDesk
         $labels = array_keys($events);
         foreach ((array) ($d['events'] ?? []) as $e) {
             $label = (string) ($e['label'] ?? '');
-            if (! in_array($label, $labels, true)) {
-                continue;
+            if (! in_array($label, $labels, true)
+                || FestivalTime::where(['festival' => $key, 'cycle' => $year, 'label' => $label, 'status' => 'verified'])->exists()) {
+                continue;   // only what was asked, and a confirmed time is never taken back by a later search
             }
             [$ok, $start, $end, $day, $found, $why] = self::verify($e, $pages->all(), $year);
             FestivalTime::updateOrCreate(['festival' => $key, 'cycle' => $year, 'label' => $label], [
