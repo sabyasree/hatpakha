@@ -70,7 +70,7 @@ class JanunController extends Controller
         abort_unless(FestivalPlan::pageLive(), 404);
         $url = Url::to('/janun/puja/pujor-somoy');
         $seo = new Seo(title: 'পুজোর তিথি ও সময়: পৃথিবীর যে কোনো দেশের ঘড়িতে',
-            description: JanunPlan::clip('দুর্গাপুজো, সরস্বতী পুজো, কালীপুজো, লক্ষ্মী পুজোর তিথি শুরু ও শেষের সময়, আমেরিকা, ব্রিটেন, জাপান বা যে কোনো দেশের নিজের সময়ে। দুটি সূত্রে মিলিয়ে দেখা।'),
+            description: JanunPlan::clip('দুর্গাপুজো, সরস্বতী পুজো, কালীপুজো, লক্ষ্মী পুজোর তিথি শুরু ও শেষের সময়, আমেরিকা, ব্রিটেন, জাপান বা যে কোনো দেশের নিজের সময়ে, প্রকাশিত সূত্রে মিলিয়ে।'),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['পুজো-পার্বণ', Url::to('/janun/puja')], ['পুজোর তিথি ও সময়', $url]])]);
         Ads::allow();
 

@@ -51,9 +51,12 @@ class JanunRun extends Command
         }
         foreach ([$year, $year + 1] as $y) {
             if (BanglaMonth::where('year', $y)->where('status', '!=', 'verified')->exists()) {
-                Setting::put("calendar.bn.tries.{$y}", (int) Setting::get("calendar.bn.tries.{$y}", 0) + 1);
+                Setting::put("calendar.bn.tries.{$y}", 0);   // a run by hand starts the hourly tries afresh
                 $ok = BanglaCalendarDesk::check($y);
                 $this->line("   {$y}: {$ok} of 12 months confirmed");
+                foreach (BanglaMonth::where('year', $y)->where('status', 'held')->orderBy('month')->get() as $m) {
+                    $this->line('      held '.BanglaDate::EN[$m->month - 1].' (calculated '.$m->starts_on->toDateString().'): '.$m->note);
+                }
             } else {
                 $this->line("   {$y}: already confirmed");
             }
@@ -65,9 +68,10 @@ class JanunRun extends Command
                 if (FestivalTime::where('festival', $key)->where('cycle', $y)->where('status', 'verified')->exists()) {
                     continue;
                 }
-                Setting::put("festival.tries.{$key}.{$y}", (int) Setting::get("festival.tries.{$key}.{$y}", 0) + 1);
+                Setting::put("festival.tries.{$key}.{$y}", 0);
                 $kept = rescue(fn () => FestivalDesk::find($key, $y), 0, false);
-                $this->line("   {$key} {$y}: {$kept} time(s) confirmed");
+                $held = FestivalTime::where('festival', $key)->where('cycle', $y)->where('status', 'held')->get()->map(fn ($t) => $t->label.': '.$t->note)->implode('; ');
+                $this->line("   {$key} {$y}: {$kept} time(s) confirmed".($held ? " (held: {$held})" : ''));
             }
         }
 
@@ -83,6 +87,11 @@ class JanunRun extends Command
             }
             JanunDesk::check($p->fresh(), $now);
             $p->refresh();
+            if ($p->status === 'drafted') {
+                $this->line("   {$p->key}: drafted; the check's web search did not answer (the hourly job checks it again)");
+
+                continue;
+            }
             $this->line("   {$p->key}: {$p->status}".($p->publish_at ? ' → goes live '.$p->publish_at->timezone('Asia/Kolkata')->format('D j M, g:ia') : ''));
         }
         $this->info('Done. Results: /janun/bangla-calendar/, /janun/puja/pujor-somoy/ (once two festivals are confirmed), and the audit log in /desk.');
