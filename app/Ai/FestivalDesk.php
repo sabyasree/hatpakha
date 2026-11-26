@@ -24,7 +24,7 @@ final class FestivalDesk
         if (Setting::get('festival.hour') === $now->format('Y-m-d H')) {
             return false;
         }
-        foreach ([$now->year, $now->year + 1] as $year) {
+        foreach (self::years($now) as $year) {
             foreach (FestivalPlan::FESTIVALS as $key => $f) {
                 $tries = (int) Setting::get("festival.tries.{$key}.{$year}", 0);
                 if ($tries >= 3 || FestivalTime::where('festival', $key)->where('cycle', $year)->where('status', 'verified')->exists()) {
@@ -39,6 +39,12 @@ final class FestivalDesk
         }
 
         return false;
+    }
+
+    /** The years worth searching: from November this year's festivals are over (ভাইফোঁটা is the last), so only next year's. */
+    public static function years(CarbonImmutable $now): array
+    {
+        return $now->month >= 11 ? [$now->year + 1] : [$now->year, $now->year + 1];
     }
 
     /** Searches once, opens the pages it names, keeps what two of them show. @return int how many times were kept */

@@ -103,7 +103,8 @@ class FestivalTimesTest extends TestCase
         foreach (range(1, 70) as $h) {
             FestivalDesk::run($now->addHours($h));
         }
-        $this->assertSame(3, (int) \App\Models\Setting::get('festival.tries.saraswati.2026'));
+        $this->assertSame(3, (int) \App\Models\Setting::get('festival.tries.saraswati.2027'), 'in November only next year\'s festivals');
+        $this->assertNull(\App\Models\Setting::get('festival.tries.saraswati.2026'));
         $this->assertFalse(FestivalDesk::run($now->addHours(200)), 'everything tried three times');
     }
 

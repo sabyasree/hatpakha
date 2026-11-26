@@ -185,6 +185,21 @@ jobs:
       # backlog packages and cover illustrations for the owner's approval (D42/D43). Never publishes.
       # Two pieces first in the open (so a broken setup shows here), the rest in the background on the
       # server (hours of work must not hold the deploy). Log: storage/logs/ai-editor.log
+      # জেনে রাখুন: the first round now instead of one job an hour (owner, 2026-11-26). Same checks; nothing goes live
+      # early. Put [run-janun] in the release PR's title (it lands in the merge commit). Runs in the background on
+      # the server (about half an hour); log: storage/logs/janun-run.log
+      - name: জেনে রাখুন first round (on request)
+        if: contains(github.event.head_commit.message, '[run-janun]')
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" \
+            "cd '${DEPLOY_PATH}' && (nohup php artisan hatpakha:janun-run --pages=3 --no-ansi > storage/logs/janun-run.log 2>&1 < /dev/null &) && \
+             sleep 20 && cat storage/logs/janun-run.log && echo '... continues in the background: storage/logs/janun-run.log'"
+
       - name: AI editor batch (on request)
         if: github.ref_name == 'staging' && contains(github.event.head_commit.message, '[run-ai-editor]')
         env:
