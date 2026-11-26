@@ -56,7 +56,7 @@ final class Batch
         $requests = $items->map(function ($i) {
             $r = json_decode($i->request, true);
 
-            return ['customId' => 'i'.$i->id, 'params' => [
+            return ['customID' => 'i'.$i->id, 'params' => [   // the SDK's key (sent as custom_id; 'customId' was dropped, 2026-11-26)
                 'model' => $r['model'], 'maxTokens' => (int) $r['max'],
                 'system' => Claude::systemBlocks($r['purpose'], $r['system']),
                 'messages' => [['role' => 'user', 'content' => $r['user']]],

@@ -56,7 +56,7 @@ final class EditorialWriter
         ]);
         $html = collect((array) $data['paragraphs'])->map(fn ($p) => '<p>'.e(trim((string) $p)).'</p>')->implode('');
         $post = $current ?? new Post();
-        $post->forceFill([
+        $fill = [
             'title' => mb_substr(trim((string) $data['title']), 0, 200) ?: 'সম্পাদকীয়: '.$issue->title,
             'body_html' => $html,
             'section_id' => $section->id,
@@ -65,7 +65,13 @@ final class EditorialWriter
             'status' => 'draft',
             'slug' => $post->slug ?: \App\Support\Review::uniqueSlug('sompadokiyo-'.$issue->slug, 0),
             'ai_drafted_at' => now(),
-        ])->save();
+        ];
+        // 2026-11-26 (site errors): two clicks at once made the same new address twice; the second one gets the next free address.
+        try {
+            $post->forceFill($fill)->save();
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            $post->forceFill(['slug' => \App\Support\Review::uniqueSlug('sompadokiyo-'.$issue->slug, (int) $post->id)])->save();
+        }
         $post->authors()->sync([$author->id => ['position' => 0]]);
         $issue->forceFill(['editorial_post_id' => $post->id])->save();
         \App\Models\AuditLog::record('editorial.drafted', $post, ['issue' => $issue->slug]);

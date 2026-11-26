@@ -56,7 +56,7 @@ class AiBatchTest extends TestCase
                         'tags' => [], 'image_alt' => '', 'share_text' => 'পড়ুন', 'related_ids' => []],
                     default => ['edits' => [['original' => 'বানান ভুল', 'replacement' => 'বানান-ভুল', 'kind' => 'punctuation']], 'title_fix' => '', 'note' => 'ভালো'],
                 };
-                $out[$r['customId']] = ['data' => $data, 'usage' => ['in' => 1_000_000, 'out' => 0, 'cache_read' => 0, 'cache_write' => 0]];
+                $out[$r['customID']] = ['data' => $data, 'usage' => ['in' => 1_000_000, 'out' => 0, 'cache_read' => 0, 'cache_write' => 0]];
             }
 
             return $out;
@@ -79,7 +79,7 @@ class AiBatchTest extends TestCase
         $live = $this->makePost(['slug' => 'live2', 'status' => 'published']);
         TopicSorter::start();
         Batch::queueTopics();
-        Batch::$fake = fn (array $requests) => collect($requests)->mapWithKeys(fn ($r) => [$r['customId'] => ['data' => null, 'error' => 'expired']])->all();
+        Batch::$fake = fn (array $requests) => collect($requests)->mapWithKeys(fn ($r) => [$r['customID'] => ['data' => null, 'error' => 'expired']])->all();
         Batch::run();
         Batch::run();
         $this->assertNull($live->fresh()->topics_by, 'Sorted again in a later batch');

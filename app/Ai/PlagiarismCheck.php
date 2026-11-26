@@ -17,7 +17,7 @@ final class PlagiarismCheck
 {
     public const VERDICTS = ['clear', 'possible', 'found'];
 
-    public const MAX_SEARCHES = 6;
+    public const MAX_SEARCHES = 4;   // D298: one search per sampled line (was 6; the costliest Sonnet job after the letters)
 
     public const MAX_TRIES = 3;
 
