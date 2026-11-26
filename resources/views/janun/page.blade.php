@@ -20,9 +20,11 @@
         @if ($p->kind === 'list')
             @php($groups = collect((array) ($b['entries'] ?? []))->groupBy(fn ($e) => mb_substr(trim((string) $e['term']), 0, 1)))
             <div class="sticky top-0 z-10 -mx-5 mt-6 bg-paper px-5 pb-2 pt-2">
+            <div data-janun-search hidden>
             <label for="janun-q" class="block font-bold">খুঁজুন</label>
             <input id="janun-q" type="search" data-janun-q autocomplete="off" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg" placeholder="যেমন: লোভ">
             <p data-janun-count role="status" aria-live="polite" class="mt-1 min-h-5 text-sm text-ink2"></p>
+            </div>
             <nav aria-label="অক্ষর ধরে" class="mt-2 flex flex-nowrap gap-2 overflow-x-auto pb-1">
                 @foreach ($groups->keys() as $l)<a href="#l-{{ $loop->index }}" data-janun-letter class="grid h-11 w-11 flex-none place-items-center rounded-xl border-2 border-navy bg-white font-bold hover:bg-peach-light">{{ $l }}</a>@endforeach
             </nav>
@@ -50,7 +52,11 @@
                     // য়/ড়/ঢ় come as one character from some keyboards and as two from others: compare in one form (UX review)
                     const norm = (s) => s.normalize('NFC').replace(/[\u200c\u200d]/g, '');
                     items.forEach((el) => { el.dataset.t = norm(el.textContent); });
+                    document.querySelector('[data-janun-search]')?.removeAttribute('hidden');   // without JavaScript the box would do nothing
                     q?.addEventListener('input', () => {
+                        // typing far down a long list: bring the box and the first answers back into view (UX review)
+                        const bar = q.closest('.sticky');
+                        if (bar && bar.parentElement.getBoundingClientRect().top < 0) bar.parentElement.scrollIntoView({ block: 'start' });
                         const t = norm(q.value.trim());
                         let n = 0;
                         items.forEach((el) => { const hit = !t || el.dataset.t.includes(t); el.hidden = !hit; n += hit ? 1 : 0; });
@@ -79,7 +85,7 @@
             </section>
             @if (filled($b['roman'] ?? ''))
                 <details class="mt-4 rounded-2xl border-2 border-rule p-4">
-                    <summary class="cursor-pointer font-bold">রোমান হরফে পড়ুন · Read in Roman letters</summary>
+                    <summary class="flex min-h-11 cursor-pointer items-center font-bold">রোমান হরফে পড়ুন · Read in Roman letters</summary>
                     <p lang="bn-Latn" class="mt-2 whitespace-pre-line text-lg italic leading-relaxed">{{ trim((string) $b['roman']) }}</p>
                 </details>
             @endif
@@ -109,8 +115,8 @@
             @endif
             @if ($sections->count() > 2)
                 <details class="mt-5 rounded-2xl border-2 border-navy p-4" open>
-                    <summary class="cursor-pointer font-bold">এই লেখায়</summary>
-                    <ol class="mt-2 list-decimal space-y-1 pl-6">@foreach ($sections as $s)<li><a href="#s-{{ $loop->index }}" class="underline">{{ $s['heading'] }}</a></li>@endforeach</ol>
+                    <summary class="flex min-h-11 cursor-pointer items-center font-bold">এই লেখায়</summary>
+                    <ol class="mt-1 list-decimal pl-6">@foreach ($sections as $s)<li><a href="#s-{{ $loop->index }}" class="block py-2 underline">{{ $s['heading'] }}</a></li>@endforeach</ol>
                 </details>
             @endif
             @foreach ($sections as $s)
@@ -142,7 +148,7 @@
         @if (! empty($b['faq']))
             <h2 class="mt-10 font-display text-2xl font-extrabold">প্রশ্নোত্তর</h2>
             @foreach ($b['faq'] as $f)
-                <details class="mt-2 rounded-xl border-2 border-rule p-3"><summary class="cursor-pointer font-bold">{{ $f['q'] }}</summary><p class="mt-2 font-serif leading-relaxed">{{ $f['a'] }}</p></details>
+                <details class="mt-2 rounded-xl border-2 border-rule p-3"><summary class="flex min-h-11 cursor-pointer items-center font-bold">{{ $f['q'] }}</summary><p class="mt-2 font-serif leading-relaxed">{{ $f['a'] }}</p></details>
             @endforeach
         @endif
         @if (! empty($b['sources']))

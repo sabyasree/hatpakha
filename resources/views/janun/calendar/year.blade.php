@@ -16,7 +16,7 @@
                 <tbody>
                     @foreach ($rows as $r)
                         <tr class="border-b border-rule">
-                            <th scope="row" class="py-2 pr-2"><a href="{{ $B::url($year, $r['month']) }}" class="font-bold underline">{{ $B::MONTHS[$r['month'] - 1] }}</a><span class="block text-xs font-normal text-ink2">{{ $B::SEASONS[$r['month'] - 1] }}</span></th>
+                            <th scope="row" class="py-2 pr-2"><a href="{{ $B::url($year, $r['month']) }}" class="inline-flex min-h-11 items-center font-bold underline">{{ $B::MONTHS[$r['month'] - 1] }}</a><span class="block text-xs font-normal text-ink2">{{ $B::SEASONS[$r['month'] - 1] }}</span></th>
                             <td class="py-2 pr-2">@if ($r['wb']){{ $C::short($r['wb']) }} {{ $N($r['wb']->year) }}<span class="block text-xs text-ink2">{{ $N($r['wbLen']) }} দিন</span>@else<span class="text-sm text-ink2">মিলিয়ে দেখা হচ্ছে</span>@endif</td>
                             <td class="py-2">{{ $C::short($r['bd']) }} {{ $N($r['bd']->year) }}<span class="block text-xs text-ink2">{{ $N($r['bdLen']) }} দিন</span></td>
                         </tr>
