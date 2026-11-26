@@ -86,6 +86,7 @@ class SitemapController extends Controller
             $md('আর্কাইভ (archive, by year)', Url::to('/archive')),
             $md('সব সংখ্যা (all issues)', Url::to('/sonkha')),
             ...(JanunController::anyLive() ? [$md('জেনে রাখুন (reference: Bengali proverbs, spelling, puja rules and mantras with meaning, school essays)', Url::to('/janun'))] : []),   // D301
+            $md('বাংলা ক্যালেন্ডার (today\'s Bengali date in West Bengal and Bangladesh, months and festivals)', \App\Support\BanglaDate::url()),   // D303
             '',
             '## Recent pieces',
             ...$recent->all(),
@@ -153,11 +154,19 @@ class SitemapController extends Controller
     {
         $times = \App\Support\FestivalPlan::pageLive()
             ? [['loc' => Url::to('/janun/puja/pujor-somoy'), 'lastmod' => \App\Models\FestivalTime::where('status', 'verified')->max('updated_at'), 'image' => null]] : [];   // D302
+        // D303: the calendar (hub, this year and next, their months) is always there, and so is the জেনে রাখুন hub
+        $cal = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null], ['loc' => \App\Support\BanglaDate::url(), 'lastmod' => now()->startOfDay(), 'image' => null]]);
+        foreach (range(BanglaCalendarController::FIRST_YEAR, \App\Support\BanglaDate::bd(BanglaCalendarController::today())[0] + 1) as $y) {
+            $cal->push(['loc' => \App\Support\BanglaDate::url($y), 'lastmod' => null, 'image' => null]);
+            foreach (range(1, 12) as $m) {
+                $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
+            }
+        }
         $live = array_filter(JanunController::live(), fn ($pages) => $pages->isNotEmpty());
         if ($live === []) {
-            return collect($times);
+            return $cal->concat($times);
         }
-        $out = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null]]);
+        $out = $cal;
         foreach ($live as $section => $pages) {
             $out->push(['loc' => Url::to('/janun/'.$section), 'lastmod' => null, 'image' => null]);
             foreach ($pages as $p) {

@@ -35,6 +35,7 @@ final class JanunDesk
             return $n;
         }
         FestivalDesk::run($now);   // D302: tithi times for the time-zone page, one search an hour at most
+        BanglaCalendarDesk::run($now);   // D303: West Bengal month starts, checked against published calendars
         if ($p = JanunPage::where('status', 'drafted')->orderBy('id')->first()) {
             self::check($p, $now);
         } elseif (Setting::get('janun.drafted_hour') !== $now->format('Y-m-d H')) {

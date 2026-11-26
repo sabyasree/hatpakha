@@ -41,7 +41,7 @@ class JanunController extends Controller
     public function index()
     {
         $live = self::live();
-        abort_if(collect($live)->flatten()->isEmpty(), 404);
+        // D303: the hub exists from the start, because the calendar is always there
         $seo = new Seo(title: 'জেনে রাখুন: প্রবাদ, বাগধারা, পুজোর মন্ত্র, ভাবসম্প্রসারণ',
             description: 'হাতপাখার জেনে রাখুন: বাংলা প্রবাদ-প্রবচন ও বাগধারার অর্থ, শুদ্ধ বানান, পুজোর নিয়ম ও মন্ত্র অর্থসহ, আর ছাত্রছাত্রীদের জন্য ভাবসম্প্রসারণ ও রচনা।',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')]])]);

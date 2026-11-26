@@ -15,6 +15,7 @@ Unless `SEO_INDEXABLE=true` (production, from cutover), every response carries `
 | Archive | `/archive/` and `/archive/{yyyy}/` | New (D31). Old date archives `/yyyy/`, `/yyyy/mm/`, `/yyyy/mm/dd/` 301 here ✅test |
 | Topic | `/bishoy/` and `/bishoy/{slug}/` | New (D293). The topics are fixed in `App\Support\Topics` (owner-approved names, titles, introductions); a topic appears in menus, sitemap and Google only with 8 or more pieces |
 | Reference (জেনে রাখুন) | `/janun/`, `/janun/{bhasha\|puja\|pathshala}/`, `/janun/{part}/{slug}/` | New (D301). Pages in `App\Support\JanunPlan`; a page, its part and the hub exist (and enter the sitemap) only once a page is published; at most three new pages a week |
+| Bengali calendar (D303) | `/janun/bangla-calendar/`, `/janun/bangla-calendar/{1433…}/`, `/janun/bangla-calendar/{year}/{boishakh…choitro}/` | Years from 1433 (launch) to next year; never removed once offered |
 | Puja times (D302) | `/janun/puja/pujor-somoy/`; booklets `/janun/puja/{slug}/chhapun/` | The times page is indexed once two festivals have checked times; booklets are `noindex, follow` with the canonical on their page |
 | Tag | `/tag/{slug}/` | Only the ~150 controlled tags. Merged or removed tags → 301 to the section |
 - **Trailing slash, always** (as on WordPress). A URL without the slash → 301 to the slashed version. ✅test

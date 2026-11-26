@@ -434,3 +434,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Festival times found and checked on two pages by the desk; `/janun/puja/pujor-somoy/` and a box on each puja page in the reader's time zone (any zone in the world); 13 children's poems with our English translation (`/janun/chhora/`); free A5 booklet per puja page (FestivalTimesTest).
 - [ ] Owner, when the Saraswati page is live (about two weeks after deploy): send the booklet link to Bengali associations abroad (a ready message is in the conversation of 2026-11-26).
 - [ ] Watch the audit log (festival.found) in the first days: if pages rarely confirm the times (sites blocking the server), times stay hidden and the check needs another source.
+
+## বাংলা ক্যালেন্ডার (D303), 2026-11-26
+- [x] Today, month and year pages for both Bengals; Bangladesh by arithmetic, West Bengal calculated and checked against two published calendars; home-page line, /janun/ card, footer, sitemap (BanglaCalendarTest).
+- [ ] After deploy: within a few hours the desk checks 1433 and 1434; watch the audit log (calendar.checked). Months that stay held show the "being checked" note.
+- [ ] Later, if the calendar draws visitors: the tithi of the day (checked the same way).

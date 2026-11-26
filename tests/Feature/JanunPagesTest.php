@@ -44,7 +44,7 @@ class JanunPagesTest extends TestCase
             if ($purpose === 'factcheck') {
                 return str_contains($user, '<mantra')
                     ? ['exact_matches' => array_map(fn ($s) => ['url' => 'https://'.$s.'/x', 'site' => $s], array_shift($this->mantraSites) ?? [])]
-                    : (str_contains($user, '<festival') ? ['events' => [], 'sources' => []] : ['problems' => (++$this->factSearches && true) ? $this->problems : []]);
+                    : (str_contains($user, '<festival') || str_contains($user, '<year>') ? ['events' => [], 'sources' => []] : ['problems' => (++$this->factSearches && true) ? $this->problems : []]);
             }
 
             return null;
@@ -108,11 +108,11 @@ class JanunPagesTest extends TestCase
     public function test_nothing_is_public_until_published(): void
     {
         JanunDesk::seed();
-        $this->get('/janun/')->assertNotFound();
+        $this->get('/janun/')->assertOk()->assertDontSee('বাংলা প্রবাদ-প্রবচন ও তার অর্থ');   // D303: the hub holds the calendar from the start
         $this->get('/janun/bhasha/probad/')->assertNotFound();
         JanunPage::where('key', 'probad')->update(['status' => 'scheduled', 'publish_at' => now()->addDay(), 'body' => json_encode($this->listBody(45))]);
         $this->get('/janun/bhasha/probad/')->assertNotFound();
-        $this->assertStringNotContainsString('/janun/', $this->get('/sitemap-pages.xml')->getContent());
+        $this->assertStringNotContainsString('/janun/bhasha/', $this->get('/sitemap-pages.xml')->getContent());
     }
 
     public function test_drafting_checking_and_scheduling(): void
@@ -230,7 +230,7 @@ class JanunPagesTest extends TestCase
         $this->assertSame('bagdhara', $sib->first()->key, 'a page on the same subject comes first');
         // the rest of the site links in once something is live
         cache()->forget('janun:any');
-        $this->get('/')->assertSee(\App\Support\Url::to('/janun'), false);
+        $this->get('/')->assertSee('href="'.\App\Support\Url::to('/janun').'"', false);
         $this->assertStringContainsString('জেনে রাখুন', $this->get('/llms.txt')->getContent());
     }
 
@@ -238,7 +238,7 @@ class JanunPagesTest extends TestCase
     {
         JanunDesk::seed();
         cache()->forget('janun:any');
-        $this->get('/')->assertDontSee(\App\Support\Url::to('/janun'), false);
+        $this->get('/')->assertDontSee('href="'.\App\Support\Url::to('/janun').'"', false);
     }
 
     public function test_descriptions_are_cut_between_words(): void
