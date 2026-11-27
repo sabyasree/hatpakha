@@ -10,6 +10,7 @@
         <h1 class="mt-5 font-display text-4xl font-extrabold">বাংলা শিখি</h1>
         <p lang="en" class="text-base text-ink2">Learn to read Bengali</p>
         <p class="mt-1 text-lg"><span data-done>{{ $N(0) }}</span>/{{ \App\Support\LearnCourse::count() }} <span data-en="lessons">পাঠ</span> · <span data-stars>{{ $N(0) }}</span> ⭐</p>
+        <div data-sticker-book class="mt-2 flex min-h-9 flex-wrap gap-1" aria-label="আমার স্টিকার" data-en-label="My stickers"></div>
         <a data-continue href="{{ \App\Support\LearnCourse::url('first-letters', 1) }}" class="mt-4 flex min-h-16 items-center justify-center rounded-2xl bg-red px-6 font-display text-2xl font-extrabold text-white shadow-[4px_4px_0_#13212C]">শুরু করো →</a>
         <ol class="mt-8 space-y-6">
             @foreach ($units as $slug => $u)
@@ -22,7 +23,7 @@
                     <ol class="mt-3 flex flex-wrap gap-3">
                         @foreach ($u['lessons'] as $i => $l)
                             <li><a href="{{ \App\Support\LearnCourse::url($slug, $i + 1) }}" data-lesson="{{ $slug }}/{{ $i + 1 }}" class="relative flex h-16 w-16 flex-col items-center justify-center rounded-2xl border-2 border-navy bg-white font-display text-xl font-extrabold"
-                                aria-label="পাঠ {{ $N($i + 1) }}: {{ $l['title'] }}">{{ $N($i + 1) }}<span data-lesson-stars class="text-xs leading-none" aria-hidden="true"></span></a></li>
+                                aria-label="পাঠ {{ $N($i + 1) }}: {{ $l['title'] }}" data-en-label="Lesson {{ $i + 1 }}: {{ $l['title'] }}"><span data-num>{{ $N($i + 1) }}</span><span data-lesson-stars class="text-xs leading-none" aria-hidden="true"></span></a></li>
                         @endforeach
                     </ol>
                 </li>
@@ -35,8 +36,8 @@
         <ul data-who-list class="mt-3 space-y-2"></ul>
         <form data-who-add class="mt-4 rounded-2xl border-2 border-dashed border-navy p-3">
             <label for="who-new" class="font-bold" data-en="A new name (up to four)">নতুন নাম (চারজন পর্যন্ত)</label>
-            <input id="who-new" name="name" maxlength="20" autocomplete="off" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg" placeholder="যেমন: মিঠু">
-            <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="একটা ছবি বাছো" data-faces></div>
+            <input id="who-new" name="name" maxlength="20" autocomplete="off" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-3 text-lg" placeholder="যেমন: মিঠু" data-en-placeholder="e.g. Mithu">
+            <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="একটা ছবি বাছো" data-en-label="Pick a picture" data-faces></div>
             <button class="mt-3 min-h-12 w-full rounded-full bg-red font-bold text-white" data-en="Add">যোগ করো</button>
         </form>
         <button type="button" data-who-close class="mt-3 min-h-11 w-full rounded-full border-2 border-navy font-bold" data-en="Close">বন্ধ</button>

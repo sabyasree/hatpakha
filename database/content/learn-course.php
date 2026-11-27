@@ -245,19 +245,29 @@ return [
             'lessons' => [
                 ['title' => 'মিঠুর বিড়াল', 'new' => [], 'words' => [], 'story' => [
                     'text' => "মিঠুর একটা বিড়াল আছে। বিড়ালটার নাম মেনি। মেনি সাদা আর নরম।\nরোজ সকালে মেনি দুধ খায়। তারপর রোদে বসে ঘুমায়।\nএকদিন মেনি একটা প্রজাপতি দেখল। প্রজাপতি উড়ে গেল ফুলের দিকে। মেনিও ছুটল। কিন্তু প্রজাপতি ধরা দিল না।\nমেনি আবার রোদে ফিরে এসে ঘুমিয়ে পড়ল।",
-                    'q' => ['মেনি কী দেখল?', ['একটা প্রজাপতি', 'একটা পাখি', 'একটা মাছ'], 0], 'picture' => '🐈']],
+                    'q' => ['মেনি কী দেখল?', ['একটা প্রজাপতি', 'একটা পাখি', 'একটা মাছ'], 0], 'picture' => '🐈',
+                    'en' => "Mithu has a cat. The cat's name is Meni. Meni is white and soft.\nEvery morning Meni drinks milk. Then she sits in the sun and sleeps.\nOne day Meni saw a butterfly. The butterfly flew off towards the flowers. Meni ran after it too. But the butterfly would not be caught.\nMeni came back to the sun and fell asleep again.",
+                    'q_en' => ['What did Meni see?', ['a butterfly', 'a bird', 'a fish']]]],
                 ['title' => 'বৃষ্টির দিন', 'new' => [], 'words' => [], 'story' => [
                     'text' => "সকাল থেকে আকাশে কালো মেঘ। তারপর বৃষ্টি নামল। টাপুর টুপুর, টাপুর টুপুর।\nরিনা জানালার ধারে বসে দেখল, উঠোনে জল জমেছে।\nরিনার ভাই কাগজ দিয়ে একটা নৌকা বানাল। রিনা নৌকাটা জলে ভাসিয়ে দিল। নৌকা দুলে দুলে চলল।\nরিনা হাততালি দিয়ে হাসল।",
-                    'q' => ['রিনার ভাই কী বানাল?', ['মাটির পুতুল', 'কাগজের নৌকা', 'কাঠের ঘোড়া'], 1], 'picture' => '🌧️']],
+                    'q' => ['রিনার ভাই কী বানাল?', ['মাটির পুতুল', 'কাগজের নৌকা', 'কাঠের ঘোড়া'], 1], 'picture' => '🌧️',
+                    'en' => "Since morning the sky has been full of black clouds. Then the rain came. Tapur tupur, tapur tupur.\nRina sat by the window and saw water gathering in the yard.\nRina's brother made a boat out of paper. Rina floated the boat on the water. The boat went rocking along.\nRina clapped and laughed.",
+                    'q_en' => ['What did Rina\'s brother make?', ['a clay doll', 'a paper boat', 'a wooden horse']]]],
                 ['title' => 'আমগাছ', 'new' => [], 'words' => [], 'story' => [
                     'text' => "আমাদের উঠোনে একটা আমগাছ আছে। গরমকালে গাছে অনেক আম হয়।\nকাঁচা আম সবুজ, পাকা আম হলুদ।\nমা কাঁচা আম দিয়ে আচার বানান। আমি পাকা আম খেতে ভালোবাসি।\nএকদিন ঝড়ে অনেক আম পড়ল। আমরা সবাই মিলে ঝুড়ি ভরে আম কুড়োলাম।",
-                    'q' => ['মা কাঁচা আম দিয়ে কী বানান?', ['পিঠে', 'মিষ্টি', 'আচার'], 2], 'picture' => '🥭']],
+                    'q' => ['মা কাঁচা আম দিয়ে কী বানান?', ['পিঠে', 'মিষ্টি', 'আচার'], 2], 'picture' => '🥭',
+                    'en' => "There is a mango tree in our yard. In summer the tree has lots of mangoes.\nUnripe mangoes are green, ripe mangoes are yellow.\nMother makes pickle with the unripe mangoes. I love eating ripe mangoes.\nOne day a storm brought down lots of mangoes. We all gathered them together and filled a basket.",
+                    'q_en' => ['What does Mother make with unripe mangoes?', ['pitha (rice cakes)', 'sweets', 'pickle']]]],
                 ['title' => 'নতুন বন্ধু', 'new' => [], 'words' => [], 'story' => [
                     'text' => "স্কুলে আজ একটা নতুন মেয়ে এসেছে। ওর নাম আয়েশা। আয়েশা একা বসে ছিল।\nটুম্পা গিয়ে বলল, \"তোমার পাশে বসব?\" আয়েশা হেসে বলল, \"বসো।\"\nটিফিনে দুজনে রুটি আর আলুভাজা ভাগ করে খেল।\nছুটির পর আয়েশা বলল, \"কাল আবার দেখা হবে।\" টুম্পা বলল, \"হ্যাঁ, আমরা এখন বন্ধু।\"",
-                    'q' => ['টিফিনে দুজনে কী খেল?', ['ভাত আর ডাল', 'রুটি আর আলুভাজা', 'লুচি আর মিষ্টি'], 1], 'picture' => '🤝']],
+                    'q' => ['টিফিনে দুজনে কী খেল?', ['ভাত আর ডাল', 'রুটি আর আলুভাজা', 'লুচি আর মিষ্টি'], 1], 'picture' => '🤝',
+                    'en' => "A new girl came to school today. Her name is Ayesha. Ayesha was sitting alone.\nTumpa went over and said, \"Shall I sit next to you?\" Ayesha smiled and said, \"Yes, sit.\"\nAt tiffin the two of them shared flatbread and fried potatoes.\nAfter school Ayesha said, \"See you tomorrow.\" Tumpa said, \"Yes, we are friends now.\"",
+                    'q_en' => ['What did the two eat at tiffin?', ['rice and dal', 'flatbread and fried potatoes', 'luchi and sweets']]]],
                 ['title' => 'পৌষের পিঠে', 'new' => [], 'words' => [], 'story' => [
                     'text' => "পৌষ মাসে খুব শীত পড়ে। ভোরবেলা চারদিক কুয়াশায় ঢাকা।\nআজ পৌষ সংক্রান্তি। মা পিঠে বানাবেন। চালের গুঁড়ো, নারকেল আর নলেন গুড় এসেছে।\nআমরা সবাই রান্নাঘরে গোল হয়ে বসলাম। মা পাটিসাপটা ভাজলেন, বাবা দুধপুলি বানালেন।\nগরম পিঠে খেয়ে আমাদের মুখে হাসি ফুটল।",
-                    'q' => ['মা কী ভাজলেন?', ['লুচি', 'মাছ', 'পাটিসাপটা'], 2], 'picture' => '🥞']],
+                    'q' => ['মা কী ভাজলেন?', ['লুচি', 'মাছ', 'পাটিসাপটা'], 2], 'picture' => '🥞',
+                    'en' => "It is very cold in the month of Poush. Early in the morning everything is covered in fog.\nToday is Poush Sankranti. Mother will make pitha. Rice flour, coconut and fresh date-palm jaggery have arrived.\nWe all sat in a circle in the kitchen. Mother fried patishapta, Father made dudh-puli.\nWe ate the hot pitha and smiled.",
+                    'q_en' => ['What did Mother fry?', ['luchi', 'fish', 'patishapta']]]],
             ],
         ],
     ],

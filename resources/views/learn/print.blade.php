@@ -54,7 +54,7 @@
                     <li>বোর্ডে নতুন অক্ষরটা বড় করে লিখুন, সবাই একসঙ্গে বলুক।</li>
                     <li>শব্দগুলো ছবি দেখিয়ে পড়ান: আগে অক্ষর ধরে, তারপর পুরো শব্দ।</li>
                     <li>ওয়ার্কশিট: প্রথম ঘর দেখে, পরের তিন ঘর ধূসরের ওপর, শেষ দুই ঘর নিজে।</li>
-                    <li>ছবি আর শব্দ মেলানো। উত্তর শেষ পাতায়।</li>
+                    <li>ছবি আর শব্দ মেলানো@if (collect($teacher['lessons'])->contains(fn ($l) => count(array_filter((array) ($l['words'] ?? []), fn ($w) => $w[3] !== '')) >= 3 || isset($l['story']))। উত্তর শেষ পাতায়@endif।</li>
                 </ol>
                 <p class="mt-3 font-serif text-lg">{{ $teacher['tip']['bn'] }}</p>
                 <p lang="en" class="mt-1 text-base">{{ $teacher['tip']['en'] }}</p>
@@ -79,19 +79,21 @@
                 </header>
                 @if (! empty($l['new']))
                     <h2 class="mt-4 font-display text-xl font-extrabold">লিখে শিখি <span class="text-base font-normal">(প্রথম ঘর দেখো, পরের তিন ঘর ধূসরের ওপর, শেষ দুই ঘর নিজে)</span></h2>
+                    <p lang="en" class="text-xs">Write it: look at the first box, write over the grey in the next three, then write it alone.</p>
                     @foreach ($l['new'] as $x)
                         <div class="row" aria-label="{{ $glyph($x) }}">@for ($i = 0; $i < 6; $i++)<div class="box {{ $i > 0 && $i < 4 ? 'trace' : '' }}">{{ $i < 4 ? $glyph($x) : '' }}</div>@endfor</div>
+                        @if (count($pics) < 3 && count($l['new']) <= 2)<div class="row" aria-label="{{ $glyph($x) }}: নিজে">@for ($i = 0; $i < 6; $i++)<div class="box {{ $i < 2 ? 'trace' : '' }}">{{ $i < 2 ? $glyph($x) : '' }}</div>@endfor</div>@endif
                     @endforeach
                 @endif
                 @if (! empty($l['words']))
-                    <h2 class="mt-5 font-display text-xl font-extrabold">পড়ো আর লেখো</h2>
+                    <h2 class="mt-5 font-display text-xl font-extrabold">পড়ো আর লেখো <span lang="en" class="text-xs font-normal">Read it, write over it, write it alone</span></h2>
                     @foreach (array_slice($l['words'], 0, empty($l['new']) ? 5 : 3) as $w)
                         <div class="wordrow"><div>{{ $w[3] }} {{ $w[0] }}</div><div class="trace">{{ $w[0] }}</div><div></div></div>
                         <p lang="en" class="text-xs">{{ $w[1] }} · {{ $w[2] }}</p>
                     @endforeach
                 @endif
                 @if (count($pics) >= 3)
-                    <h2 class="mt-5 font-display text-xl font-extrabold">ছবির সঙ্গে শব্দ মেলাও <span class="text-base font-normal">(দাগ টেনে)</span></h2>
+                    <h2 class="mt-5 font-display text-xl font-extrabold">ছবির সঙ্গে শব্দ মেলাও <span class="text-base font-normal">(দাগ টেনে)</span> <span lang="en" class="text-xs font-normal">Draw a line from each picture to its word</span></h2>
                     @php($right = $order($pics, 'w'.$unit.$n))
                     <div class="match">
                         @foreach ($pics as $k => $w)
@@ -100,14 +102,14 @@
                     </div>
                 @endif
                 @if (! empty($l['sentences']))
-                    <h2 class="mt-5 font-display text-xl font-extrabold">পড়ো আর দেখে লেখো</h2>
+                    <h2 class="mt-5 font-display text-xl font-extrabold">পড়ো আর দেখে লেখো <span lang="en" class="text-xs font-normal">Read and copy</span></h2>
                     @foreach ($l['sentences'] as $s)
                         <p class="mt-3 font-display text-[8mm] font-extrabold">{{ $s[0] }} <span lang="en" class="font-sans text-xs font-normal">{{ $s[2] }}</span></p>
                         <div class="h-[14mm] border-b border-peach-deep"></div>
                     @endforeach
                 @endif
                 @if (isset($l['story']))
-                    <h2 class="mt-4 font-display text-xl font-extrabold">গল্পটা পড়ো</h2>
+                    <h2 class="mt-4 font-display text-xl font-extrabold">গল্পটা পড়ো <span lang="en" class="text-xs font-normal">Read the story, then tick the answer</span></h2>
                     <div class="mt-2 space-y-2 font-serif text-[6mm] leading-relaxed">@foreach (explode("\n", $l['story']['text']) as $p)<p>{{ $p }}</p>@endforeach</div>
                     <p class="mt-4 font-display text-xl font-extrabold">{{ $l['story']['q'][0] }}</p>
                     <ul class="mt-2 space-y-2 text-[6mm]">@foreach ($l['story']['q'][1] as $o)<li>☐ {{ $o }}</li>@endforeach</ul>

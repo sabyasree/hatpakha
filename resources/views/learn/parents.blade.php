@@ -5,7 +5,7 @@
     $lessons = []; $items = [];
     foreach ($C::all() as [$slug, $n, $id]) {
         $l = $C::lesson($slug, $n);
-        $lessons[] = ['id' => $id, 'title' => $l['title'], 'unit' => $units[$slug]['title'], 'url' => $C::url($slug, $n), 'new' => array_values(array_filter((array) $l['new'], fn ($x) => mb_strlen($x) === 1))];
+        $lessons[] = ['id' => $id, 'title' => $l['title'], 'unit' => $units[$slug]['title'], 'unitEn' => $units[$slug]['en'], 'url' => $C::url($slug, $n), 'new' => array_values(array_filter((array) $l['new'], fn ($x) => mb_strlen($x) === 1))];
         foreach ((array) $l['new'] as $x) { if (mb_strlen($x) === 1 && ! in_array($x, $items, true)) { $items[] = $x; } }
     }
 @endphp
@@ -13,6 +13,7 @@
     <article class="mx-auto max-w-[860px] px-5 py-8" data-learn-parents>
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা শিখি', $C::url()], ['বাবা-মায়ের জন্য', '']], 'kicker' => 'বাংলা শিখি', 'title' => 'বাবা-মায়ের জন্য'])
         <p lang="en" class="mt-1 text-base text-ink2">Helping your child learn to read Bengali, even if you read little Bengali yourself</p>
+        <button type="button" data-ui-toggle class="mt-3 flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold"><span data-en="বাংলায় দেখুন">Show in English</span></button>
         <section class="mt-6 print:hidden">
             <h2 class="font-display text-2xl font-extrabold">রোজ দশ মিনিট: কীভাবে</h2>
             <ol class="mt-3 list-decimal space-y-2 pl-6 font-serif text-lg">
@@ -29,19 +30,20 @@
         </section>
         <x-ad-slot spot="list" :height="250" />
         <section class="mt-6">
-            <h2 class="font-display text-2xl font-extrabold">এই ফোনে অগ্রগতি</h2>
-            <p class="text-base text-ink2 print:hidden">শুধু এই ফোন বা কম্পিউটারে রাখা আছে, কোথাও পাঠানো হয় না।</p>
+            <h2 class="font-display text-2xl font-extrabold" data-en="Progress on this phone">এই ফোনে অগ্রগতি</h2>
+            <p class="text-base text-ink2 print:hidden" data-en="Kept only on this phone or computer; nothing is sent anywhere.">শুধু এই ফোন বা কম্পিউটারে রাখা আছে, কোথাও পাঠানো হয় না।</p>
             <div data-progress-out><p class="mt-3 text-lg">অগ্রগতি দেখতে জাভাস্ক্রিপ্ট চালু রাখুন।</p></div>
-            <button type="button" data-print-card class="mt-3 min-h-11 rounded-full border-2 border-navy px-4 font-bold print:hidden">অগ্রগতির কার্ড ছাপুন</button>
+            <button type="button" data-print-card class="mt-3 min-h-11 rounded-full border-2 border-navy px-4 font-bold print:hidden" data-en="Print a progress card">অগ্রগতির কার্ড ছাপুন</button>
         </section>
         <section class="mt-8 rounded-2xl border-2 border-navy p-5 print:hidden">
-            <h2 class="font-display text-2xl font-extrabold">অন্য ফোনে নিয়ে যান</h2>
-            <p class="mt-1 font-serif text-lg">এই ফোনে "কোড বানান" টিপুন, কোডটা নিজেকে হোয়াটসঅ্যাপ বা ইমেলে পাঠান, অন্য ফোনে এই পাতায় বসিয়ে "কোড বসান" টিপুন।</p>
-            <label for="learn-code" class="mt-3 block font-bold">কোড</label>
+            <h2 class="font-display text-2xl font-extrabold" data-en="Move to another phone">অন্য ফোনে নিয়ে যান</h2>
+            <p class="mt-1 font-serif text-lg" data-en="On this phone tap “Make a code”, send the code to yourself by WhatsApp or e-mail, then paste it on this page on the other phone and tap “Use the code”.">এই ফোনে "কোড বানান" টিপুন, কোডটা নিজেকে হোয়াটসঅ্যাপ বা ইমেলে পাঠান, অন্য ফোনে এই পাতায় বসিয়ে "কোড বসান" টিপুন।</p>
+            <label for="learn-code" class="mt-3 block font-bold" data-en="Code">কোড</label>
             <textarea id="learn-code" data-code rows="3" class="mt-1 block w-full rounded-xl border-2 border-navy bg-white p-3 font-mono text-sm" spellcheck="false"></textarea>
             <div class="mt-2 flex flex-wrap gap-2">
-                <button type="button" data-export class="min-h-11 rounded-full bg-navy px-4 font-bold text-white">কোড বানান</button>
-                <button type="button" data-import class="min-h-11 rounded-full border-2 border-navy px-4 font-bold">কোড বসান</button>
+                <button type="button" data-export class="min-h-11 rounded-full bg-navy px-4 font-bold text-white" data-en="Make a code">কোড বানান</button>
+                <button type="button" data-share-code hidden class="min-h-11 rounded-full border-2 border-navy px-4 font-bold" data-en="Send">পাঠান</button>
+                <button type="button" data-import class="min-h-11 rounded-full border-2 border-navy px-4 font-bold" data-en="Use the code">কোড বসান</button>
             </div>
             <p data-code-msg role="status" class="mt-2 font-bold"></p>
         </section>
@@ -55,8 +57,9 @@
             </dl>
         </section>
         <div class="mt-8 flex flex-wrap gap-2 print:hidden">
-            <a href="{{ $C::url('start') }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white">পাঠে ফিরুন</a>
-            <a href="{{ $C::url('worksheets') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold">সব ওয়ার্কশিট</a>
+            <a href="{{ $C::url('start') }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white" data-en="Back to the lessons">পাঠে ফিরুন</a>
+            <a href="{{ $C::url('worksheets') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold" data-en="All worksheets">সব ওয়ার্কশিট</a>
+            <a href="{{ $C::url('english') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold" lang="en">Sound guide in English</a>
         </div>
         <div class="print:hidden"><x-newsletter-signup variant="card" /></div>
     </article>
