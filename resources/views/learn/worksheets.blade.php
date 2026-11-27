@@ -9,7 +9,14 @@
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা শিখি', $C::url()], ['ওয়ার্কশিট', '']], 'kicker' => 'বাংলা শিখি · বিনা পয়সায়', 'title' => 'বাংলা ওয়ার্কশিট (PDF)'])
         <p lang="en" class="mt-1 text-base text-ink2">Free Bengali worksheets: alphabet, vowel signs (kar), phola and conjunct letters. A4 and US Letter.</p>
         <p class="mt-4 font-serif text-xl leading-relaxed">প্রতিটি পাঠের একটি ওয়ার্কশিট: আগে দেখে, তারপর ধূসর অক্ষরের ওপর, শেষে নিজে লেখা; ছবির সঙ্গে শব্দ মেলানো। বাংলা স্কুল আর পুজো কমিটির জন্য প্রতিটি ধাপের পুরো সেট, উত্তরসহ। বিনা পয়সায় ছাপুন, বিলি করুন।</p>
-        <h2 class="mt-6 font-display text-2xl font-extrabold">দেওয়ালের চার্ট</h2>
+        <section id="schools" lang="en" class="mt-6 scroll-mt-20 rounded-2xl border-2 border-sky-deep bg-sky-tint p-4">
+            <h2 class="font-display text-2xl font-extrabold">For Bengali schools and teachers</h2>
+            <p class="mt-1 text-lg">Every unit has a teacher's set: a page on how to use it in class, every worksheet of the unit, and an answer page. Free to print and hand out. Lessons can also be played on a phone at home, with English instructions for families who don't read Bengali.</p>
+            <ul class="mt-3 grid gap-2 sm:grid-cols-2">@foreach ($units as $slug => $u)<li><a href="{{ $C::url('pdf/'.$slug.'-teacher-a4') }}" class="flex min-h-11 items-center rounded-xl border-2 border-navy bg-paper px-3 font-bold">{{ $u['n'] }}. {{ $u['en'] }}</a></li>@endforeach</ul>
+            <p class="mt-2 text-base">US Letter versions are in each unit below.</p>
+        </section>
+        <h2 lang="en" class="mt-6 font-display text-2xl font-extrabold">Bengali alphabet worksheets (PDF)</h2>
+        <h2 class="mt-1 font-display text-2xl font-extrabold">দেওয়ালের চার্ট</h2>
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
             @foreach (['alphabet' => 'বর্ণমালার চার্ট', 'kar' => 'কারের চার্ট'] as $c => $t)
                 <div class="rounded-2xl border-2 border-navy p-4"><p class="font-display text-xl font-extrabold">{{ $t }}</p>

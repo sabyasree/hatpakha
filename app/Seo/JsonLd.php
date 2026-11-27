@@ -190,17 +190,19 @@ final class JsonLd
             'description' => 'অক্ষর থেকে প্রথম গল্প পর্যন্ত বাংলা পড়া শেখার বিনা পয়সার পাঠ, ছোটদের জন্য। A free course for children learning to read Bengali.',
             'url' => $url, 'inLanguage' => 'bn', 'isAccessibleForFree' => true, 'educationalLevel' => 'Beginner', 'provider' => self::org(),
             'offers' => ['@type' => 'Offer', 'price' => 0, 'priceCurrency' => 'USD', 'category' => 'Free'],
-            'hasCourseInstance' => ['@type' => 'CourseInstance', 'courseMode' => 'Online', 'courseWorkload' => 'PT10M'],
+            'hasCourseInstance' => ['@type' => 'CourseInstance', 'courseMode' => 'Online', 'courseWorkload' => 'PT'.max(1, (int) round(\App\Support\LearnCourse::count() * 7 / 60)).'H'],
+            'image' => asset('images/og/card-janun.jpg'), 'teaches' => 'Bengali script: letters, vowel signs, phola, joined letters, first reading',
+            'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student', 'suggestedMinAge' => 4],
             'hasPart' => array_map(fn ($slug) => ['@type' => 'LearningResource', 'name' => $units[$slug]['title'], 'url' => Url::to('/janun/learn-bengali/'.$slug)], array_keys($units))];
     }
 
     /** D317: a free lesson for learners of Bengali. */
-    public static function learningResource(string $name, string $url, string $teaches, ?string $description = null): array
+    public static function learningResource(string $name, string $url, string $teaches, ?string $description = null, string $lang = 'bn'): array
     {
-        return ['@type' => 'LearningResource', '@id' => $url.'#lesson', 'name' => $name, 'url' => $url, 'inLanguage' => 'bn', 'teaches' => $teaches,
+        return array_filter(['@type' => 'LearningResource', '@id' => $url.'#lesson', 'name' => $name, 'url' => $url, 'inLanguage' => $lang, 'teaches' => $teaches,
             'educationalLevel' => 'Beginner', 'learningResourceType' => 'Lesson', 'isAccessibleForFree' => true,
             'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student'],
-            'description' => $description, 'author' => self::org(), 'publisher' => self::org()];
+            'description' => $description, 'author' => self::org(), 'publisher' => self::org()], fn ($v) => $v !== null);
     }
 
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */

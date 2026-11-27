@@ -86,7 +86,7 @@ class NamesTest extends TestCase
         JanunDesk::run(CarbonImmutable::now('Asia/Kolkata'));
         $this->assertSame('live', $p->fresh()->status, 'goes live on its day, even with the AI off');
         $this->get('/janun/names/boy-names-a/')->assertOk()->assertSee('আ দিয়ে ছেলেদের নাম, অর্থসহ')->assertSee('আকাশ')->assertDontSee('আকাশকুসুম')
-            ->assertSee('Bengali Boy Names with A (আ)', false)->assertSee('"DefinedTermSet"', false)->assertSee('২৬টি সংস্কৃত থেকে', false)->assertSee('data-name-q', false);
+            ->assertSee('Bengali Boy Names Starting with A (আ)', false)->assertSee('"DefinedTermSet"', false)->assertSee('২৬টি সংস্কৃত থেকে', false)->assertSee('data-name-q', false);
         $this->get('/janun/names/')->assertOk()->assertSee('/janun/names/boy-names-a/', false);
         $this->get('/janun/names/girl-names-a/')->assertNotFound();
         $this->get('/janun/names/boy-names-zz/')->assertNotFound();

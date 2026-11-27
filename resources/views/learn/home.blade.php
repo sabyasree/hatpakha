@@ -20,7 +20,7 @@
             <li class="rounded-2xl bg-sky-tint p-3"><b>দুই বাংলার শব্দ</b>, সব পরিবারের জন্য</li>
         </ul>
         <x-ad-slot spot="list" :height="250" />
-        <h2 class="mt-8 font-display text-3xl font-extrabold">পাঁচ ধাপে পড়া</h2>
+        <h2 class="mt-8 font-display text-3xl font-extrabold">ধাপে ধাপে পড়া</h2>
         <ol class="mt-4 space-y-3">
             <li><a href="{{ $U('/bornomala') }}" class="flex min-h-16 items-center gap-4 rounded-2xl border-2 border-navy p-4 hover:bg-peach-light"><span class="text-4xl" aria-hidden="true">🔤</span><span><span class="block font-display text-xl font-extrabold">অ আ ক খ: বর্ণমালা</span><span class="block text-base text-ink2">প্রতিটি অক্ষর ছবি আর শব্দে</span></span></a></li>
             @foreach ($units as $slug => $u)

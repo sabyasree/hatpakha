@@ -7,10 +7,10 @@
 <x-layouts.app :seo="$seo">
     <article class="mx-auto max-w-[760px] px-5 py-8">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা শিখি', $U('/janun/learn-bengali')], [$l['title'], '']],
-            'kicker' => 'বাংলা শিখি · পাঠ '.\App\Support\Bn::num((string) (array_search($key, $L::LESSONS, true) + 2)), 'title' => $l['title']])
+            'kicker' => 'বাংলা শিখি · চার্ট', 'title' => $l['title']])
         <p lang="en" class="mt-1 text-sm text-ink2">{{ $l['en'] }}</p>
         <p class="mt-4 font-serif text-lg leading-relaxed">{{ $l['intro'] }}</p>
-        <div class="mt-4 flex flex-wrap gap-2"><a href="{{ \App\Support\LearnCourse::url('start') }}" class="inline-flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">ধাপে ধাপে পাঠ খেলুন</a><a href="{{ \App\Support\LearnCourse::url('worksheets') }}" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট (PDF)</a>@if ($key === 'kar')<a href="#barokhori" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বারোখড়ি খেলুন ↓</a>@endif</div>
+        <div class="mt-4 flex flex-wrap gap-2">@foreach (array_keys(array_filter(\App\Http\Controllers\LearnController::CHART_OF, fn ($c) => $c === $key)) as $unitSlug)<a href="{{ \App\Support\LearnCourse::url($unitSlug) }}" class="inline-flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">ধাপে ধাপে শিখুন: {{ \App\Support\LearnCourse::unit($unitSlug)['title'] }}</a>@endforeach<a href="{{ \App\Support\LearnCourse::url('worksheets') }}" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট (PDF)</a>@if ($key === 'kar')<a href="#barokhori" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বারোখড়ি খেলুন ↓</a>@endif</div>
         <x-ad-slot spot="list" :height="250" />   {{-- reference page for parents and older learners (owner, 2026-11-27: ads on parent pages only) --}}
 
         @if ($key === 'kar')

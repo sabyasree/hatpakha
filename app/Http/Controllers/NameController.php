@@ -37,7 +37,7 @@ class NameController extends Controller
         [$gBn, $gEn] = NamePlan::GENDERS[$p->gender];
         $title = $p->title().', অর্থসহ';
         $en = NamePlan::EN_LETTER[$p->letter];
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $letter.' দিয়ে '.$gBn.' নাম ও অর্থ · Bengali '.$gEn.' Names with '.$en.' ('.$letter.')',
+        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $letter.' দিয়ে '.$gBn.' নাম ও অর্থ · Bengali '.$gEn.' Names Starting with '.$en.' ('.$letter.')',
             description: JanunPlan::clip($letter.' দিয়ে '.$gBn.' '.Bn::num((string) count($names)).'টি নাম, অর্থ, ইংরেজি বানান ও উৎসসহ: '.collect($names)->take(5)->pluck('bn')->implode(', ').'। প্রতিটি অর্থ দুটি অভিধানে মিলিয়ে দেখা।', 155),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['নাম ও অর্থ', Url::to('/janun/names')], [$p->title(), $p->url()]]),
                 JsonLd::festivalPage($title, $p->url(), $p->checked_at, $p->publish_at), JsonLd::nameList($title, $p->url(), $names)]);

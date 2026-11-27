@@ -46,3 +46,4 @@
 @endif
 <a href="{{ \App\Support\LearnCourse::url('start') }}" class="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-red px-4 py-3 font-bold text-white shadow-[4px_4px_0_#13212C]">   {{-- D317/D321: the next step --}}
     <span>পরের ধাপ: বাংলা শিখি, খেলতে খেলতে পড়া</span><span aria-hidden="true">→</span></a>
+<p class="mt-2 text-base"><a href="{{ \App\Support\LearnCourse::url() }}" class="inline-flex min-h-11 items-center underline">বাবা-মায়ের জন্য: বাংলা শিখি কীভাবে চলে, ওয়ার্কশিট</a></p>

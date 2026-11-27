@@ -13,6 +13,7 @@
         <p lang="en" class="mt-1 text-base text-ink2">{{ $u['en'] }}</p>
         <p class="mt-4 font-serif text-xl leading-relaxed">{{ $u['intro'] }}</p>
         <div class="mt-4 rounded-2xl bg-sky-tint p-4"><p class="font-bold">বাবা-মায়ের জন্য</p><p class="mt-1 font-serif text-lg">{{ $u['tip']['bn'] }}</p><p lang="en" class="mt-1 text-base">{{ $u['tip']['en'] }}</p></div>
+        @if ($chart)<p class="mt-3"><a href="{{ $U('/janun/learn-bengali/'.$chart) }}" class="inline-flex min-h-11 items-center font-bold underline">পুরো চার্ট: {{ \App\Http\Controllers\LearnController::lessons()[$chart]['title'] }} →</a></p>@endif
         <a href="{{ $C::url($slug, 1) }}" class="mt-5 flex min-h-16 items-center justify-center rounded-2xl bg-red px-6 font-display text-2xl font-extrabold text-white shadow-[4px_4px_0_#13212C]">এই ধাপের প্রথম পাঠ খেলুন →</a>
         <x-ad-slot spot="list" :height="250" />
         <ol class="mt-6 space-y-4">
