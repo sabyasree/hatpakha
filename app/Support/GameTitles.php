@@ -159,6 +159,7 @@ final class GameTitles
     public static function hall(): array
     {
         $rows = DB::table('game_titles')->join('users', 'users.id', '=', 'game_titles.user_id')->orderByDesc('period')->orderBy('place')
+            ->where(fn ($query) => $query->whereNull('users.role')->orWhere('users.role', '!=', \App\Enums\Role::Admin->value))   // the admin is never on a board (owner, 2026-11-27)
             ->get(['game_titles.user_id', 'kind', 'period', 'place', 'points', 'users.name']);
         $names = \App\Models\Author::whereIn('user_id', $rows->pluck('user_id')->unique())->whereNotNull('display_name_bn')->pluck('display_name_bn', 'user_id');
         $list = fn (string $kind) => $rows->where('kind', $kind)->map(fn ($r) => ['period' => $r->period, 'label' => self::label($kind, $r->period), 'place' => (int) $r->place,
