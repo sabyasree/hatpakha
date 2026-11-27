@@ -128,6 +128,10 @@ class SitemapController extends Controller
                 ->push(['loc' => Url::to('/khela'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D174: the daily word game
                 ->push(['loc' => Url::to('/khela/dhadha'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/dhadha/kothin'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/probad'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/aaj'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D177
                 ->push(['loc' => Url::to('/khela/shobdojobdo/sohoj'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/shobdojobdo/kothin'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D201
+                ->when(\App\Support\WordChoice::open(), fn ($c) => $c->push(['loc' => Url::to('/khela/banan'), 'lastmod' => now()->startOfDay(), 'image' => null])
+                    ->push(['loc' => Url::to('/khela/ek-shobde'), 'lastmod' => now()->startOfDay(), 'image' => null])->push(['loc' => Url::to('/khela/akshorjal'), 'lastmod' => now()->startOfDay(), 'image' => null]))
+                ->push(['loc' => Url::to('/khela/quiz'), 'lastmod' => now()->startOfWeek(\Carbon\Carbon::SUNDAY), 'image' => null])->push(['loc' => Url::to('/khela/lorai'), 'lastmod' => now()->startOfWeek(\Carbon\Carbon::SUNDAY), 'image' => null])
+                ->push(['loc' => Url::to('/khela/dol'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D328
                 ->push(['loc' => Url::to('/kolom'), 'lastmod' => now()->startOfDay(), 'image' => null])   // D175: পাঠকের কলম
                 ->when(WritersController::index() !== [], fn ($c) => $c->push(['loc' => Url::to('/lekhok'), 'lastmod' => null, 'image' => null]))   // A2: all writers
                 ->when(\App\Support\Topics::live() !== [], fn ($c) => $c->push(['loc' => Url::to('/bishoy'), 'lastmod' => null, 'image' => null]))   // D293: topic pages

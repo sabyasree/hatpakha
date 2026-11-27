@@ -21,7 +21,7 @@
 @else
     <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
         <p class="text-lg font-bold">এই পয়েন্ট জমল না: অ্যাকাউন্ট ছাড়া পয়েন্ট ওঠে না।</p>
-        <p class="mt-1 text-ink2">অ্যাকাউন্ট খুললে চারটে খেলাই খোলে, সেরাদের তালিকায় নাম ওঠে, মাসের সেরার খেতাব জেতা যায়।</p>
+        <p class="mt-1 text-ink2">অ্যাকাউন্ট খুললে সব খেলাই খোলে, সেরাদের তালিকায় নাম ওঠে, মাসের সেরার খেতাব জেতা যায়।</p>
         <a href="{{ \App\Support\Url::to('/register') }}?next={{ rawurlencode('/khela/aaj/') }}" class="mt-3 flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white shadow-[3px_3px_0_#13212C]">বিনামূল্যে অ্যাকাউন্ট খুলুন</a>
         <p class="mt-2 text-center"><a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সাইন ইন</a> · <a href="{{ \App\Support\Url::to('/khela/board') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">কারা এগিয়ে, দেখুন</a></p>
     </div>

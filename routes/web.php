@@ -38,6 +38,20 @@ Route::get('/khela/aaj', [\App\Http\Controllers\GameController::class, 'hub'])->
 Route::get('/khela/shobdojobdo', [\App\Http\Controllers\GameController::class, 'crossword'])->name('game.cross');
 Route::get('/khela/shobdojobdo/{level}', [\App\Http\Controllers\GameController::class, 'crossword'])->whereIn('level', ['sohoj', 'kothin'])->name('game.cross.level');   // D201
 Route::get('/khela/board', [\App\Http\Controllers\GameController::class, 'board'])->name('game.board');
+// D328: four more games and two ways to play with others
+Route::get('/khela/banan', [\App\Http\Controllers\GameController::class, 'choice'])->defaults('game', 'banan')->name('game.banan');
+Route::get('/khela/ek-shobde', [\App\Http\Controllers\GameController::class, 'choice'])->defaults('game', 'ekshobde')->name('game.ekshobde');
+Route::get('/khela/akshorjal', [\App\Http\Controllers\GameController::class, 'jal'])->name('game.jal');
+Route::get('/khela/quiz', [\App\Http\Controllers\GameController::class, 'quiz'])->name('game.quiz');
+Route::get('/khela/lorai', [\App\Http\Controllers\GameController::class, 'lorai'])->name('game.lorai');
+Route::get('/khela/lorai/{code}', [\App\Http\Controllers\GameController::class, 'lorai'])->where('code', '[a-z0-9]{8}')->name('game.lorai.show');
+Route::post('/khela/lorai', [\App\Http\Controllers\GameController::class, 'loraiStore'])->middleware('throttle:6,1')->name('game.lorai.store');
+Route::post('/khela/lorai/{code}', [\App\Http\Controllers\GameController::class, 'loraiStore'])->where('code', '[a-z0-9]{8}')->middleware('throttle:10,1')->name('game.lorai.answer');
+Route::get('/khela/dol', [\App\Http\Controllers\GameController::class, 'teams'])->name('game.teams');
+Route::post('/khela/dol', [\App\Http\Controllers\GameController::class, 'teamStore'])->middleware(['auth', 'throttle:5,1'])->name('game.teams.store');
+Route::post('/khela/dol/leave', [\App\Http\Controllers\GameController::class, 'teamLeave'])->middleware('auth')->name('game.teams.leave');
+Route::get('/khela/dol/{code}', [\App\Http\Controllers\GameController::class, 'team'])->where('code', '[a-z0-9]{7}')->name('game.team');
+Route::post('/khela/dol/{code}/join', [\App\Http\Controllers\GameController::class, 'teamJoin'])->where('code', '[a-z0-9]{7}')->middleware(['auth', 'throttle:10,1'])->name('game.team.join');
 Route::post('/khela/report', [\App\Http\Controllers\GameController::class, 'report'])->middleware('throttle:10,1')->name('game.report');   // D179
 Route::post('/khela/score', [\App\Http\Controllers\GameController::class, 'score'])->middleware(['auth', 'throttle:20,1'])->name('game.score');
 Route::get('/app', [\App\Http\Controllers\AppController::class, 'page'])->name('app');

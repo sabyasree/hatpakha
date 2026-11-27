@@ -414,6 +414,8 @@ window.addEventListener('appinstalled', () => {
 (() => {
     const box = document.querySelector('[data-install]');
     if (!box || hpStandalone() || !window.matchMedia('(max-width: 767px)').matches || location.pathname.startsWith('/app')) return;
+    // D328: never over a game being played (it covered the অক্ষরজাল grid); the games' hub page may still show it
+    if (location.pathname.startsWith('/khela/') && !location.pathname.startsWith('/khela/aaj')) return;
     const views = Number(hpStore.get('hp.views') || 0) + 1;
     hpStore.set('hp.views', String(views));
     const later = Number(hpStore.get('hp.install.later') || 0);

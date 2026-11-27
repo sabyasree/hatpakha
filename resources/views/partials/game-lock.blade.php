@@ -5,7 +5,7 @@
     <p class="font-hand text-2xl text-red">এটা খেলতে অ্যাকাউন্ট লাগে</p>
     <h2 class="mt-1 font-display text-2xl font-extrabold leading-tight">{{ $what }} খেলুন অ্যাকাউন্ট খুলে</h2>
     <ul class="mt-3 space-y-1 text-lg">
-        <li>✓ চারটে খেলাই খোলা, রোজ ৩০০ পয়েন্ট পর্যন্ত</li>
+        <li>✓ সব খেলা খোলা, রোজ ৩০০ পয়েন্ট পর্যন্ত</li>
         <li>✓ সেরাদের তালিকায় নাম, মাসের সেরা আর বছরের সেরার খেতাব</li>
         <li>✓ ব্যাজ আর টানা দিনের হিসেব</li>
     </ul>

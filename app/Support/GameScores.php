@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class GameScores
 {
-    public const GAMES = ['word' => 'শব্দ-খেলা', 'riddle' => 'ধাঁধা', 'riddle2' => 'ধাঁধা (কঠিন)', 'cross' => 'শব্দজব্দ', 'cross1' => 'শব্দজব্দ (সহজ)', 'cross3' => 'শব্দজব্দ (কঠিন)', 'probad' => 'প্রবাদ পূরণ'];
+    public const GAMES = ['word' => 'শব্দ-খেলা', 'riddle' => 'ধাঁধা', 'riddle2' => 'ধাঁধা (কঠিন)', 'cross' => 'শব্দজব্দ', 'cross1' => 'শব্দজব্দ (সহজ)', 'cross3' => 'শব্দজব্দ (কঠিন)', 'probad' => 'প্রবাদ পূরণ',
+        'banan' => 'বানান-যাচাই', 'ekshobde' => 'এক শব্দে প্রকাশ', 'jal' => 'অক্ষরজাল', 'quiz' => 'পত্রিকা-কুইজ'];
 
     /**
      * D243 (owner: "plan properly for the points, make like proper games"; with a game designer): four games, each
@@ -26,6 +27,12 @@ final class GameScores
         'riddle' => ['ধাঁধা', ['riddle', 'riddle2']],
         'cross' => ['শব্দজব্দ', ['cross1', 'cross', 'cross3']],
         'probad' => ['প্রবাদ পূরণ', ['probad']],
+        // D328 (owner: "don't remove the existing numbers"): four more games, each also 100 a day; the day still
+        // counts the best three, so a full day stays 300 and every score so far keeps its meaning
+        'banan' => ['বানান-যাচাই', ['banan']],
+        'ekshobde' => ['এক শব্দে প্রকাশ', ['ekshobde']],
+        'jal' => ['অক্ষরজাল', ['jal']],
+        'quiz' => ['পত্রিকা-কুইজ', ['quiz']],   // weekly: counts on the day it is played
     ];
 
     public const DAY_MAX = 300;
@@ -89,6 +96,19 @@ final class GameScores
 
             return array_sum(array_map(fn ($x) => ['g' => 25, 'y' => 10, 'r' => 0][$x], $res));
         }
+        if (isset(WordChoice::GAMES[$game]) || $game === 'quiz') {   // D328: one try each, 20 a right answer
+            $n = $game === 'quiz' ? WeeklyQuiz::count($day) : WordChoice::PER_DAY;
+            if (! $n || count($res) !== $n || array_diff($res, ['g', 'r'])) {
+                return null;
+            }
+
+            return min(100, count(array_keys($res, 'g', true)) * WordChoice::POINTS);
+        }
+        if ($game === 'jal') {   // D328: the words found; only those the day's grid holds count
+            $words = array_values(array_filter((array) ($r['words'] ?? []), 'is_string'));
+
+            return count($words) > 300 ? null : Akshorjal::score($words, $day);
+        }
         if ($game === 'riddle' || $game === 'riddle2') {
             [$alone, $helped] = self::riddlePoints($game, $day);
 
@@ -112,6 +132,9 @@ final class GameScores
         $today = now('Asia/Kolkata')->toDateString();
         if (! isset(self::GAMES[$game]) || ! in_array($day, [$today, now('Asia/Kolkata')->subDay()->toDateString()], true)) {
             return false;
+        }
+        if ($game === 'quiz' && WeeklyQuiz::played($user, $day)) {
+            return false;   // the weekly quiz counts once a week, on whichever day it was played
         }
         $made = (bool) DB::table('game_scores')->insertOrIgnore([
             'user_id' => $user->id, 'game' => $game, 'day' => $day, 'points' => max(0, min(150, $points)),
