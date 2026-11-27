@@ -63,4 +63,18 @@ class TithiTest extends TestCase
         Carbon::setTestNow();
         BanglaDate::flush();
     }
+
+    public function test_a_week_already_stored_is_not_fetched_again(): void
+    {
+        Carbon::setTestNow('2026-11-27 01:00:00');
+        foreach (range(0, 6) as $i) {
+            TithiDay::create(['day' => CarbonImmutable::create(2026, 11, 27)->addDays($i)->format('Y-m-d 00:00:00'), 'tithi' => 18 + $i, 'turns' => [], 'status' => 'verified']);
+            TithiDay::create(['day' => CarbonImmutable::create(2027, 1, 1)->addDays($i)->format('Y-m-d 00:00:00'), 'tithi' => 1 + $i, 'turns' => [], 'status' => 'verified']);
+        }
+        Http::preventStrayRequests();
+        Http::fake();
+        $this->assertFalse(TithiDesk::run(CarbonImmutable::now('Asia/Kolkata')), 'both weeks are there: no fetch (the last day counts on SQLite too)');
+        Http::assertNothingSent();
+        Carbon::setTestNow();
+    }
 }

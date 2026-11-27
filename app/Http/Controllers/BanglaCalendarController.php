@@ -109,6 +109,14 @@ class BanglaCalendarController extends Controller
     /** The next festival with a checked day: [name, day (Carbon), link to its page or the times page], or null. */
     public static function nextFestival(): ?array
     {
+        // cached for a quarter of an hour, scalars only (D18): the home page and the calendar ask on every visit (code review)
+        $c = cache()->remember('janun:next:'.self::today()->toDateString(), 900, fn () => ($n = self::nextFestivalNow()) ? [$n[0], $n[1]->toDateString(), $n[2]] : false);
+
+        return $c ? [$c[0], CarbonImmutable::parse($c[1]), $c[2]] : null;
+    }
+
+    private static function nextFestivalNow(): ?array
+    {
         $f = FestivalPlan::upcoming()->first();
         if (! $f) {
             return null;
@@ -148,7 +156,7 @@ class BanglaCalendarController extends Controller
         $bdLen = BanglaDate::bdLengths($year + 594)[$month - 1];
         $events = self::events(($wbStart ?? $bdStart)->min($bdStart), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32));
         // D310: each day's checked tithi (Kolkata)
-        $tithis = \App\Models\TithiDay::where('status', 'verified')->whereBetween('day', [($wbStart ?? $bdStart)->min($bdStart)->toDateString(), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32)->toDateString()])
+        $tithis = \App\Models\TithiDay::where('status', 'verified')->whereDate('day', '>=', ($wbStart ?? $bdStart)->min($bdStart)->toDateString())->whereDate('day', '<=', ($wbStart ?? $bdStart)->max($bdStart)->addDays(32)->toDateString())
             ->get()->keyBy(fn ($t) => $t->day->toDateString());
         $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events, $tithis) {
             $g = $start->addDays($i);
@@ -168,11 +176,12 @@ class BanglaCalendarController extends Controller
     {
         $out = [];
         $pages = \App\Models\JanunPage::live()->whereIn('key', collect(FestivalPlan::FESTIVALS)->pluck(1)->filter()->all())->get(['id', 'key', 'section', 'slug'])->keyBy('key');
-        foreach (FestivalTime::where('status', 'verified')->whereBetween('day', [$from->toDateString(), $to->toDateString()])->orderBy('position')->get() as $t) {
+        $livePages = FestivalPlan::livePages()->map(fn ($p) => $p[0].'|'.$p[1])->flip();   // once, not per row (code review)
+        foreach (FestivalTime::where('status', 'verified')->whereDate('day', '>=', $from->toDateString())->whereDate('day', '<=', $to->toDateString())->orderBy('position')->get() as $t) {
             [$name, $pageKey] = FestivalPlan::FESTIVALS[$t->festival] ?? [null, null];
             if ($name) {
                 $label = $t->festival === 'durga' || count(FestivalPlan::FESTIVALS[$t->festival][2]) > 1 ? $name.': '.$t->label : $name;
-                $link = FestivalPlan::yearRows($t->festival, $t->cycle) ? FestivalPlan::pageUrl($t->festival, $t->cycle) : (isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null);   // D308
+                $link = isset($livePages[$t->festival.'|'.$t->cycle]) ? FestivalPlan::pageUrl($t->festival, $t->cycle) : (isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null);   // D308
                 $out[$t->day->toDateString()][] = [$label, $link, 'wb'];
             }
         }

@@ -25,7 +25,7 @@ final class TithiDesk
         }
         $today = CarbonImmutable::create($now->year, $now->month, $now->day);
         foreach ([$today, $today->addDays(35)] as $d) {
-            $have = TithiDay::whereBetween('day', [$d->toDateString(), $d->addDays(6)->toDateString()])->count();
+            $have = TithiDay::whereDate('day', '>=', $d->toDateString())->whereDate('day', '<=', $d->addDays(6)->toDateString())->count();
             if ($have < 7 && ($url = BanglaCalendarDesk::sourceUrlFor($d))) {
                 Setting::put('tithi.hour', $now->format('Y-m-d H'));
                 self::fill($url);

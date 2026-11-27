@@ -283,4 +283,19 @@ class BanglaCalendarTest extends TestCase
         $this->get('/janun/bangla-calendar/1433/')->assertSee('<title>Bengali Calendar 2026-27 · বাংলা ক্যালেন্ডার ১৪৩৩', false);
         $this->get('/janun/bangla-calendar/1433/ogrohayon/')->assertSee('অগ্রহায়ণ ১৪৩৩ (নভেম্বর-ডিসেম্বর ২০২৬)')->assertSee('পরের পুজো:');
     }
+
+    public function test_code_review_fixes(): void
+    {
+        // 1. a Kolkata "now" gives that calendar day, not the day before
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(CarbonImmutable::parse('2026-11-27 09:00', 'Asia/Kolkata')));
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(CarbonImmutable::parse('2026-11-27 23:50', 'Asia/Kolkata')));
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(new \DateTime('2026-11-27')));
+
+        // 2. the web search never judges the next year's বৈশাখ against this year's
+        BanglaCalendarDesk::seed(1433);
+        $this->answer = ['months' => [['month' => 'বৈশাখ', 'first_day' => '2026-04-15']], 'sources' => [['url' => 'https://a.org/c']]];
+        Http::fake(['https://a.org/*' => Http::response('<p>15 April 2026</p>')]);
+        BanglaCalendarDesk::check(1433);
+        $this->assertNotSame('held', BanglaMonth::where(['year' => 1434, 'month' => 1])->value('status'), 'not compared with last April');
+    }
 }
