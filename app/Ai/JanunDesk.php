@@ -31,12 +31,16 @@ final class JanunDesk
         $now ??= CarbonImmutable::now('Asia/Kolkata');
         self::seed();
         $n = self::publishDue();
+        $n += NameDesk::publishDue();   // D316
         rescue(fn () => TithiDesk::run($now), null, false);   // D310: no AI, no cost: the published tithi checked by our own calculation
         if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || AiSwitch::paused()) {
             return $n;
         }
         FestivalDesk::run($now);   // D302: tithi times for the time-zone page, one search an hour at most
         BanglaCalendarDesk::run($now);   // D303: West Bengal month starts, checked against published calendars
+        HolidayDesk::run($now);   // D314: government holiday lists, once their notice is out
+        GreetingDesk::run($now);   // D315: festival greetings, one set a day, shown once checked
+        NameDesk::run($now);   // D316: baby names: a page being checked, or one new page a day
         if ($p = JanunPage::where('status', 'drafted')->orderBy('id')->first()) {
             self::check($p, $now);
         } elseif (Setting::get('janun.drafted_hour') !== $now->format('Y-m-d H')) {

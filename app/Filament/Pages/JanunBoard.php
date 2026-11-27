@@ -91,8 +91,13 @@ class JanunBoard extends Page
         })->values();
         $months = BanglaMonth::orderBy('year')->orderBy('month')->get()->groupBy('year');
 
+        $holidays = \App\Models\HolidayList::orderBy('year')->orderBy('country')->get();
         $tithi = \App\Models\TithiDay::where('day', '>=', now('Asia/Kolkata')->toDateString())->get();
 
-        return ['tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
+        $greetings = \App\Models\GreetingSet::all()->sortBy(fn ($g) => array_search($g->slug, array_keys(\App\Support\GreetingPlan::OCCASIONS), true))->values();   // D315
+
+        $names = \App\Models\NamePage::all()->sortBy(fn ($p) => array_search($p->letter, array_keys(\App\Support\NamePlan::LETTERS), true).$p->gender)->values();   // D316
+
+        return ['names' => $names, 'greetings' => $greetings, 'holidays' => $holidays, 'tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
     }
 }

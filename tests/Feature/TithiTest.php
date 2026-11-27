@@ -64,17 +64,19 @@ class TithiTest extends TestCase
         BanglaDate::flush();
     }
 
-    public function test_a_week_already_stored_is_not_fetched_again(): void
+    public function test_days_already_stored_are_not_fetched_again(): void
     {
         Carbon::setTestNow('2026-11-27 01:00:00');
-        foreach (range(0, 6) as $i) {
-            TithiDay::create(['day' => CarbonImmutable::create(2026, 11, 27)->addDays($i)->format('Y-m-d 00:00:00'), 'tithi' => 18 + $i, 'turns' => [], 'status' => 'verified']);
-            TithiDay::create(['day' => CarbonImmutable::create(2027, 1, 1)->addDays($i)->format('Y-m-d 00:00:00'), 'tithi' => 1 + $i, 'turns' => [], 'status' => 'verified']);
-        }
         Http::preventStrayRequests();
-        Http::fake();
-        $this->assertFalse(TithiDesk::run(CarbonImmutable::now('Asia/Kolkata')), 'both weeks are there: no fetch (the last day counts on SQLite too)');
-        Http::assertNothingSent();
+        Http::fake(['*' => Http::response('', 404)]);
+        $this->assertTrue(TithiDesk::run(CarbonImmutable::now('Asia/Kolkata')), 'nothing stored: a month page is fetched');
+        Http::assertSentCount(1);
+        // every day from today to the end of next Bengali year stored: nothing more to fetch (whereDate counts the last day on SQLite too)
+        foreach (range(0, 520) as $i) {
+            TithiDay::create(['day' => CarbonImmutable::create(2026, 11, 27)->addDays($i)->format('Y-m-d 00:00:00'), 'tithi' => 1 + $i % 30, 'turns' => [], 'status' => 'verified']);
+        }
+        $this->assertFalse(TithiDesk::run(CarbonImmutable::now('Asia/Kolkata')->addHour()));
+        Http::assertSentCount(1);
         Carbon::setTestNow();
     }
 }

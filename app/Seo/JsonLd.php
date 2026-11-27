@@ -144,7 +144,7 @@ final class JsonLd
             '@type' => 'Article', '@id' => $p->url().'#article', 'headline' => $p->title, 'description' => (string) $p->seo_description,
             'inLanguage' => 'bn', 'url' => $p->url(), 'mainEntityOfPage' => $p->url(),
             'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => $p->modifiedAt()?->toIso8601String(),
-            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
+            'author' => self::org(), 'publisher' => self::org(),
         ]];
         if ($p->kind === 'poem' && filled($p->body['poet'] ?? '')) {   // D302: the poem itself, by its poet; our page carries the translation
             $nodes[0]['about'] = ['@type' => 'CreativeWork', 'name' => trim(explode(':', $p->title)[0]), 'inLanguage' => 'bn', 'author' => ['@type' => 'Person', 'name' => (string) $p->body['poet']],
@@ -159,11 +159,50 @@ final class JsonLd
     }
 
     /** D308: a festival's yearly page (built from checked times): an Article by the magazine, no Event markup (a holiday is not an event to attend). */
-    public static function festivalPage(string $headline, string $url, $modified): array
+    public static function festivalPage(string $headline, string $url, $modified, $published = null, ?string $description = null): array
     {
-        return ['@type' => 'Article', '@id' => $url.'#article', 'headline' => $headline, 'inLanguage' => 'bn', 'url' => $url, 'mainEntityOfPage' => $url,
+        return array_filter(['@type' => 'Article', '@id' => $url.'#article', 'headline' => $headline, 'inLanguage' => 'bn', 'url' => $url, 'mainEntityOfPage' => $url,
+            'description' => $description ?: null, 'image' => asset('images/og/card-janun.jpg'),
+            'datePublished' => $published ? \Carbon\Carbon::parse($published)->toIso8601String() : null,
             'dateModified' => $modified ? \Carbon\Carbon::parse($modified)->toIso8601String() : null,
-            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
+            'author' => self::org(), 'publisher' => self::org()], fn ($v) => $v !== null);
+    }
+
+    /** The magazine as author or publisher, complete, so a page's markup stands on its own (the full node is only on the home page). */
+    public static function org(): array
+    {
+        return ['@type' => 'Organization', '@id' => Url::to('/').'#org', 'name' => 'হাতপাখা', 'alternateName' => 'Hatpakha', 'url' => Url::to('/'), 'logo' => asset('images/logo.png')];
+    }
+
+    /** D316: a letter's names as a list of defined terms. */
+    public static function nameList(string $name, string $url, array $names): array
+    {
+        return ['@type' => 'DefinedTermSet', '@id' => $url.'#names', 'name' => $name, 'url' => $url, 'inLanguage' => 'bn',
+            'hasDefinedTerm' => array_map(fn ($n) => ['@type' => 'DefinedTerm', 'name' => $n['bn'], 'alternateName' => $n['roman'], 'description' => $n['meaning_bn'].' / '.$n['meaning_en']], $names)];
+    }
+
+    /** D321: বাংলা শিখি as a free course (Google's Course markup: name, description, provider, free, units as parts). */
+    public static function course(array $units): array
+    {
+        $url = Url::to('/janun/learn-bengali');
+
+        return ['@type' => 'Course', '@id' => $url.'#course', 'name' => 'বাংলা শিখি', 'alternateName' => 'Learn to read Bengali',
+            'description' => 'অক্ষর থেকে প্রথম গল্প পর্যন্ত বাংলা পড়া শেখার বিনা পয়সার পাঠ, ছোটদের জন্য। A free course for children learning to read Bengali.',
+            'url' => $url, 'inLanguage' => 'bn', 'isAccessibleForFree' => true, 'educationalLevel' => 'Beginner', 'provider' => self::org(),
+            'offers' => ['@type' => 'Offer', 'price' => 0, 'priceCurrency' => 'USD', 'category' => 'Free'],
+            'hasCourseInstance' => ['@type' => 'CourseInstance', 'courseMode' => 'Online', 'courseWorkload' => 'PT'.max(1, (int) round(\App\Support\LearnCourse::count() * 7 / 60)).'H'],
+            'image' => asset('images/og/card-janun.jpg'), 'teaches' => 'Bengali script: letters, vowel signs, phola, joined letters, first reading',
+            'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student', 'suggestedMinAge' => 4],
+            'hasPart' => array_map(fn ($slug) => ['@type' => 'LearningResource', 'name' => $units[$slug]['title'], 'url' => Url::to('/janun/learn-bengali/'.$slug)], array_keys($units))];
+    }
+
+    /** D317: a free lesson for learners of Bengali. */
+    public static function learningResource(string $name, string $url, string $teaches, ?string $description = null, string $lang = 'bn'): array
+    {
+        return array_filter(['@type' => 'LearningResource', '@id' => $url.'#lesson', 'name' => $name, 'url' => $url, 'inLanguage' => $lang, 'teaches' => $teaches,
+            'educationalLevel' => 'Beginner', 'learningResourceType' => 'Lesson', 'isAccessibleForFree' => true,
+            'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student'],
+            'description' => $description, 'author' => self::org(), 'publisher' => self::org()], fn ($v) => $v !== null);
     }
 
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */

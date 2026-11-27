@@ -159,6 +159,35 @@ class SitemapController extends Controller
         foreach ($fest as [$k, $y]) {
             $times[] = ['loc' => \App\Support\FestivalPlan::pageUrl($k, $y), 'lastmod' => \App\Models\FestivalTime::where(['festival' => $k, 'cycle' => $y, 'status' => 'verified'])->max('updated_at'), 'image' => null];
         }
+        $other = [];   // pages outside /janun/puja/: they never make the puja section count as live
+        $namePages = \App\Models\NamePage::where('status', 'live')->get()->filter->isLive();   // D316
+        foreach ($namePages as $np) {
+            $other[] = ['loc' => $np->url(), 'lastmod' => $np->checked_at, 'image' => null];
+        }
+        if ($namePages->isNotEmpty()) {
+            $other[] = ['loc' => Url::to('/janun/names'), 'lastmod' => $namePages->max('checked_at'), 'image' => null];
+        }
+        $greet = \App\Http\Controllers\GreetingController::live();   // D315
+        foreach ($greet as $gs) {
+            $other[] = ['loc' => $gs->url(), 'lastmod' => $gs->checked_at, 'image' => null];
+        }
+        if ($greet->count() >= 3) {   // the hub is indexed once it has three sets
+            $other[] = ['loc' => Url::to('/janun/greetings'), 'lastmod' => $greet->max('checked_at'), 'image' => null];
+        }
+        $liveLists = \App\Models\HolidayList::all()->filter->isLive();   // D314
+        foreach ($liveLists as $hl) {
+            $other[] = ['loc' => $hl->url(), 'lastmod' => $hl->checked_at, 'image' => null];
+        }
+        foreach ($liveLists->pluck('year')->unique() as $hy) {
+            $other[] = ['loc' => Url::to('/janun/holidays/'.$hy), 'lastmod' => null, 'image' => null];
+        }
+        foreach ([now()->year, now()->year + 1] as $y) {   // D313: পূর্ণিমা / অমাবস্যা / একাদশী of a year, once six are known
+            foreach (array_keys(\App\Support\LunarDays::TYPES) as $t) {
+                if (count(\App\Support\LunarDays::year($t, $y)) >= 6) {
+                    $times[] = ['loc' => \App\Support\LunarDays::url($t, $y), 'lastmod' => null, 'image' => null];
+                }
+            }
+        }
         foreach ($fest->groupBy(1)->filter(fn ($g) => $g->count() >= 2)->keys() as $y) {
             $times[] = ['loc' => Url::to('/janun/puja/'.$y), 'lastmod' => null, 'image' => null];
         }
@@ -170,9 +199,14 @@ class SitemapController extends Controller
                 $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
             }
         }
+        $learnMod = \Illuminate\Support\Carbon::createFromTimestamp((int) @filemtime(database_path('content/learn-course.php')));
+        foreach (array_merge(['', '/parents', '/worksheets', '/english'], array_map(fn ($k) => '/'.$k, \App\Http\Controllers\LearnController::LESSONS),
+            array_map(fn ($k) => '/'.$k, array_keys(\App\Support\LearnCourse::units()))) as $lk) {   // D317/D321: the parent pages (lessons and the map are not indexed)
+            $cal->push(['loc' => Url::to('/janun/learn-bengali'.$lk), 'lastmod' => $learnMod, 'image' => null]);
+        }
         $live = array_filter(JanunController::live(), fn ($pages, $s) => $pages->isNotEmpty() || ($s === 'puja' && $times !== []), ARRAY_FILTER_USE_BOTH);
         if ($live === []) {
-            return $cal->concat($times);
+            return $cal->concat($times)->concat($other);
         }
         $out = $cal;
         foreach ($live as $section => $pages) {
@@ -182,6 +216,6 @@ class SitemapController extends Controller
             }
         }
 
-        return $out->concat($times);
+        return $out->concat($times)->concat($other);
     }
 }

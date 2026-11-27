@@ -69,6 +69,16 @@ class JanunRun extends Command
             }
         }
 
+        $this->line('1c. Holiday lists (only once the official notice is out)');
+        foreach ([$now->year, $now->year + 1] as $y) {
+            foreach (array_keys(\App\Models\HolidayList::COUNTRIES) as $c) {
+                $list = \App\Models\HolidayList::firstOrCreate(['country' => $c, 'year' => $y]);
+                if ($list->status !== 'verified' && ($y > $now->year || $now->month < 10)) {
+                    $this->line("   {$c} {$y}: ".\App\Ai\HolidayDesk::find($list).' dates checked'.($list->fresh()->note ? ' ('.$list->fresh()->note.')' : ''));
+                }
+            }
+        }
+
         $this->line('2. Festival times');
         foreach (FestivalDesk::years($now) as $y) {
             foreach (array_keys(FestivalPlan::FESTIVALS) as $key) {

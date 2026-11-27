@@ -97,6 +97,20 @@ class GamesAndBadgesTest extends TestCase
         $this->get('/account/settings/')->assertSee('লিডারবোর্ডে আমার নাম দেখান');
     }
 
+    public function test_the_admin_is_never_on_a_board_or_in_the_hall(): void
+    {
+        $today = now('Asia/Kolkata')->toDateString();
+        $admin = User::factory()->create(['name' => 'Site Admin', 'role' => \App\Enums\Role::Admin]);
+        $a = User::factory()->create(['name' => 'Mita Sen']);
+        GameScores::record($admin, 'riddle', $today, 100, 10);
+        GameScores::record($a, 'riddle', $today, 50, 10);
+        $this->assertSame(['Mita Sen'], array_column(GameScores::board('today', $a)['rows'], 'name'));
+        $this->assertSame(1, GameScores::board('today', $a)['rows'][0]['rank']);
+        $this->assertSame(100, GameScores::board('today', $admin)['mine']['points'], 'the admin still sees their own score');
+        DB::table('game_titles')->insert(['user_id' => $admin->id, 'kind' => 'month', 'period' => '2026-10', 'place' => 1, 'points' => 900, 'days' => 20, 'created_at' => now()]);
+        $this->get('/khela/board/')->assertOk()->assertSee('Mita Sen')->assertDontSee('Site Admin');
+    }
+
     public function test_badges_come_in_three_tiers_from_what_a_person_really_did(): void
     {
         $u = User::factory()->create(['role' => Role::Writer]);

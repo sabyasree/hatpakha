@@ -193,7 +193,7 @@ final class GameScores
             if (! $days) {
                 return [];
             }
-            $users = DB::table('users')->whereIn('id', array_keys($days))->get(['id', 'name', 'board_hidden', 'game_blocked_at'])->keyBy('id');
+            $users = DB::table('users')->whereIn('id', array_keys($days))->get(['id', 'name', 'role', 'board_hidden', 'game_blocked_at'])->keyBy('id');
             $names = \App\Models\Author::whereIn('user_id', array_keys($days))->whereNotNull('display_name_bn')->pluck('display_name_bn', 'user_id');
             $out = [];
             foreach ($days as $userId => $byDay) {
@@ -215,7 +215,7 @@ final class GameScores
                 } else {
                     $points = $range === 'month' ? self::best($totals, self::MONTH_DAYS) : array_sum($totals);
                 }
-                $out[] = ['user_id' => (int) $userId, 'name' => (string) ($names[$userId] ?? $users[$userId]->name), 'hidden' => $users[$userId]->board_hidden || $users[$userId]->game_blocked_at,   // D245: kept off by the desk counts as hidden
+                $out[] = ['user_id' => (int) $userId, 'name' => (string) ($names[$userId] ?? $users[$userId]->name), 'hidden' => $users[$userId]->board_hidden || $users[$userId]->game_blocked_at || $users[$userId]->role === \App\Enums\Role::Admin->value,   // D245: kept off by the desk counts as hidden; the site's admin never shows (owner, 2026-11-27)
                     'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId]];
             }
             usort($out, fn ($a, $b) => [$b['points'], $b['days'], $b['full'], $a['seconds'], $a['user_id']] <=> [$a['points'], $a['days'], $a['full'], $b['seconds'], $b['user_id']]);

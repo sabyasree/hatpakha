@@ -73,6 +73,29 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+// D317/D321: বাংলা শিখি. Fixed words first, then the reference pages, then units and lessons.
+Route::prefix('/janun/learn-bengali')->controller(\App\Http\Controllers\LearnController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/start', 'map');
+    Route::get('/parents', 'parents');
+    Route::get('/worksheets', 'worksheets');
+    Route::get('/english', 'english');   // D322
+    Route::get('/certificate', 'certificate');
+    Route::get('/pdf/{file}', 'pdf')->where('file', '[a-z0-9-]{3,60}');
+    Route::get('/charts/{chart}/print', 'chart')->whereIn('chart', ['alphabet', 'kar']);
+    Route::get('/{lesson}', 'show')->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
+    Route::get('/{unit}', 'unit')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
+    Route::get('/{unit}/print', 'teacher')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
+    Route::get('/{unit}/{n}', 'lesson')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']))->whereNumber('n');
+    Route::get('/{unit}/{n}/print', 'sheet')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']))->whereNumber('n');
+});
+Route::get('/janun/names', [\App\Http\Controllers\NameController::class, 'index']);   // D316
+Route::get('/janun/names/{page}', [\App\Http\Controllers\NameController::class, 'show'])->where('page', '(boy|girl)-names-[a-z]{1,3}');
+Route::get('/janun/greetings', [\App\Http\Controllers\GreetingController::class, 'index']);   // D315
+Route::get('/janun/greetings/{slug}', [\App\Http\Controllers\GreetingController::class, 'show'])->whereIn('slug', array_keys(\App\Support\GreetingPlan::OCCASIONS));
+Route::get('/janun/holidays/{year}', [\App\Http\Controllers\HolidayController::class, 'year'])->where('year', '20\d\d');   // D314
+Route::get('/janun/holidays/{list}', [\App\Http\Controllers\HolidayController::class, 'show'])->where('list', '(west-bengal|bangladesh)-20\d\d');   // D314
+Route::get('/janun/puja/{page}', [\App\Http\Controllers\LunarDaysController::class, 'show'])->where('page', '(purnima|amavasya|ekadashi)-20\d\d');   // D313
 Route::get('/janun/puja/{year}', [\App\Http\Controllers\FestivalPageController::class, 'year'])->where('year', '20\d\d');   // D308: a year's festivals
 Route::get('/janun/puja/{festival}', [\App\Http\Controllers\FestivalPageController::class, 'show'])->where('festival', '('.implode('|', array_column(\App\Support\FestivalPlan::PAGES, 0)).')-20\d\d');   // D308
 Route::get('/janun/puja/pujor-somoy', [\App\Http\Controllers\JanunController::class, 'times'])->name('janun.times');   // D302: tithi times in any time zone

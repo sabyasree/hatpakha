@@ -7,6 +7,10 @@ final class Url
 {
     public static function to(string $path): string
     {
+        // A query or fragment stays after the slash: /a/print?size=letter → /a/print/?size=letter
+        if (preg_match('/^([^?#]*)([?#].*)$/s', $path, $m)) {
+            return self::to($m[1]).$m[2];
+        }
         $u = rtrim(url($path), '/');
         // A file (sitemap.xml, feed.rss…) keeps no slash; only the path is checked, so "hatpakha.com" itself gets "/" too.
         $p = (string) parse_url($u, PHP_URL_PATH);

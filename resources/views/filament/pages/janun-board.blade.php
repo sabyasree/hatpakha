@@ -67,6 +67,37 @@
         @endforeach
     </div>
 
+    <h2 class="text-lg font-bold">{{ __('সরকারি ছুটির তালিকা') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($holidays as $hl)
+            <div class="hp-j-box"><b>{{ $hl->name() }} {{ $n($hl->year) }}</b>: {{ $hl->isLive() ? __('প্রকাশিত') : ($hl->status === 'held' ? __('আটকে আছে') : __('প্রজ্ঞাপনের অপেক্ষায়')) }}
+                <p class="hp-j-why">{{ $n($hl->holidays()->where('status', 'verified')->count()) }} {{ __('দিন মিলেছে') }}@if ($hl->note) · {{ $hl->note }}@endif @if ($hl->isLive()) · <a class="hp-j-link" href="{{ $hl->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p></div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও খোঁজা হয়নি') }}</p>
+        @endforelse
+    </div>
+
+    <h2 class="text-lg font-bold">{{ __('শুভেচ্ছা বার্তা') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($greetings as $g)
+            <div class="hp-j-box"><b>{{ $g->name() }}</b>: {{ match ($g->status) { 'live' => __('প্রকাশিত'), 'held' => __('আটকে আছে'), 'drafted' => __('যাচাই চলছে'), default => __('লেখা হয়নি') } }}
+                @if ($g->check)<p class="hp-j-why">{{ $n($g->check['lines'] ?? 0) }} {{ __('বার্তা') }} · {{ __('বাদ গেছে') }} {{ $n(count($g->check['removed'] ?? [])) }}@if (($g->check['poet'] ?? '') === 'matched') · {{ __('কবির পঙ্‌ক্তি মিলেছে') }}@endif @if ($g->isLive()) · <a class="hp-j-link" href="{{ $g->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p>@endif</div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও লেখা হয়নি') }}</p>
+        @endforelse
+    </div>
+
+    <h2 class="text-lg font-bold">{{ __('নাম ও অর্থ') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($names as $np)
+            @php($ns = collect((array) $np->names))
+            <div class="hp-j-box"><b>{{ $np->title() }}</b>: {{ match ($np->status) { 'live' => __('প্রকাশিত'), 'held' => __('আটকে আছে'), 'checking' => __('যাচাই চলছে'), 'scheduled' => __('তারিখ ঠিক হয়েছে').' · '.$np->publish_at?->timezone('Asia/Kolkata')->format('j M, g:i a'), default => __('লেখা হয়নি') } }}
+                <p class="hp-j-why">{{ $n($ns->where('status', 'ok')->count()) }} {{ __('নাম মিলেছে') }} · {{ $n($ns->where('status', 'no')->count()) }} {{ __('বাদ গেছে') }}@if ($ns->where('status', 'new')->count()) · {{ $n($ns->where('status', 'new')->count()) }} {{ __('বাকি') }}@endif @if ($np->isLive()) · <a class="hp-j-link" href="{{ $np->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p></div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও লেখা হয়নি') }}</p>
+        @endforelse
+    </div>
+
     <h2 class="text-lg font-bold">{{ __('আজ থেকে তিথি') }}</h2>
     <div class="hp-j-box">
         <p>{{ $n($tithi['ok']) }} {{ __('দিনের তিথি মিলেছে') }}@if ($tithi['last']) ({{ __('শেষ দিন') }} {{ \Carbon\Carbon::parse($tithi['last'])->format('j M Y') }})@endif</p>

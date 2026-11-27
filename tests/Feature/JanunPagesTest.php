@@ -44,7 +44,7 @@ class JanunPagesTest extends TestCase
             if ($purpose === 'factcheck') {
                 return str_contains($user, '<mantra')
                     ? ['exact_matches' => array_map(fn ($s) => ['url' => 'https://'.$s.'/x', 'site' => $s], array_shift($this->mantraSites) ?? [])]
-                    : (str_contains($user, '<festival') || str_contains($user, '<year>') ? ['events' => [], 'sources' => []] : ['problems' => (++$this->factSearches && true) ? $this->problems : []]);
+                    : (str_contains($user, '<festival') || str_contains($user, '<year>') || str_contains($user, '<list>') ? ['events' => [], 'sources' => []] : ['problems' => (++$this->factSearches && true) ? $this->problems : []]);
             }
 
             return null;

@@ -45,6 +45,10 @@ class PostForm
                 // D101: children's pieces: age band and word meanings (the AI teacher suggests; the owner edits)
                 Section::make(__('ছোটদের হাতপাখা'))->collapsible()->visible(fn (?Post $record) => $record?->section?->slug === \App\Models\Section::KIDS)->schema([
                     \Filament\Forms\Components\Select::make('age_band')->label(__('বয়স'))->options(\App\Support\Lang::t(\App\Ai\KidsTeacher::AGES)),
+                    // D321: a child who has finished this unit of বাংলা শিখি can read this piece; the unit's page suggests it
+                    \Filament\Forms\Components\Select::make('reading_unit')->label(__('বাংলা শিখি: কোন পাঠের পরে পড়া যায়'))
+                        ->options(collect(\App\Support\LearnCourse::units())->mapWithKeys(fn ($u) => [$u['n'] => \App\Support\Bn::num((string) $u['n']).'. '.$u['title']])->all())
+                        ->helperText(__('শিশু এই পাঠ শেষ করলে গল্পটা নিজে পড়তে পারবে। ফাঁকা রাখলে বাংলা শিখিতে দেখানো হবে না।')),
                     \Filament\Forms\Components\Repeater::make('glossary')->label(__('শব্দের মানে'))->schema([
                         TextInput::make('word')->label(__('শব্দ'))->required()->maxLength(40),
                         TextInput::make('bn')->label(__('বাংলায়'))->required()->maxLength(160),

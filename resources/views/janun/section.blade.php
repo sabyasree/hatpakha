@@ -6,6 +6,14 @@
             {{-- D302 --}}
             <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
         @endif
+        @if ($section === 'puja')
+            @php($lunar = collect([now()->year, now()->year + 1])->crossJoin(array_keys(\App\Support\LunarDays::TYPES))->filter(fn ($p) => count(\App\Support\LunarDays::year($p[1], $p[0])) >= 6))
+            @if ($lunar->isNotEmpty())
+                {{-- D313 --}}
+                <h2 class="mt-8 font-display text-xl font-extrabold">পূর্ণিমা, অমাবস্যা, একাদশী</h2>
+                <div class="mt-3 flex flex-wrap gap-2">@foreach ($lunar as [$y, $t])<a href="{{ \App\Support\LunarDays::url($t, $y) }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">{{ \App\Support\LunarDays::TYPES[$t][0] }} {{ \App\Support\Bn::num((string) $y) }}</a>@endforeach</div>
+            @endif
+        @endif
         @if ($section === 'puja' && ($festPages = \App\Support\FestivalPlan::livePages())->isNotEmpty())
             {{-- D308: each festival's yearly page, and each year's list --}}
             <h2 class="mt-8 font-display text-xl font-extrabold">পুজো-পার্বণের তারিখ</h2>

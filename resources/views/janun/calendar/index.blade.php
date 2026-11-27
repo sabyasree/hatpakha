@@ -30,6 +30,17 @@
         @include('janun.calendar.grids', ['grids' => $grids, 'year' => $year, 'month' => $month])
         @include('janun.calendar.next', ['festival' => $nextFestival])
         <x-ad-slot spot="list" :height="250" />
+        @php($lunarY = $d->year + ($d->month === 12 ? 1 : 0))
+        @php($lunarLinks = collect(array_keys(\App\Support\LunarDays::TYPES))->filter(fn ($t) => count(\App\Support\LunarDays::year($t, $lunarY)) >= 6))
+        @if ($lunarLinks->isNotEmpty())
+            {{-- D313: the year's lunar days, one tap from the calendar --}}
+            <div class="mt-6 flex flex-wrap gap-2">@foreach ($lunarLinks as $t)<a href="{{ \App\Support\LunarDays::url($t, $lunarY) }}" class="flex min-h-11 items-center rounded-full bg-peach-light px-4 font-bold hover:bg-peach">{{ \App\Support\LunarDays::TYPES[$t][0] }} {{ \App\Support\Bn::num((string) $lunarY) }} →</a>@endforeach</div>
+        @endif
+        @php($holidayLists = \App\Models\HolidayList::where('year', $lunarY)->get()->filter->isLive())
+        @if ($holidayLists->isNotEmpty())
+            {{-- D314 --}}
+            <div class="mt-3 flex flex-wrap gap-2">@foreach ($holidayLists as $hl)<a href="{{ $hl->url() }}" class="flex min-h-11 items-center rounded-full bg-sky-tint px-4 font-bold">সরকারি ছুটি {{ \App\Support\Bn::num((string) $hl->year) }}: {{ $hl->name() }} →</a>@endforeach</div>
+        @endif
         <h2 class="mt-8 font-display text-2xl font-extrabold">বছরের ক্যালেন্ডার</h2>
         <div class="mt-3 flex flex-wrap gap-2">
             @foreach (range($C::FIRST_YEAR, $B::bd($d)[0] + 1) as $y)<a href="{{ $B::url($y) }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">বঙ্গাব্দ {{ \App\Support\Bn::num((string) $y) }}</a>@endforeach

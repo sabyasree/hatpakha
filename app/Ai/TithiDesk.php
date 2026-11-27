@@ -24,10 +24,24 @@ final class TithiDesk
             return false;
         }
         $today = CarbonImmutable::create($now->year, $now->month, $now->day);
-        foreach ([$today, $today->addDays(35)] as $d) {
+        // the weeks ahead first, then every month of this Bengali year and the next (D313: the yearly পূর্ণিমা/অমাবস্যা/একাদশী lists)
+        $starts = collect([$today, $today->addDays(35)]);
+        [$y] = \App\Support\BanglaDate::bd($today);
+        foreach ([$y, $y + 1] as $year) {
+            $s = \App\Support\BanglaDate::wbComputed($year);
+            for ($i = 0; $i < 12; $i++) {
+                if ($s[$i + 1]->gt($today)) {
+                    $starts->push($s[$i]->max($today)->addDays(3));
+                }
+            }
+        }
+        foreach ($starts as $d) {
             $have = TithiDay::whereDate('day', '>=', $d->toDateString())->whereDate('day', '<=', $d->addDays(6)->toDateString())->count();
-            if ($have < 7 && ($url = BanglaCalendarDesk::sourceUrlFor($d))) {
+            $url = BanglaCalendarDesk::sourceUrlFor($d);
+            $tried = $url ? (int) Setting::get('tithi.tried.'.md5($url).'.'.$today->format('Y-m'), 0) : 9;
+            if ($have < 7 && $url && $tried < 3) {   // a page not published yet is tried three times a month
                 Setting::put('tithi.hour', $now->format('Y-m-d H'));
+                Setting::put('tithi.tried.'.md5($url).'.'.$today->format('Y-m'), $tried + 1);
                 self::fill($url);
 
                 return true;

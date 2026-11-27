@@ -451,3 +451,15 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Desk list for জেনে রাখুন (D309); tithi of the day on the calendar, published source checked by our own calculation (D310, TithiTest).
 - [x] জেনে রাখুন in the menus (D311); share pictures, IndexNow, date in the evening note (D312).
 - [x] Home-page জেনে রাখুন strip (owner approved the mock-up).
+
+## More reference pages, 2026-11-27 (D313–D319)
+- [x] পূর্ণিমা / অমাবস্যা / একাদশী lists per year (D313); government holiday lists, West Bengal and Bangladesh (D314).
+- [x] Festival greetings with share pictures drawn on the phone, 16 occasions (D315); baby names by letter, each meaning in two dictionaries (D316).
+- [x] বাংলা শিখি starter: four lessons after the বর্ণমালা, worksheets, no ads (D317). Admin off the game boards (D318).
+- [x] Review round: UX, SEO, strategy/business, research; fixes (D319).
+- [x] বাংলা শিখি phases 1–3: 72 lessons, player, map, parents' page, worksheets as PDF, certificate, desk recordings (D321); English mode and guide (D322).
+- [ ] **Owner:** record the letters and words at /desk → বাংলা শিখি: রেকর্ডিং (start with unit 1).
+- [ ] Stroke-order drawings for the worksheets (designer); premium (phase 4) when the owner decides.
+- [x] 49 greeting occasions; names with Arabic and Persian, four sources (D320).
+- [ ] **Owner:** Golam Mostofa among the poets (out of copyright since 2025)?
+- [ ] After release: read the first three greeting sets and the first two name pages within 48 hours (spot check), then one in five.

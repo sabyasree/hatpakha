@@ -119,6 +119,7 @@ class PostController extends Controller
 
         if ($page->slug === 'bornomala') {
             request()->attributes->set('hp.no_ads', true);   // D101
+            request()->attributes->set('hp.no-bottom-nav', true);   // D321: no "লিখুন" or menus under a child's finger
         }
 
         return view('page', compact('page', 'seo', 'crumbs'));

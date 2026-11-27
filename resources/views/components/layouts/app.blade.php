@@ -48,7 +48,7 @@
         </script>
     @endif
 </head>
-<body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
+<body class="min-h-screen bg-paper text-navy antialiased {{ request()->is('sonkha/*/boi*') || request()->attributes->get('hp.no-bottom-nav') ? '' : 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' }} md:pb-0">
     @if ($va = request()->attributes->get('view_as'))
         {{-- D85: the admin is looking through a writer's eyes --}}
         <div data-view-as class="sticky top-0 z-[60] flex flex-wrap items-center gap-x-3 gap-y-1 bg-red px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sm font-bold text-white" role="status">

@@ -1,10 +1,16 @@
 <x-layouts.app :seo="$seo">
     <section class="mx-auto max-w-[1000px] px-5 py-10">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', \App\Support\Url::to('/')], ['জেনে রাখুন', '']], 'kicker' => 'জেনে রাখুন', 'title' => 'জেনে রাখুন'])
-        <p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed">প্রবাদ আর বাগধারার মানে, শুদ্ধ বানানের নিয়ম, পুজোর নিয়ম আর মন্ত্রের অর্থ, আর ছাত্রছাত্রীদের জন্য ভাবসম্প্রসারণ ও রচনা। হাতপাখা ডেস্কের লেখা, তথ্য যাচাই করে।</p>
+        <p class="mt-4 max-w-[720px] font-serif text-lg leading-relaxed">বাংলা ক্যালেন্ডার, পুজোর তিথি, সরকারি ছুটি, শুভেচ্ছা বার্তা, নাম ও অর্থ, ছোটদের বাংলা শেখা; প্রবাদ আর বাগধারার মানে, শুদ্ধ বানানের নিয়ম, পুজোর নিয়ম আর মন্ত্রের অর্থ, আর ছাত্রছাত্রীদের জন্য ভাবসম্প্রসারণ ও রচনা। হাতপাখা ডেস্কের লেখা, তথ্য যাচাই করে।</p>
         {{-- D303/D302: the calendar and the puja times, always useful --}}
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
             <a href="{{ \App\Support\BanglaDate::url() }}" class="block rounded-2xl bg-navy p-4 text-white"><span class="block text-sm font-bold">বাংলা ক্যালেন্ডার</span><span class="mt-1 block font-display text-xl font-extrabold">{{ implode(' ', \App\Http\Controllers\BanglaCalendarController::todayLine()) }}</span></a>
+            @foreach (\App\Models\HolidayList::where('year', '>=', now()->year)->get()->filter->isLive()->sortBy('year')->take(2) as $hl)
+                <a href="{{ $hl->url() }}" class="block rounded-2xl border-2 border-navy bg-white p-4"><span class="block text-sm font-bold">সরকারি ছুটি {{ \App\Support\Bn::num((string) $hl->year) }}</span><span class="mt-1 block font-display text-xl font-extrabold">{{ $hl->name() }}</span></a>   {{-- D314 --}}
+            @endforeach
+            @if ($gs = \App\Http\Controllers\GreetingController::live()->first())<a href="{{ \App\Support\Url::to('/janun/greetings') }}" class="block rounded-2xl bg-red p-4 text-white"><span class="block text-sm font-bold">শুভেচ্ছা বার্তা, ছবিসহ</span><span class="mt-1 block font-display text-xl font-extrabold">{{ $gs->name() }}</span></a>@endif   {{-- D315 --}}
+            @if (\App\Models\NamePage::where('status', 'live')->get()->contains->isLive())<a href="{{ \App\Support\Url::to('/janun/names') }}" class="block rounded-2xl border-2 border-navy bg-peach-light p-4"><span class="block text-sm font-bold">নাম ও অর্থ</span><span class="mt-1 block font-display text-xl font-extrabold">ছেলে ও মেয়েদের বাংলা নাম</span></a>@endif   {{-- D316 --}}
+            <a href="{{ \App\Support\Url::to('/janun/learn-bengali') }}" class="block rounded-2xl border-2 border-sky-deep bg-white p-4"><span class="block text-sm font-bold">বাংলা শিখি · বিনা পয়সায়</span><span class="mt-1 block font-display text-xl font-extrabold">কার, ফলা, যুক্তাক্ষর</span></a>   {{-- D317 --}}
             @if (\App\Support\FestivalPlan::pageLive())<a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="block rounded-2xl border-2 border-sky-deep bg-sky-tint p-4"><span class="block text-sm font-bold">পুজোর তিথি ও সময়</span><span class="mt-1 block font-display text-xl font-extrabold">আপনার দেশের ঘড়িতে</span></a>@endif
         </div>
         @foreach (\App\Support\JanunPlan::SECTIONS as $key => [$name, $kicker, $intro])
