@@ -18,7 +18,7 @@
             <a href="{{ $href }}" @if ($on === $key) aria-current="page" @endif class="flex min-h-12 items-center justify-center px-1 leading-tight {{ $on === $key ? 'bg-navy text-white' : 'hover:bg-peach-light' }} {{ $loop->index ? 'border-l-2 border-navy' : '' }}">{{ $label }}</a>
         @endforeach
     </div>
-    <ul class="-mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1 text-[15px] font-bold [scrollbar-width:none]" aria-label="সব খেলা">
+    <ul class="-mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1 text-[15px] font-bold [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0" aria-label="সব খেলা">
         @foreach ($games as $key => [$label, $href])
             <li class="flex-none"><a href="{{ $href }}" @if ($on === $key) aria-current="page" data-nav-on @endif class="flex min-h-11 items-center whitespace-nowrap rounded-full border-2 border-navy px-4 {{ $on === $key ? 'bg-red text-white border-red' : 'bg-white hover:bg-peach-light' }}">{{ $label }}</a></li>
         @endforeach

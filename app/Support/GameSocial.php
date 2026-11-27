@@ -75,11 +75,10 @@ final class GameSocial
             $answers = array_column($one, 1);
             foreach ($pick($one, 3, 2) as $i => $row) {
                 [$phrase, $answer, $note] = $row + [2 => ''];
-                $others = array_values(array_diff($answers, [$answer]));
                 mt_srand($seed + 20 + $i);
-                shuffle($others);
+                $decoys = WordChoice::decoys($answer, $phrase, $answers);
                 mt_srand();
-                $out[] = ['kind' => 'ekshobde', 'prompt' => $phrase, 'options' => self::shuffled(array_merge([$answer], array_slice($others, 0, 3)), $seed + 30 + $i), 'answer' => $answer, 'note' => (string) $note];
+                $out[] = ['kind' => 'ekshobde', 'prompt' => $phrase, 'options' => self::shuffled(array_merge([$answer], $decoys), $seed + 30 + $i), 'answer' => $answer, 'note' => (string) $note];
             }
             $proverbs = Proverbs::all();
             $words = array_values(array_unique(array_column($proverbs, 1)));
@@ -111,6 +110,26 @@ final class GameSocial
         return $a;
     }
 
+    /**
+     * Who is playing: the account, or else this browser's own long-lived cookie (set on the লড়াই page). Not the
+     * address and the phone model: two guests on one home Wi-Fi with the same phone were taken for one person.
+     */
+    public static function key(Request $r): string
+    {
+        $pid = (string) $r->cookie('hp_pid', '');
+        $who = $r->user() ? 'u'.$r->user()->id : (preg_match('/^[A-Za-z0-9]{20,40}$/', $pid) ? 'p'.$pid : 'ip'.$r->ip().'|'.mb_substr((string) $r->userAgent(), 0, 120));
+
+        return hash_hmac('sha256', $who, (string) config('app.key'));
+    }
+
+    /** The code of the challenge this player started this week, if any. */
+    public static function ownCode(Request $r): ?string
+    {
+        return DB::table('game_challenge_plays')->join('game_challenges', 'game_challenges.id', '=', 'game_challenge_plays.game_challenge_id')
+            ->where('game_challenge_plays.sender_hash', self::key($r))->where('game_challenge_plays.started', true)
+            ->where('game_challenges.week', WeeklyQuiz::week())->orderByDesc('game_challenges.id')->value('game_challenges.code');
+    }
+
     /** A new challenge from a finished game; the maker's own result is the first on the link. */
     public static function challenge(Request $r, string $name, int $score, int $seconds): string
     {
@@ -130,7 +149,7 @@ final class GameSocial
         return (bool) DB::table('game_challenge_plays')->insertOrIgnore([
             'game_challenge_id' => $challengeId, 'user_id' => $r->user()?->id, 'name' => $name,
             'score' => max(0, min(self::QUESTIONS * self::POINTS, $score)), 'seconds' => max(1, min(3600, $seconds)), 'started' => $started,
-            'sender_hash' => Kolom::senderHash($r), 'created_at' => now(),
+            'sender_hash' => self::key($r), 'created_at' => now(),
         ]);
     }
 
@@ -141,7 +160,7 @@ final class GameSocial
         if (! $c) {
             return null;
         }
-        $mine = $r ? Kolom::senderHash($r) : null;
+        $mine = $r ? self::key($r) : null;
         $plays = DB::table('game_challenge_plays')->where('game_challenge_id', $c->id)->orderByDesc('score')->orderBy('seconds')->orderBy('id')->limit(100)->get()
             ->map(fn ($p) => ['name' => $p->name, 'score' => (int) $p->score, 'seconds' => (int) $p->seconds, 'started' => (bool) $p->started, 'mine' => $mine !== null && $p->sender_hash === $mine])->all();
         $week = substr((string) $c->week, 0, 10);

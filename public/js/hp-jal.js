@@ -54,7 +54,7 @@
         path = []; mode = null; paint();
         if (n < 2) { if (n) say('অন্তত দুটো অক্ষর লাগবে'); return; }
         if (store.found.includes(w)) { say(w + ': আগেই পেয়েছেন'); return; }
-        if (!words.has(w)) { say(w + ': এই শব্দটা আমাদের তালিকায় নেই'); return; }
+        if (!words.has(w)) { say(w + ': এটা আজকের তালিকায় নেই'); return; }
         store.found.push(w); save(); foundList();
         say('✓ ' + w + '  +' + bn(pointsFor(n)), true);
     };
@@ -112,6 +112,7 @@
         if (!store.start) { store.start = Date.now(); save(); }
         $('intro').hidden = true; $('board').hidden = false;
         $('board').scrollIntoView({ block: 'start', behavior: 'smooth' });   // the clock and the whole grid in view
+        document.documentElement.dataset.playing = '1';   // the site's bottom bar steps aside while the clock runs
         paint(); foundList(); tick(); timer = setInterval(tick, 250);
     };
     $('go').addEventListener('click', begin);
@@ -124,6 +125,7 @@
     function finish() {
         if (timer) clearInterval(timer);
         store.ended = true; save(); path = []; mode = null;
+        delete document.documentElement.dataset.playing;
         $('intro').hidden = true; $('board').hidden = true; $('done').hidden = false;
         const n = store.found.length;
         $('cheer').textContent = n >= 12 ? 'দারুণ! শব্দের জাদুকর' : (n >= 6 ? 'বেশ হয়েছে!' : (n ? 'ভালো শুরু' : 'কাল আবার চেষ্টা করুন'));

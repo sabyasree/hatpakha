@@ -16,12 +16,12 @@
         @include('partials.game-nav', ['on' => $kind])
         <div class="flex items-end justify-between gap-3">
             <div>
-                <p class="font-hand text-2xl text-red">{{ $banan ? 'রোজ পাঁচটা বানান' : 'রোজ পাঁচটা বাক্য সংকোচন' }}</p>
+                <p class="font-hand text-xl text-red">{{ $banan ? 'রোজ পাঁচটা বানান' : 'রোজ পাঁচটা কথা, এক শব্দে' }}</p>
                 <h1 class="font-display text-4xl font-extrabold leading-tight">{{ $name }}</h1>
             </div>
             <p class="text-right text-sm font-bold text-ink2">খেলা নং {{ Bn::num((string) $game['no']) }}</p>
         </div>
-        <p class="mt-2 text-ink2">{{ $banan ? 'চারটে বানানের মধ্যে একটাই ঠিক। টিপুন; উত্তরের পরে নিয়মটা দেখানো হবে।' : 'কথাটা পড়ুন; চারটে শব্দের মধ্যে যেটা পুরো কথাটা এক শব্দে বলে, সেটায় টিপুন।' }} প্রতিটি ঠিক উত্তরে ২০ পয়েন্ট, একবারই সুযোগ।</p>
+        <p class="mt-1 text-ink2">{{ $banan ? 'একটাই ঠিক; উত্তরের পরে নিয়ম দেখাবে।' : 'কথাটা এক শব্দে কী হবে, বেছে নিন।' }} ঠিক হলে ২০ পয়েন্ট।</p>
 
         @if ($locked)
             @include('partials.game-lock', ['what' => $name, 'easy' => ['বানান-যাচাই', Url::to('/khela/banan')]])
@@ -41,7 +41,7 @@
                     <li>চারটে শব্দের মধ্যে যেটা পুরো কথাটা এক শব্দে বলে (অভূতপূর্ব), সেটায় টিপুন।</li>
                 @endif
                 <li>ঠিক হলে ২০ পয়েন্ট; ভুল হলে ঠিক উত্তরটা দেখানো হয়। একবারই সুযোগ।</li>
-                <li>রোজ রাত বারোটায় নতুন পাঁচটা।</li>
+                <li>রোজ রাত বারোটায় (ভারতের সময়) নতুন পাঁচটা।</li>
             </ul>
         </details>
         <x-ad-slot spot="list" :height="250" class="!mt-16" />

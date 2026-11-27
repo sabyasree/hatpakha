@@ -54,7 +54,7 @@
                     <a href="{{ $href }}" class="flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $isDone && ! $more ? 'bg-peach-light' : 'bg-white shadow-[4px_4px_0_#13212C]' }}">
                         <span class="flex flex-none gap-0.5" aria-hidden="true">@foreach ($tiles as $t)<span class="flex h-11 w-10 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
                         <span class="min-w-0 flex-1 leading-tight">
-                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}</span>
+                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-xs font-bold text-white">নতুন</span>@endif</span>
                             <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)অ্যাকাউন্ট লাগে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
                         </span>
                         @if ($isDone && ! $more)
@@ -72,7 +72,7 @@
         <a href="{{ Url::to('/khela/quiz') }}" class="mt-3 flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $quizDone ? 'bg-peach-light' : 'bg-sky-tint shadow-[4px_4px_0_#13212C]' }}">
             <span class="flex flex-none gap-0.5" aria-hidden="true"><span class="flex h-11 w-10 rotate-2 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold">কু</span><span class="flex h-11 w-10 -rotate-3 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold">ইজ</span></span>
             <span class="min-w-0 flex-1 leading-tight">
-                <span class="block font-display text-[22px] font-extrabold">পত্রিকা-কুইজ <span class="text-base font-bold text-red">সাপ্তাহিক</span></span>
+                <span class="block font-display text-[22px] font-extrabold">পত্রিকা-কুইজ <span class="text-base font-bold text-red">সাপ্তাহিক</span>@if ($day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-xs font-bold text-white">নতুন</span>@endif</span>
                 <span class="block text-base text-ink2">@if ($quizDone)এ সপ্তাহে হয়ে গেছে @elseif ($quiz)এ সপ্তাহের লেখা থেকে পাঁচটা প্রশ্ন @else নতুন কুইজ আসবে রবিবার @endif</span>
             </span>
             @if ($quizDone)<span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
@@ -113,7 +113,7 @@
             </div>
         @endguest
 
-        <p class="mt-6 font-bold">নতুন খেলা আসে রোজ রাত বারোটায়।</p>
+        <p class="mt-6 font-bold">নতুন খেলা আসে রোজ রাত বারোটায় (ভারতের সময়)।</p>
         {{-- one ad, under everything a player taps --}}
         <x-ad-slot spot="list" :height="250" class="!mt-12" />
     </section>

@@ -194,6 +194,23 @@ class MoreGamesTest extends TestCase
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])->postJson('/khela/lorai/'.$code, ['name' => 'নতুন', 'score' => 50, 'seconds' => 70])->assertStatus(422);
     }
 
+    public function test_two_guests_on_one_wifi_are_two_players_and_the_link_page_is_never_shared(): void
+    {
+        $r = $this->withCredentials()->withCookie('hp_pid', str_repeat('a', 32))->postJson('/khela/lorai', ['name' => 'মা', 'score' => 60, 'seconds' => 50])->assertOk()->json();
+        $code = basename(rtrim($r['url'], '/'));
+        // same address, same phone, another browser cookie: a second player
+        $this->withCredentials()->withCookie('hp_pid', str_repeat('b', 32))->postJson('/khela/lorai/'.$code, ['name' => 'ছেলে', 'score' => 80, 'seconds' => 40])->assertOk()->assertJsonCount(2, 'plays');
+        $page = $this->withCookie('hp_pid', str_repeat('b', 32))->get('/khela/lorai/'.$code.'/');
+        $page->assertOk()->assertSee('এই লড়াইয়ে যাঁরা খেলেছেন')->assertSee('এবার আপনি বন্ধুদের ডাকুন');
+        $this->assertStringNotContainsString('public', (string) $page->headers->get('Cache-Control'), 'Each player sees their own view: never cached for others');
+        // the friend's own link carries their result, without playing again
+        $this->withCookie('hp_pid', str_repeat('b', 32))->post('/khela/lorai/'.$code.'/own')->assertRedirect();
+        $this->assertSame(2, DB::table('game_challenges')->count());
+        $this->assertSame(2, DB::table('game_challenge_plays')->where('started', true)->count());
+        // the maker going back to the লড়াই page lands on their own link
+        $this->withCookie('hp_pid', str_repeat('a', 32))->get('/khela/lorai/')->assertRedirect(\App\Support\Url::to('/khela/lorai/'.$code));
+    }
+
     public function test_teams_count_their_ten_best_and_the_desk_can_hide_one(): void
     {
         $a = $this->player('অমল');

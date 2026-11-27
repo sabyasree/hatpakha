@@ -14,7 +14,7 @@
 <x-layouts.app :seo="$seo">
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @if ($quiz) data-choice @endif @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
         @include('partials.game-nav', ['on' => 'quiz'])
-        <p class="font-hand text-2xl text-red">প্রতি রবিবার পাঁচটা প্রশ্ন</p>
+        <p class="font-hand text-xl text-red">প্রতি রবিবার (ভারতের সময়) পাঁচটা প্রশ্ন</p>
         <h1 class="font-display text-4xl font-extrabold leading-tight">পত্রিকা-কুইজ</h1>
         @if ($quiz)
             <p class="mt-2 text-ink2">এ সপ্তাহে হাতপাখায় যা বেরিয়েছে, তা থেকে পাঁচটা প্রশ্ন। পড়ে থাকলে সহজ; না পড়লে প্রতিটি উত্তরের পরে লেখাটার লিঙ্ক থাকবে। ঠিক উত্তরে ২০ পয়েন্ট। চলবে {{ Bn::date($ends) }} পর্যন্ত।</p>

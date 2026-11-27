@@ -47,6 +47,7 @@ Route::get('/khela/lorai', [\App\Http\Controllers\GameController::class, 'lorai'
 Route::get('/khela/lorai/{code}', [\App\Http\Controllers\GameController::class, 'lorai'])->where('code', '[a-z0-9]{8}')->name('game.lorai.show');
 Route::post('/khela/lorai', [\App\Http\Controllers\GameController::class, 'loraiStore'])->middleware('throttle:6,1')->name('game.lorai.store');
 Route::post('/khela/lorai/{code}', [\App\Http\Controllers\GameController::class, 'loraiStore'])->where('code', '[a-z0-9]{8}')->middleware('throttle:10,1')->name('game.lorai.answer');
+Route::post('/khela/lorai/{code}/own', [\App\Http\Controllers\GameController::class, 'loraiOwn'])->where('code', '[a-z0-9]{8}')->middleware('throttle:6,1')->name('game.lorai.own');
 Route::get('/khela/dol', [\App\Http\Controllers\GameController::class, 'teams'])->name('game.teams');
 Route::post('/khela/dol', [\App\Http\Controllers\GameController::class, 'teamStore'])->middleware(['auth', 'throttle:5,1'])->name('game.teams.store');
 Route::post('/khela/dol/leave', [\App\Http\Controllers\GameController::class, 'teamLeave'])->middleware('auth')->name('game.teams.leave');

@@ -12,7 +12,7 @@
         @include('partials.game-nav', ['on' => 'social'])
         <div class="mb-4 grid grid-cols-2 gap-2 font-bold">
             <a href="{{ Url::to('/khela/lorai') }}" class="flex min-h-12 items-center justify-center rounded-full border-2 border-navy bg-white">সাপ্তাহিক লড়াই</a>
-            <a href="{{ Url::to('/khela/dol') }}" @unless ($team) aria-current="page" @endunless class="flex min-h-12 items-center justify-center rounded-full {{ $team ? 'border-2 border-navy bg-white' : 'bg-navy text-white' }}">পাড়ার দল</a>
+            <a href="{{ Url::to('/khela/dol') }}" aria-current="page" class="flex min-h-12 items-center justify-center rounded-full bg-navy text-white">পাড়ার দল</a>
         </div>
 
         @if ($done)
@@ -48,9 +48,9 @@
                     <a href="{{ Url::to('/register') }}?next={{ rawurlencode('/khela/dol/'.$team->code.'/') }}" class="mt-3 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">অ্যাকাউন্ট খুলে যোগ দিন</a>
                     <p class="mt-2 text-center"><a href="{{ Url::to('/login') }}?next={{ rawurlencode('/khela/dol/'.$team->code.'/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">আগে থেকে আছে? সাইন ইন</a></p>
                 @endauth
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" data-copy="{{ $teamUrl }}" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">লিঙ্ক কপি</button>
-                    <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার খেলায় আমাদের দল "'.$team->name.'"-এ যোগ দিন। রোজ বাংলা শব্দের খেলা, একসঙ্গে পয়েন্ট: '.$teamUrl) }}" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">WhatsApp-এ পাঠান</a>
+                <div class="mt-3 grid gap-2">
+                    <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার খেলায় আমাদের দল "'.$team->name.'"-এ যোগ দিন। রোজ বাংলা শব্দের খেলা, একসঙ্গে পয়েন্ট: '.$teamUrl) }}" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">WhatsApp-এ দলের লিঙ্ক পাঠান</a>
+                    <button type="button" data-copy="{{ $teamUrl }}" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">লিঙ্ক কপি করুন</button>
                 </div>
                 <p class="mt-1 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-copy-msg></p>
             </div>

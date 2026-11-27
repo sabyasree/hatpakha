@@ -217,7 +217,7 @@
     @endphp
     @unless (request()->is('sonkha/*/boi*') || request()->attributes->get('hp.no-bottom-nav'))
     @include('partials.more-sheet', ['menu' => $menu])
-    <nav aria-label="{{ __('প্রধান') }}" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
+    <nav aria-label="{{ __('প্রধান') }}" data-bottom-nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t-2 border-navy bg-paper pb-[env(safe-area-inset-bottom)] text-[13px] font-bold md:hidden">
         @foreach ($tabs as [$label, $href, $on, $ic])
             @if ($ic === 'write')
                 <a href="{{ $href }}" data-tab-centre class="flex h-16 flex-col items-center justify-center" @if ($on) aria-current="page" @endif>

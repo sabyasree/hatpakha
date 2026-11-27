@@ -71,7 +71,7 @@ class GameController extends Controller
         return view('game-choice', ['game' => $day, 'kind' => $game, 'locked' => ! $banan && ! $request->user(), 'seo' => new Seo(
             title: $banan ? 'বানান-যাচাই: রোজ পাঁচটা বাংলা বানান, কোনটা ঠিক?' : 'এক শব্দে প্রকাশ: রোজ পাঁচটা বাক্য সংকোচন',
             description: $banan ? 'হাতপাখার রোজকার বানানের খেলা। চারটে বানানের মধ্যে ঠিকটা বেছে নিন; উত্তরের পরে নিয়মটাও জেনে নিন। মুহূর্ত না মুহুর্ত, উজ্জ্বল না উজ্জল?'
-                : 'হাতপাখার রোজকার এক কথায় প্রকাশের খেলা। পাঁচটা বাক্যাংশ, প্রতিটির জন্য চারটে শব্দ; ঠিক শব্দটা বেছে নিন। স্কুলের বাক্য সংকোচন, নতুন করে।',
+                : 'হাতপাখার রোজকার এক শব্দে প্রকাশের খেলা। পাঁচটা কথা, প্রতিটির জন্য চারটে শব্দ; ঠিক শব্দটা বেছে নিন। স্কুলের বাক্য সংকোচন, নতুন করে।',
             canonical: Url::to($banan ? '/khela/banan' : '/khela/ek-shobde'),
         )]);
     }
@@ -107,17 +107,24 @@ class GameController extends Controller
     /** D328: সাপ্তাহিক লড়াই. Without a code: play the week's ten and get a link. With one: answer a friend's challenge. */
     public function lorai(Request $request, ?string $code = null)
     {
+        if (! $request->cookie('hp_pid')) {   // this browser's own player id (GameSocial::key), a year long
+            \Illuminate\Support\Facades\Cookie::queue('hp_pid', \Illuminate\Support\Str::random(32), 525600, null, null, null, true, false, 'lax');
+        }
+        if (! $code && ($own = GameSocial::ownCode($request))) {
+            return redirect(Url::to('/khela/lorai/'.$own));   // this week's own challenge: its scores, and the link to send
+        }
         $challenge = $code ? GameSocial::find($code, $request) ?? abort(404) : null;
         $week = $challenge['week'] ?? WeeklyQuiz::week();
         \App\Support\Ads::allow();
         $maker = $challenge ? collect($challenge['plays'])->firstWhere('started', true) : null;
 
         return view('game-lorai', ['challenge' => $challenge, 'maker' => $maker, 'questions' => GameSocial::questions($week), 'week' => $week,
+            'played' => $challenge && collect($challenge['plays'])->contains('mine', true), 'own' => $challenge && GameSocial::ownCode($request) === $challenge['code'],
             'name' => $request->user() ? GameSocial::playerName($request->user()) : '',
             'seo' => new Seo(
                 title: $maker ? $maker['name'].' আপনাকে লড়াইয়ে ডেকেছেন: হাতপাখা সাপ্তাহিক লড়াই' : 'সাপ্তাহিক লড়াই: বন্ধুদের সঙ্গে দশ প্রশ্নের বাংলা খেলা',
-                description: $maker ? 'বানান, এক কথায় প্রকাশ আর প্রবাদের দশটা প্রশ্ন। '.$maker['name'].' পেয়েছেন '.\App\Support\Bn::num((string) $maker['score']).'। আপনি কত পান?'
-                    : 'দশটা প্রশ্ন: বানান, এক কথায় প্রকাশ, প্রবাদ। খেলে লিঙ্কটা বন্ধুদের পাঠান; তাঁরাও একই প্রশ্ন খেলবেন, সবার নম্বর এক জায়গায়।',
+                description: $maker ? 'বানান, এক শব্দে প্রকাশ আর প্রবাদের দশটা প্রশ্ন। '.$maker['name'].' পেয়েছেন '.\App\Support\Bn::num((string) $maker['score']).'। আপনি কত পান?'
+                    : 'দশটা প্রশ্ন: বানান, এক শব্দে প্রকাশ, প্রবাদ। খেলে লিঙ্কটা বন্ধুদের পাঠান; তাঁরাও একই প্রশ্ন খেলবেন, সবার নম্বর এক জায়গায়।',
                 canonical: Url::to($challenge ? '/khela/lorai/'.$challenge['code'] : '/khela/lorai'),
                 noindex: (bool) $challenge,   // a friend's link: shared, never searched
             )]);
@@ -146,6 +153,17 @@ class GameController extends Controller
         }
 
         return response()->json(['ok' => true, 'url' => Url::to('/khela/lorai/'.$code), 'plays' => GameSocial::find($code, $request)['plays']]);
+    }
+
+    /** After answering a friend's challenge: a link of one's own with the same result, without playing again. */
+    public function loraiOwn(Request $request, string $code)
+    {
+        $c = GameSocial::find($code, $request) ?? abort(404);
+        $mine = collect($c['plays'])->firstWhere('mine', true);
+        abort_unless($mine && $c['open'], 404);
+        $own = GameSocial::ownCode($request) ?? GameSocial::challenge($request, $mine['name'], $mine['score'], $mine['seconds']);
+
+        return redirect(Url::to('/khela/lorai/'.$own));
     }
 
     /** D328: পাড়ার দল. The teams this month, the player's own team, and making one. */
