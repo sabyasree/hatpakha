@@ -71,8 +71,8 @@ class GreetingsTest extends TestCase
 
     public function test_a_set_is_written_checked_and_shown(): void
     {
-        Http::fake(['https://a.org/*' => Http::response('<p>'.str_replace("\n", '<br>', $this->poem).'</p>'),
-            'https://www.b.in/*' => Http::response('<div>এসো হে বৈশাখ এসো এসো। তাপসনিশ্বাসবায়ে মুমূর্ষুরে দাও উড়ায়ে।</div>'), '*' => Http::response('', 404)]);
+        Http::fake(['https://a.org/*' => Http::response('<h1>রবীন্দ্রনাথ ঠাকুর</h1><p>'.str_replace("\n", '<br>', $this->poem).'</p>'),
+            'https://www.b.in/*' => Http::response('<div>এসো হে বৈশাখ এসো এসো। তাপসনিশ্বাসবায়ে মুমূর্ষুরে দাও উড়ায়ে।</div><p>রবীন্দ্রনাথ ঠাকুর</p>'), '*' => Http::response('', 404)]);
         $this->drop = [['n' => 3, 'why' => 'বানান ভুল']];
         $now = CarbonImmutable::parse('2026-11-27 12:00', 'Asia/Kolkata');
         GreetingDesk::run($now);
@@ -92,7 +92,8 @@ class GreetingsTest extends TestCase
         $this->get('/janun/greetings/')->assertOk()->assertSee('জন্মদিনের শুভেচ্ছা');
         $this->get('/janun/greetings/christmas/')->assertNotFound();
         $this->get('/janun/greetings/nothing/')->assertNotFound();
-        $this->get('/sitemap-pages.xml')->assertOk()->assertSee('/janun/greetings/birthday/')->assertSee('/janun/greetings/<', false);
+        $this->get('/sitemap-pages.xml')->assertOk()->assertSee('/janun/greetings/birthday/')->assertDontSee('/janun/greetings/<', false);   // the hub waits for three sets
+        $this->get('/janun/greetings/')->assertSee('noindex, follow', false);
         $this->get('/janun/')->assertOk()->assertSee('শুভেচ্ছা বার্তা, ছবিসহ');
     }
 
@@ -118,6 +119,22 @@ class GreetingsTest extends TestCase
         $d = $this->draft();
         $d['poet']['poet'] = 'কাজী নজরুল ইসলাম';   // died 1976: still in copyright
         $s = GreetingSet::create(['slug' => 'eid-ul-fitr', 'status' => 'drafted', 'body' => $d]);
+        GreetingDesk::check($s);
+        $this->assertNull($s->fresh()->body['poet']);
+    }
+
+    public function test_the_occasions_coming_soonest_are_written_first(): void
+    {
+        $order = \App\Support\GreetingPlan::order(CarbonImmutable::parse('2026-11-27 12:00', 'Asia/Kolkata'));
+        $this->assertSame(['birthday', 'christmas', 'happy-new-year'], array_slice($order, 0, 3));
+        $this->assertSame('bhai-phonta', end($order), 'a festival just past waits for next year');
+        $this->assertLessThan(array_search('poila-baishakh', $order), array_search('eid-ul-fitr', $order), 'Eid ul-Fitr 2027 is in March');
+    }
+
+    public function test_a_line_printed_under_another_poets_name_does_not_pass(): void
+    {
+        Http::fake(['*' => Http::response('<h1>কাজী নজরুল ইসলাম</h1><p>'.$this->poem.'</p>')]);   // the lines are on both pages, but under another poet
+        $s = GreetingSet::create(['slug' => 'poila-baishakh', 'status' => 'drafted', 'body' => $this->draft()]);
         GreetingDesk::check($s);
         $this->assertNull($s->fresh()->body['poet']);
     }

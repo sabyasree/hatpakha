@@ -2,7 +2,7 @@
 @php
     $U = fn ($p) => \App\Support\Url::to($p);
     $L = \App\Http\Controllers\LearnController::class;
-    $word = fn ($w) => '<span class="font-display text-2xl font-extrabold">'.e($w[0]).'</span> <span lang="en" class="text-sm text-ink2">'.e($w[1]).' · '.e($w[2]).'</span>';
+    $word = fn ($w) => '<span class="font-display text-2xl font-extrabold">'.e($w[0]).'</span> <span lang="en" class="text-base text-navy">'.e($w[1]).' · '.e($w[2]).'</span>';
 @endphp
 <x-layouts.app :seo="$seo">
     <article class="mx-auto max-w-[760px] px-5 py-8">
@@ -10,25 +10,26 @@
             'kicker' => 'বাংলা শিখি · পাঠ '.\App\Support\Bn::num((string) (array_search($key, $L::LESSONS, true) + 2)), 'title' => $l['title']])
         <p lang="en" class="mt-1 text-sm text-ink2">{{ $l['en'] }}</p>
         <p class="mt-4 font-serif text-lg leading-relaxed">{{ $l['intro'] }}</p>
-        <a href="{{ $U('/janun/learn-bengali/'.$key.'/print') }}" class="mt-4 inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট ছাপুন</a>
+        <div class="mt-4 flex flex-wrap gap-2"><a href="{{ $U('/janun/learn-bengali/'.$key.'/print') }}" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট ছাপুন</a>@if ($key === 'kar')<a href="#barokhori" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বারোখড়ি খেলুন ↓</a>@endif</div>
 
         @if ($key === 'kar')
             <div class="mt-6 grid gap-3">
                 @foreach ($l['rows'] as [$v, $sign, $name, $roman, $where, $words])
                     <section class="rounded-2xl border-2 border-navy p-4">
-                        <h2 class="flex items-baseline gap-3"><span class="font-display text-4xl font-extrabold text-red">◌{{ $sign }}</span><span class="font-display text-2xl font-extrabold">{{ $name }}</span><span lang="en" class="text-sm text-ink2">{{ $roman }}</span></h2>
-                        <p class="mt-1 text-sm">{{ $v }} → {{ $sign }}, {{ $where }}। <span class="font-display text-xl font-extrabold">ক + {{ $sign }} = ক{{ $sign }}</span></p>
+                        <h2 class="flex items-baseline gap-3"><span class="font-display text-4xl font-extrabold text-red">ক{{ $sign }}</span><span class="font-display text-2xl font-extrabold">{{ $name }}</span><span lang="en" class="text-sm text-ink2">{{ $roman }}</span></h2>
+                        <p class="mt-1">{{ $v }}-এর চিহ্ন বসে {{ $where }}।</p>
+                        <p class="mt-1 font-display text-2xl font-extrabold">ক + {{ $v }} = ক{{ $sign }}</p>
                         <ul class="mt-2 space-y-1">@foreach ($words as $w)<li>{!! $word($w) !!}</li>@endforeach</ul>
                     </section>
                 @endforeach
             </div>
-            <section class="mt-8 rounded-2xl bg-peach-light p-4" data-barokhori>
+            <section id="barokhori" class="mt-8 scroll-mt-20 rounded-2xl bg-peach-light p-4" data-barokhori>
                 <h2 class="font-display text-2xl font-extrabold">বারোখড়ি: একটা অক্ষরে সব কার</h2>
                 <p class="mt-1 text-sm">অক্ষর বেছে নিন, তার সঙ্গে প্রতিটি কার কেমন দেখায় দেখুন।</p>
-                <div class="mt-3 flex flex-wrap gap-1" role="group" aria-label="অক্ষর বেছে নিন">
+                <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="অক্ষর বেছে নিন">
                     @foreach ($l['barokhori'] as $c)<button type="button" data-letter="{{ $c }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}" class="h-11 w-11 rounded-lg border-2 border-navy font-display text-xl font-extrabold aria-pressed:bg-navy aria-pressed:text-white">{{ $c }}</button>@endforeach
                 </div>
-                <ol class="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6" data-combos aria-live="polite">
+                <ol class="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6" data-combos>
                     @foreach (array_merge([''], array_column($l['rows'], 1)) as $sign)<li class="flex h-16 items-center justify-center rounded-xl bg-paper font-display text-3xl font-extrabold" data-sign="{{ $sign }}">ক{{ $sign }}</li>@endforeach
                 </ol>
             </section>

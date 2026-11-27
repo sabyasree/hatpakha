@@ -37,7 +37,7 @@ class LearnController extends Controller
         $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $l['title'].' · '.$l['en'].' · বাংলা শিখি',
             description: JanunPlan::clip($l['title'].': '.$l['intro'].' '.$l['en'].', with Roman readings and English meanings.', 158),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা শিখি', Url::to('/janun/learn-bengali')], [$l['title'], $url]]),
-                JsonLd::learningResource($l['title'], $url, $l['en'])]);
+                JsonLd::learningResource($l['title'], $url, $l['en'], $l['intro'])]);
         request()->attributes->set('hp.no_ads', true);   // D101: pages for children carry no ads and no analytics
         $i = array_search($lesson, self::LESSONS, true);
 

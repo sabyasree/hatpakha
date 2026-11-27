@@ -23,7 +23,7 @@ final class NameDesk
 
     public const DICTIONARIES = [
         'accessibledictionary.gov.bd' => 'https://accessibledictionary.gov.bd/bengali-to-english/?q=',
-        'en.wiktionary.org' => 'https://en.wiktionary.org/wiki/',
+        'en.wiktionary.org' => 'https://en.wiktionary.org/wiki/',   // read as wikitext (?action=raw): only the Bengali section's definition lines count
         'bn.wiktionary.org' => 'https://bn.wiktionary.org/wiki/',
     ];
 
@@ -118,7 +118,7 @@ final class NameDesk
                     break;   // the answer cannot change
                 }
                 $left--;
-                $text = JanunDesk::fetchText($base.rawurlencode($n['bn']));
+                $text = JanunDesk::fetchText($base.rawurlencode($n['bn']).(str_ends_with($host, 'wiktionary.org') ? '?action=raw' : ''));
                 if ($text !== null && self::gives($host, $text, $n)) {
                     $found[] = $host;
                 }
@@ -142,31 +142,47 @@ final class NameDesk
         AuditLog::record($ok >= NamePlan::MIN_NAMES ? 'names.scheduled' : 'names.held', null, ['page' => NamePlan::slug($p->gender, $p->letter), 'ok' => $ok, 'of' => count($names)]);
     }
 
-    /** Does this dictionary page have the name as an entry, with a meaning that shares a word with ours? */
+    /**
+     * Does this dictionary have the name as an entry, with a meaning like ours? Only the entry's own definition is read
+     * (never menus or other words' entries), words are matched whole, and the meaning must agree: the first main word of
+     * our English meaning, or at least half of its main words, or a whole Bengali word of our Bengali meaning.
+     */
     public static function gives(string $host, string $text, array $n): bool
     {
-        $text = \Normalizer::normalize($text, \Normalizer::FORM_C) ?: $text;
-        $name = \Normalizer::normalize($n['bn'], \Normalizer::FORM_C) ?: $n['bn'];
+        $nfc = fn ($t) => \Normalizer::normalize((string) $t, \Normalizer::FORM_C) ?: (string) $t;
+        $text = $nfc($text);
+        $name = $nfc($n['bn']);
+        $defs = '';
         if ($host === 'accessibledictionary.gov.bd') {
-            if (! preg_match('/Bengali Word\s+'.preg_quote($name, '/').'\s+English definition(.*?)(?:Bengali Word|$)/su', $text, $m)) {
-                return false;
+            // "Bengali Word" headword(s) "English definition" … until the next "Bengali Word"; a headword may list variants (জ্যোতি, জ্যোতিঃ)
+            preg_match_all('/Bengali Word\s*([^\n]*?)\s*English definition(.*?)(?=Bengali Word|$)/su', $text, $m, PREG_SET_ORDER);
+            foreach ($m as $e) {
+                if (in_array($name, array_map('trim', explode(',', $nfc($e[1]))), true)) {
+                    $defs = $e[2];
+                    break;
+                }
             }
-            $entry = $m[1];
         } else {
-            if (! str_contains($text, $name)) {
+            // wikitext: the Bengali section (==Bengali== or =={{ভাষা|bn}}== / ==বাংলা==) up to the next language, its "# " lines only
+            if (! preg_match('/^==\s*(?:Bengali|বাংলা|\{\{ভাষা\|bn\}\})\s*==\s*$(.*?)(?=^==[^=]|\z)/msu', $text, $sec)) {
                 return false;
             }
-            $entry = $text;
+            preg_match_all('/^#(?![:*])\s*(.+)$/mu', $sec[1], $lines);
+            $defs = preg_replace(['/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/u', '/\{\{[^}]*\}\}/u'], ['$1', ' '], implode("\n", $lines[1]));
         }
-        $entry = mb_strtolower($entry);
-        if ($host === 'bn.wiktionary.org') {
-            $words = preg_split('/[\s,;।()\/-]+/u', (string) $n['meaning_bn']);
-
-            return collect($words)->filter(fn ($w) => mb_strlen($w) >= 3 && ! in_array($w, self::STOP_BN, true))->contains(fn ($w) => str_contains($entry, mb_strtolower($w)));
+        if (trim((string) $defs) === '') {
+            return false;
         }
-        $words = preg_split('/[^a-z]+/', mb_strtolower((string) $n['meaning_en']));
+        $defs = mb_strtolower($defs);
+        $en = collect(preg_split('/[^a-z]+/', mb_strtolower((string) $n['meaning_en'])))->filter(fn ($w) => strlen($w) >= 3 && ! in_array($w, self::STOP_EN, true))->values();
+        $hit = fn ($w) => (bool) preg_match('/\b'.preg_quote($w, '/').'(?:s|es)?\b/u', $defs);
+        if ($en->isNotEmpty() && ($hit($en[0]) || $en->filter($hit)->count() * 2 >= $en->count() && $en->count() >= 2)) {
+            return true;
+        }
+        $tokens = preg_split('/[^\x{0980}-\x{09FF}\x{200C}\x{200D}]+/u', $defs, -1, PREG_SPLIT_NO_EMPTY);
 
-        return collect($words)->filter(fn ($w) => strlen($w) >= 3 && ! in_array($w, self::STOP_EN, true))->contains(fn ($w) => preg_match('/\b'.preg_quote($w, '/').'/', $entry));
+        return collect(preg_split('/[\s,;।()\/-]+/u', $nfc($n['meaning_bn'])))->filter(fn ($w) => mb_strlen($w) >= 2 && ! in_array($w, self::STOP_BN, true))
+            ->contains(fn ($w) => in_array($w, $tokens, true));
     }
 
     /** The next free Tuesday, Thursday or Saturday, 10am India, at least a day ahead and after every page already given a day. */

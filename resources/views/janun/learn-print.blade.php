@@ -19,8 +19,9 @@
         @page { size: A4; margin: 12mm; }
         body { background: #fff; color: #13212C; }
         .sheet { max-width: 186mm; margin: 0 auto; padding: 16px; }
-        .row { break-inside: avoid; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
-        .box { height: 22mm; border: 1px solid #E8DCCB; display: flex; align-items: center; justify-content: center; font-family: 'Anek Bangla', sans-serif; font-size: 13mm; font-weight: 400; }
+        .row { break-inside: avoid; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+        .box { height: 22mm; overflow: hidden; border: 1px solid #E39A6A; background: linear-gradient(#E39A6A, #E39A6A) 0 32% / 100% 1px no-repeat; display: flex; align-items: center; justify-content: center; font-family: 'Anek Bangla', sans-serif; font-size: 13mm; font-weight: 400; }
+        @media screen { .box { font-size: min(13mm, 9vw); height: min(22mm, 15vw); } }
         .trace { color: var(--color-ink2); opacity: .28; }
         @media print { .no-print { display: none !important; } .sheet { padding: 0; } }
     </style>

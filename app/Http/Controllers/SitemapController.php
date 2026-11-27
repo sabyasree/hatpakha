@@ -171,7 +171,7 @@ class SitemapController extends Controller
         foreach ($greet as $gs) {
             $other[] = ['loc' => $gs->url(), 'lastmod' => $gs->checked_at, 'image' => null];
         }
-        if ($greet->isNotEmpty()) {
+        if ($greet->count() >= 3) {   // the hub is indexed once it has three sets
             $other[] = ['loc' => Url::to('/janun/greetings'), 'lastmod' => $greet->max('checked_at'), 'image' => null];
         }
         $liveLists = \App\Models\HolidayList::all()->filter->isLive();   // D314

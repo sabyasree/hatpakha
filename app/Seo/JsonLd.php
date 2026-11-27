@@ -144,7 +144,7 @@ final class JsonLd
             '@type' => 'Article', '@id' => $p->url().'#article', 'headline' => $p->title, 'description' => (string) $p->seo_description,
             'inLanguage' => 'bn', 'url' => $p->url(), 'mainEntityOfPage' => $p->url(),
             'datePublished' => $p->publish_at?->toIso8601String(), 'dateModified' => $p->modifiedAt()?->toIso8601String(),
-            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org'],
+            'author' => self::org(), 'publisher' => self::org(),
         ]];
         if ($p->kind === 'poem' && filled($p->body['poet'] ?? '')) {   // D302: the poem itself, by its poet; our page carries the translation
             $nodes[0]['about'] = ['@type' => 'CreativeWork', 'name' => trim(explode(':', $p->title)[0]), 'inLanguage' => 'bn', 'author' => ['@type' => 'Person', 'name' => (string) $p->body['poet']],
@@ -159,20 +159,35 @@ final class JsonLd
     }
 
     /** D308: a festival's yearly page (built from checked times): an Article by the magazine, no Event markup (a holiday is not an event to attend). */
-    public static function festivalPage(string $headline, string $url, $modified): array
+    public static function festivalPage(string $headline, string $url, $modified, $published = null, ?string $description = null): array
     {
-        return ['@type' => 'Article', '@id' => $url.'#article', 'headline' => $headline, 'inLanguage' => 'bn', 'url' => $url, 'mainEntityOfPage' => $url,
+        return array_filter(['@type' => 'Article', '@id' => $url.'#article', 'headline' => $headline, 'inLanguage' => 'bn', 'url' => $url, 'mainEntityOfPage' => $url,
+            'description' => $description ?: null, 'image' => asset('images/og/card-janun.jpg'),
+            'datePublished' => $published ? \Carbon\Carbon::parse($published)->toIso8601String() : null,
             'dateModified' => $modified ? \Carbon\Carbon::parse($modified)->toIso8601String() : null,
-            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
+            'author' => self::org(), 'publisher' => self::org()], fn ($v) => $v !== null);
+    }
+
+    /** The magazine as author or publisher, complete, so a page's markup stands on its own (the full node is only on the home page). */
+    public static function org(): array
+    {
+        return ['@type' => 'Organization', '@id' => Url::to('/').'#org', 'name' => 'হাতপাখা', 'alternateName' => 'Hatpakha', 'url' => Url::to('/'), 'logo' => asset('images/logo.png')];
+    }
+
+    /** D316: a letter's names as a list of defined terms. */
+    public static function nameList(string $name, string $url, array $names): array
+    {
+        return ['@type' => 'DefinedTermSet', '@id' => $url.'#names', 'name' => $name, 'url' => $url, 'inLanguage' => 'bn',
+            'hasDefinedTerm' => array_map(fn ($n) => ['@type' => 'DefinedTerm', 'name' => $n['bn'], 'alternateName' => $n['roman'], 'description' => $n['meaning_bn'].' / '.$n['meaning_en']], $names)];
     }
 
     /** D317: a free lesson for learners of Bengali. */
-    public static function learningResource(string $name, string $url, string $teaches): array
+    public static function learningResource(string $name, string $url, string $teaches, ?string $description = null): array
     {
         return ['@type' => 'LearningResource', '@id' => $url.'#lesson', 'name' => $name, 'url' => $url, 'inLanguage' => 'bn', 'teaches' => $teaches,
             'educationalLevel' => 'Beginner', 'learningResourceType' => 'Lesson', 'isAccessibleForFree' => true,
             'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student'],
-            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
+            'description' => $description, 'author' => self::org(), 'publisher' => self::org()];
     }
 
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */

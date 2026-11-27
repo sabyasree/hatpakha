@@ -34,7 +34,7 @@ final class GreetingDesk
         if (Setting::get('greeting.day') === $now->toDateString()) {
             return false;
         }
-        $order = array_flip(GreetingPlan::order($now->month));
+        $order = array_flip(GreetingPlan::order($now));
         $next = GreetingSet::where('status', 'planned')->where('tries', '<', 3)->get()->sortBy(fn ($s) => $order[$s->slug] ?? 99)->first();
         if (! $next) {
             return false;
@@ -61,7 +61,7 @@ final class GreetingDesk
             .'Every greeting is our own, newly written, in warm, simple প্রমিত বাংলা (Bangla Academy spelling); never copy a greeting, quotation or verse from a website, card or book. '
             .'groups: for each key (chhoto = one short line for a picture or a status, up to 90 characters; poribar = family and elders; bondhu = friends, light and playful allowed; office = colleagues, clients, polite) write 6 to 8 greetings of one to three sentences. '
             .'en = a plain English rendering of the same greeting, for families abroad. No emoji, no hashtags, no links, no names of real people, no claims about dates. Respect every faith: nothing a believer would find careless. '
-            .'poet = one to four lines from a poem or song by ONLY one of these poets ('.implode(', ', array_keys(JanunPlan::POETS)).') that suit the occasion, exactly as in the standard edition; work = the poem or song\'s name. If you are not certain of every letter, give empty strings. '
+            .'poet = one to four lines from a poem or song by ONLY one of these poets ('.implode(', ', array_keys(JanunPlan::POETS)).'; never Kazi Nazrul Islam, Jibanananda Das or any later poet: their work is in copyright), from a work published in the poet\'s lifetime, that suit the occasion, exactly as in the standard edition; work = the poem or song\'s name. If you are not certain of every letter, give empty strings. '
             .'intro = two short paragraphs: what the occasion means and how Bengalis greet each other on it. description = 120-155 characters for Google, with the Bengali name and the word শুভেচ্ছা. '
             .'faq = 3 short questions people really ask about greeting on this occasion (e.g. what to write to an elder), with short answers.';
         [$d, $err] = Claude::json('janun', $system, '<occasion bn="'.e($bn).'" en="'.e($en).'">'.e($brief).'</occasion>', $schema, (string) config('ai.anthropic.review_model'), 16000);
@@ -187,7 +187,8 @@ final class GreetingDesk
                 continue;
             }
             $page = JanunDesk::fetchText((string) $url);
-            if ($page !== null && str_contains(JanunDesk::letters($page), $want)) {
+            // the lines AND the poet's name on the same page: a line in copyright passed off as Tagore's must not pass
+            if ($page !== null && str_contains(JanunDesk::letters($page), $want) && str_contains(JanunDesk::letters($page), JanunDesk::letters($poet))) {
                 $found[$host] = (string) $url;
             }
             if (count($found) >= 2) {

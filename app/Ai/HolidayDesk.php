@@ -27,7 +27,7 @@ final class HolidayDesk
         if (Setting::get('holiday.day') === $now->toDateString()) {
             return false;
         }
-        $years = $now->month >= 10 ? [$now->year, $now->year + 1] : [$now->year];
+        $years = $now->month >= 10 ? [$now->year + 1, $now->year] : [$now->year];   // next year's notice first: it is what people search for from October
         foreach ($years as $year) {
             foreach (array_keys(self::ASK) as $country) {
                 $list = HolidayList::firstOrCreate(['country' => $country, 'year' => $year]);

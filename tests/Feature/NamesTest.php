@@ -41,14 +41,16 @@ class NamesTest extends TestCase
             if ($word === 'আকাশকুসুম') {
                 return Http::response('', 404);
             }
-            if (str_contains($url, 'accessibledictionary')) {
-                return Http::response('<div>Bengali Word</div><div>'.$word.'</div><div>English definition (noun) (1) light; (2) joy, delight.</div><div>Bengali Word</div><div>অন্য</div><div>English definition dark</div>');
+            $word = preg_replace('/\?action=raw$/', '', $word);
+            if (str_contains($url, 'accessibledictionary')) {   // the real markup: headword and label in neighbouring spans
+                return Http::response('<p>Bengali Word </span><span class="separator-2">'.$word.'</span><span class="sr-only">English definition</span><em>(noun)</em> (1) light; (2) joy, delight.</p>'
+                    .'<p>Bengali Word </span><span class="separator">অন্য</span><span class="sr-only">English definition</span> dark</p>');
             }
-            if (str_contains($url, 'en.wiktionary')) {
-                return Http::response('<h1>'.$word.'</h1><p>Noun: shine</p>');   // the entry, but a meaning that shares no word with ours
+            if (str_contains($url, 'en.wiktionary')) {   // wikitext: the entry exists, but its meaning shares no word with ours
+                return Http::response("==Bengali==\n\n===Noun===\n{{bn-noun}}\n\n# [[shine]]\n#: {{ux|bn|light and joy}}\n\n==Assamese==\n# [[light]]\n");
             }
 
-            return Http::response('<h1>'.$word.'</h1><p>বিশেষ্য: আলো, দীপ্তি</p>');
+            return Http::response("=={{ভাষা|bn}}==\n\n===বিশেষ্য===\n# [[আলো]], দীপ্তি\n");
         });
     }
 
@@ -84,7 +86,7 @@ class NamesTest extends TestCase
         JanunDesk::run(CarbonImmutable::now('Asia/Kolkata'));
         $this->assertSame('live', $p->fresh()->status, 'goes live on its day, even with the AI off');
         $this->get('/janun/names/boy-names-a/')->assertOk()->assertSee('আ দিয়ে ছেলেদের নাম, অর্থসহ')->assertSee('আকাশ')->assertDontSee('আকাশকুসুম')
-            ->assertSee('Bengali Boy Names Starting with A', false)->assertSee('data-name-q', false);
+            ->assertSee('Bengali Boy Names with A (আ)', false)->assertSee('"DefinedTermSet"', false)->assertSee('২৬টি সংস্কৃত থেকে', false)->assertSee('data-name-q', false);
         $this->get('/janun/names/')->assertOk()->assertSee('/janun/names/boy-names-a/', false);
         $this->get('/janun/names/girl-names-a/')->assertNotFound();
         $this->get('/janun/names/boy-names-zz/')->assertNotFound();
@@ -105,12 +107,17 @@ class NamesTest extends TestCase
     public function test_the_dictionary_entry_must_be_the_name_itself(): void
     {
         $n = ['bn' => 'অরুণ', 'meaning_bn' => 'সূর্য', 'meaning_en' => 'the sun'];
-        $acc = "Bengali Word\nঅরুণ\n English definition (noun) (1) the sun. (2) the newly-risen sun.\nBengali Word\nঅরুচি\n English definition apathy";
+        $acc = "Bengali Word অরুণEnglish definition(noun) (1) the sun. (2) the newly-risen sun.\nBengali Word অরুচিEnglish definition apathy";
         $this->assertTrue(NameDesk::gives('accessibledictionary.gov.bd', $acc, $n));
         $this->assertFalse(NameDesk::gives('accessibledictionary.gov.bd', $acc, ['bn' => 'অরুচি', 'meaning_bn' => '', 'meaning_en' => 'sun']), 'the meaning of the next word does not count');
-        $this->assertFalse(NameDesk::gives('accessibledictionary.gov.bd', "Bengali Word\nঅরুণিমা\n English definition sun", $n));
-        $this->assertTrue(NameDesk::gives('en.wiktionary.org', 'অরুণ Noun the sun', $n));
-        $this->assertFalse(NameDesk::gives('en.wiktionary.org', 'অরুণ Noun red', $n));
+        $this->assertFalse(NameDesk::gives('accessibledictionary.gov.bd', 'Bengali Word অরুণিমাEnglish definition sun', $n));
+        $this->assertTrue(NameDesk::gives('accessibledictionary.gov.bd', 'Bengali Word জ্যোতি, জ্যোতিঃEnglish definition light', ['bn' => 'জ্যোতি', 'meaning_bn' => 'আলো', 'meaning_en' => 'light']), 'a headword with variants');
+        $wiki = "==Bengali==\n===Noun===\n# the [[sun]]\n==Sanskrit==\n# [[beginning]]\n";
+        $this->assertTrue(NameDesk::gives('en.wiktionary.org', $wiki, $n));
+        $this->assertFalse(NameDesk::gives('en.wiktionary.org', $wiki, ['bn' => 'অরুণ', 'meaning_bn' => 'নতুন', 'meaning_en' => 'beginning']), 'only the Bengali section counts');
+        $this->assertFalse(NameDesk::gives('en.wiktionary.org', "==Bengali==\n# [[sunday]]\n", $n), 'whole words only');
+        $this->assertFalse(NameDesk::gives('bn.wiktionary.org', "==বাংলা==\n# আলোচনা\n", ['bn' => 'অরুণ', 'meaning_bn' => 'আলো', 'meaning_en' => 'x']), 'আলো is not আলোচনা');
+        $this->assertTrue(NameDesk::gives('bn.wiktionary.org', "=={{ভাষা|bn}}==\n# [[আলো]]\n", ['bn' => 'অরুণ', 'meaning_bn' => 'আলো', 'meaning_en' => 'x']));
     }
 
     public function test_slots_are_tuesday_thursday_saturday_and_three_wait_at_most(): void

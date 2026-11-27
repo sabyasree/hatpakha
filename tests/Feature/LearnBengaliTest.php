@@ -17,7 +17,7 @@ class LearnBengaliTest extends TestCase
         $this->get('/janun/learn-bengali/kar/')->assertOk()->assertSee('আ-কার')->assertSee('data-barokhori', false)->assertSee('"LearningResource"', false)
             ->assertSee('/janun/learn-bengali/phola/', false)->assertSee('/janun/learn-bengali/kar/print/', false);
         $this->get('/janun/learn-bengali/juktakkhor/')->assertOk()->assertSee('ক্ষ')->assertSee('ক + ষ');
-        $this->get('/janun/learn-bengali/first-words/')->assertOk()->assertSee('বাংলাদেশে পানি')->assertSee('Thank you.');
+        $this->get('/janun/learn-bengali/first-words/')->assertOk()->assertSee('অনেক মুসলমান পরিবারে পানি')->assertSee('Thank you.');
         $this->get('/janun/learn-bengali/kar/print/')->assertOk()->assertSee('noindex, follow', false)->assertSee('trace', false);
         $this->get('/janun/learn-bengali/nothing/')->assertNotFound();
         $this->assertStringEndsWith('/janun/learn-bengali/kar/', (string) $this->get('/janun/learn-bengali/kar')->assertStatus(301)->headers->get('Location'));
@@ -48,6 +48,11 @@ class LearnBengaliTest extends TestCase
         foreach ($all['juktakkhor']['rows'] as [$c, $parts, $w]) {
             $this->assertStringContainsString($c, $w[0], "{$w[0]} has {$c}");
             $this->assertSame(\Normalizer::normalize(str_replace([' + ', ' '], ['্', ''], $parts)), \Normalizer::normalize($c), "{$c} is {$parts}");
+        }
+        foreach ($all['kar']['rows'] as $r) {
+            foreach ($r[5] as $w) {
+                $this->assertNotContains($w[1], ['mom'], 'no example that reads as an English word');
+            }
         }
     }
 }
