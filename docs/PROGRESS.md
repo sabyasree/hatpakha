@@ -457,6 +457,9 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Festival greetings with share pictures drawn on the phone, 16 occasions (D315); baby names by letter, each meaning in two dictionaries (D316).
 - [x] বাংলা শিখি starter: four lessons after the বর্ণমালা, worksheets, no ads (D317). Admin off the game boards (D318).
 - [x] Review round: UX, SEO, strategy/business, research; fixes (D319).
-- [ ] **Owner:** approve the বাংলা শিখি plan (`docs/LEARN-BENGALI.md`): learning mode, units, real A4/Letter PDFs, premium later.
-- [ ] **Owner:** more greeting occasions (বিজয় দিবস first: 16 December), a source for Arabic/Persian names, Golam Mostofa among the poets.
+- [x] বাংলা শিখি phases 1–3: 72 lessons, player, map, parents' page, worksheets as PDF, certificate, desk recordings (D321); English mode and guide (D322).
+- [ ] **Owner:** record the letters and words at /desk → বাংলা শিখি: রেকর্ডিং (start with unit 1).
+- [ ] Stroke-order drawings for the worksheets (designer); premium (phase 4) when the owner decides.
+- [x] 49 greeting occasions; names with Arabic and Persian, four sources (D320).
+- [ ] **Owner:** Golam Mostofa among the poets (out of copyright since 2025)?
 - [ ] After release: read the first three greeting sets and the first two name pages within 48 hours (spot check), then one in five.

@@ -171,3 +171,7 @@ html[data-read-night] [data-reading] .hp-on-page.text-red { color: var(--color-p
 
 /* C3: the progress ring in the desktop rail */
 [data-progress-ring] { transition: stroke-dashoffset .1s linear; }
+
+/* D321: বাংলা শিখি: a wrong answer gives a small shake (none for people who ask for less motion) */
+@keyframes hp-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@media (prefers-reduced-motion: reduce) { [class*="animate-[hp-shake"] { animation: none !important; } }

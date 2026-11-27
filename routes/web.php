@@ -73,9 +73,22 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
-Route::get('/janun/learn-bengali', [\App\Http\Controllers\LearnController::class, 'index']);   // D317
-Route::get('/janun/learn-bengali/{lesson}', [\App\Http\Controllers\LearnController::class, 'show'])->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
-Route::get('/janun/learn-bengali/{lesson}/print', [\App\Http\Controllers\LearnController::class, 'print'])->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
+// D317/D321: বাংলা শিখি. Fixed words first, then the reference pages, then units and lessons.
+Route::prefix('/janun/learn-bengali')->controller(\App\Http\Controllers\LearnController::class)->group(function () {
+    Route::get('/', 'index');
+    Route::get('/start', 'map');
+    Route::get('/parents', 'parents');
+    Route::get('/worksheets', 'worksheets');
+    Route::get('/english', 'english');   // D322
+    Route::get('/certificate', 'certificate');
+    Route::get('/pdf/{file}', 'pdf')->where('file', '[a-z0-9-]{3,60}');
+    Route::get('/charts/{chart}/print', 'chart')->whereIn('chart', ['alphabet', 'kar']);
+    Route::get('/{lesson}', 'show')->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
+    Route::get('/{unit}', 'unit')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
+    Route::get('/{unit}/print', 'teacher')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
+    Route::get('/{unit}/{n}', 'lesson')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']))->whereNumber('n');
+    Route::get('/{unit}/{n}/print', 'sheet')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']))->whereNumber('n');
+});
 Route::get('/janun/names', [\App\Http\Controllers\NameController::class, 'index']);   // D316
 Route::get('/janun/names/{page}', [\App\Http\Controllers\NameController::class, 'show'])->where('page', '(boy|girl)-names-[a-z]{1,3}');
 Route::get('/janun/greetings', [\App\Http\Controllers\GreetingController::class, 'index']);   // D315

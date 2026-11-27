@@ -10,7 +10,8 @@
             'kicker' => 'বাংলা শিখি · পাঠ '.\App\Support\Bn::num((string) (array_search($key, $L::LESSONS, true) + 2)), 'title' => $l['title']])
         <p lang="en" class="mt-1 text-sm text-ink2">{{ $l['en'] }}</p>
         <p class="mt-4 font-serif text-lg leading-relaxed">{{ $l['intro'] }}</p>
-        <div class="mt-4 flex flex-wrap gap-2"><a href="{{ $U('/janun/learn-bengali/'.$key.'/print') }}" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট ছাপুন</a>@if ($key === 'kar')<a href="#barokhori" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বারোখড়ি খেলুন ↓</a>@endif</div>
+        <div class="mt-4 flex flex-wrap gap-2"><a href="{{ \App\Support\LearnCourse::url('start') }}" class="inline-flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">ধাপে ধাপে পাঠ খেলুন</a><a href="{{ \App\Support\LearnCourse::url('worksheets') }}" class="inline-flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">ওয়ার্কশিট (PDF)</a>@if ($key === 'kar')<a href="#barokhori" class="inline-flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বারোখড়ি খেলুন ↓</a>@endif</div>
+        <x-ad-slot spot="list" :height="250" />   {{-- reference page for parents and older learners (owner, 2026-11-27: ads on parent pages only) --}}
 
         @if ($key === 'kar')
             <div class="mt-6 grid gap-3">
@@ -80,9 +81,10 @@
             <section class="mt-6 rounded-2xl bg-sky-tint p-4"><h2 class="font-display text-xl font-extrabold">মনে রাখার কথা</h2>
                 <ul class="mt-2 list-disc space-y-1 pl-5 font-serif">@foreach ($l['notes'] as $n)<li>{{ $n }}</li>@endforeach</ul></section>
         @endif
+        <x-ad-slot spot="list" :height="250" />
         <nav aria-label="পাঠ" class="mt-6 flex flex-wrap justify-between gap-2">
             @if ($prev)<a href="{{ $U('/janun/learn-bengali/'.$prev) }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">← {{ $all[$prev]['title'] }}</a>@else<a href="{{ $U('/bornomala') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">← বর্ণমালা</a>@endif
-            @if ($next)<a href="{{ $U('/janun/learn-bengali/'.$next) }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">{{ $all[$next]['title'] }} →</a>@else<a href="{{ $U('/janun/learn-bengali') }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">সব পাঠ →</a>@endif
+            @if ($next)<a href="{{ $U('/janun/learn-bengali/'.$next) }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">{{ $all[$next]['title'] }} →</a>@else<a href="{{ $U('/janun/learn-bengali') }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">বাংলা শিখি →</a>@endif
         </nav>
     </article>
 </x-layouts.app>

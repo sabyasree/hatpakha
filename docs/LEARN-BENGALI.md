@@ -1,7 +1,8 @@
 # বাংলা শিখি: plan for the free course (and the premium one later)
 
-Status: **plan for the owner's approval** (2026-11-27). Nothing here is built until the owner says so; prices,
-payment and paid features are the owner's decision (CLAUDE.md §3).
+Status: **approved 2026-11-27; phases 1–3 built (D321, D322).** Premium (phase 4) waits for the owner: prices,
+payment and paid features are the owner's decision (CLAUDE.md §3). Sound: human recordings uploaded at the desk.
+Also built: English instructions and an English beginner's guide for parents and learners who do not read Bengali.
 Written with: a learning designer, a market researcher, a business/marketing analyst and the UX review of the first
 version (D317).
 

@@ -42,6 +42,24 @@ jobs:
           php artisan test
           rm .env
 
+      - name: Save the বাংলা শিখি worksheets as PDF (A4 and US Letter)
+        # D321: the web server cannot shape Bengali text in a PDF, so a real browser here prints every worksheet, teacher's
+        # set and chart to public/pdf/learn/ before the upload. If this fails the release still goes out: the download
+        # links then open the print page, from which a family can print or save a PDF themselves.
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          cp .env.example .env && php artisan key:generate
+          touch /tmp/learn.sqlite
+          export DB_CONNECTION=sqlite DB_DATABASE=/tmp/learn.sqlite APP_URL=http://127.0.0.1:8099
+          php artisan migrate --force --no-interaction
+          php artisan hatpakha:learn-pdfs --list > /tmp/learn-jobs.json
+          (php artisan serve --port=8099 > /tmp/learn-serve.log 2>&1 &)
+          sudo apt-get install -y -qq fonts-noto-color-emoji >/dev/null   # the worksheets' pictures are emoji
+          mkdir -p /tmp/pdfjob && cd /tmp/pdfjob && npm init -y >/dev/null && npm install --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps chromium
+          sleep 2 && node "$GITHUB_WORKSPACE/scripts/learn-pdfs.mjs" /tmp/learn-jobs.json http://127.0.0.1:8099 "$GITHUB_WORKSPACE/public/pdf/learn"
+          cd "$GITHUB_WORKSPACE" && rm -f .env
+
       - name: Build production bundle
         run: |
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress

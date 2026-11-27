@@ -199,8 +199,10 @@ class SitemapController extends Controller
                 $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
             }
         }
-        foreach (array_merge([''], array_map(fn ($k) => '/'.$k, \App\Http\Controllers\LearnController::LESSONS)) as $lk) {   // D317: fixed lessons, always there
-            $cal->push(['loc' => Url::to('/janun/learn-bengali'.$lk), 'lastmod' => null, 'image' => null]);
+        $learnMod = \Illuminate\Support\Carbon::createFromTimestamp((int) @filemtime(database_path('content/learn-course.php')));
+        foreach (array_merge(['', '/parents', '/worksheets', '/english'], array_map(fn ($k) => '/'.$k, \App\Http\Controllers\LearnController::LESSONS),
+            array_map(fn ($k) => '/'.$k, array_keys(\App\Support\LearnCourse::units()))) as $lk) {   // D317/D321: the parent pages (lessons and the map are not indexed)
+            $cal->push(['loc' => Url::to('/janun/learn-bengali'.$lk), 'lastmod' => $learnMod, 'image' => null]);
         }
         $live = array_filter(JanunController::live(), fn ($pages, $s) => $pages->isNotEmpty() || ($s === 'puja' && $times !== []), ARRAY_FILTER_USE_BOTH);
         if ($live === []) {

@@ -35,3 +35,4 @@ Thumbs.db
 /public/media
 /studio/node_modules
 /studio/package*.json
+/public/pdf/learn/

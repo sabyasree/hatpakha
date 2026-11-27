@@ -181,6 +181,19 @@ final class JsonLd
             'hasDefinedTerm' => array_map(fn ($n) => ['@type' => 'DefinedTerm', 'name' => $n['bn'], 'alternateName' => $n['roman'], 'description' => $n['meaning_bn'].' / '.$n['meaning_en']], $names)];
     }
 
+    /** D321: বাংলা শিখি as a free course (Google's Course markup: name, description, provider, free, units as parts). */
+    public static function course(array $units): array
+    {
+        $url = Url::to('/janun/learn-bengali');
+
+        return ['@type' => 'Course', '@id' => $url.'#course', 'name' => 'বাংলা শিখি', 'alternateName' => 'Learn to read Bengali',
+            'description' => 'অক্ষর থেকে প্রথম গল্প পর্যন্ত বাংলা পড়া শেখার বিনা পয়সার পাঠ, ছোটদের জন্য। A free course for children learning to read Bengali.',
+            'url' => $url, 'inLanguage' => 'bn', 'isAccessibleForFree' => true, 'educationalLevel' => 'Beginner', 'provider' => self::org(),
+            'offers' => ['@type' => 'Offer', 'price' => 0, 'priceCurrency' => 'USD', 'category' => 'Free'],
+            'hasCourseInstance' => ['@type' => 'CourseInstance', 'courseMode' => 'Online', 'courseWorkload' => 'PT10M'],
+            'hasPart' => array_map(fn ($slug) => ['@type' => 'LearningResource', 'name' => $units[$slug]['title'], 'url' => Url::to('/janun/learn-bengali/'.$slug)], array_keys($units))];
+    }
+
     /** D317: a free lesson for learners of Bengali. */
     public static function learningResource(string $name, string $url, string $teaches, ?string $description = null): array
     {
