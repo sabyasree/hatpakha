@@ -45,6 +45,15 @@ final class GameScores
      */
     public const RULES_FROM = '2026-12-01';
 
+    /**
+     * D329 (owner: "smaller titles like সপ্তাহের সেরা too, so people will get engaged"): a calendar week, Sunday to
+     * Saturday (Kolkata), the same week as the quiz and the লড়াই. It counts the best six days, so one day off costs
+     * nothing (as the streak allows); a title needs three days played.
+     */
+    public const WEEK_DAYS = 6;
+
+    public const WEEK_MIN_DAYS = 3;
+
     /** A month's score is the best this-many days; a year's is the best this-many months. */
     public const MONTH_DAYS = 20;
 
@@ -150,7 +159,7 @@ final class GameScores
     /** The boards are kept for two minutes; a new result (or a name hidden or shown) is seen at once. */
     public static function forget(): void
     {
-        foreach (['today', 'week', 'month', 'year'] as $range) {
+        foreach (['today', 'week', 'sweek', 'month', 'year'] as $range) {
             Cache::forget('hp.board.'.$range.'.'.self::period($range));
         }
     }
@@ -180,7 +189,7 @@ final class GameScores
         $at ??= now('Asia/Kolkata');
 
         return match ($range) {
-            'month' => $at->format('Y-m'), 'year' => $at->format('Y'), default => $at->toDateString(),
+            'month' => $at->format('Y-m'), 'year' => $at->format('Y'), 'sweek' => WeeklyQuiz::week($at), default => $at->toDateString(),
         };
     }
 
@@ -198,6 +207,7 @@ final class GameScores
         [$from, $to] = match ($range) {
             'today' => [$period, $period],
             'week' => [Carbon::parse($period)->subDays(6)->toDateString(), $period],
+            'sweek' => [$period, Carbon::parse($period)->addDays(6)->toDateString()],   // D329: Sunday to Saturday
             'month' => [$period.'-01', Carbon::parse($period.'-01')->endOfMonth()->toDateString()],
             default => [$period.'-01-01', $period.'-12-31'],
         };
@@ -236,7 +246,7 @@ final class GameScores
                     }
                     $points = self::best($scores, self::YEAR_MONTHS);
                 } else {
-                    $points = $range === 'month' ? self::best($totals, self::MONTH_DAYS) : array_sum($totals);
+                    $points = match ($range) { 'month' => self::best($totals, self::MONTH_DAYS), 'sweek' => self::best($totals, self::WEEK_DAYS), default => array_sum($totals) };
                 }
                 $out[] = ['user_id' => (int) $userId, 'name' => (string) ($names[$userId] ?? $users[$userId]->name), 'hidden' => $users[$userId]->board_hidden || $users[$userId]->game_blocked_at || $users[$userId]->role === \App\Enums\Role::Admin->value,   // D245: kept off by the desk counts as hidden; the site's admin never shows (owner, 2026-11-27)
                     'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId]];

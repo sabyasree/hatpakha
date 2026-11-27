@@ -258,7 +258,7 @@ class GameController extends Controller
         $me = $request->user();
         \App\Support\Ads::allow();
         GameTitles::award();   // the 1st of the month writes last month's names down; this is the safety net
-        $boards = ['today' => GameScores::board('today', $me), 'month' => GameScores::board('month', $me), 'year' => GameScores::board('year', $me)];
+        $boards = ['today' => GameScores::board('today', $me), 'sweek' => GameScores::board('sweek', $me), 'month' => GameScores::board('month', $me), 'year' => GameScores::board('year', $me)];
         $ids = array_values(array_unique(array_merge(...array_map(fn ($b) => array_column($b['rows'], 'user_id'), array_values($boards)))));
 
         return view('game-board', ['boards' => $boards, 'me' => $me, 'hall' => GameTitles::hall(), 'marks' => GameTitles::marks(), 'levels' => GameScores::levelNames($ids), 'seo' => new Seo(
@@ -297,12 +297,14 @@ class GameController extends Controller
             $next = ['name' => 'কঠিন ধাঁধা', 'url' => Url::to('/khela/dhadha/kothin')];
         }
         $level = GameScores::level(GameScores::lifetime($user));
+        $week = GameScores::board('sweek', $user, 0)['mine'];   // D329
 
         $quizOpen = (bool) WeeklyQuiz::live();
         $groups = array_values(array_filter($today['groups'], fn ($g) => $g['key'] !== 'quiz' || $g['done'] || $quizOpen));
 
         return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
             'rank' => ['now' => $mine['rank'] ?? 0, 'up' => $new && $before && ($mine['rank'] ?? 0) ? max(0, $before - $mine['rank']) : 0, 'gap' => $mine['gap'] ?? null],
+            'week' => ['rank' => $week['rank'] ?? 0, 'gap' => $week['gap'] ?? null],
             'next' => $next, 'level' => ['name' => $level['name'], 'nextName' => $level['nextName'], 'left' => $level['left'], 'percent' => $level['percent']]]);
     }
 

@@ -81,18 +81,19 @@ class GameTitlesTest extends TestCase
         $this->assertSame(301, $board['mine']['gap'], 'Only the next step up is told');
 
         $this->at('2027-01-01 00:20');
-        $this->assertSame(3, GameTitles::award());
+        GameTitles::award();   // also writes the last full week's (D329)
+        $this->assertSame(3, DB::table('game_titles')->where('kind', 'month')->count());
         $this->assertSame(0, GameTitles::award(), 'Once');
         $titles = DB::table('game_titles')->where('kind', 'month')->orderBy('place')->get();
         $this->assertSame([$a->id, $b->id, $d->id], $titles->pluck('user_id')->all(), 'Nine days are not enough; a hidden name is not on the roll');
         $this->assertSame(['2026-12'], $titles->pluck('period')->unique()->values()->all());
         $this->assertSame(['months' => ['2026-12'], 'place' => 1], ['months' => GameTitles::of($a)['months'], 'place' => 1]);
-        $this->assertSame(['m'], GameTitles::marks()[$a->id]);
+        $this->assertSame(['m', 'w'], GameTitles::marks()[$a->id], 'Also last week\'s first (D329)');
         $this->assertArrayNotHasKey($b->id, GameTitles::marks(), 'The mark beside a name is for first place');
 
         $this->get('/khela/board/')->assertOk()->assertSee('ডিসেম্বর ২০২৬-এর সেরা তিন')->assertSee('Asha')->assertSee('সম্মান-ফলক')->assertSee('মাসের সেরা');
         $this->actingAs($a)->get('/account/profile/')->assertOk()->assertSee('খেতাব')->assertSee('মাসের সেরা');
-        $this->actingAs($c)->get('/account/profile/')->assertOk()->assertSee('মাসের সেরা তিন জন খেতাব পান');
+        $this->actingAs($c)->get('/account/profile/')->assertOk()->assertSee('প্রতি সপ্তাহে আর প্রতি মাসে সেরা তিন জন খেতাব পান');
     }
 
     /** D245 (owner: winners should be told; and "a desk button to remove a suspicious score"). */
@@ -122,7 +123,8 @@ class GameTitlesTest extends TestCase
         $this->actingAs($a)->get('/khela/board/')->assertOk()->assertDontSee('Too Fast')->assertDontSee('/desk/users/', false);
 
         $this->at('2027-01-01 00:20');
-        $this->assertSame(3, GameTitles::award());
+        GameTitles::award();   // also writes the last full week's (D329)
+        $this->assertSame(3, DB::table('game_titles')->where('kind', 'month')->count());
         $this->assertSame([$a->id, $b->id, $quiet->id], DB::table('game_titles')->orderBy('place')->pluck('user_id')->all(), 'No title for a player kept off');
         \Illuminate\Support\Facades\Notification::assertSentTo($a, \App\Notifications\TemplateMail::class, function ($n) use ($a) {
             $mail = $n->toMail($a);

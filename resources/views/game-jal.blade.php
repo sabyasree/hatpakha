@@ -81,7 +81,7 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @unless ($locked)
-        <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=2" defer></script>
         <script src="{{ asset('js/hp-jal.js') }}?v=1" defer></script>
     @endunless
 </x-layouts.app>

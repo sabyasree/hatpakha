@@ -17,6 +17,9 @@ window.hpAfter = function (root, j) {
     const r = j.rank || {};
     $('rank').textContent = !r.now ? '' : (r.up > 0 ? '⬆ ' + bn(r.up) + ' জনকে পেরিয়ে এ মাসে এখন ' + bn(r.now) + ' নম্বরে'
         : (r.now === 1 ? 'এ মাসে আপনিই সবার আগে' : 'এ মাসে আপনি ' + bn(r.now) + ' নম্বরে' + (r.gap ? '। আর ' + bn(r.gap) + ' পয়েন্ট পেলে ' + bn(r.now - 1) + ' নম্বরে' : '')));
+    // D329: the week's place, the nearest title within reach
+    const w = j.week || {};
+    if (w.rank) $('rank').textContent = ($('rank').textContent ? $('rank').textContent + ' ' : '') + (w.rank <= 3 ? 'এ সপ্তাহে আপনি সেরা তিনে (' + bn(w.rank) + ' নম্বর)!' : 'এ সপ্তাহে ' + bn(w.rank) + ' নম্বরে' + (w.gap ? '; আর ' + bn(w.gap) + ' পয়েন্টে ' + bn(w.rank - 1) + ' নম্বর।' : '।'));
     const next = $('next');
     if (j.next) { next.hidden = false; next.href = j.next.url; next.textContent = 'এবার ' + j.next.name + ' খেলুন →'; }
     if (j.level && j.level.nextName) {

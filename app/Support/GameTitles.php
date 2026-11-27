@@ -19,6 +19,9 @@ final class GameTitles
     /** The first month that is judged: the new points start with it. */
     public const FIRST_MONTH = '2026-12';
 
+    /** D329: the first week judged for সপ্তাহের সেরা (Sunday 29 November 2026; its winners are written on 6 December). */
+    public const FIRST_WEEK = '2026-11-29';
+
     public const PLACES = [1 => 'প্রথম', 2 => 'দ্বিতীয়', 3 => 'তৃতীয়'];
 
     public const MULTI = [2 => 'শব্দ-সাধক', 3 => 'হাতপাখা-রত্ন'];
@@ -28,6 +31,11 @@ final class GameTitles
     {
         $now = ($now ?? now('Asia/Kolkata'))->copy();
         $made = 0;
+        $week = Carbon::parse(WeeklyQuiz::week($now), 'Asia/Kolkata')->subDays(7)->toDateString();   // D329: the week that has just ended
+        if ($week >= self::FIRST_WEEK && ! Cache::get('hp.titles.done.'.$week) && ! DB::table('game_titles')->where('kind', 'week')->where('period', $week)->exists()) {
+            $made += self::write('week', $week, array_filter(GameScores::ranking('sweek', $week), fn ($r) => $r['days'] >= GameScores::WEEK_MIN_DAYS), 'days');
+            Cache::put('hp.titles.done.'.$week, true, 86400 * 10);
+        }
         $month = $now->copy()->startOfMonth()->subMonth()->format('Y-m');
         if ($month >= self::FIRST_MONTH && ! Cache::get('hp.titles.done.'.$month) && ! DB::table('game_titles')->where('kind', 'month')->where('period', $month)->exists()) {
             $made += self::write('month', $month, array_filter(GameScores::ranking('month', $month), fn ($r) => $r['days'] >= GameScores::MONTH_MIN_DAYS), 'days');
@@ -77,13 +85,15 @@ final class GameTitles
         if (! $user) {
             return;
         }
-        $title = $place === 1 ? ($kind === 'year' ? 'বছরের সেরা' : 'মাসের সেরা') : ($kind === 'year' ? 'বছরের সেরা তিনে' : 'মাসের সেরা তিনে');
+        $name = ['year' => 'বছরের সেরা', 'month' => 'মাসের সেরা', 'week' => 'সপ্তাহের সেরা'][$kind];
+        $title = $place === 1 ? $name : $name.' তিনে';
         if ($kind === 'year' && $place === 1 && ($multi = self::multiName(DB::table('game_titles')->where('user_id', $userId)->where('kind', 'year')->where('place', 1)->count()))) {
             $title .= ', '.$multi;
         }
         $when = self::label($kind, $period);
         $url = Url::to('/khela/board').'#hall';
-        if (filled($user->email) && ! $user->mail_opt_out && $user->hasVerifiedEmail()) {
+        // D329: a week's title is told on the phone and on the site only; a letter every week would be too many
+        if ($kind !== 'week' && filled($user->email) && ! $user->mail_opt_out && $user->hasVerifiedEmail()) {
             $user->notify(new \App\Notifications\TemplateMail('game_title', ['{খেতাব}' => $title, '{সময়}' => $when, '{স্থান}' => self::PLACES[$place], '{পয়েন্ট}' => Bn::num(number_format($points))], $url));
         }
         foreach (\App\Models\PushSubscription::where('user_id', $userId)->get() as $sub) {
@@ -92,9 +102,16 @@ final class GameTitles
         \App\Models\AuditLog::record('game.title_told', $user, ['kind' => $kind, 'period' => $period, 'place' => $place]);
     }
 
-    /** "ডিসেম্বর ২০২৬" or "২০২৭" */
+    /** "ডিসেম্বর ২০২৬", "২০২৭", or a week: "২৯ নভেম্বর – ৫ ডিসেম্বর" */
     public static function label(string $kind, string $period): string
     {
+        if ($kind === 'week') {
+            $a = Carbon::parse($period, 'Asia/Kolkata');
+            $b = $a->copy()->addDays(6);
+
+            return Bn::num((string) $a->day).($a->month === $b->month ? '' : ' '.Bn::MONTHS[$a->month - 1]).' – '.Bn::num((string) $b->day).' '.Bn::MONTHS[$b->month - 1];
+        }
+
         return $kind === 'month' ? Feelings::monthLabel($period) : Bn::year((int) $period);
     }
 
@@ -110,9 +127,9 @@ final class GameTitles
     public static function of(User $u): array
     {
         $rows = DB::table('game_titles')->where('user_id', $u->id)->orderBy('period')->get(['kind', 'period', 'place']);
-        $out = ['any' => $rows->isNotEmpty(), 'multi' => null, 'years' => [], 'yearPlaces' => [], 'months' => [], 'monthPlaces' => []];
+        $out = ['any' => $rows->isNotEmpty(), 'multi' => null, 'years' => [], 'yearPlaces' => [], 'months' => [], 'monthPlaces' => [], 'weeks' => [], 'weekPlaces' => []];
         foreach ($rows as $r) {
-            $k = $r->kind === 'year' ? 'year' : 'month';
+            $k = in_array($r->kind, ['year', 'week'], true) ? $r->kind : 'month';
             $out[$k.'Places'][(int) $r->place] = ($out[$k.'Places'][(int) $r->place] ?? 0) + 1;
             if ((int) $r->place === 1) {
                 $out[$k.'s'][] = $r->period;
@@ -131,7 +148,7 @@ final class GameTitles
     {
         return Cache::remember('hp.titles.marks', 600, function () {
             $by = [];
-            foreach (DB::table('game_titles')->where('place', 1)->get(['user_id', 'kind']) as $r) {
+            foreach (DB::table('game_titles')->where('place', 1)->where('kind', '!=', 'week')->get(['user_id', 'kind']) as $r) {
                 $by[$r->user_id][$r->kind] = ($by[$r->user_id][$r->kind] ?? 0) + 1;
             }
             $out = [];
@@ -146,6 +163,12 @@ final class GameTitles
                     $marks[] = 'm';
                 }
                 $out[(int) $userId] = $marks;
+            }
+            // D329: last week's first carries a small mark for the whole of this week (it passes on every Sunday)
+            $champ = DB::table('game_titles')->where('kind', 'week')->where('place', 1)
+                ->where('period', Carbon::parse(WeeklyQuiz::week(), 'Asia/Kolkata')->subDays(7)->toDateString())->value('user_id');
+            if ($champ) {
+                $out[(int) $champ] = array_slice(array_merge($out[(int) $champ] ?? [], ['w']), 0, 2);
             }
 
             return $out;
@@ -166,9 +189,13 @@ final class GameTitles
             'name' => (string) ($names[$r->user_id] ?? $r->name), 'points' => (int) $r->points, 'user_id' => (int) $r->user_id])->values()->all();
         $years = $list('year');
         $months = $list('month');
+        $weeks = $list('week');
         $last = $months[0]['period'] ?? null;
+        $lastWeek = $weeks[0]['period'] ?? null;
+        $recent = array_slice(array_values(array_unique(array_column($weeks, 'period'))), 0, 8);   // the roll keeps two months of weeks
 
-        return ['year' => collect($years)->firstWhere('place', 1), 'lastMonth' => array_values(array_filter($months, fn ($m) => $m['period'] === $last)), 'years' => $years, 'months' => $months];
+        return ['year' => collect($years)->firstWhere('place', 1), 'lastMonth' => array_values(array_filter($months, fn ($m) => $m['period'] === $last)), 'years' => $years, 'months' => $months,
+            'lastWeek' => array_values(array_filter($weeks, fn ($w) => $w['period'] === $lastWeek)), 'weeks' => array_values(array_filter($weeks, fn ($w) => in_array($w['period'], $recent, true)))];
     }
 
     /** A scalloped ring round (cx, cy): $n petals between radius $r and $o. */
@@ -206,23 +233,25 @@ final class GameTitles
                 $a = M_PI * (1 + $k / 8);
                 $s .= '<path d="M60 70L'.round(60 + 70 * cos($a), 1).' '.round(70 + 70 * sin($a), 1).'" stroke="'.$SK.'" stroke-width="3"/>';
             }
+        } elseif ($kind === 'week') {   // D329: the smallest: a rosette on one short sky ribbon, six petals
+            $s .= '<path d="M52 96V132L60 124L68 132V96Z" fill="'.$SK.'" stroke="'.$N.'" stroke-width="2.5" stroke-linejoin="round"/>';
         } else {
             foreach ($kind === 'month' ? [[52, 68]] : [[34, 54], [66, 86]] as [$a, $b]) {
                 $s .= '<path d="M'.$a.' 96V146L'.(($a + $b) / 2).' 136L'.$b.' 146V96Z" fill="'.($kind === 'month' ? $PE : $R).'" stroke="'.$N.'" stroke-width="2.5" stroke-linejoin="round"/>';   // peach, so it shows on a red card too
             }
         }
-        if ($kind !== 'month') {
+        if ($kind !== 'month' && $kind !== 'week') {
             $s .= '<path d="M38 24L44 4L54 16L60 0L66 16L76 4L82 24Z" fill="'.$PE.'" stroke="'.$N.'" stroke-width="2.5" stroke-linejoin="round"/>';
         }
         $cy = $kind === 'multi' ? 72 : 66;
-        $rr = $kind === 'month' ? 40 : 42;
-        $s .= '<path d="'.self::scallop(60, $cy, $rr, $rr + 8, $kind === 'month' ? 8 : 12).'" fill="'.$PE.'" stroke="'.$N.'" stroke-width="3" stroke-linejoin="round"/>';
-        if ($kind !== 'month') {
+        $rr = ['month' => 40, 'week' => 36][$kind] ?? 42;
+        $s .= '<path d="'.self::scallop(60, $cy, $rr, $rr + 8, ['month' => 8, 'week' => 6][$kind] ?? 12).'" fill="'.$PE.'" stroke="'.$N.'" stroke-width="3" stroke-linejoin="round"/>';
+        if ($kind !== 'month' && $kind !== 'week') {
             $s .= '<circle cx="60" cy="'.$cy.'" r="'.($rr - 3).'" fill="none" stroke="'.$N.'" stroke-width="2"/>';
         }
         $s .= '<circle cx="60" cy="'.$cy.'" r="'.($rr - 8).'" fill="'.$face.'" stroke="'.$N.'" stroke-width="2.5"/>';
         // the logo's fan
-        [$fy, $fr] = $kind === 'month' ? [$cy + 6, 24] : [$cy - 2, 18];
+        [$fy, $fr] = in_array($kind, ['month', 'week'], true) ? [$cy + 6, $kind === 'week' ? 20 : 24] : [$cy - 2, 18];
         if ($label === '') {
             [$fy, $fr] = [$cy + 10, 26];
         }
@@ -232,7 +261,7 @@ final class GameTitles
         }
         $s .= '<circle cx="60" cy="'.$fy.'" r="'.round($fr * .3, 1).'" fill="'.$CR.'" stroke="'.$N.'" stroke-width="1.5"/>';
         if ($label !== '') {
-            $s .= '<text x="60" y="'.($cy + ($kind === 'month' ? 26 : 24)).'" text-anchor="middle" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="'.($kind === 'month' ? 13 : 17).'" fill="'.$ink.'">'.e($label).'</text>';
+            $s .= '<text x="60" y="'.($cy + (in_array($kind, ['month', 'week'], true) ? 24 : 24)).'" text-anchor="middle" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="'.(in_array($kind, ['month', 'week'], true) ? 13 : 17).'" fill="'.$ink.'">'.e($label).'</text>';
         }
         if ($count > 1) {
             $s .= '<circle cx="98" cy="'.($cy + 36).'" r="15" fill="'.$CR.'" stroke="'.$N.'" stroke-width="2.5"/><text x="98" y="'.($cy + 42).'" text-anchor="middle" font-family="\'Anek Bangla\',\'Noto Sans Bengali\',sans-serif" font-weight="800" font-size="16" fill="'.$N.'">×'.Bn::num((string) $count).'</text>';
@@ -248,7 +277,9 @@ final class GameTitles
     public static function mark(string $kind, int $size = 24): string
     {
         [$N, $R, $PE, $CR] = ['#13212C', '#CB1B32', '#EFC08D', '#FFFBF4'];
-        if ($kind === 'yy') {
+        if ($kind === 'w') {   // D329: this week's holder of last week's title: a small sky rosette, no ribbon
+            $s = '<path d="'.self::scallop(12, 12, 7.4, 10, 6).'" fill="#2DAAE2" stroke="'.$N.'" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="'.$CR.'"/>';
+        } elseif ($kind === 'yy') {
             $s = '<path d="M3 2H21V13Q21 19.5 12 23Q3 19.5 3 13Z" fill="'.$N.'"/><path d="M5.6 4.6H18.4V12.8Q18.4 17.6 12 20.2Q5.6 17.6 5.6 12.8Z" fill="'.$CR.'"/><circle cx="12" cy="11.4" r="4" fill="'.$R.'" stroke="'.$N.'" stroke-width="1.2"/>';
         } else {
             $cy = $kind === 'y' ? 12.5 : 9.5;
@@ -256,7 +287,7 @@ final class GameTitles
                 .($kind === 'y' ? '<path d="M6.5 6.4L7.6 1L10.4 4.2L12 .4L13.6 4.2L16.4 1L17.5 6.4Z" fill="'.$PE.'" stroke="'.$N.'" stroke-width="1.2" stroke-linejoin="round"/>' : '')
                 .'<path d="'.self::scallop(12, $cy, 6.6, 8.8, 8).'" fill="'.$R.'" stroke="'.$N.'" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12" cy="'.$cy.'" r="2.3" fill="'.$CR.'"/>';
         }
-        $title = ['yy' => 'একাধিক বছরের সেরা', 'y' => 'বছরের সেরা', 'm' => 'মাসের সেরা'][$kind];
+        $title = ['yy' => 'একাধিক বছরের সেরা', 'y' => 'বছরের সেরা', 'm' => 'মাসের সেরা', 'w' => 'গত সপ্তাহের সেরা'][$kind];
 
         return '<svg xmlns="http://www.w3.org/2000/svg" width="'.$size.'" height="'.$size.'" viewBox="0 0 24 24" role="img" aria-label="'.$title.'" class="flex-none"><title>'.$title.'</title>'.$s.'</svg>';
     }

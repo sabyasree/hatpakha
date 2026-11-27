@@ -462,6 +462,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Full joined-letter list (171), worksheet pictures, course share card (D324); stroke order as drafts with a desk page (D325); review leftovers (D326).
 - [x] Staging deploy fix: MySQL treated ড় as ড and stopped the stroke-order migration; Bengali letter columns now compare exactly (D327).
 - [x] Four more games (বানান-যাচাই, এক শব্দে প্রকাশ, অক্ষরজাল, weekly পত্রিকা-কুইজ) and two ways to play with others (সাপ্তাহিক লড়াই, পাড়ার দল); points unchanged, a day stays 300 (D328).
+- [x] সপ্তাহের সেরা: a title every week, Sunday to Saturday, best six days, three days to qualify; told by a phone notice (D329).
+- [ ] Next, from the games research (2026-11-28, owner to choose): a softer streak, the story behind each answer, stronger share text, a friends' circle with a neighbours-only board, festival weeks.
 - [ ] **Owner:** every Saturday, read and approve next week's quiz at /desk → খেলা: কুইজ ও দল (red badge while it waits). Without approval there is no quiz that week.
 - [ ] A native Bengali copy editor reads database/content/spelling.php, one-word.php and akshorjal-words.php (players' reports fix the rest, D179).
 - [ ] **Owner:** check and approve the stroke-order drafts at /desk → বাংলা শিখি: লেখার ক্রম (ideally with someone who teaches writing).

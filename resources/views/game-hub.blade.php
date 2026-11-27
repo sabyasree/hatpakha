@@ -22,6 +22,8 @@
     $quizDone = $me && $quiz && \App\Support\WeeklyQuiz::played($me, $day);
     $groups = collect($today['groups'] ?? [])->keyBy('key');
     $lead = $month['rows'][0] ?? null;
+    $wk = GameScores::board('sweek', $me, 1);   // D329
+    $wlead = $wk['rows'][0] ?? null;
     $mine = $month['mine'] ?? null;
 @endphp
 <x-layouts.app :seo="$seo">
@@ -101,6 +103,10 @@
             @else
                 <p class="font-hand text-2xl text-red">এ মাসে এখনও কেউ খেলেননি</p>
                 <p class="text-lg">প্রথম নামটা আপনার হোক।</p>
+            @endif
+            @if ($wlead)
+                <p class="mt-3 border-t-2 border-dashed border-navy pt-3 text-lg"><b>এ সপ্তাহে এগিয়ে:</b> {{ $wlead['name'] }} · {{ Bn::num(number_format($wlead['points'])) }}@if (($wk['mine']['rank'] ?? 0) > 1)। আপনি {{ Bn::num((string) $wk['mine']['rank']) }} নম্বরে@endif</p>
+                <p class="text-sm text-ink2">প্রতি রবিবার সপ্তাহের সেরা তিন জন খেতাব পান।</p>
             @endif
             <a href="{{ Url::to('/khela/board') }}" class="mt-3 flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">কারা এগিয়ে, পুরো তালিকা দেখুন</a>
         </div>
