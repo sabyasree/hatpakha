@@ -121,3 +121,8 @@ Schedule::call(function () {   // D271: one failing job never stops the others
         rescue(fn () => $job(), null, true);
     }
 })->name('comments told to writers')->everyTenMinutes()->withoutOverlapping(10);   // D217, D252: comments, replies, a piece going live
+
+// D328: Saturday morning the AI drafts next week's পত্রিকা-কুইজ from the week's pieces (tried again in the evening if
+// it failed); it waits at /desk → খেলা: কুইজ ও দল for approval. Nothing reaches readers before that.
+Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz draft')->weeklyOn(6, '10:15')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz draft again')->weeklyOn(6, '19:15')->timezone('Asia/Kolkata')->withoutOverlapping(30);

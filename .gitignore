@@ -36,3 +36,6 @@ Thumbs.db
 /studio/node_modules
 /studio/package*.json
 /public/pdf/learn/
+
+# screenshots made for the owner during work (not part of the site)
+/shots/

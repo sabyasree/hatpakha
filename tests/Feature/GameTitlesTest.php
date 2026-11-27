@@ -211,7 +211,7 @@ class GameTitlesTest extends TestCase
     {
         $this->at('2026-12-05 10:00');
         $this->get('/khela/')->assertOk()->assertSee('js/hp-khela.js', false);
-        $this->get('/khela/dhadha/')->assertOk()->assertSee('js/hp-khela.js', false)->assertSee('সহজ ধাঁধা')->assertSee('কঠিন ধাঁধা')->assertSee('৪০ পয়েন্ট')->assertSee('অ্যাকাউন্ট ছাড়া পয়েন্ট ওঠে না');
+        $this->get('/khela/dhadha/')->assertOk()->assertSee('js/hp-khela.js', false)->assertSee('সহজ ধাঁধা')->assertSee('কঠিন ধাঁধা')->assertSee('৪০ পয়েন্ট')->assertSee('পয়েন্ট জমিয়ে রাখতে চান?');
         $hard = WordGame::riddle(null, 'hard')['words'][0];
         $this->get('/khela/dhadha/kothin/')->assertOk()->assertDontSee('js/hp-khela.js', false)->assertDontSee($hard['clue'])->assertSee('অ্যাকাউন্ট খুলুন');
         $this->get('/khela/probad/')->assertOk()->assertDontSee('js/hp-probad.js', false)->assertSee('অ্যাকাউন্ট খুলুন');
