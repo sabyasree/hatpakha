@@ -8,6 +8,7 @@
             @foreach (\App\Models\HolidayList::where('year', '>=', now()->year)->get()->filter->isLive()->sortBy('year')->take(2) as $hl)
                 <a href="{{ $hl->url() }}" class="block rounded-2xl border-2 border-navy bg-white p-4"><span class="block text-sm font-bold">সরকারি ছুটি {{ \App\Support\Bn::num((string) $hl->year) }}</span><span class="mt-1 block font-display text-xl font-extrabold">{{ $hl->name() }}</span></a>   {{-- D314 --}}
             @endforeach
+            @if ($gs = \App\Http\Controllers\GreetingController::live()->first())<a href="{{ \App\Support\Url::to('/janun/greetings') }}" class="block rounded-2xl bg-red p-4 text-white"><span class="block text-sm font-bold">শুভেচ্ছা বার্তা, ছবিসহ</span><span class="mt-1 block font-display text-xl font-extrabold">{{ $gs->name() }}</span></a>@endif   {{-- D315 --}}
             @if (\App\Support\FestivalPlan::pageLive())<a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="block rounded-2xl border-2 border-sky-deep bg-sky-tint p-4"><span class="block text-sm font-bold">পুজোর তিথি ও সময়</span><span class="mt-1 block font-display text-xl font-extrabold">আপনার দেশের ঘড়িতে</span></a>@endif
         </div>
         @foreach (\App\Support\JanunPlan::SECTIONS as $key => [$name, $kicker, $intro])

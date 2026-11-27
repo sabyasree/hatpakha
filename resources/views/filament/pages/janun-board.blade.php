@@ -77,6 +77,16 @@
         @endforelse
     </div>
 
+    <h2 class="text-lg font-bold">{{ __('শুভেচ্ছা বার্তা') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($greetings as $g)
+            <div class="hp-j-box"><b>{{ $g->name() }}</b>: {{ match ($g->status) { 'live' => __('প্রকাশিত'), 'held' => __('আটকে আছে'), 'drafted' => __('যাচাই চলছে'), default => __('লেখা হয়নি') } }}
+                @if ($g->check)<p class="hp-j-why">{{ $n($g->check['lines'] ?? 0) }} {{ __('বার্তা') }} · {{ __('বাদ গেছে') }} {{ $n(count($g->check['removed'] ?? [])) }}@if (($g->check['poet'] ?? '') === 'matched') · {{ __('কবির পঙ্‌ক্তি মিলেছে') }}@endif @if ($g->isLive()) · <a class="hp-j-link" href="{{ $g->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p>@endif</div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও লেখা হয়নি') }}</p>
+        @endforelse
+    </div>
+
     <h2 class="text-lg font-bold">{{ __('আজ থেকে তিথি') }}</h2>
     <div class="hp-j-box">
         <p>{{ $n($tithi['ok']) }} {{ __('দিনের তিথি মিলেছে') }}@if ($tithi['last']) ({{ __('শেষ দিন') }} {{ \Carbon\Carbon::parse($tithi['last'])->format('j M Y') }})@endif</p>

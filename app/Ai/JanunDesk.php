@@ -38,6 +38,7 @@ final class JanunDesk
         FestivalDesk::run($now);   // D302: tithi times for the time-zone page, one search an hour at most
         BanglaCalendarDesk::run($now);   // D303: West Bengal month starts, checked against published calendars
         HolidayDesk::run($now);   // D314: government holiday lists, once their notice is out
+        GreetingDesk::run($now);   // D315: festival greetings, one set a day, shown once checked
         if ($p = JanunPage::where('status', 'drafted')->orderBy('id')->first()) {
             self::check($p, $now);
         } elseif (Setting::get('janun.drafted_hour') !== $now->format('Y-m-d H')) {

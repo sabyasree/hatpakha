@@ -66,6 +66,7 @@
         @endif
         <x-ad-slot spot="list" :height="250" />
         <div class="mt-4 flex flex-wrap gap-x-4">
+            @foreach (\App\Http\Controllers\GreetingController::live()->filter(fn ($g) => (\App\Support\GreetingPlan::OCCASIONS[$g->slug][2] ?? null) === $key) as $g)<a href="{{ $g->url() }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">{{ $g->name() }} বার্তা →</a>@endforeach   {{-- D315 --}}
             <a href="{{ $U('/janun/puja/'.$year) }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">পুজো-পার্বণ {{ $N($year) }}: সব তারিখ →</a>
             <a href="{{ \App\Support\BanglaDate::url() }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">বাংলা ক্যালেন্ডার →</a>
         </div>

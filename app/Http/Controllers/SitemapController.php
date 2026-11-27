@@ -159,6 +159,13 @@ class SitemapController extends Controller
         foreach ($fest as [$k, $y]) {
             $times[] = ['loc' => \App\Support\FestivalPlan::pageUrl($k, $y), 'lastmod' => \App\Models\FestivalTime::where(['festival' => $k, 'cycle' => $y, 'status' => 'verified'])->max('updated_at'), 'image' => null];
         }
+        $greet = \App\Http\Controllers\GreetingController::live();   // D315
+        foreach ($greet as $gs) {
+            $times[] = ['loc' => $gs->url(), 'lastmod' => $gs->checked_at, 'image' => null];
+        }
+        if ($greet->isNotEmpty()) {
+            $times[] = ['loc' => Url::to('/janun/greetings'), 'lastmod' => $greet->max('checked_at'), 'image' => null];
+        }
         $liveLists = \App\Models\HolidayList::all()->filter->isLive();   // D314
         foreach ($liveLists as $hl) {
             $times[] = ['loc' => $hl->url(), 'lastmod' => $hl->checked_at, 'image' => null];

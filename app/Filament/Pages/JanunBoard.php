@@ -94,6 +94,8 @@ class JanunBoard extends Page
         $holidays = \App\Models\HolidayList::orderBy('year')->orderBy('country')->get();
         $tithi = \App\Models\TithiDay::where('day', '>=', now('Asia/Kolkata')->toDateString())->get();
 
-        return ['holidays' => $holidays, 'tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
+        $greetings = \App\Models\GreetingSet::all()->sortBy(fn ($g) => array_search($g->slug, array_keys(\App\Support\GreetingPlan::OCCASIONS), true))->values();   // D315
+
+        return ['greetings' => $greetings, 'holidays' => $holidays, 'tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
     }
 }
