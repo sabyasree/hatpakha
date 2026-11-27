@@ -463,8 +463,8 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Staging deploy fix: MySQL treated ড় as ড and stopped the stroke-order migration; Bengali letter columns now compare exactly (D327).
 - [x] Four more games (বানান-যাচাই, এক শব্দে প্রকাশ, অক্ষরজাল, weekly পত্রিকা-কুইজ) and two ways to play with others (সাপ্তাহিক লড়াই, পাড়ার দল); points unchanged, a day stays 300 (D328).
 - [x] সপ্তাহের সেরা: a title every week, Sunday to Saturday, best six days, three days to qualify; told by a phone notice (D329).
-- [ ] Next, from the games research (2026-11-28, owner to choose): a softer streak, the story behind each answer, stronger share text, a friends' circle with a neighbours-only board, festival weeks.
-- [ ] **Owner:** every Saturday, read and approve next week's quiz at /desk → খেলা: কুইজ ও দল (red badge while it waits). Without approval there is no quiz that week.
+- [x] Games run themselves and were reworked with a UX panel and game designers: automatic checked quiz, no admin, today's three, a finish line, the week's dots, a line from the magazine after each answer, অক্ষরজাল learns words, লড়াই and দল improvements (D330).
+- [ ] Before late February 2027: grow বানান-যাচাই and এক শব্দে প্রকাশ to about 1,100 entries each (they repeat after ~85 days); festival weeks (পৌষ পার্বণ, ২১শে ফেব্রুয়ারি, পঁচিশে বৈশাখ).
 - [ ] A native Bengali copy editor reads database/content/spelling.php, one-word.php and akshorjal-words.php (players' reports fix the rest, D179).
 - [ ] **Owner:** check and approve the stroke-order drafts at /desk → বাংলা শিখি: লেখার ক্রম (ideally with someone who teaches writing).
 - [ ] Premium (phase 4) when the owner decides price and payment.

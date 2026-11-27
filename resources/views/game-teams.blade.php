@@ -56,6 +56,22 @@
             </div>
             @endif
 
+            {{-- D330 (game designers): the family's own scoreboard for today, to send to the group --}}
+            @php
+                $named = collect($members)->filter(fn ($m) => $m['name'] !== null);
+                $todayText = 'আমাদের দল "'.$team->name.'" আজ: '.$named->map(fn ($m) => $m['name'].' '.($m['today'] !== null ? Bn::num((string) $m['today']).' ✓' : 'বাকি…'))->implode(', ')."\n".$teamUrl;
+            @endphp
+            <h2 class="mt-6 font-display text-2xl font-extrabold">আজ দলে</h2>
+            <ul class="mt-2 grid gap-1.5 rounded-2xl border-2 border-navy bg-white p-3">
+                @foreach ($members as $m)
+                    <li class="flex items-center justify-between gap-3 {{ $m['me'] ? 'font-extrabold' : '' }}">
+                        <span class="min-w-0 truncate">{{ $m['name'] ?? 'নাম না-দেখানো খেলোয়াড়' }}@if ($m['me']) · আপনি@endif</span>
+                        <span class="flex-none {{ $m['today'] !== null ? 'font-bold text-navy' : 'text-ink2' }}">{{ $m['today'] !== null ? Bn::num((string) $m['today']).' ✓' : 'এখনও খেলেননি' }}</span>
+                    </li>
+                @endforeach
+            </ul>
+            <a href="https://wa.me/?text={{ rawurlencode($todayText) }}" target="_blank" rel="noopener" class="mt-2 flex h-12 items-center justify-center rounded-full bg-navy px-5 font-bold text-white">দলে আজকের ফল পাঠান</a>
+
             <h2 class="mt-6 font-display text-2xl font-extrabold">দলের খেলোয়াড়, এ মাসে</h2>
             <ol class="mt-2 divide-y divide-rule rounded-2xl border-2 border-navy bg-white px-3">
                 @forelse ($members as $i => $m)

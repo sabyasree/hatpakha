@@ -71,6 +71,10 @@
         </div>
 
         {{-- the four lists; without the script all four simply show, one under the other --}}
+        {{-- D330: a title needs a checked e-mail; say so to a player who would otherwise be passed over without knowing --}}
+        @if ($me && ! $me->hasVerifiedEmail() && ($boards['sweek']['mine']['rank'] ?? 0) >= 1 && $boards['sweek']['mine']['rank'] <= 3)
+            <p class="mt-3 rounded-2xl border-2 border-red bg-white p-3 font-bold">আপনি এ সপ্তাহের সেরা তিনে! খেতাব পেতে <a href="{{ Url::to('/email/verify') }}" class="text-sky-night underline">ই-মেল যাচাই করুন</a>।</p>
+        @endif
         <div class="mt-5 grid grid-cols-[1fr_1.25fr_1.1fr_1.1fr_1.6fr] overflow-hidden rounded-2xl border-2 border-navy bg-white text-center font-bold" role="tablist" aria-label="কোন তালিকা" data-board-tabs hidden>
             @foreach ($tabs as $key => $label)
                 <button type="button" role="tab" data-tab="{{ $key }}" aria-selected="{{ $key === 'sweek' ? 'true' : 'false' }}" class="min-h-12 px-0.5 text-[14px] leading-tight {{ $loop->first ? '' : 'border-l-2 border-navy' }} aria-selected:bg-navy aria-selected:text-white">{{ $label }}</button>

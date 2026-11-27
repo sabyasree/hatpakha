@@ -63,7 +63,8 @@
         if (store.found.includes(w)) { say(w + ': আগেই পেয়েছেন'); return; }
         if (!words.has(w)) { say(w + ': আমাদের তালিকায় এখনও নেই'); return; }
         store.found.push(w); save(); foundList();
-        say('✓ ' + w + '  +' + bn(pointsFor(n)), true);
+        say((n >= 4 ? 'দারুণ! ' : '✓ ') + w + '  +' + bn(pointsFor(n)), true);
+        if (n >= 4) { const m = $('msg'); m.classList.remove('hp-pop'); void m.offsetWidth; m.classList.add('hp-pop'); }   // D330: a small bounce for a long word
     };
     const tileAt = (x, y) => {
         const el = document.elementFromPoint(x, y);

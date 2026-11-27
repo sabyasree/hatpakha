@@ -14,9 +14,13 @@ final class Proverbs
     public const PER_DAY = 4;
 
     /** @return list<array{0: string, 1: string, 2: string}> [proverb, the word left out, meaning] */
-    public static function all(): array
+    public static function all(?Carbon $day = null): array
     {
-        return WordGame::file('proverbs');
+        // D330: a proverb readers reported and the AI took out is skipped (null keeps the days after it in place)
+        $fixes = WordGame::fixes('probad', $day);
+        $list = WordGame::file('proverbs');
+
+        return $fixes ? array_map(fn ($row) => isset($fixes[$row[0]]) ? null : $row, $list) : $list;
     }
 
     /**
@@ -26,8 +30,8 @@ final class Proverbs
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $i = max(0, (int) Carbon::parse(WordGame::EXTRA_FROM, 'Asia/Kolkata')->diffInDays($day, false));
-        $all = self::all();
-        $words = array_values(array_unique(array_column($all, 1)));
+        $all = self::all($day);
+        $words = array_values(array_unique(array_column(array_filter($all), 1)));
         $items = [];
         foreach (WordGame::rota($all, self::PER_DAY, $i, 4409) as $n => [$full, $answer, $meaning]) {
             $parts = preg_split('/\s+/u', trim($full));

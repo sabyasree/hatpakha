@@ -94,6 +94,7 @@
             const c = document.createElement('span'); c.className = 'block text-sm text-ink2'; c.textContent = q.meaning;
             li.append(b, c); ul.appendChild(li);
         });
+        if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), 'probad', data.items.map((q) => ({ word: [q.before, answer(q), q.after].filter(Boolean).join(' '), clue: q.meaning })));   // D330
         const url = root.dataset.scoreUrl;
         if (url) {
             fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },

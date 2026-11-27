@@ -149,7 +149,9 @@ class GameController extends Controller
             if (! $c['open']) {
                 return response()->json(['ok' => false, 'error' => 'closed'], 422);
             }
-            GameSocial::play($request, $c['id'], $name, (int) $data['score'], (int) $data['seconds']);
+            if (GameSocial::play($request, $c['id'], $name, (int) $data['score'], (int) $data['seconds'])) {
+                rescue(fn () => GameSocial::tellMaker($c['id'], $name, (int) $data['score']), null, false);
+            }
         }
 
         return response()->json(['ok' => true, 'url' => Url::to('/khela/lorai/'.$code), 'plays' => GameSocial::find($code, $request)['plays']]);
@@ -318,9 +320,9 @@ class GameController extends Controller
     /** D179: a player says a word, clue or riddle is wrong. No account needed. */
     public function report(Request $request)
     {
-        $data = $request->validate(['game' => ['required', 'in:word,riddle,riddle2,cross,cross1,cross3,probad,banan,ekshobde'], 'word' => ['required', 'string', 'max:60'],
+        $data = $request->validate(['game' => ['required', 'in:word,riddle,riddle2,cross,cross1,cross3,probad,banan,ekshobde'], 'word' => ['required', 'string', 'max:200'],
             'reason' => ['required', 'in:'.implode(',', array_keys(\App\Support\WordReports::REASONS))], 'note' => ['nullable', 'string', 'max:300']]);
-        $ok = \App\Support\WordReports::store($request, in_array($data['game'], ['riddle', 'riddle2'], true) ? 'riddle' : (isset(WordChoice::GAMES[$data['game']]) ? $data['game'] : 'word'), $data['word'], $data['reason'], $data['note'] ?? null);
+        $ok = \App\Support\WordReports::store($request, in_array($data['game'], ['riddle', 'riddle2'], true) ? 'riddle' : (isset(WordChoice::GAMES[$data['game']]) || $data['game'] === 'probad' ? $data['game'] : 'word'), $data['word'], $data['reason'], $data['note'] ?? null);
 
         return response()->json(['ok' => $ok], $ok ? 200 : 422);
     }

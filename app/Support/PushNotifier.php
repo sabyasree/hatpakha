@@ -141,8 +141,14 @@ final class PushNotifier
         $sent = 0;
         foreach (PushSubscription::whereIn('user_id', $due)->whereJsonContains('topics', 'games')->get()->groupBy('user_id') as $userId => $subs) {
             $user = \App\Models\User::find($userId);
-            $days = $user ? GameScores::streak($user)['now'] : 0;
+            $streak = $user ? GameScores::streak($user) : ['now' => 0, 'rest' => []];
+            $days = $streak['now'];
             if ($days < 2) {
+                continue;
+            }
+            // D330 (game designers): with the week's rest day still free, missing today breaks nothing: no nudge, no worry
+            $restUsed = collect($streak['rest'])->contains(fn ($r) => \Illuminate\Support\Carbon::parse($r)->diffInDays(\Illuminate\Support\Carbon::parse($today)) < 7);
+            if (! $restUsed) {
                 continue;
             }
             $a = $userId % 2 === 0;

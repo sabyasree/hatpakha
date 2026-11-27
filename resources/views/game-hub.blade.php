@@ -61,7 +61,7 @@
         @endif
 
         <div class="mt-5 flex items-end justify-between gap-2">
-            <h2 class="font-display text-2xl font-extrabold leading-tight">আজকের তিন <span class="block text-base font-bold text-ink2">@if ($doneCount >= 3)আজকের দিন পূর্ণ ✓ আরও খেললে মজা, পয়েন্ট বাড়বে না @elseif ($doneCount)আর {{ Bn::num((string) (3 - $doneCount)) }}টা খেললেই পুরো দিন @else সাত-আট মিনিটে পুরো দিন @endif</span></h2>
+            <h2 class="font-display text-2xl font-extrabold leading-tight">আজকের তিন <span class="block text-base font-bold text-ink2">@if ($doneCount >= 3 && ($today['total'] ?? 0) >= GameScores::DAY_MAX)আজকের দিন পূর্ণ ✓ পুরো ৩০০; আরও খেললে শুধু মজা @elseif ($doneCount >= 3)আজকের দিন পূর্ণ ✓ আরও খেললে সেরা তিনটে বদলাতে পারে @elseif ($doneCount)আর {{ Bn::num((string) (3 - $doneCount)) }}টা খেললেই পুরো দিন @else সাত-আট মিনিটে পুরো দিন @endif</span></h2>
             @if ($startAt && $doneCount < 3)<a href="{{ $startAt[3] }}" class="flex h-12 flex-none items-center rounded-full bg-red px-5 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">{{ $doneCount ? 'পরেরটা খেলুন →' : 'শুরু করুন →' }}</a>@endif
         </div>
         <ul class="mt-3 grid gap-3">

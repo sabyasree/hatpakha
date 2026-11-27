@@ -77,7 +77,7 @@
                         <p class="text-lg font-extrabold">লিঙ্কটা বন্ধুদের পাঠান</p>
                         <input readonly value="{{ $link }}" aria-label="লড়াইয়ের লিঙ্ক" class="mt-2 h-12 w-full rounded-xl border-2 border-navy bg-paper px-3 text-base" data-lorai-url>
                         <div class="mt-2 grid gap-2">
-                            <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার সাপ্তাহিক লড়াইয়ে আমি পেয়েছি '.Bn::num((string) ($me['score'] ?? 0)).' / '.Bn::num((string) $max).'। একই দশটা প্রশ্ন, আপনি কত পান? '.$link) }}" target="_blank" rel="noopener" class="flex h-14 items-center justify-center rounded-full bg-red px-4 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">WhatsApp-এ পাঠান</a>
+                            <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার লড়াই: আমি পেয়েছি '.Bn::num((string) ($me['score'] ?? 0)).' / '.Bn::num((string) $max).'।'.(($t = \App\Support\GameSocial::teaser($week)) ? "\n".$t : '')."\nবাকি প্রশ্ন এখানে, আপনি কত পান? ".$link) }}" target="_blank" rel="noopener" class="flex h-14 items-center justify-center rounded-full bg-red px-4 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">WhatsApp-এ পাঠান</a>
                             <button type="button" data-copy="{{ $link }}" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">লিঙ্ক কপি করুন</button>
                         </div>
                         <p class="mt-1 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-copy-msg></p>

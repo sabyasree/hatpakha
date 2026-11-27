@@ -12,7 +12,9 @@
         'mag' => collect($game['words'])->filter(fn ($w) => mb_strlen($w) >= 3)->take(8)->map(fn ($w) => ($m = \App\Support\InMagazine::line($w)) ? base64_encode(json_encode($m, JSON_UNESCAPED_UNICODE)) : null)->filter()->take(3)->values()->all()];
 @endphp
 <x-layouts.app :seo="$seo">
-    <style>html[data-playing] [data-bottom-nav] { display: none; }</style>
+    <style>html[data-playing] [data-bottom-nav] { display: none; }
+        @keyframes hpPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } } .hp-pop { animation: hpPop .45s ease-out; }
+        @media (prefers-reduced-motion: reduce) { .hp-pop { animation: none; } }</style>
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jal @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
         @include('partials.game-nav', ['on' => 'jal'])
         <div class="flex items-end justify-between gap-3">

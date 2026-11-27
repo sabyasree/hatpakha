@@ -25,6 +25,13 @@ final class WordReports
     public static function reportable(string $game): array
     {
         $out = [];
+        if ($game === 'probad') {   // D330: the whole proverb is reported (several share a missing word)
+            foreach ([now('Asia/Kolkata'), now('Asia/Kolkata')->subDay()] as $day) {
+                $out = array_merge($out, array_column(Proverbs::day($day)['items'], 'full'));
+            }
+
+            return array_values(array_unique($out));
+        }
         if (isset(WordChoice::GAMES[$game])) {   // D328: বানান-যাচাই, এক শব্দে প্রকাশ
             foreach ([now('Asia/Kolkata'), now('Asia/Kolkata')->subDay()] as $day) {
                 $out = array_merge($out, array_column(WordChoice::day($game, $day)['items'], 'answer'));
@@ -69,14 +76,15 @@ final class WordReports
             [$game, $word] = explode('|', $key, 2);
             $choice = isset(WordChoice::GAMES[$game]);
             $k = $choice ? WordChoice::answerKey($game) : ($game === 'riddle' ? 1 : 0);
-            $row = collect($choice ? WordChoice::all($game, now('Asia/Kolkata')->addDay()) : WordGame::listFor($game, now('Asia/Kolkata')->addDay()))->first(fn ($x) => $x && $x[$k] === $word);
+            $list = $game === 'probad' ? Proverbs::all(now('Asia/Kolkata')->addDay()) : ($choice ? WordChoice::all($game, now('Asia/Kolkata')->addDay()) : WordGame::listFor($game, now('Asia/Kolkata')->addDay()));
+            $row = collect($list)->first(fn ($x) => $x && $x[$k] === $word);
             if (! $row) {   // already changed or taken out
                 DB::table('word_reports')->whereIn('id', $reports->pluck('id'))->update(['status' => 'kept', 'outcome' => 'আগেই বদলানো হয়েছে', 'updated_at' => now()]);
 
                 continue;
             }
             // D328: for a spelling the "clue" is the wrong spellings shown beside it; for এক শব্দে প্রকাশ, the phrase
-            $clue = $game === 'banan' ? 'ভুল বানান হিসেবে দেখানো: '.implode(', ', (array) $row[1]) : ($game === 'ekshobde' ? $row[0] : $row[1 - $k]);
+            $clue = $game === 'banan' ? 'ভুল বানান হিসেবে দেখানো: '.implode(', ', (array) $row[1]) : ($game === 'ekshobde' ? $row[0] : ($game === 'probad' ? 'যে শব্দ বাদ: '.$row[1].'; মানে: '.$row[2] : $row[1 - $k]));
             $items[$key] = ['game' => $game, 'word' => $word, 'clue' => $clue, 'reports' => $reports];
         }
         if (! $items) {
@@ -88,6 +96,7 @@ final class WordReports
             .'"fix" if the spelling is wrong or the clue is wrong, misleading or fits another common word better: give the corrected word (the SAME word, standard spelling; empty string if the word is fine) and/or a better clue (empty string if the clue is fine). '
             .'"remove" if the word is obscure, offensive, not really one word, or cannot be made fair. '
             .'Kind "banan" is a spelling quiz: the answer must be the spelling both Bangla Academy and Paschimbanga Bangla Akademi accept, and none of the wrong spellings may be an accepted form; if any of that fails, "remove". '
+            .'Kind "probad" is a well-known Bengali proverb (the answer is the whole proverb) with its meaning; "keep" if it is a real, commonly known proverb in a standard form and the meaning is right; otherwise "remove". '
             .'Kind "ekshobde" is বাক্য সংকোচন: the answer must be the standard single word for the phrase and no other common word may fit it as well; if not, "remove". For these two kinds never answer "fix". '
             .'A word has 3-6 অক্ষর (a consonant with its conjunct and vowel sign is one), a riddle answer 2-6; Bengali letters only; the clue must not contain the answer. Give the reason in one short Bengali sentence.',
             collect($items)->map(fn ($it, $key) => '<entry key="'.e($key).'" kind="'.$it['game'].'"><answer>'.e($it['word']).'</answer><clue>'.e($it['clue']).'</clue>'
@@ -119,7 +128,7 @@ final class WordReports
         $newWord = trim((string) ($v['word'] ?? ''));
         $newClue = trim((string) ($v['clue'] ?? ''));
         $why = mb_substr(trim((string) ($v['why'] ?? '')), 0, 300);
-        if ($verdict === 'fix' && isset(WordChoice::GAMES[$game])) {
+        if ($verdict === 'fix' && (isset(WordChoice::GAMES[$game]) || $game === 'probad')) {
             $verdict = 'remove';   // D328: these lists are not corrected by the AI, only kept or taken out
         }
         if ($verdict === 'fix') {

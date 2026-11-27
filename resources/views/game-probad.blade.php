@@ -48,7 +48,8 @@
                 <a data-probad-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
             </div>
             <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-probad-share-msg></p>
-            <p class="mt-4 font-bold">নতুন প্রবাদ আসবে রাত বারোটায়।</p>
+            <div data-report></div>
+            <p class="mt-4 font-bold">নতুন প্রবাদ আসবে রাত বারোটায় (ভারতের সময়)।</p>
         </div>
         @endif
 
@@ -71,6 +72,7 @@
     </section>
     @unless ($locked)
     <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
-    <script src="{{ asset('js/hp-probad.js') }}?v=2" defer></script>
+    <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-probad.js') }}?v=3" defer></script>
     @endunless
 </x-layouts.app>
