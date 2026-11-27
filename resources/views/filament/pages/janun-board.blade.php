@@ -67,6 +67,12 @@
         @endforeach
     </div>
 
+    <h2 class="text-lg font-bold">{{ __('আজ থেকে তিথি') }}</h2>
+    <div class="hp-j-box">
+        <p>{{ $n($tithi['ok']) }} {{ __('দিনের তিথি মিলেছে') }}@if ($tithi['last']) ({{ __('শেষ দিন') }} {{ \Carbon\Carbon::parse($tithi['last'])->format('j M Y') }})@endif</p>
+        @foreach ($tithi['held'] as $h)<p class="hp-j-why">{{ $h->day->format('j M') }}: {{ __('আটকে') }} ({{ $h->note }})</p>@endforeach
+    </div>
+
     <h2 class="text-lg font-bold">{{ __('বাংলা ক্যালেন্ডার (পশ্চিমবঙ্গ)') }}</h2>
     <div class="hp-j-grid">
         @foreach ($months as $year => $rows)

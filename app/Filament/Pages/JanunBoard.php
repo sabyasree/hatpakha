@@ -91,6 +91,8 @@ class JanunBoard extends Page
         })->values();
         $months = BanglaMonth::orderBy('year')->orderBy('month')->get()->groupBy('year');
 
-        return ['pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
+        $tithi = \App\Models\TithiDay::where('day', '>=', now('Asia/Kolkata')->toDateString())->get();
+
+        return ['tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
     }
 }

@@ -31,6 +31,7 @@ final class JanunDesk
         $now ??= CarbonImmutable::now('Asia/Kolkata');
         self::seed();
         $n = self::publishDue();
+        rescue(fn () => TithiDesk::run($now), null, false);   // D310: no AI, no cost: the published tithi checked by our own calculation
         if (! config('ai.enabled') || blank(config('ai.anthropic.key')) || AiSwitch::paused()) {
             return $n;
         }

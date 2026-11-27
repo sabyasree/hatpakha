@@ -48,6 +48,9 @@
                                 $detail = $B::WEEKDAYS[$day['g']->dayOfWeek].', '.$C::short($day['g']).' '.$N($day['g']->year)
                                     .($other ? ' · '.$otherName.' '.$B::text($other) : '').' · ঋতু: '.$B::SEASONS[$g['month'] - 1];
                                 $events = collect($day['events'])->pluck(0)->implode(' · ');
+                                if ($day['tithi']) {
+                                    $detail .= ' · তিথি: '.$day['tithi'].' (ভারতের সময়)';   // D310
+                                }
                             @endphp
                             {{-- a day can be tapped: its details show under the grid (owner, 2026-11-27: "not able to click different dates") --}}
                             <div role="cell" @if ($day['today']) aria-current="date" @endif class="relative">

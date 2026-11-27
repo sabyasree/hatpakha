@@ -8,7 +8,7 @@
     <article class="mx-auto max-w-[760px] px-5 py-8">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['বাংলা ক্যালেন্ডার', '']], 'kicker' => 'বাংলা ক্যালেন্ডার '.\App\Support\Bn::num((string) $bd[0]), 'title' => 'আজ বাংলা কত তারিখ?'])
         {{-- the answer in one plain sentence, in the page as sent (SEO review: what Google shows as the answer) --}}
-        <p class="mt-3 font-serif text-lg leading-relaxed">আজ {{ $B::WEEKDAYS[$d->dayOfWeek] }}, {{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }}: @if ($wb)পশ্চিমবঙ্গে <b>{{ $B::text($wb) }}</b>, বাংলাদেশে <b>{{ $B::text($bd) }}</b>@else বাংলাদেশে <b>{{ $B::text($bd) }}</b>@endif বঙ্গাব্দ।</p>
+        <p class="mt-3 font-serif text-lg leading-relaxed">আজ {{ $B::WEEKDAYS[$d->dayOfWeek] }}, {{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }}: @if ($wb)পশ্চিমবঙ্গে <b>{{ $B::text($wb) }}</b>, বাংলাদেশে <b>{{ $B::text($bd) }}</b>@else বাংলাদেশে <b>{{ $B::text($bd) }}</b>@endif বঙ্গাব্দ।@if ($tithi) আজকের তিথি: {{ $tithi->text() }} (ভারতের সময়)।@endif</p>
         <section class="mt-5 rounded-2xl bg-navy p-5 text-white" aria-label="আজকের তারিখ">
             <p class="text-sm font-bold">আজ, {{ $B::WEEKDAYS[$d->dayOfWeek] }}</p>
             @if ($wb)
@@ -24,6 +24,7 @@
                 <p class="mt-1 font-display text-4xl font-extrabold leading-tight">{{ $B::text($bd) }}</p>
                 <p class="mt-1">বাংলাদেশ (পশ্চিমবঙ্গের তারিখ মিলিয়ে দেখা হচ্ছে)</p>
             @endif
+            @if ($tithi)<p class="mt-2 text-sm"><b>তিথি:</b> {{ $tithi->text() }} <span class="opacity-80">(ভারতের সময়)</span></p>@endif   {{-- D310 --}}
             <p class="mt-2 text-sm">{{ $C::short($d) }} {{ \App\Support\Bn::num((string) $d->year) }} · ঋতু: {{ $B::SEASONS[($wb ?? $bd)[1] - 1] }} · দিন বদলায় ভারতীয় সময়ে</p>
         </section>
         @include('janun.calendar.grids', ['grids' => $grids, 'year' => $year, 'month' => $month])

@@ -48,7 +48,7 @@ class BanglaCalendarController extends Controller
         $wb = BanglaDate::wb($d);
         $bd = BanglaDate::bd($d);
         [$y, $m] = $wb ? [$wb[0], $wb[1]] : [$bd[0], $bd[1]];
-        $title = 'বাংলা ক্যালেন্ডার '.Bn::num((string) $bd[0]).': আজ বাংলা কত তারিখ';
+        $title = 'বাংলা ক্যালেন্ডার '.Bn::num((string) $bd[0]).': আজ বাংলা কত তারিখ, আজকের তিথি';
         // each calendar shows its own current month (on the days they fall in different months, the review found the Bangladesh tab a month behind)
         $grids = ['wb' => $wb ? self::grids($wb[0], $wb[1])['wb'] : null, 'bd' => self::grids($bd[0], $bd[1])['bd']];
         // timeless: Google keeps a snippet for days (SEO review)
@@ -57,7 +57,9 @@ class BanglaCalendarController extends Controller
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()]])]);
         Ads::allow();
 
-        return view('janun.calendar.index', ['nextFestival' => self::nextFestival(), 'd' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
+        $tithi = \App\Models\TithiDay::where('status', 'verified')->whereDate('day', $d->toDateString())->first();
+
+        return view('janun.calendar.index', ['tithi' => $tithi,'nextFestival' => self::nextFestival(), 'd' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
     }
 
     public function year(int $year)
@@ -145,12 +147,16 @@ class BanglaCalendarController extends Controller
         $bdStart = BanglaDate::bdStart($year, $month);
         $bdLen = BanglaDate::bdLengths($year + 594)[$month - 1];
         $events = self::events(($wbStart ?? $bdStart)->min($bdStart), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32));
-        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events) {
+        // D310: each day's checked tithi (Kolkata)
+        $tithis = \App\Models\TithiDay::where('status', 'verified')->whereBetween('day', [($wbStart ?? $bdStart)->min($bdStart)->toDateString(), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32)->toDateString()])
+            ->get()->keyBy(fn ($t) => $t->day->toDateString());
+        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events, $tithis) {
             $g = $start->addDays($i);
 
             $cal = $other === 'bd' ? 'wb' : 'bd';   // a calendar shows its own days and the shared ones
 
             return ['n' => $i + 1, 'g' => $g, 'today' => $g->equalTo(self::today()), 'other' => $other === 'bd' ? BanglaDate::bd($g) : BanglaDate::wb($g),
+                'tithi' => isset($tithis[$g->toDateString()]) ? $tithis[$g->toDateString()]->text() : null,
                 'events' => array_values(array_filter($events[$g->toDateString()] ?? [], fn ($e) => in_array($e[2], ['both', $cal], true)))];
         })->all()];
 
