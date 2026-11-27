@@ -3,6 +3,7 @@
     $U = fn ($p) => \App\Support\Url::to($p);
     $N = fn ($n) => \App\Support\Bn::num((string) $n);
     $G = \App\Support\GreetingPlan::GROUPS;
+    if ($tone !== 'happy') { $G['chhoto'] = 'ছোট বার্তা'; }
     $body = (array) $s->body;
     $poet = $body['poet'] ?? null;
     $nonce = \Illuminate\Support\Facades\Vite::cspNonce();
@@ -10,7 +11,7 @@
 <x-layouts.app :seo="$seo">
     <article class="mx-auto max-w-[760px] px-5 py-8" data-greet="{{ $bn }}">
         @include('janun.partials.head', ['crumbs' => [['হাতপাখা', $U('/')], ['জেনে রাখুন', $U('/janun')], ['শুভেচ্ছা বার্তা', $U('/janun/greetings')], [$bn, '']],
-            'kicker' => 'জেনে রাখুন · শুভেচ্ছা বার্তা', 'title' => $bn.' বার্তা', 'trust' => 'বার্তাগুলি নতুন লেখা, বানান ও রীতি যাচাই করা', 'trustBy' => $U('/janun')])
+            'kicker' => 'জেনে রাখুন · শুভেচ্ছা বার্তা', 'title' => $h1, 'trust' => 'বার্তাগুলি নতুন লেখা, বানান ও রীতি যাচাই করা', 'trustBy' => $U('/janun')])
         <p lang="en" class="mt-1 text-sm text-ink2">{{ $en }}</p>
         @foreach (preg_split('/\n\s*\n/', trim((string) ($body['intro'] ?? ''))) as $para)
             <p class="mt-4 font-serif text-lg leading-relaxed">{{ $para }}</p>
@@ -22,7 +23,7 @@
             @if ($festivalUrl)<a href="{{ $festivalUrl }}" class="flex min-h-11 items-center rounded-full bg-red px-4 font-bold text-white hover:bg-red-deep">তিথি ও সময়</a>@endif
         </nav>
         <p data-greet-status role="status" class="sr-only"></p>
-        <p class="mt-3 text-sm text-ink2">যে বার্তা ভালো লাগে, <b>কপি</b> করুন, <b>হোয়াটসঅ্যাপে</b> পাঠান, বা <b>ছবি</b> বানিয়ে নিন। ছবি আপনার ফোনেই তৈরি হয়।</p>
+        <p class="mt-3 text-sm text-ink2">যে বার্তা আপনার মনের কথা বলে, <b>কপি</b> করুন, <b>হোয়াটসঅ্যাপে</b> পাঠান, বা <b>ছবি</b> বানিয়ে নিন। ছবি আপনার ফোনেই তৈরি হয়।</p>
 
         @if ($poet)
             <figure class="lined mt-6 rounded-2xl border-2 border-navy bg-peach-light p-5 tilt-a">
@@ -78,7 +79,7 @@
     </dialog>
     <script nonce="{{ $nonce }}">
     (() => {
-        const status = document.querySelector('[data-greet-status]'), page = @json($s->url()), title = @json($bn), dlg = document.querySelector('[data-card-dialog]');
+        const status = document.querySelector('[data-greet-status]'), page = @json($s->url()), title = @json($bn), band = @json($tone === 'happy' ? '#CB1B32' : '#13212C'), dlg = document.querySelector('[data-card-dialog]');
         const cv = dlg.querySelector('canvas'), ctx = cv.getContext('2d'), save = dlg.querySelector('[data-card-save]'), share = dlg.querySelector('[data-card-share]');
         let file = null, said = '';
         const msg = dlg.querySelector('[data-card-msg]');
@@ -98,7 +99,7 @@
             said = text; msg.textContent = 'ছবি তৈরি হচ্ছে…'; cv.setAttribute('aria-label', text);
             try { await Promise.all([document.fonts.load('800 60px "Anek Bangla"', title), document.fonts.load('400 60px "Noto Serif Bengali"', text), document.fonts.load('48px "Galada"', 'হাতপাখা')]); } catch (e) { /* the phone's own Bengali font */ }
             ctx.fillStyle = '#FBEBD8'; ctx.fillRect(0, 0, 1080, 1080);
-            ctx.fillStyle = '#CB1B32'; ctx.fillRect(0, 0, 1080, 150);
+            ctx.fillStyle = band; ctx.fillRect(0, 0, 1080, 150);
             ctx.strokeStyle = '#E39A6A'; ctx.lineWidth = 6; ctx.strokeRect(40, 190, 1000, 760);
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = '#FFFFFF'; ctx.font = '800 60px "Anek Bangla", sans-serif'; ctx.fillText(title, 540, 78);

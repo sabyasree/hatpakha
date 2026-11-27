@@ -13,19 +13,25 @@ use Carbon\CarbonImmutable;
  *   - a due page goes live (Tuesday, Thursday, Saturday, 10am India);
  *   - a page being checked: up to CHECK_PER_RUN names are looked up in the dictionaries;
  *   - otherwise, at most one new page a day is written, and only while fewer than three wait for their day.
- * A name is printed only when at least two of the three dictionaries have it as an entry and give a meaning that shares a
- * word with ours: the Bangla Academy's Bengali-English dictionary (accessibledictionary.gov.bd, a Bangladesh government
- * site), Wiktionary in English and Wiktionary in Bengali. Names the dictionaries do not know are left out, never guessed.
+ * A name is printed only when at least two of four sources have it and give a meaning like ours: the Bangla Academy's
+ * Bengali-English dictionary (accessibledictionary.gov.bd, a Bangladesh government site), English Wiktionary (the Bengali
+ * entry, or the Arabic, Persian or Sanskrit word it says the name comes from), Bengali Wiktionary, and Behind the Name
+ * (a name dictionary with sourced histories; D320, for Arabic and Persian names, which ordinary dictionaries rarely list).
+ * Names no two sources know are left out, never guessed.
  */
 final class NameDesk
 {
-    public const CHECK_PER_RUN = 8;
+    public const CHECK_PER_RUN = 5;
 
     public const DICTIONARIES = [
         'accessibledictionary.gov.bd' => 'https://accessibledictionary.gov.bd/bengali-to-english/?q=',
         'en.wiktionary.org' => 'https://en.wiktionary.org/wiki/',   // read as wikitext (?action=raw): only the Bengali section's definition lines count
         'bn.wiktionary.org' => 'https://bn.wiktionary.org/wiki/',
+        'behindthename.com' => 'https://www.behindthename.com/name/',   // by the English spelling
     ];
+
+    /** Wiktionary's codes for the languages names come from, and the heading of that language's section. */
+    private const ORIGINS = ['ar' => 'Arabic', 'fa' => 'Persian', 'sa' => 'Sanskrit'];
 
     private const STOP_EN = ['name', 'with', 'that', 'which', 'from', 'also', 'one', 'who', 'the', 'and', 'for', 'having', 'being', 'like', 'very', 'person', 'given'];
 
@@ -72,17 +78,17 @@ final class NameDesk
     {
         $str = ['type' => 'string'];
         $schema = ['type' => 'object', 'additionalProperties' => false, 'required' => ['intro', 'names'], 'properties' => ['intro' => $str,
-            'names' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['bn', 'roman', 'meaning_bn', 'meaning_en', 'origin'],
-                'properties' => ['bn' => $str, 'roman' => $str, 'meaning_bn' => $str, 'meaning_en' => $str, 'origin' => ['type' => 'string', 'enum' => ['সংস্কৃত', 'বাংলা', 'আরবি', 'ফারসি', 'অন্য']]]]]]];
+            'names' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['bn', 'variants', 'roman', 'meaning_bn', 'meaning_en', 'origin'],
+                'properties' => ['bn' => $str, 'variants' => ['type' => 'array', 'items' => $str], 'roman' => $str, 'meaning_bn' => $str, 'meaning_en' => $str, 'origin' => ['type' => 'string', 'enum' => ['সংস্কৃত', 'বাংলা', 'আরবি', 'ফারসি', 'অন্য']]]]]]];
         $letter = NamePlan::LETTERS[$p->letter];
         [$gBn, $gEn] = NamePlan::GENDERS[$p->gender];
         [$d, $err] = Claude::json('janun',
             'You list Bengali given names for the "জেনে রাখুন" section of হাতপাখা, a Bengali literary magazine, for parents in West Bengal, Bangladesh and abroad. '
-            .'Give 45 real, well-attested '.($p->gender === 'boy' ? 'boys\'' : 'girls\'').' names that begin with the letter given, mixing Hindu, Muslim and secular names that Bengalis actually use. '
-            .'Prefer names that are ordinary Bengali or Sanskrit-derived words or well-known Arabic/Persian names found in Bengali dictionaries, with their dictionary meaning. Never invent a name or a meaning; leave out any you are unsure of. '
-            .'bn = the name in Bengali script, standard spelling; roman = how it is usually written in English; meaning_bn = the meaning in two to six plain Bengali words; meaning_en = the same in two to six English words, as a dictionary gives it; origin = the language it comes from. '
-            .'intro = one short paragraph for parents (no claims about popularity or numbers).',
-            '<page letter="'.e($letter).'" gender="'.e($gEn).'">'.e($letter.' দিয়ে '.$gBn.' নাম').'</page>', $schema, (string) config('ai.anthropic.review_model'), 12000);
+            .'Give as many real, well-attested '.($p->gender === 'boy' ? 'boys\'' : 'girls\'').' names beginning with the letter given as Bengalis actually use, up to 90: Sanskrit-derived and Bengali names, AND the Arabic and Persian names Bengali Muslims use (both, as many as the letter really has), and secular names. '
+            .'Each with its established meaning as name dictionaries and word dictionaries give it. Never invent a name or a meaning; leave out any you are unsure of. '
+            .'bn = the name in Bengali script, standard spelling; variants = up to two other common Bengali spellings (e.g. ফাতিমা for ফাতেমা), else empty; roman = the usual English spelling (one, e.g. Fatima); meaning_bn = the meaning in two to six plain Bengali words; meaning_en = the same in two to six English words, as a dictionary gives it; origin = the language it comes from. '
+            .'intro = two or three sentences for parents about names that begin with this letter (sounds, kinds of meanings); no claims about popularity or numbers.',
+            '<page letter="'.e($letter).'" gender="'.e($gEn).'">'.e($letter.' দিয়ে '.$gBn.' নাম').'</page>', $schema, (string) config('ai.anthropic.review_model'), 24000);
         $p->tries++;
         if (! is_array($d)) {
             $p->save();
@@ -92,9 +98,10 @@ final class NameDesk
         }
         $names = collect((array) ($d['names'] ?? []))
             ->map(fn ($n) => ['bn' => trim((string) ($n['bn'] ?? '')), 'roman' => mb_substr(trim((string) ($n['roman'] ?? '')), 0, 40), 'meaning_bn' => mb_substr(trim((string) ($n['meaning_bn'] ?? '')), 0, 80),
-                'meaning_en' => mb_substr(trim((string) ($n['meaning_en'] ?? '')), 0, 80), 'origin' => (string) ($n['origin'] ?? ''), 'status' => 'new', 'found' => []])
+                'meaning_en' => mb_substr(trim((string) ($n['meaning_en'] ?? '')), 0, 80), 'origin' => (string) ($n['origin'] ?? ''),
+                'variants' => array_slice(array_values(array_filter((array) ($n['variants'] ?? []), fn ($v) => is_string($v) && preg_match('/^[\x{0980}-\x{09FF}\x{200C}\x{200D}]+$/u', $v))), 0, 2), 'status' => 'new', 'found' => []])
             ->filter(fn ($n) => $n['bn'] !== '' && str_starts_with(\Normalizer::normalize($n['bn'], \Normalizer::FORM_C) ?: $n['bn'], $letter) && preg_match('/^[\x{0980}-\x{09FF}\x{200C}\x{200D}]+$/u', $n['bn']))
-            ->unique('bn')->take(60)->values()->all();
+            ->unique('bn')->take(100)->values()->all();
         $p->forceFill(['names' => $names, 'intro' => trim((string) ($d['intro'] ?? '')) ?: null, 'status' => 'checking'])->save();
 
         return true;
@@ -113,13 +120,12 @@ final class NameDesk
             }
             $found = [];
             $left = count(self::DICTIONARIES);
-            foreach (self::DICTIONARIES as $host => $base) {
+            foreach (array_keys(self::DICTIONARIES) as $host) {
                 if (count($found) >= 2 || count($found) + $left < 2) {
                     break;   // the answer cannot change
                 }
                 $left--;
-                $text = JanunDesk::fetchText($base.rawurlencode($n['bn']).(str_ends_with($host, 'wiktionary.org') ? '?action=raw' : ''));
-                if ($text !== null && self::gives($host, $text, $n)) {
+                if (self::lookup($host, $n)) {
                     $found[] = $host;
                 }
             }
@@ -142,12 +148,50 @@ final class NameDesk
         AuditLog::record($ok >= NamePlan::MIN_NAMES ? 'names.scheduled' : 'names.held', null, ['page' => NamePlan::slug($p->gender, $p->letter), 'ok' => $ok, 'of' => count($names)]);
     }
 
+    /** Opens the source's page(s) for this name and asks gives(). */
+    public static function lookup(string $host, array $n): bool
+    {
+        $spellings = array_values(array_unique(array_filter(array_merge([$n['bn']], (array) ($n['variants'] ?? [])))));
+        if ($host === 'behindthename.com') {
+            $slug = strtolower((string) preg_replace('/[^A-Za-z]/', '', (string) strtok((string) ($n['roman'] ?? ''), '/,')));
+            $text = $slug !== '' ? JanunDesk::fetchText(self::DICTIONARIES[$host].$slug) : null;
+
+            return $text !== null && self::gives($host, $text, $n);
+        }
+        if ($host === 'accessibledictionary.gov.bd') {
+            $text = JanunDesk::fetchText(self::DICTIONARIES[$host].rawurlencode($n['bn']));
+
+            return $text !== null && self::gives($host, $text, $n);
+        }
+        foreach ($spellings as $sp) {
+            $raw = JanunDesk::fetchText(self::DICTIONARIES[$host].rawurlencode($sp).'?action=raw');
+            if ($raw === null) {
+                continue;
+            }
+            if (self::gives($host, $raw, $n)) {
+                return true;
+            }
+            // the Bengali entry names the word it comes from: {{bor|bn|ar|فاطمة}}; that word's own entry gives the meaning
+            if ($host === 'en.wiktionary.org' && preg_match('/\{\{(?:bor\+?|lbor|der\+?|inh\+?)\|bn\|(ar|fa|sa)\|([^|}]+)/u', $raw, $m)) {
+                $word = trim((string) preg_replace('/[\x{064B}-\x{065F}\x{0670}]/u', '', $m[2]));
+                $src = $word !== '' ? JanunDesk::fetchText(self::DICTIONARIES[$host].rawurlencode($word).'?action=raw') : null;
+                if ($src !== null && self::gives($host, $src, $n, self::ORIGINS[$m[1]])) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
     /**
      * Does this dictionary have the name as an entry, with a meaning like ours? Only the entry's own definition is read
      * (never menus or other words' entries), words are matched whole, and the meaning must agree: the first main word of
      * our English meaning, or at least half of its main words, or a whole Bengali word of our Bengali meaning.
      */
-    public static function gives(string $host, string $text, array $n): bool
+    public static function gives(string $host, string $text, array $n, ?string $lang = null): bool
     {
         $nfc = fn ($t) => \Normalizer::normalize((string) $t, \Normalizer::FORM_C) ?: (string) $t;
         $text = $nfc($text);
@@ -156,15 +200,23 @@ final class NameDesk
         if ($host === 'accessibledictionary.gov.bd') {
             // "Bengali Word" headword(s) "English definition" … until the next "Bengali Word"; a headword may list variants (জ্যোতি, জ্যোতিঃ)
             preg_match_all('/Bengali Word\s*([^\n]*?)\s*English definition(.*?)(?=Bengali Word|$)/su', $text, $m, PREG_SET_ORDER);
+            $names = array_map($nfc, array_merge([$n['bn']], (array) ($n['variants'] ?? [])));
             foreach ($m as $e) {
-                if (in_array($name, array_map('trim', explode(',', $nfc($e[1]))), true)) {
+                if (array_intersect($names, array_map('trim', explode(',', $nfc($e[1])))) !== []) {
                     $defs = $e[2];
                     break;
                 }
             }
+        } elseif ($host === 'behindthename.com') {
+            // the "Meaning & History" part only (not related names, popularity or the menus)
+            if (! preg_match('/Meaning\s*&\s*History(.*?)(?:Related Names|Name Days|Popularity|$)/su', $text, $mh)) {
+                return false;
+            }
+            $defs = $mh[1];
         } else {
             // wikitext: the Bengali section (==Bengali== or =={{ভাষা|bn}}== / ==বাংলা==) up to the next language, its "# " lines only
-            if (! preg_match('/^==\s*(?:Bengali|বাংলা|\{\{ভাষা\|bn\}\})\s*==\s*$(.*?)(?=^==[^=]|\z)/msu', $text, $sec)) {
+            $heading = $lang !== null ? preg_quote($lang, '/') : '(?:Bengali|বাংলা|\{\{ভাষা\|bn\}\})';
+            if (! preg_match('/^==\s*'.$heading.'\s*==\s*$(.*?)(?=^==[^=]|\z)/msu', $text, $sec)) {
                 return false;
             }
             preg_match_all('/^#(?![:*])\s*(.+)$/mu', $sec[1], $lines);
@@ -175,7 +227,8 @@ final class NameDesk
         }
         $defs = mb_strtolower($defs);
         $en = collect(preg_split('/[^a-z]+/', mb_strtolower((string) $n['meaning_en'])))->filter(fn ($w) => strlen($w) >= 3 && ! in_array($w, self::STOP_EN, true))->values();
-        $hit = fn ($w) => (bool) preg_match('/\b'.preg_quote($w, '/').'(?:s|es)?\b/u', $defs);
+        $stem = fn ($w) => strlen($w) > 5 && str_ends_with($w, 'ing') ? substr($w, 0, -3) : (strlen($w) > 4 && str_ends_with($w, 'ed') ? substr($w, 0, -2) : (strlen($w) > 4 && str_ends_with($w, 's') ? substr($w, 0, -1) : $w));
+        $hit = fn ($w) => (bool) preg_match('/\b'.preg_quote($stem($w), '/').'(?:s|es|ed|ing|er|ers)?\b/u', $defs);
         if ($en->isNotEmpty() && ($hit($en[0]) || $en->filter($hit)->count() * 2 >= $en->count() && $en->count() >= 2)) {
             return true;
         }

@@ -69,7 +69,7 @@ class NamesTest extends TestCase
         $p = NamePage::first();
         $this->assertSame(['boy', 'a', 'checking'], [$p->gender, $p->letter, $p->status]);
         $this->assertCount(27, $p->names, 'a name in Roman letters and one with another first letter are dropped');
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 6; $i++) {   // five names a run
             NameDesk::run($now->addMinutes(10 * ($i + 1)));
         }
         $p->refresh();
@@ -118,6 +118,22 @@ class NamesTest extends TestCase
         $this->assertFalse(NameDesk::gives('en.wiktionary.org', "==Bengali==\n# [[sunday]]\n", $n), 'whole words only');
         $this->assertFalse(NameDesk::gives('bn.wiktionary.org', "==বাংলা==\n# আলোচনা\n", ['bn' => 'অরুণ', 'meaning_bn' => 'আলো', 'meaning_en' => 'x']), 'আলো is not আলোচনা');
         $this->assertTrue(NameDesk::gives('bn.wiktionary.org', "=={{ভাষা|bn}}==\n# [[আলো]]\n", ['bn' => 'অরুণ', 'meaning_bn' => 'আলো', 'meaning_en' => 'x']));
+    }
+
+    public function test_arabic_and_persian_names_through_behind_the_name_and_the_source_word(): void
+    {
+        $n = ['bn' => 'ফারহান', 'roman' => 'Farhan', 'meaning_bn' => 'আনন্দিত', 'meaning_en' => 'happy, joyful', 'variants' => []];
+        $btn = "Farhan\nGender Masculine\nMeaning & History\nMeans \"happy, joyful\" in Arabic.\nRelated Names\nhappy families";
+        $this->assertTrue(NameDesk::gives('behindthename.com', $btn, $n));
+        $this->assertFalse(NameDesk::gives('behindthename.com', "Meaning & History\nMeans \"sad\".\nRelated Names\nhappy joyful", $n), 'only the meaning part counts');
+        $this->assertTrue(NameDesk::gives('behindthename.com', 'Meaning & History Means "abstaining, weaning". Related Names', ['bn' => 'x', 'meaning_bn' => '', 'meaning_en' => 'one who abstains']), 'abstains finds abstaining');
+        Http::swap(new \Illuminate\Http\Client\Factory);   // instead of the dictionaries faked for the other tests
+        Http::fake([
+            'https://en.wiktionary.org/wiki/'.rawurlencode('ফারহান').'*' => Http::response("==Bengali==\n===Etymology===\n{{bor+|bn|ar|فَرْحَان}}\n===Proper noun===\n# {{given name|bn|male}}\n"),
+            'https://en.wiktionary.org/wiki/'.rawurlencode('فرحان').'*' => Http::response("==Arabic==\n===Adjective===\n# [[happy]], [[glad]]\n==Persian==\n# x\n"),
+            '*' => Http::response('', 404),
+        ]);
+        $this->assertTrue(NameDesk::lookup('en.wiktionary.org', $n), 'the Arabic word it comes from gives the meaning');
     }
 
     public function test_slots_are_tuesday_thursday_saturday_and_three_wait_at_most(): void

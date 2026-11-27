@@ -15,13 +15,19 @@
         @if ($p->intro)<p class="mt-4 font-serif text-lg leading-relaxed">{{ $p->intro }}</p>@endif
         <label class="mt-5 block font-bold" for="name-q">নাম বা অর্থ খুঁজুন</label>
         <input id="name-q" type="search" data-name-q autocomplete="off" enterkeyhint="search" inputmode="search" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg" placeholder="যেমন: সূর্য, light">
+        @if ($origins->count() > 1)
+            <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="উৎস ধরে দেখুন">
+                <button type="button" data-origin-chip="" aria-pressed="true" class="min-h-11 rounded-full border-2 border-navy px-4 font-bold aria-pressed:bg-navy aria-pressed:text-white">সব</button>
+                @foreach ($origins as $o => $c)<button type="button" data-origin-chip="{{ $o }}" aria-pressed="false" class="min-h-11 rounded-full border-2 border-navy px-4 font-bold aria-pressed:bg-navy aria-pressed:text-white">{{ $o ?: 'অন্য' }} ({{ $N($c) }})</button>@endforeach
+            </div>
+        @endif
         <p class="mt-2 text-sm text-ink2" data-name-count role="status">{{ $N(count($names)) }}টি নাম</p>
         <div class="mt-2 overflow-x-auto">
             <table class="w-full text-left">
                 <thead><tr class="border-b-2 border-navy text-sm"><th class="py-2 pr-2">নাম</th><th class="py-2 pr-2">অর্থ</th><th class="py-2">উৎস</th></tr></thead>
                 <tbody>
                     @foreach ($names as $n)
-                        <tr class="border-b border-rule" data-name-row="{{ mb_strtolower(\Normalizer::normalize($n['bn'].' '.$n['roman'].' '.$n['meaning_bn'].' '.$n['meaning_en'], \Normalizer::FORM_C) ?: '') }}">
+                        <tr class="border-b border-rule" data-origin="{{ $n['origin'] }}" data-name-row="{{ mb_strtolower(\Normalizer::normalize($n['bn'].' '.$n['roman'].' '.$n['meaning_bn'].' '.$n['meaning_en'], \Normalizer::FORM_C) ?: '') }}">
                             <th scope="row" class="py-2 pr-2 align-top"><span class="font-display text-xl font-extrabold">{{ $n['bn'] }}</span><span lang="en" class="block text-sm font-normal text-ink2">{{ $n['roman'] }}</span></th>
                             <td class="py-2 pr-2 align-top font-serif">{{ $n['meaning_bn'] }}<span lang="en" class="block font-sans text-sm text-ink2">{{ $n['meaning_en'] }}</span></td>
                             <td class="py-2 align-top text-sm">{{ $n['origin'] }}</td>
@@ -45,13 +51,20 @@
         const q = document.querySelector('[data-name-q]'), rows = [...document.querySelectorAll('[data-name-row]')], count = document.querySelector('[data-name-count]');
         const ad = document.querySelector('[data-name-ad]'), none = document.querySelector('[data-name-none]'), head = document.querySelector('thead');
         const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
-        q.addEventListener('input', () => {
+        let origin = '';
+        const apply = () => {
             const t = q.value.trim().normalize('NFC').toLowerCase(); let n = 0;
-            rows.forEach((r) => { const ok = !t || r.dataset.nameRow.includes(t); r.hidden = !ok; n += ok; });
-            if (ad) ad.hidden = t !== '';   // no ad among search results (accidental clicks)
+            rows.forEach((r) => { const ok = (!t || r.dataset.nameRow.includes(t)) && (!origin || r.dataset.origin === origin); r.hidden = !ok; n += ok; });
+            if (ad) ad.hidden = t !== '' || origin !== '';   // no ad among filtered results (accidental clicks)
             none.hidden = n > 0; head.hidden = n === 0;
             count.textContent = bn(n) + 'টি নাম';
-        });
+        };
+        q.addEventListener('input', apply);
+        document.querySelectorAll('[data-origin-chip]').forEach((b) => b.addEventListener('click', () => {
+            origin = b.dataset.originChip;
+            document.querySelectorAll('[data-origin-chip]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+            apply();
+        }));
     })();
     </script>
 </x-layouts.app>

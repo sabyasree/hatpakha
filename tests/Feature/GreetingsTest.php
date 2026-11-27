@@ -85,7 +85,10 @@ class GreetingsTest extends TestCase
         $this->assertSame(4, count($s->check['removed']));
         $this->assertSame(['https://a.org/p', 'https://www.b.in/p'], $s->body['poet']['urls']);
         $this->assertSame(0, GreetingSet::where('status', 'drafted')->count());
-        $this->assertFalse(GreetingDesk::run($now->addMinutes(20)), 'one new set a day');
+        $this->assertTrue(GreetingDesk::run($now->addMinutes(20)));
+        $this->assertSame('good-morning', GreetingSet::where('status', 'drafted')->value('slug'), 'the second most searched, the same day');
+        GreetingDesk::run($now->addMinutes(30));
+        $this->assertFalse(GreetingDesk::run($now->addMinutes(40)), 'two new sets a day');
 
         $this->get('/janun/greetings/birthday/')->assertOk()->assertSee('জন্মদিনের শুভেচ্ছা বার্তা')->assertSee('এসো হে বৈশাখ')->assertSee('a.org')
             ->assertSee('wa.me/?text=', false)->assertSee('data-card=', false)->assertSee('Birthday Wishes in Bengali', false)->assertDontSee('🎉')->assertDontSee('example.com');
@@ -126,7 +129,7 @@ class GreetingsTest extends TestCase
     public function test_the_occasions_coming_soonest_are_written_first(): void
     {
         $order = \App\Support\GreetingPlan::order(CarbonImmutable::parse('2026-11-27 12:00', 'Asia/Kolkata'));
-        $this->assertSame(['birthday', 'christmas', 'happy-new-year'], array_slice($order, 0, 3));
+        $this->assertSame(['birthday', 'good-morning', 'bijoy-dibos', 'christmas'], array_slice($order, 0, 4), 'the two most searched, then 16 and 25 December');
         $this->assertSame('bhai-phonta', end($order), 'a festival just past waits for next year');
         $this->assertLessThan(array_search('poila-baishakh', $order), array_search('eid-ul-fitr', $order), 'Eid ul-Fitr 2027 is in March');
     }
@@ -137,6 +140,25 @@ class GreetingsTest extends TestCase
         $s = GreetingSet::create(['slug' => 'poila-baishakh', 'status' => 'drafted', 'body' => $this->draft()]);
         GreetingDesk::check($s);
         $this->assertNull($s->fresh()->body['poet']);
+    }
+
+    public function test_sad_days_are_written_and_shown_without_celebration(): void
+    {
+        $prompts = [];
+        Claude::$fake = function ($purpose, $user, $schema) use (&$prompts) {
+            $prompts[] = $user;
+
+            return str_contains($user, '<occasion') ? $this->draft() : (str_contains($user, '<g n=') ? ['drop' => []] : ['pages' => []]);
+        };
+        $this->assertSame('condolence', \App\Support\GreetingPlan::tone('condolence'));
+        $this->assertSame('শোকবার্তা', \App\Support\GreetingPlan::heading('condolence'), 'not "শোকবার্তা বার্তা"');
+        $this->assertSame('একুশে ফেব্রুয়ারির শ্রদ্ধাঞ্জলি', \App\Support\GreetingPlan::heading('ekushe-february'));
+        $this->assertSame('জন্মদিনের শুভেচ্ছা বার্তা', \App\Support\GreetingPlan::heading('birthday'));
+        $s = GreetingSet::create(['slug' => 'condolence', 'status' => 'drafted', 'body' => $this->draft()]);
+        GreetingDesk::check($s);
+        $this->get('/janun/greetings/condolence/')->assertOk()->assertSee('<h1', false)->assertSee('শোকবার্তা')->assertDontSee('শোকবার্তা বার্তা')
+            ->assertSee('ছোট বার্তা')->assertDontSee('ছোট শুভেচ্ছা')->assertSee('#13212C', false);
+        $this->assertGreaterThanOrEqual(45, count(\App\Support\GreetingPlan::OCCASIONS));
     }
 
     public function test_line_rules(): void

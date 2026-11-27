@@ -21,6 +21,9 @@ use Carbon\CarbonImmutable;
  */
 final class GreetingDesk
 {
+    /** New sets written a day (owner, D320: as many occasions as possible). */
+    public const PER_DAY = 2;
+
     public static function run(CarbonImmutable $now): bool
     {
         foreach (array_keys(GreetingPlan::OCCASIONS) as $slug) {
@@ -31,7 +34,8 @@ final class GreetingDesk
 
             return true;
         }
-        if (Setting::get('greeting.day') === $now->toDateString()) {
+        $done = (int) Setting::get('greeting.count.'.$now->toDateString(), 0);
+        if ($done >= self::PER_DAY) {
             return false;
         }
         $order = array_flip(GreetingPlan::order($now));
@@ -39,7 +43,7 @@ final class GreetingDesk
         if (! $next) {
             return false;
         }
-        Setting::put('greeting.day', $now->toDateString());
+        Setting::put('greeting.count.'.$now->toDateString(), $done + 1);
         self::draft($next);
 
         return true;
@@ -62,7 +66,13 @@ final class GreetingDesk
             .'groups: for each key (chhoto = one short line for a picture or a status, up to 90 characters; poribar = family and elders; bondhu = friends, light and playful allowed; office = colleagues, clients, polite) write 6 to 8 greetings of one to three sentences. '
             .'en = a plain English rendering of the same greeting, for families abroad. No emoji, no hashtags, no links, no names of real people, no claims about dates. Respect every faith: nothing a believer would find careless. '
             .'poet = one to four lines from a poem or song by ONLY one of these poets ('.implode(', ', array_keys(JanunPlan::POETS)).'; never Kazi Nazrul Islam, Jibanananda Das or any later poet: their work is in copyright), from a work published in the poet\'s lifetime, that suit the occasion, exactly as in the standard edition; work = the poem or song\'s name. If you are not certain of every letter, give empty strings. '
-            .'intro = two short paragraphs: what the occasion means and how Bengalis greet each other on it. description = 120-155 characters for Google, with the Bengali name and the word শুভেচ্ছা. '
+            .'intro = two short paragraphs: what the occasion means and how Bengalis greet each other on it. description = 120-155 characters for Google, with the Bengali name and the word শুভেচ্ছা (or বার্তা / শ্রদ্ধা for a sad or solemn day). '
+            .match (GreetingPlan::tone($s->slug)) {
+                'condolence' => 'THIS IS NOT A HAPPY OCCASION: messages of condolence. Quiet, sincere and short; no word of celebration, no শুভেচ্ছা, no jokes even for friends; poet = empty. ',
+                'tribute' => 'THIS IS A DAY OF REMEMBRANCE: শ্রদ্ধা, never শুভ or festive words; no jokes even for friends. ',
+                'care' => 'Someone is unwell: gentle, hopeful and caring; no jokes about illness. ',
+                default => '',
+            }
             .'faq = 3 short questions people really ask about greeting on this occasion (e.g. what to write to an elder), with short answers.';
         [$d, $err] = Claude::json('janun', $system, '<occasion bn="'.e($bn).'" en="'.e($en).'">'.e($brief).'</occasion>', $schema, (string) config('ai.anthropic.review_model'), 16000);
         $s->tries++;
@@ -151,7 +161,7 @@ final class GreetingDesk
         $str = ['type' => 'string'];
         [$d] = Claude::json('janun',
             'You are the proofreader of হাতপাখা, a Bengali literary magazine. You get greetings written for '.GreetingPlan::OCCASIONS[$s->slug][1].'. '
-            .'List ONLY the numbers of greetings that must not be published: a spelling or grammar mistake by Bangla Academy rules, a wrong or doubtful custom, anything careless about any faith, unkind, crude or sad on a happy day, '
+            .'List ONLY the numbers of greetings that must not be published: a spelling or grammar mistake by Bangla Academy rules, a wrong or doubtful custom, anything careless about any faith, unkind, crude or sad on a happy day, '.(GreetingPlan::tone($s->slug) === 'happy' ? '' : 'or (THIS IS A '.strtoupper(GreetingPlan::tone($s->slug)).' OCCASION, NOT A HAPPY ONE) anything cheerful, festive or joking, ')
             .'a claim about a date, or a well-known greeting, quotation or verse copied from elsewhere (we print only our own). Keep good ones; do not rewrite anything.',
             collect($lines)->map(fn ($l, $i) => '<g n="'.$i.'">'.e($l).'</g>')->implode("\n"),
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['drop'], 'properties' => ['drop' => ['type' => 'array', 'items' => ['type' => 'object',
