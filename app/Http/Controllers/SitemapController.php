@@ -159,6 +159,13 @@ class SitemapController extends Controller
         foreach ($fest as [$k, $y]) {
             $times[] = ['loc' => \App\Support\FestivalPlan::pageUrl($k, $y), 'lastmod' => \App\Models\FestivalTime::where(['festival' => $k, 'cycle' => $y, 'status' => 'verified'])->max('updated_at'), 'image' => null];
         }
+        $liveLists = \App\Models\HolidayList::all()->filter->isLive();   // D314
+        foreach ($liveLists as $hl) {
+            $times[] = ['loc' => $hl->url(), 'lastmod' => $hl->checked_at, 'image' => null];
+        }
+        foreach ($liveLists->pluck('year')->unique() as $hy) {
+            $times[] = ['loc' => Url::to('/janun/holidays/'.$hy), 'lastmod' => null, 'image' => null];
+        }
         foreach ([now()->year, now()->year + 1] as $y) {   // D313: পূর্ণিমা / অমাবস্যা / একাদশী of a year, once six are known
             foreach (array_keys(\App\Support\LunarDays::TYPES) as $t) {
                 if (count(\App\Support\LunarDays::year($t, $y)) >= 6) {

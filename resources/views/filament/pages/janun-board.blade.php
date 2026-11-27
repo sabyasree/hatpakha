@@ -67,6 +67,16 @@
         @endforeach
     </div>
 
+    <h2 class="text-lg font-bold">{{ __('সরকারি ছুটির তালিকা') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($holidays as $hl)
+            <div class="hp-j-box"><b>{{ $hl->name() }} {{ $n($hl->year) }}</b>: {{ $hl->isLive() ? __('প্রকাশিত') : ($hl->status === 'held' ? __('আটকে আছে') : __('প্রজ্ঞাপনের অপেক্ষায়')) }}
+                <p class="hp-j-why">{{ $n($hl->holidays()->where('status', 'verified')->count()) }} {{ __('দিন মিলেছে') }}@if ($hl->note) · {{ $hl->note }}@endif @if ($hl->isLive()) · <a class="hp-j-link" href="{{ $hl->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p></div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও খোঁজা হয়নি') }}</p>
+        @endforelse
+    </div>
+
     <h2 class="text-lg font-bold">{{ __('আজ থেকে তিথি') }}</h2>
     <div class="hp-j-box">
         <p>{{ $n($tithi['ok']) }} {{ __('দিনের তিথি মিলেছে') }}@if ($tithi['last']) ({{ __('শেষ দিন') }} {{ \Carbon\Carbon::parse($tithi['last'])->format('j M Y') }})@endif</p>
