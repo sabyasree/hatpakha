@@ -73,6 +73,7 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+Route::get('/janun/puja/{page}', [\App\Http\Controllers\LunarDaysController::class, 'show'])->where('page', '(purnima|amavasya|ekadashi)-20\d\d');   // D313
 Route::get('/janun/puja/{year}', [\App\Http\Controllers\FestivalPageController::class, 'year'])->where('year', '20\d\d');   // D308: a year's festivals
 Route::get('/janun/puja/{festival}', [\App\Http\Controllers\FestivalPageController::class, 'show'])->where('festival', '('.implode('|', array_column(\App\Support\FestivalPlan::PAGES, 0)).')-20\d\d');   // D308
 Route::get('/janun/puja/pujor-somoy', [\App\Http\Controllers\JanunController::class, 'times'])->name('janun.times');   // D302: tithi times in any time zone
