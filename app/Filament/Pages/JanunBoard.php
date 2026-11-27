@@ -96,6 +96,8 @@ class JanunBoard extends Page
 
         $greetings = \App\Models\GreetingSet::all()->sortBy(fn ($g) => array_search($g->slug, array_keys(\App\Support\GreetingPlan::OCCASIONS), true))->values();   // D315
 
-        return ['greetings' => $greetings, 'holidays' => $holidays, 'tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
+        $names = \App\Models\NamePage::all()->sortBy(fn ($p) => array_search($p->letter, array_keys(\App\Support\NamePlan::LETTERS), true).$p->gender)->values();   // D316
+
+        return ['names' => $names, 'greetings' => $greetings, 'holidays' => $holidays, 'tithi' => ['ok' => $tithi->where('status', 'verified')->count(), 'held' => $tithi->where('status', 'held')->values(), 'last' => $tithi->max('day')], 'pages' => $pages, 'counts' => $pages->countBy('status'), 'on' => Handover::on('janun'), 'festivals' => $festivals, 'months' => $months];
     }
 }

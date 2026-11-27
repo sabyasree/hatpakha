@@ -73,6 +73,8 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+Route::get('/janun/names', [\App\Http\Controllers\NameController::class, 'index']);   // D316
+Route::get('/janun/names/{page}', [\App\Http\Controllers\NameController::class, 'show'])->where('page', '(boy|girl)-names-[a-z]{1,3}');
 Route::get('/janun/greetings', [\App\Http\Controllers\GreetingController::class, 'index']);   // D315
 Route::get('/janun/greetings/{slug}', [\App\Http\Controllers\GreetingController::class, 'show'])->whereIn('slug', array_keys(\App\Support\GreetingPlan::OCCASIONS));
 Route::get('/janun/holidays/{year}', [\App\Http\Controllers\HolidayController::class, 'year'])->where('year', '20\d\d');   // D314

@@ -87,6 +87,17 @@
         @endforelse
     </div>
 
+    <h2 class="text-lg font-bold">{{ __('নাম ও অর্থ') }}</h2>
+    <div class="hp-j-grid">
+        @forelse ($names as $np)
+            @php($ns = collect((array) $np->names))
+            <div class="hp-j-box"><b>{{ $np->title() }}</b>: {{ match ($np->status) { 'live' => __('প্রকাশিত'), 'held' => __('আটকে আছে'), 'checking' => __('যাচাই চলছে'), 'scheduled' => __('তারিখ ঠিক হয়েছে').' · '.$np->publish_at?->timezone('Asia/Kolkata')->format('j M, g:i a'), default => __('লেখা হয়নি') } }}
+                <p class="hp-j-why">{{ $n($ns->where('status', 'ok')->count()) }} {{ __('নাম মিলেছে') }} · {{ $n($ns->where('status', 'no')->count()) }} {{ __('বাদ গেছে') }}@if ($ns->where('status', 'new')->count()) · {{ $n($ns->where('status', 'new')->count()) }} {{ __('বাকি') }}@endif @if ($np->isLive()) · <a class="hp-j-link" href="{{ $np->url() }}" target="_blank" rel="noopener">{{ __('পাতা') }}</a>@endif</p></div>
+        @empty
+            <p class="hp-j-why">{{ __('এখনও লেখা হয়নি') }}</p>
+        @endforelse
+    </div>
+
     <h2 class="text-lg font-bold">{{ __('আজ থেকে তিথি') }}</h2>
     <div class="hp-j-box">
         <p>{{ $n($tithi['ok']) }} {{ __('দিনের তিথি মিলেছে') }}@if ($tithi['last']) ({{ __('শেষ দিন') }} {{ \Carbon\Carbon::parse($tithi['last'])->format('j M Y') }})@endif</p>
