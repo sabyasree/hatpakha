@@ -172,7 +172,10 @@ class LearnController extends Controller
     {
         $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: 'বাংলা ওয়ার্কশিট PDF · Bengali Alphabet Worksheets (Free)',
             description: JanunPlan::clip('বাংলা বর্ণমালা, কার, ফলা আর যুক্তাক্ষরের ওয়ার্কশিট, প্রতিটি পাঠের জন্য একটি, A4 আর US Letter মাপে। বাংলা স্কুলের জন্য পুরো সেট। Free Bengali worksheets PDF.', 155),
-            jsonLd: [JsonLd::breadcrumbs(self::crumbs([['ওয়ার্কশিট', LearnCourse::url('worksheets')]]))]);
+            jsonLd: [JsonLd::breadcrumbs(self::crumbs([['ওয়ার্কশিট', LearnCourse::url('worksheets')]])),
+                ['@type' => 'ItemList', 'name' => 'বাংলা ওয়ার্কশিট / Bengali worksheets (PDF)', 'itemListElement' => collect(['alphabet' => 'বর্ণমালার চার্ট', 'alphabet-tracing' => 'বর্ণমালা লেখা অনুশীলন', 'kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা'])
+                    ->values()->map(fn ($name, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'item' => ['@type' => 'LearningResource', 'name' => $name, 'learningResourceType' => 'Worksheet', 'encodingFormat' => 'application/pdf', 'isAccessibleForFree' => true,
+                        'url' => LearnCourse::url('pdf/chart-'.['alphabet', 'alphabet-tracing', 'kar', 'juktakkhor'][$i].'-a4')]])->all()]]);   // D326
         Ads::allow();
 
         return view('learn.worksheets', ['units' => LearnCourse::units(), 'seo' => $seo]);
@@ -211,7 +214,7 @@ class LearnController extends Controller
     public function chart(string $chart)
     {
         return view('learn.chart', ['chart' => $chart, 'size' => self::size(), 'letters' => \App\Ai\KidsAlphabet::letters(), 'kar' => self::lessons()['kar'], 'jukta' => self::lessons()['juktakkhor'],
-            'seo' => new Seo(title: (['kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা'][$chart] ?? 'বর্ণমালার চার্ট').' · বাংলা শিখি', noindex: true, canonical: LearnCourse::url('worksheets'))]);
+            'seo' => new Seo(title: (['kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা', 'alphabet-tracing' => 'বর্ণমালা লেখা অনুশীলন'][$chart] ?? 'বর্ণমালার চার্ট').' · বাংলা শিখি', noindex: true, canonical: LearnCourse::url('worksheets'))]);
     }
 
     private static function size(): string
@@ -230,7 +233,7 @@ class LearnController extends Controller
             foreach (array_keys(LearnCourse::units()) as $unit) {
                 $out["$unit-teacher-$size"] = "/janun/learn-bengali/$unit/print/?size=$size";
             }
-            foreach (['alphabet', 'kar', 'juktakkhor'] as $c) {
+            foreach (['alphabet', 'alphabet-tracing', 'kar', 'juktakkhor'] as $c) {
                 $out["chart-$c-$size"] = "/janun/learn-bengali/charts/$c/print/?size=$size";
             }
         }
@@ -239,6 +242,9 @@ class LearnController extends Controller
     }
 
     /** D324: the picture of a worksheet's first page, if the deploy job has made it (chart-alphabet, kar-1-1, …). */
+    /** D326: the course's content date for sitemaps (changes only when the lessons or charts change, not on every deploy). */
+    public const VERSION = '2026-11-28';
+
     public static function preview(string $name): ?string
     {
         return is_file(public_path('pdf/learn/preview-'.$name.'.jpg')) ? asset('pdf/learn/preview-'.$name.'.jpg') : null;
@@ -255,7 +261,15 @@ class LearnController extends Controller
         }, null, false);
         $path = public_path('pdf/learn/'.$file.'.pdf');
         if (is_file($path)) {
-            return response()->file($path, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="hatpakha-'.$file.'.pdf"', 'X-Robots-Tag' => 'noindex']);
+            // charts and teacher's sets (A4) may be found by "… worksheet pdf" searches; their Letter twins point to them; single sheets stay out
+            $headers = ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="hatpakha-'.$file.'.pdf"'];
+            if (preg_match('/^(chart-[a-z-]+|[a-z0-9-]+-teacher)-letter$/', $file, $m)) {
+                $headers['Link'] = '<'.Url::to('/janun/learn-bengali/pdf/'.$m[1].'-a4').'>; rel="canonical"';
+            } elseif (! preg_match('/^(chart-[a-z-]+|[a-z0-9-]+-teacher)-a4$/', $file)) {
+                $headers['X-Robots-Tag'] = 'noindex';
+            }
+
+            return response()->file($path, $headers);
         }
 
         return redirect(Url::to($pdfs[$file]));   // the slash goes before the query (Url::to)

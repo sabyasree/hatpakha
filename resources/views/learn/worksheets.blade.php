@@ -18,7 +18,7 @@
         <h2 lang="en" class="mt-6 font-display text-2xl font-extrabold">Bengali alphabet worksheets (PDF)</h2>
         <h2 class="mt-1 font-display text-2xl font-extrabold">দেওয়ালের চার্ট</h2>
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
-            @foreach (['alphabet' => 'বর্ণমালার চার্ট', 'kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা'] as $c => $t)
+            @foreach (['alphabet' => 'বর্ণমালার চার্ট', 'alphabet-tracing' => 'বর্ণমালা লেখা অনুশীলন (অক্ষরের ক্রমে)', 'kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা'] as $c => $t)
                 <div class="rounded-2xl border-2 border-navy p-4">@if ($img = \App\Http\Controllers\LearnController::preview('chart-'.$c))<img src="{{ $img }}" alt="{{ $t }}: বাংলা ওয়ার্কশিট / Bengali worksheet (PDF)" width="794" height="1000" loading="lazy" class="mb-2 h-auto w-full rounded-lg border border-rule">@endif<p class="font-display text-xl font-extrabold">{{ $t }}</p>
                     <div class="mt-2 flex gap-2"><a href="{{ $C::url('pdf/chart-'.$c.'-a4') }}" class="flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">A4</a><a href="{{ $C::url('pdf/chart-'.$c.'-letter') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold" lang="en">US Letter</a></div></div>
             @endforeach

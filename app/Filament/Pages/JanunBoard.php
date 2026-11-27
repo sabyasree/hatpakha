@@ -43,17 +43,25 @@ class JanunBoard extends Page
 
     public static function getNavigationBadgeColor(): ?string
     {
-        return 'gray';   // D279: for information
+        // D326: a held greeting set or names page needs a person before its day comes: red; held reference pages: grey
+        return self::heldTimely() ? 'danger' : 'gray';
+    }
+
+    /** Greeting sets and name pages that stopped (held, or gave up after three tries). */
+    public static function heldTimely(): int
+    {
+        return \App\Models\GreetingSet::where('status', 'held')->orWhere(fn ($q) => $q->where('status', 'planned')->where('tries', '>=', 3))->count()
+            + \App\Models\NamePage::where('status', 'held')->count();
     }
 
     public static function getNavigationBadge(): ?string
     {
-        return ($n = JanunPage::where('status', 'held')->count()) ? \App\Support\Bn::num((string) $n) : null;
+        return ($n = JanunPage::where('status', 'held')->count() + self::heldTimely()) ? \App\Support\Bn::num((string) $n) : null;
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return \App\Support\DeskInbox::join([[JanunPage::where('status', 'held')->count(), 'টি পাতা আটকে আছে']]);
+        return \App\Support\DeskInbox::join([[JanunPage::where('status', 'held')->count(), 'টি পাতা আটকে আছে'], [self::heldTimely(), 'টি শুভেচ্ছা বা নামের পাতা আটকে আছে']]);
     }
 
     /** Why a page is where it is, in plain words. */

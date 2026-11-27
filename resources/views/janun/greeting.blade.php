@@ -65,6 +65,7 @@
                 @foreach ($others as $o)<a href="{{ $o->url() }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">{{ $o->name() }}</a>@endforeach
             </div>
         @endif
+        @include('janun.partials.read-magazine')
     </article>
 
     <dialog data-card-dialog aria-labelledby="card-h" class="m-auto w-[min(92vw,460px)] rounded-2xl border-2 border-navy bg-paper p-4 text-navy backdrop:bg-navy/60">

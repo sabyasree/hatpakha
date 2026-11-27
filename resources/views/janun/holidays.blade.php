@@ -37,5 +37,6 @@
             <a href="{{ $U('/janun/puja/pujor-somoy') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">পুজোর তিথি ও সময়</a>
         </div>
         <x-ad-slot spot="list" :height="250" />
+        @include('janun.partials.read-magazine')
     </article>
 </x-layouts.app>

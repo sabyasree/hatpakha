@@ -199,7 +199,7 @@ class SitemapController extends Controller
                 $cal->push(['loc' => \App\Support\BanglaDate::url($y, $m), 'lastmod' => null, 'image' => null]);
             }
         }
-        $learnMod = \Illuminate\Support\Carbon::createFromTimestamp((int) @filemtime(database_path('content/learn-course.php')));
+        $learnMod = \Illuminate\Support\Carbon::parse(\App\Http\Controllers\LearnController::VERSION);
         foreach (array_merge(['', '/parents', '/worksheets', '/english'], array_map(fn ($k) => '/'.$k, \App\Http\Controllers\LearnController::LESSONS),
             array_map(fn ($k) => '/'.$k, array_keys(\App\Support\LearnCourse::units()))) as $lk) {   // D317/D321: the parent pages (lessons and the map are not indexed)
             $img = $lk === '/worksheets' ? \App\Http\Controllers\LearnController::preview('chart-alphabet')

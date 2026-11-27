@@ -82,7 +82,7 @@ Route::prefix('/janun/learn-bengali')->controller(\App\Http\Controllers\LearnCon
     Route::get('/english', 'english');   // D322
     Route::get('/certificate', 'certificate');
     Route::get('/pdf/{file}', 'pdf')->where('file', '[a-z0-9-]{3,60}');
-    Route::get('/charts/{chart}/print', 'chart')->whereIn('chart', ['alphabet', 'kar', 'juktakkhor']);
+    Route::get('/charts/{chart}/print', 'chart')->whereIn('chart', ['alphabet', 'alphabet-tracing', 'kar', 'juktakkhor']);
     Route::get('/{lesson}', 'show')->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
     Route::get('/{unit}', 'unit')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
     Route::get('/{unit}/print', 'teacher')->whereIn('unit', array_keys(\App\Support\LearnCourse::data()['units']));
