@@ -28,7 +28,7 @@
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-board>
         @include('partials.game-nav', ['on' => 'board'])
         <p class="font-hand text-2xl text-red">কারা এগিয়ে</p>
-        <h1 class="font-display text-4xl font-extrabold leading-tight">লিডারবোর্ড</h1>
+        <h1 class="font-display text-4xl font-extrabold leading-tight">সেরাদের তালিকা</h1>
 
         @if ($hall['year'])
             <div class="mt-3 flex items-center gap-3 rounded-2xl bg-navy px-4 py-2.5 text-white">
@@ -65,7 +65,7 @@
                     <p class="font-serif text-2xl font-bold leading-tight">এখনও কেউ নেই</p>
                     <p class="text-lg font-bold">প্রথম নামটা আপনার হোক</p>
                 @endif
-                <p class="mt-1 text-sm font-semibold">@if ($judged){{ Bn::MONTHS[$now->month - 1] }} শেষ হতে আর {{ Bn::num((string) $left) }} দিন। সেরা তিন জন খেতাব পাবেন।@else মাসের সেরার খেতাব শুরু {{ GameTitles::label('month', GameTitles::FIRST_MONTH) }} থেকে।@endif</p>
+                <p class="mt-1 text-sm font-semibold">@if ($judged){{ Bn::MONTHS[$now->month - 1] }} শেষ হতে আর {{ Bn::num((string) $left) }} দিন। সেরা তিন জন খেতাব পাবেন।@else মাসের সেরার খেতাব দেওয়া শুরু হবে {{ GameTitles::label('month', GameTitles::FIRST_MONTH) }} থেকে।@endif</p>
             </div>
             @if ($judged){!! GameTitles::svg('month', 1, 84, Bn::MONTHS[$now->month - 1]) !!}@endif
         </div>
@@ -91,7 +91,7 @@
                         <a href="{{ Url::to('/khela/aaj') }}" class="mt-3 flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white shadow-[3px_3px_0_#13212C]">খেলুন</a>
                     </div>
                 @else
-                    @if ($few)<p class="mt-3 rounded-2xl bg-peach-light px-4 py-3 font-bold">এখনও কম জন খেলেছেন। প্রথম দিকে নাম তুলুন।</p>@endif
+                    @if ($few)<p class="mt-3 rounded-2xl bg-peach-light px-4 py-3 font-bold">এখনও অল্প কয়েকজন খেলেছেন। এই বেলা নাম তুলে ফেলুন।</p>@endif
                     <ol class="mt-3 overflow-hidden rounded-3xl border-2 border-navy bg-white">
                         @foreach ($b['rows'] as $r)
                             <li class="flex min-h-[3.75rem] items-center gap-2.5 border-b border-rule px-3.5 py-1.5 last:border-b-0 {{ $r['me'] ? 'bg-sky-tint' : '' }}">

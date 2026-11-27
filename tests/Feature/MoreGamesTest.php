@@ -145,8 +145,9 @@ class MoreGamesTest extends TestCase
         $this->get('/khela/ek-shobde/')->assertOk()->assertSee('data-choice', false);
         $this->get('/khela/akshorjal/')->assertOk()->assertSee('data-jal', false);
         $this->get('/khela/aaj/')->assertOk()->assertSee('অক্ষরজাল')->assertSee('পত্রিকা-কুইজ')->assertSee('সাপ্তাহিক লড়াই');
-        // the menu of every game page lists the new games
-        $this->get('/khela/')->assertOk()->assertSee('বানান-যাচাই')->assertSee('লড়াই ও দল');
+        // D330: a game's own page has one slim row back to today's games; the full menu lives on the hub and the board
+        $this->get('/khela/')->assertOk()->assertSee('আজকের খেলা')->assertSee('সেরাদের তালিকা')->assertDontSee('লড়াই ও দল');
+        $this->get('/khela/board/')->assertOk()->assertSee('বানান-যাচাই')->assertSee('লড়াই ও দল');
     }
 
     public function test_a_finished_game_reaches_the_board(): void

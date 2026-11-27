@@ -104,7 +104,7 @@
                 <input id="hp-lorai-name" data-c-name type="text" maxlength="30" autocomplete="nickname" class="mt-2 h-14 w-full rounded-2xl border-2 border-navy bg-paper px-4 text-xl" placeholder="যেমন: মিতা, রাজুদা">
                 <p class="mt-1 min-h-5 text-sm font-bold text-red" role="status" data-c-name-msg></p>
                 <button type="button" data-c-go class="mt-2 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন →</button>
-                <p class="mt-3 text-sm text-ink2">অ্যাকাউন্ট আছে? <a class="font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}">সাইন ইন করে খেলুন</a>, নামটা নিজে থেকে বসবে।</p>
+                <p class="mt-3 text-sm text-ink2">অ্যাকাউন্ট আছে? <a class="inline-flex min-h-11 items-center font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}">সাইন ইন করে খেলুন</a>, নামটা নিজে থেকে বসবে।</p>
             </div>
             @include('partials.choice-board', ['count' => count($questions), 'after' => false, 'noShare' => true,
                 'extra' => '<a href="#" data-c-results hidden class="mt-4 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">'.($maker ? 'সবার পয়েন্ট দেখুন →' : 'সবার পয়েন্ট দেখুন ও লিঙ্ক পাঠান →').'</a>'])

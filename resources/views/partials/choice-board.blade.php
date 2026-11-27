@@ -19,18 +19,19 @@
     <p class="font-hand text-3xl text-red" data-c-cheer></p>
     <p class="mt-1 text-2xl font-extrabold" data-c-score></p>
     <p class="mt-2 flex flex-wrap gap-1.5" data-c-grid aria-hidden="true"></p>
+    @unless ($noShare ?? false)
+        {{-- D330 (UX panel): sharing right under the score, one filled button --}}
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <a data-c-wa href="#" target="_blank" rel="noopener" class="flex h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 font-bold text-white">WhatsApp-এ ফল পাঠান</a>
+            <button type="button" data-c-share class="min-h-11 font-bold text-sky-night underline">বন্ধুদের দেখান</button>
+        </div>
+    @endunless
     {!! $extra ?? '' !!}
     @if ($after ?? true)
         @include('partials.game-board-line')
     @endif
     <h2 class="mt-4 font-display text-xl font-extrabold">উত্তরগুলো</h2>
     <ul class="mt-2 divide-y divide-rule" data-c-answers></ul>
-    @unless ($noShare ?? false)
-        <div class="mt-4 grid gap-2">
-            <button type="button" data-c-share class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">বন্ধুদের দেখান</button>
-            <a data-c-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
-        </div>
-    @endunless
     <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-c-share-msg></p>
     <div data-report></div>
 </div>

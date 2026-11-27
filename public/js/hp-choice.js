@@ -88,7 +88,7 @@
         $('score').textContent = bn(total()) + ' / ' + bn(max) + ' পয়েন্ট';
         const gridBox = $('grid'); gridBox.textContent = '';
         day.results.forEach((r) => { const i = document.createElement('i'); i.className = 'block h-7 w-7 rounded-lg border-2 border-navy ' + (r === 'g' ? 'bg-sky-deep' : 'bg-red'); gridBox.appendChild(i); });
-        const ul = $('answers'); ul.textContent = '';
+        const ul = $('answers'); ul.textContent = ''; let shownMag = false;
         data.items.forEach((q, i) => {
             const li = document.createElement('li'); li.className = 'py-2';
             const top = document.createElement('span'); top.className = 'flex items-start gap-2';
@@ -97,7 +97,7 @@
             b.textContent = (q.p && data.showPrompt && q.sp !== false ? q.p + ': ' : '') + answer(q);
             top.append(mark, b); li.append(top);
             if (q.n) { const c = document.createElement('span'); c.className = 'block ps-6 text-base text-ink2'; c.textContent = q.n; li.append(c); }
-            if (q.m && window.hpMagLine) li.append(window.hpMagLine(q.m));
+            if (q.m && window.hpMagLine && !shownMag) { li.append(window.hpMagLine(q.m)); shownMag = true; }   // once: the share buttons stay near (UX panel)
             if (q.l) { const a = document.createElement('a'); a.className = 'ms-6 inline-flex min-h-11 items-center font-bold text-sky-night underline'; a.href = q.l.u; a.textContent = 'পড়ুন: ' + q.l.t; li.append(a); }
             ul.appendChild(li);
         });

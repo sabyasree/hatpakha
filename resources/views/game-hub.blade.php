@@ -23,7 +23,10 @@
     $byKey = collect($cards)->keyBy(0);
     $top = collect($three)->map(fn ($k) => $byKey[$k] ?? null)->filter()->values()->all();
     $others = collect($cards)->reject(fn ($c) => in_array($c[0], $three, true))->values()->all();
-    $startAt = collect($top)->first(fn ($c) => ! (($today['groups'] ?? null) && collect($today['groups'])->firstWhere('key', $c[0])['done']));
+    $isDoneKey = fn ($k) => (bool) (collect($today['groups'] ?? [])->firstWhere('key', $k)['done'] ?? false);
+    $top = collect($top)->sortBy(fn ($c) => $isDoneKey($c[0]) ? 1 : 0)->values()->all();   // the ones still to play first
+    $startAt = collect($top)->first(fn ($c) => ! $isDoneKey($c[0]));
+    $doneCount = collect($today['groups'] ?? [])->where('done', true)->count();
     $quiz = \App\Support\WeeklyQuiz::live();
     $quizDone = $me && $quiz && \App\Support\WeeklyQuiz::played($me, $day);
     $groups = collect($today['groups'] ?? [])->keyBy('key');
@@ -49,17 +52,17 @@
                     {{-- D330: no "০ দিন টানা": the week's days instead --}}
                     <span><span class="block font-display text-3xl font-extrabold leading-none">{{ Bn::num((string) count(array_filter($weekDays))) }}</span><span class="text-sm font-bold text-ink2">দিন এ সপ্তাহে</span></span>
                 @endif
-                <span class="border-x-2 border-rule"><span class="block font-display text-3xl font-extrabold leading-none text-red">{{ Bn::num((string) $today['total']) }}<span class="text-lg text-navy"> / {{ Bn::num((string) GameScores::DAY_MAX) }}</span></span><span class="text-sm font-bold text-ink2">আজকের পয়েন্ট</span></span>
+                <span class="border-x-2 border-rule"><span class="block whitespace-nowrap font-display text-2xl font-extrabold leading-none text-red">{{ Bn::num((string) $today['total']) }}<span class="text-base text-navy"> / {{ Bn::num((string) GameScores::DAY_MAX) }}</span></span><span class="text-sm font-bold text-ink2">আজকের পয়েন্ট</span></span>
                 <span><span class="block font-display text-xl font-extrabold leading-tight">{{ $level['name'] }}</span><span class="text-sm font-bold text-ink2">আপনার স্তর</span></span>
             </a>
             <div class="mt-3 rounded-2xl border-2 border-navy bg-white px-3 py-2">@include('partials.game-week', ['days' => $weekDays])</div>
         @else
-            <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট, লিডারবোর্ড আর খেতাবের জন্য অ্যাকাউন্ট লাগে।</p>
+            <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট জমাতে, সেরাদের তালিকায় নাম তুলতে আর খেতাব পেতে অ্যাকাউন্ট লাগে (বিনামূল্যে)।</p>
         @endif
 
         <div class="mt-5 flex items-end justify-between gap-2">
-            <h2 class="font-display text-2xl font-extrabold leading-tight">আজকের তিন <span class="block text-base font-bold text-ink2">সাত-আট মিনিটে পুরো দিন</span></h2>
-            @if ($startAt)<a href="{{ $startAt[3] }}" class="flex h-12 flex-none items-center rounded-full bg-red px-5 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন →</a>@endif
+            <h2 class="font-display text-2xl font-extrabold leading-tight">আজকের তিন <span class="block text-base font-bold text-ink2">@if ($doneCount >= 3)আজকের দিন পূর্ণ ✓ আরও খেললে মজা, পয়েন্ট বাড়বে না @elseif ($doneCount)আর {{ Bn::num((string) (3 - $doneCount)) }}টা খেললেই পুরো দিন @else সাত-আট মিনিটে পুরো দিন @endif</span></h2>
+            @if ($startAt && $doneCount < 3)<a href="{{ $startAt[3] }}" class="flex h-12 flex-none items-center rounded-full bg-red px-5 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">{{ $doneCount ? 'পরেরটা খেলুন →' : 'শুরু করুন →' }}</a>@endif
         </div>
         <ul class="mt-3 grid gap-3">
             @foreach ($top as [$key, $name, $line, $href, $max, $open, $tiles])
@@ -75,13 +78,13 @@
                     <a href="{{ $href }}" class="flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $isDone && ! $more ? 'bg-peach-light' : 'bg-white shadow-[4px_4px_0_#13212C]' }}">
                         <span class="flex flex-none gap-0.5" aria-hidden="true">@foreach ($tiles as $t)<span class="flex h-11 w-10 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
                         <span class="min-w-0 flex-1 leading-tight">
-                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-xs font-bold text-white">নতুন</span>@endif</span>
-                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)অ্যাকাউন্ট লাগে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
+                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-sm font-bold text-white">নতুন</span>@endif</span>
+                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)বিনামূল্যে অ্যাকাউন্ট খুললে খেলা যাবে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
                         </span>
                         @if ($isDone && ! $more)
                             <span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
                         @elseif ($needsAccount)
-                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') খুলুন</span>
+                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') সাইন ইন</span>
                         @else
                             <span class="flex h-12 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
                         @endif
@@ -104,13 +107,13 @@
                     <a href="{{ $href }}" class="flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $isDone && ! $more ? 'bg-peach-light' : 'bg-white shadow-[4px_4px_0_#13212C]' }}">
                         <span class="flex flex-none gap-0.5" aria-hidden="true">@foreach ($tiles as $t)<span class="flex h-11 w-10 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
                         <span class="min-w-0 flex-1 leading-tight">
-                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-xs font-bold text-white">নতুন</span>@endif</span>
-                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)অ্যাকাউন্ট লাগে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
+                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-sm font-bold text-white">নতুন</span>@endif</span>
+                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)বিনামূল্যে অ্যাকাউন্ট খুললে খেলা যাবে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
                         </span>
                         @if ($isDone && ! $more)
                             <span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
                         @elseif ($needsAccount)
-                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') খুলুন</span>
+                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') সাইন ইন</span>
                         @else
                             <span class="flex h-12 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
                         @endif
@@ -128,7 +131,7 @@
             @if ($quizDone)<span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
             @elseif ($quiz)<span class="flex h-12 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>@endif
         </a>
-        <p class="mt-3 text-ink2">প্রতিটি খেলা দিনে ১০০ পয়েন্ট পর্যন্ত। দিনের সেরা তিনটে খেলা গোনা হয়, তাই পুরো দিন = ৩০০। যেগুলো ভালো লাগে, সেগুলোই খেলুন।</p>
+        <p class="mt-3 rounded-2xl bg-white px-4 py-3 text-ink2"><b class="text-navy">পয়েন্টের নিয়ম:</b> প্রতিটি খেলায় দিনে ১০০ পর্যন্ত। দিনের সেরা তিনটে খেলা মিলে ৩০০। সপ্তাহে সেরা ছ'দিন গোনা হয়। যেগুলো ভালো লাগে, সেগুলোই খেলুন।</p>
 
         <div class="mt-6 grid grid-cols-2 gap-3">
             <a href="{{ Url::to('/khela/lorai') }}" class="rounded-3xl border-2 border-navy bg-white p-4 shadow-[4px_4px_0_#13212C]">

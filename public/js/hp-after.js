@@ -41,13 +41,13 @@ window.hpAfter = function (root, j) {
     } else { $('level-box').hidden = true; }
     // D330: this week's seven days; a missed day is one empty dot, not a run lost
     if (w.days && $('week')) {
-        const names = ['র', 'সো', 'ম', 'বু', 'বৃ', 'শু', 'শ']; const today = new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000).getDay();
+        const names = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি']; const today = new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000).getDay();
         const ol = $('week-dots'); ol.textContent = '';
         w.days.forEach((on, i) => {
             const li = document.createElement('li'); li.className = 'flex flex-col items-center gap-0.5';
-            const dot = document.createElement('span'); dot.className = 'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-extrabold ' + (on ? 'border-navy bg-red text-white' : (i === today ? 'border-red bg-white' : 'border-rule bg-white'));
+            const dot = document.createElement('span'); dot.className = 'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-extrabold ' + (on ? 'border-navy bg-red text-white' : (i === today ? 'border-red bg-white' : (i < today ? 'border-dashed border-ink2 bg-white' : 'border-navy bg-white')));
             dot.textContent = on ? '✓' : '';
-            const n = document.createElement('span'); n.className = 'text-xs font-bold text-ink2'; n.textContent = names[i];
+            const n = document.createElement('span'); n.className = 'text-[13px] font-bold text-ink2'; n.textContent = names[i];
             li.append(dot, n); ol.appendChild(li);
         });
         const c = w.days.filter(Boolean).length;

@@ -112,6 +112,7 @@ final class WeeklyQuiz
             .'each about a DIFFERENT piece below (use the piece id). A reader who has read the piece can answer; one who has not, cannot guess it from general knowledge. '
             .'Ask about a detail in the text (a place, an object, a name, what someone did, an image in a poem). NEVER ask about or reveal the ending, the twist, who did it, or how a story ends. '
             .'Nothing sad, violent or private as the point of a question; nothing about the writer\'s life. Each question has four short options (under 6 words each), exactly one right, the others plausible and from the same kind. '
+            .'Write a piece\'s title in «» as its own phrase followed by a word, never with a case ending stuck to the quote mark: «শিরোনাম» গল্পে…, «শিরোনাম» কবিতায়… (not «শিরোনাম»-এ). '
             .'Give in "why" one short Bengali sentence saying where in the piece the answer is (without revealing the ending). Use only what the text says; never invent.',
             "Pieces published this week:\n".$text,
             ['type' => 'object', 'additionalProperties' => false, 'required' => ['questions'], 'properties' => ['questions' => ['type' => 'array', 'items' => [

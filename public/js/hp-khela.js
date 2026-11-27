@@ -132,7 +132,7 @@
             const b = document.createElement('strong'); b.className = 'font-serif text-lg'; b.textContent = answer(w);
             const c = document.createElement('span'); c.className = 'block text-sm text-ink2'; c.textContent = w.clue;
             li.append(b, c);
-            if (w.m && window.hpMagLine) li.append(window.hpMagLine(w.m));
+            if (w.m && window.hpMagLine && !ul.querySelector('a[href]')) li.append(window.hpMagLine(w.m));   // once (UX panel)
             ul.appendChild(li);
         });
         if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), data.kind, data.words.map((w) => ({ word: answer(w), clue: w.clue })));

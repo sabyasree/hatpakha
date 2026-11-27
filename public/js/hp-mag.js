@@ -7,7 +7,7 @@ window.hpMagLine = function (b64) {
     if (!m || !m.u) return box;
     box.href = m.u;
     box.className = 'mt-1 block rounded-xl border-l-4 border-red bg-white px-3 py-2 text-base leading-snug text-navy';
-    const k = document.createElement('span'); k.className = 'block text-sm font-bold text-red'; k.textContent = 'হাতপাখায় এই শব্দ';
+    const k = document.createElement('span'); k.className = 'block text-sm font-bold text-red'; k.textContent = 'হাতপাখার লেখায় শব্দটা';
     const s = document.createElement('span'); s.className = 'block font-serif'; s.textContent = '“' + m.s + '”';
     const t = document.createElement('span'); t.className = 'mt-0.5 block text-sm font-bold text-sky-night underline'; t.textContent = m.t + ' পড়ুন →';
     box.append(k, s, t);

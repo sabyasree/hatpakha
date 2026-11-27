@@ -12,7 +12,7 @@
     $third = GameScores::ranking('month')[2]['points'] ?? null;
     // what can still be won this month: only a target within it is worth naming
     $reach = GameScores::DAY_MAX * (now('Asia/Kolkata')->daysInMonth - now('Asia/Kolkata')->day + 1) / 2;
-    $tiles = array_filter([['দিন টানা খেলছেন', $streak['now']], ['নিখুঁত দিন (৩০০)', $feats['perfect']], ['নিয়মিত মাস', $feats['regular']]], fn ($x) => $x[1] > 0);
+    $tiles = array_filter([['দিন টানা খেলছেন', $streak['now']], ['নিখুঁত দিন (৩০০)', $feats['perfect']], ['নিয়মিত মাস', $feats['regular']]], fn ($x) => $x[1] > ($x[0] === 'দিন টানা খেলছেন' ? 1 : 0));
 @endphp
 <h2 id="games" class="mt-10 scroll-mt-24 font-display text-2xl font-extrabold">{{ __('আমার খেলা') }}</h2>
 <div class="mt-3 max-w-xl">

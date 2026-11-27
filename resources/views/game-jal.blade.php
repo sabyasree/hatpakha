@@ -28,13 +28,13 @@
             @include('partials.game-lock', ['what' => 'অক্ষরজাল', 'easy' => ['বানান-যাচাই', Url::to('/khela/banan')]])
         @else
             <div data-jal-intro class="mt-5 rounded-3xl border-2 border-navy bg-white p-5 shadow-[4px_4px_0_#13212C]">
-                <p class="text-lg">আজকের জালে <b>{{ Bn::num((string) count($game['words'])) }}</b>টা শব্দ লুকিয়ে আছে। ঘড়ি চলবে শুরু টিপলে।</p>
-                <ul class="mt-2 list-disc space-y-1 ps-6 text-ink2">
-                    <li>প্রথম অক্ষরে আঙুল রেখে টেনে নিয়ে যান, শেষ অক্ষরে আঙুল তুলুন।</li>
-                    <li>টানতে অসুবিধে হলে অক্ষরগুলো একটা একটা করে টিপুন, তারপর "জমা দিন"।</li>
+                <p class="text-lg">আজকের জালে <b>{{ Bn::num((string) count($game['words'])) }}</b>টা শব্দ লুকিয়ে আছে। শুরু টিপলে তিন মিনিটের ঘড়ি চলবে।</p>
+                <button type="button" data-jal-go class="mt-3 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন</button>
+                <ul class="mt-3 list-disc space-y-1 ps-6 text-ink2">
+                    <li>ছুঁয়ে থাকা অক্ষরগুলো পরপর টিপুন, তারপর "জমা দিন"। চাইলে আঙুল টেনেও বানাতে পারেন।</li>
                     <li>একই শব্দে একটা অক্ষর একবারই।</li>
+                    <li>অন্য অ্যাপে গেলে বা ফোন এলে ঘড়ি থেমে থাকে।</li>
                 </ul>
-                <button type="button" data-jal-go class="mt-4 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন</button>
             </div>
 
             <div data-jal-board hidden class="mt-5">
@@ -62,15 +62,15 @@
                 <p class="font-hand text-3xl text-red" data-jal-cheer></p>
                 <p class="mt-1 text-2xl font-extrabold" data-jal-score></p>
                 <p class="mt-1 text-lg" data-jal-sum></p>
+                <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <a data-jal-wa href="#" target="_blank" rel="noopener" class="flex h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 font-bold text-white">WhatsApp-এ ফল পাঠান</a>
+                    <button type="button" data-jal-share class="min-h-11 font-bold text-sky-night underline">বন্ধুদের দেখান</button>
+                </div>
                 @include('partials.game-board-line')
                 <h2 class="mt-4 font-display text-xl font-extrabold">আজকের জালের সব শব্দ</h2>
                 <p class="text-sm text-ink2">গাঢ় রঙে আপনার পাওয়া, হালকায় বাকি থাকা।</p>
                 <ul class="mt-2 flex flex-wrap gap-2" data-jal-all></ul>
                 <div data-jal-mag hidden class="mt-4"><h3 class="font-bold">এই শব্দগুলো হাতপাখার লেখায়</h3><div class="mt-1 grid gap-2" data-jal-mag-list></div></div>
-                <div class="mt-4 grid gap-2">
-                    <button type="button" data-jal-share class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">বন্ধুদের দেখান</button>
-                    <a data-jal-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
-                </div>
                 <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-jal-share-msg></p>
                 <p class="mt-4 font-bold">নতুন জাল আসবে রাত বারোটায় (ভারতের সময়)।</p>
             </div>

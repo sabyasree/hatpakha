@@ -18,15 +18,22 @@
             <p class="mt-1 text-xs text-ink2">স্তরে সব খেলার পয়েন্ট জমে, দিনের ৩০০-র বাইরেরগুলোও।</p>
         </div>
         <div class="mt-3" data-after-week hidden>
-            <ol class="flex gap-1.5" aria-hidden="true" data-after-week-dots></ol>
+            <ol class="flex justify-between" aria-hidden="true" data-after-week-dots></ol>
             <p class="mt-1 text-sm font-bold leading-tight" data-after-week-text></p>
         </div>
         <p class="mt-3 font-bold" data-after-streak></p>
     </div>
-    <a href="{{ \App\Support\Url::to('/khela/board') }}" class="mt-2 flex min-h-11 items-center justify-center font-bold text-sky-night underline">কারা এগিয়ে, দেখুন →</a>
+    <a href="{{ \App\Support\Url::to('/khela/board') }}" class="mt-2 flex min-h-11 items-center justify-center font-bold text-sky-night underline">সেরাদের তালিকা দেখুন →</a>
     {{-- D182: an evening reminder on days the reader has a run going and has not played yet --}}
     <p class="mt-2 flex justify-center"><x-push-button topic="games" off="🔔 রোজ খেলার কথা মনে করিয়ে দিন" on="✓ খেলার রিমাইন্ডার চালু (বন্ধ করতে টিপুন)" :small="true" /></p>
 @else
+    @php
+        // D330 (UX panel): a guest's visit no longer ends with the result; the next game open to all, then the account
+        $open = [['শব্দ-খেলা', '/khela'], ['সহজ ধাঁধা', '/khela/dhadha'], ['বানান-যাচাই', '/khela/banan'], ['সহজ শব্দজব্দ', '/khela/shobdojobdo/sohoj']];
+        $here = '/'.trim(request()->path(), '/');
+        $guestNext = collect($open)->first(fn ($g) => $g[1] !== $here);
+    @endphp
+    <a href="{{ \App\Support\Url::to($guestNext[1]) }}" class="mt-4 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">এবার {{ $guestNext[0] }} খেলুন →</a>
     <div class="mt-3 rounded-2xl border-2 border-navy bg-white p-4">
         <p class="text-lg font-bold">পয়েন্ট জমিয়ে রাখতে চান?</p>
         <p class="mt-1 text-ink2">বিনামূল্যে অ্যাকাউন্ট খুলুন: রোজকার পয়েন্ট জমবে, সব খেলা খুলবে, সেরাদের তালিকায় নাম উঠবে, মাসের সেরার খেতাব জেতা যাবে।</p>

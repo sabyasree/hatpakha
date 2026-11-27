@@ -43,7 +43,7 @@
                  above the account, for everyone. --}}
             <div class="grid grid-cols-2 gap-2 px-3 pt-3">
                 <a href="{{ Url::to('/khela/aaj') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-peach-light px-3 py-2 font-bold hover:bg-peach">
-                    <span class="text-lg leading-tight">{{ __('খেলা') }}</span><span class="text-sm font-medium text-ink2">{{ __('রোজের ধাঁধা ও শব্দের খেলা') }}</span></a>
+                    <span class="text-lg leading-tight">{{ __('খেলা') }}</span><span class="text-sm font-medium text-ink2">@auth{{-- D330 (UX panel): how today stands, for one-tap return --}}@php $gt = \App\Support\GameScores::today(auth()->user()); @endphp@if (collect($gt['groups'])->where('done', true)->count() >= 3){{ __('আজকের দিন পূর্ণ ✓') }}@else{{ __('আজ') }} {{ \App\Support\Bn::num((string) $gt['total']) }} / ৩০০ · {{ __('বাকি আছে') }}@endif @else{{ __('রোজ নতুন ধাঁধা, শব্দজব্দ, কুইজ') }}@endauth</span></a>
                 <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
                     <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>
                 {{-- D311 (UX review): today's date at a glance; the calendar and the puja times one tap away --}}

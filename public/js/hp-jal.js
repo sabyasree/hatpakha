@@ -13,7 +13,14 @@
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
-    if (store.date !== data.date) store = { date: data.date, start: null, found: [], ended: false };
+    if (store.date !== data.date) store = { date: data.date, start: null, found: [], ended: false, used: 0 };
+    // D330 (UX panel): the clock counts only time on this page; a phone call or a WhatsApp reply does not eat it
+    let seg = null;
+    const usedMs = () => (store.used || 0) + (seg ? Date.now() - seg : 0);
+    document.addEventListener('visibilitychange', () => {
+        if (!store.start || store.ended) return;
+        if (document.hidden) { if (seg) { store.used = usedMs(); seg = null; save(); } } else if (!seg) { seg = Date.now(); }
+    });
     const total = () => Math.min(100, store.found.reduce((s, w) => s + pointsFor(words.get(w) || 0), 0));
 
     // the grid
@@ -102,14 +109,16 @@
 
     // the clock
     let timer = null;
-    const left = () => Math.max(0, data.seconds - Math.floor((Date.now() - store.start) / 1000));
+    const left = () => Math.max(0, data.seconds - Math.floor(usedMs() / 1000));
     const tick = () => {
         const s = left();
         $('clock').textContent = '⏱ ' + bn(Math.floor(s / 60)) + ':' + bn(String(s % 60).padStart(2, '0'));
         if (s <= 0) finish();
     };
     const begin = () => {
-        if (!store.start) { store.start = Date.now(); save(); }
+        if (!store.start) { store.start = Date.now(); store.used = 0; save(); }
+        if (store.used === undefined) store.used = Date.now() - store.start;   // a game begun before the clock could pause
+        seg = Date.now();
         $('intro').hidden = true; $('board').hidden = false;
         $('board').scrollIntoView({ block: 'start', behavior: 'smooth' });   // the clock and the whole grid in view
         document.documentElement.dataset.playing = '1';   // the site's bottom bar steps aside while the clock runs
@@ -124,6 +133,7 @@
     };
     function finish() {
         if (timer) clearInterval(timer);
+        store.used = usedMs(); seg = null;
         store.ended = true; save(); path = []; mode = null;
         delete document.documentElement.dataset.playing;
         $('intro').hidden = true; $('board').hidden = true; $('done').hidden = false;
@@ -143,7 +153,7 @@
         const url = root.dataset.scoreUrl;
         if (url) {
             fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },
-                body: JSON.stringify({ game: 'jal', day: data.date, seconds: Math.max(1, Math.min(data.seconds, Math.round((Date.now() - store.start) / 1000))), words: store.found }) })
+                body: JSON.stringify({ game: 'jal', day: data.date, seconds: Math.max(1, Math.min(data.seconds, Math.round((store.used || 0) / 1000))), words: store.found }) })
                 .then((r) => r.ok ? r.json() : null).then((j) => { if (window.hpAfter) window.hpAfter(root, j); }).catch(() => {});
         }
     }

@@ -99,7 +99,7 @@ class WordGameTest extends TestCase
         $page = $this->get('/khela/')->assertOk()->assertSee('শব্দ-খেলা')->assertSee('js/hp-khela.js', false)->assertSee($game['words'][0]['clue']);
         $json = $page->getContent();
         $this->assertStringNotContainsString('"'.$game['words'][0]['answer'].'"', $json, 'The answer is not in plain sight');
-        $this->get('/')->assertSee('আজকের শব্দ-খেলা')->assertSee('/khela/', false);
+        $this->get('/')->assertSee('আজকের খেলা')->assertSee('/khela/aaj/', false);   // D330: the games' own page
         $this->get('/sitemap-sections.xml')->assertSee('/khela/', false);
     }
 
