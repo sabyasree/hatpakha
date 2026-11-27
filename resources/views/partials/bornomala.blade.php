@@ -41,3 +41,5 @@
     <a href="{{ $kids->url() }}" class="mt-10 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-sky-tint px-4 py-3 font-bold hover:bg-peach-light">
         <span>ছোটদের হাতপাখা — ছড়া আর গল্প পড়ুন</span><span aria-hidden="true">→</span></a>
 @endif
+<a href="{{ \App\Support\Url::to('/janun/learn-bengali/kar') }}" class="mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-navy bg-peach-light px-4 py-3 font-bold hover:bg-peach">   {{-- D317: the next step --}}
+    <span>পরের ধাপ: কার, ফলা, যুক্তাক্ষর — বাংলা শিখি</span><span aria-hidden="true">→</span></a>

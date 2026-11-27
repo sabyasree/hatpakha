@@ -73,6 +73,9 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+Route::get('/janun/learn-bengali', [\App\Http\Controllers\LearnController::class, 'index']);   // D317
+Route::get('/janun/learn-bengali/{lesson}', [\App\Http\Controllers\LearnController::class, 'show'])->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
+Route::get('/janun/learn-bengali/{lesson}/print', [\App\Http\Controllers\LearnController::class, 'print'])->whereIn('lesson', \App\Http\Controllers\LearnController::LESSONS);
 Route::get('/janun/names', [\App\Http\Controllers\NameController::class, 'index']);   // D316
 Route::get('/janun/names/{page}', [\App\Http\Controllers\NameController::class, 'show'])->where('page', '(boy|girl)-names-[a-z]{1,3}');
 Route::get('/janun/greetings', [\App\Http\Controllers\GreetingController::class, 'index']);   // D315

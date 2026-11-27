@@ -166,6 +166,15 @@ final class JsonLd
             'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
     }
 
+    /** D317: a free lesson for learners of Bengali. */
+    public static function learningResource(string $name, string $url, string $teaches): array
+    {
+        return ['@type' => 'LearningResource', '@id' => $url.'#lesson', 'name' => $name, 'url' => $url, 'inLanguage' => 'bn', 'teaches' => $teaches,
+            'educationalLevel' => 'Beginner', 'learningResourceType' => 'Lesson', 'isAccessibleForFree' => true,
+            'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student'],
+            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
+    }
+
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */
     public static function breadcrumbs(array $crumbs): array
     {
