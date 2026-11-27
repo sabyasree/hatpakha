@@ -1,4 +1,4 @@
-{{-- D311 (proposed, shown to the owner first): a quiet strip near the end of the home page, after the literature --}}
+{{-- D311 (owner approved the mock-up, 2026-11-27): a quiet strip near the end of the home page, after the literature --}}
 @php
     $U = fn ($p) => \App\Support\Url::to($p);
     $today = rescue(fn () => \App\Http\Controllers\BanglaCalendarController::todayLine(), null, false);

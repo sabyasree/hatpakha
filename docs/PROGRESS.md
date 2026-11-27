@@ -450,4 +450,4 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Festival pages per year and year lists, made by themselves from checked times (D308, FestivalPagesTest).
 - [x] Desk list for জেনে রাখুন (D309); tithi of the day on the calendar, published source checked by our own calculation (D310, TithiTest).
 - [x] জেনে রাখুন in the menus (D311); share pictures, IndexNow, date in the evening note (D312).
-- [ ] Owner: decide on the home-page জেনে রাখুন strip (mock-up sent 2026-11-27).
+- [x] Home-page জেনে রাখুন strip (owner approved the mock-up).

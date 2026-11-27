@@ -142,6 +142,9 @@ class BanglaCalendarTest extends TestCase
         cache()->flush();
         $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩ (পশ্চিমবঙ্গ)')->assertSee('· বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩')->assertSee(BanglaDate::url(), false);
         $this->get('/janun/')->assertOk()->assertSee('বাংলা ক্যালেন্ডার');
+        // the home strip (D311): today's date, puja times, ভাষার ভাণ্ডার, after the literature
+        $home = $this->get('/')->assertSee('id="janun-h"', false)->assertSee('ভাষার ভাণ্ডার')->getContent();
+        $this->assertGreaterThan(strpos($home, 'id="janun-h"'), strpos($home, 'ভ্রমণের ডাকটিকিট') ?: PHP_INT_MAX);
     }
 
     public function test_the_desk_checks_once_an_hour(): void
