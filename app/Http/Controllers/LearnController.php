@@ -45,7 +45,7 @@ class LearnController extends Controller
 
     public function index()
     {
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: 'বাংলা শিখি: ছোটদের বাংলা পড়া · Learn Bengali for Kids',
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: 'বাংলা শিখি: ছোটদের বাংলা পড়া · Learn Bengali for Kids',
             description: JanunPlan::clip('অক্ষর থেকে প্রথম গল্প: '.Bn::num((string) LearnCourse::count()).'টি ছোট পাঠ, খেলা, তারা আর স্টিকার, প্রতিটি পাঠের ছাপার ওয়ার্কশিট (A4, Letter)। বাবা-মায়ের জন্য ইংরেজি সাহায্য। Free.', 155),
             jsonLd: [JsonLd::breadcrumbs(self::crumbs()), JsonLd::course(LearnCourse::units())]);
         Ads::allow();
@@ -58,7 +58,7 @@ class LearnController extends Controller
     {
         self::forChildren();
 
-        return view('learn.map', ['units' => LearnCourse::units(), 'seo' => new Seo(title: 'বাংলা শিখি: আমার পাঠ', noindex: true, canonical: LearnCourse::url())]);
+        return view('learn.map', ['units' => LearnCourse::units(), 'seo' => new Seo(title: 'বাংলা শিখি: আমার পাঠ', description: 'অক্ষর থেকে প্রথম গল্প: ছোটদের বাংলা পড়া শেখার বিনা পয়সার পাঠ, খেলতে খেলতে। Learn to read Bengali, free.', image: asset('images/og/card-learn.jpg'), noindex: true, canonical: LearnCourse::url())]);
     }
 
     public function unit(string $unit)
@@ -66,7 +66,7 @@ class LearnController extends Controller
         $u = LearnCourse::unit($unit);
         abort_unless($u, 404);
         $url = LearnCourse::url($unit);
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $u['title'].' · '.$u['en'].' · বাংলা শিখি '.Bn::num((string) $u['n']),
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: $u['title'].' · '.$u['en'].' · বাংলা শিখি '.Bn::num((string) $u['n']),
             description: JanunPlan::clip($u['title'].': '.$u['intro'].' '.Bn::num((string) count($u['lessons'])).'টি পাঠ, ওয়ার্কশিট (A4, Letter)। '.$u['en'].' for children.', 155),
             jsonLd: [JsonLd::breadcrumbs(self::crumbs([[$u['title'], $url]])), JsonLd::learningResource($u['title'], $url, $u['en'], $u['intro'])]);
         Ads::allow();
@@ -83,7 +83,7 @@ class LearnController extends Controller
         self::forChildren();
 
         return view('learn.lesson', ['data' => self::lessonData($unit, $n), 'u' => $u, 'l' => $l,
-            'seo' => new Seo(title: $u['title'].': '.$l['title'].' · বাংলা শিখি', noindex: true, canonical: LearnCourse::url($unit))]);
+            'seo' => new Seo(title: $u['title'].': '.$l['title'].' · বাংলা শিখি', description: 'অক্ষর থেকে প্রথম গল্প: ছোটদের বাংলা পড়া শেখার বিনা পয়সার পাঠ, খেলতে খেলতে। Learn to read Bengali, free.', image: asset('images/og/card-learn.jpg'), noindex: true, canonical: LearnCourse::url($unit))]);
     }
 
     /** Everything the lesson player needs, as data (resources/js/learn.js builds the screens). */
@@ -122,6 +122,7 @@ class LearnController extends Controller
             'signs' => array_values(array_filter(LearnCourse::taught($unit, $n), fn ($t) => preg_match('/^[\x{09BE}-\x{09CC}]$/u', $t))),
             'tip' => $u['tip'], 'sticker' => $last ? $u['sticker'] : null,
             'audio' => LearnAudio::urls($texts),
+            'strokes' => \App\Models\LearnStroke::approved(array_merge(array_column($new, 't'), array_map(fn ($x) => 'ক'.$x['t'], array_filter($new, fn ($x) => $x['kind'] === 'sign')))),   // D325
             'urls' => ['map' => LearnCourse::url('start'), 'next' => $next ? LearnCourse::url($next[0], $next[1]) : LearnCourse::url('start'),
                 'nextId' => $next[2] ?? null, 'sheet' => LearnCourse::url($unit, $n, '/print'), 'parents' => LearnCourse::url('parents'),
                 'certificate' => $last ? LearnCourse::url('certificate').'?unit='.$unit : null],
@@ -147,7 +148,7 @@ class LearnController extends Controller
 
     public function parents()
     {
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: 'বাবা-মায়ের জন্য: বাংলা শিখি · Helping your child read Bengali',
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: 'বাবা-মায়ের জন্য: বাংলা শিখি · Helping your child read Bengali',
             description: JanunPlan::clip('বাংলা কম পড়লেও সন্তানকে বাংলা পড়া শেখাতে পারবেন: রোজ দশ মিনিট, কী বলবেন, কোথায় আটকায়, ছাপার ওয়ার্কশিট আর অগ্রগতি। For parents abroad.', 155),
             jsonLd: [JsonLd::breadcrumbs(self::crumbs([['বাবা-মায়ের জন্য', LearnCourse::url('parents')]]))]);
         Ads::allow();
@@ -159,7 +160,7 @@ class LearnController extends Controller
     public function english()
     {
         $url = LearnCourse::url('english');
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: 'How to Read Bengali: Free Guide and Course for Kids',
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: 'How to Read Bengali: Free Guide and Course for Kids',
             description: 'How Bengali writing works and how every letter sounds, compared with English. Then a free, step-by-step course with English instructions. For parents and adult learners.',
             lang: 'en', jsonLd: [JsonLd::breadcrumbs(self::crumbs([['Learn Bengali (English)', $url]])), JsonLd::learningResource('How to read Bengali: a beginner\'s guide', $url, 'Bengali script and pronunciation for English speakers', 'How Bengali writing works and how every letter sounds, compared with English.', 'en')]);
         Ads::allow();
@@ -169,9 +170,12 @@ class LearnController extends Controller
 
     public function worksheets()
     {
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: 'বাংলা ওয়ার্কশিট PDF · Bengali Alphabet Worksheets (Free)',
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: 'বাংলা ওয়ার্কশিট PDF · Bengali Alphabet Worksheets (Free)',
             description: JanunPlan::clip('বাংলা বর্ণমালা, কার, ফলা আর যুক্তাক্ষরের ওয়ার্কশিট, প্রতিটি পাঠের জন্য একটি, A4 আর US Letter মাপে। বাংলা স্কুলের জন্য পুরো সেট। Free Bengali worksheets PDF.', 155),
-            jsonLd: [JsonLd::breadcrumbs(self::crumbs([['ওয়ার্কশিট', LearnCourse::url('worksheets')]]))]);
+            jsonLd: [JsonLd::breadcrumbs(self::crumbs([['ওয়ার্কশিট', LearnCourse::url('worksheets')]])),
+                ['@type' => 'ItemList', 'name' => 'বাংলা ওয়ার্কশিট / Bengali worksheets (PDF)', 'itemListElement' => collect(['alphabet' => 'বর্ণমালার চার্ট', 'alphabet-tracing' => 'বর্ণমালা লেখা অনুশীলন', 'kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা'])
+                    ->values()->map(fn ($name, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'item' => ['@type' => 'LearningResource', 'name' => $name, 'learningResourceType' => 'Worksheet', 'encodingFormat' => 'application/pdf', 'isAccessibleForFree' => true,
+                        'url' => LearnCourse::url('pdf/chart-'.['alphabet', 'alphabet-tracing', 'kar', 'juktakkhor'][$i].'-a4')]])->all()]]);   // D326
         Ads::allow();
 
         return view('learn.worksheets', ['units' => LearnCourse::units(), 'seo' => $seo]);
@@ -182,7 +186,7 @@ class LearnController extends Controller
         self::forChildren();
         $unit = (string) request()->query('unit', '');
 
-        return view('learn.certificate', ['u' => LearnCourse::unit($unit), 'seo' => new Seo(title: 'বাংলা শিখি: শংসাপত্র', noindex: true, canonical: LearnCourse::url())]);
+        return view('learn.certificate', ['u' => LearnCourse::unit($unit), 'seo' => new Seo(title: 'বাংলা শিখি: শংসাপত্র', description: 'অক্ষর থেকে প্রথম গল্প: ছোটদের বাংলা পড়া শেখার বিনা পয়সার পাঠ, খেলতে খেলতে। Learn to read Bengali, free.', image: asset('images/og/card-learn.jpg'), noindex: true, canonical: LearnCourse::url())]);
     }
 
     /** A lesson's worksheet, ready to print or to save as PDF (the deploy job saves them as PDF files). */
@@ -209,8 +213,8 @@ class LearnController extends Controller
 
     public function chart(string $chart)
     {
-        return view('learn.chart', ['chart' => $chart, 'size' => self::size(), 'letters' => \App\Ai\KidsAlphabet::letters(), 'kar' => self::lessons()['kar'],
-            'seo' => new Seo(title: ($chart === 'kar' ? 'কারের চার্ট' : 'বর্ণমালার চার্ট').' · বাংলা শিখি', noindex: true, canonical: LearnCourse::url('worksheets'))]);
+        return view('learn.chart', ['chart' => $chart, 'size' => self::size(), 'letters' => \App\Ai\KidsAlphabet::letters(), 'kar' => self::lessons()['kar'], 'jukta' => self::lessons()['juktakkhor'],
+            'seo' => new Seo(title: (['kar' => 'কারের চার্ট', 'juktakkhor' => 'যুক্তাক্ষরের তালিকা', 'alphabet-tracing' => 'বর্ণমালা লেখা অনুশীলন'][$chart] ?? 'বর্ণমালার চার্ট').' · বাংলা শিখি', noindex: true, canonical: LearnCourse::url('worksheets'))]);
     }
 
     private static function size(): string
@@ -229,12 +233,21 @@ class LearnController extends Controller
             foreach (array_keys(LearnCourse::units()) as $unit) {
                 $out["$unit-teacher-$size"] = "/janun/learn-bengali/$unit/print/?size=$size";
             }
-            foreach (['alphabet', 'kar'] as $c) {
+            foreach (['alphabet', 'alphabet-tracing', 'kar', 'juktakkhor'] as $c) {
                 $out["chart-$c-$size"] = "/janun/learn-bengali/charts/$c/print/?size=$size";
             }
         }
 
         return $out;
+    }
+
+    /** D324: the picture of a worksheet's first page, if the deploy job has made it (chart-alphabet, kar-1-1, …). */
+    /** D326: the course's content date for sitemaps (changes only when the lessons or charts change, not on every deploy). */
+    public const VERSION = '2026-11-28';
+
+    public static function preview(string $name): ?string
+    {
+        return is_file(public_path('pdf/learn/preview-'.$name.'.jpg')) ? asset('pdf/learn/preview-'.$name.'.jpg') : null;
     }
 
     /** A download: counted as a daily total (nothing about the person), then the PDF, or the print page if there is none. */
@@ -248,7 +261,15 @@ class LearnController extends Controller
         }, null, false);
         $path = public_path('pdf/learn/'.$file.'.pdf');
         if (is_file($path)) {
-            return response()->file($path, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="hatpakha-'.$file.'.pdf"', 'X-Robots-Tag' => 'noindex']);
+            // charts and teacher's sets (A4) may be found by "… worksheet pdf" searches; their Letter twins point to them; single sheets stay out
+            $headers = ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="hatpakha-'.$file.'.pdf"'];
+            if (preg_match('/^(chart-[a-z-]+|[a-z0-9-]+-teacher)-letter$/', $file, $m)) {
+                $headers['Link'] = '<'.Url::to('/janun/learn-bengali/pdf/'.$m[1].'-a4').'>; rel="canonical"';
+            } elseif (! preg_match('/^(chart-[a-z-]+|[a-z0-9-]+-teacher)-a4$/', $file)) {
+                $headers['X-Robots-Tag'] = 'noindex';
+            }
+
+            return response()->file($path, $headers);
         }
 
         return redirect(Url::to($pdfs[$file]));   // the slash goes before the query (Url::to)
@@ -261,7 +282,7 @@ class LearnController extends Controller
         abort_unless(isset($all[$lesson]), 404);
         $l = $all[$lesson];
         $url = Url::to('/janun/learn-bengali/'.$lesson);
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: ($l['seo_title'] ?? $l['title']).' · '.$l['en'],
+        $seo = new Seo(image: asset('images/og/card-learn.jpg'), title: ($l['seo_title'] ?? $l['title']).' · '.$l['en'],
             description: JanunPlan::clip($l['intro'].' '.$l['en'].', with Roman readings and English meanings.', 155),
             jsonLd: [JsonLd::breadcrumbs(self::crumbs([[$l['title'], $url]])), JsonLd::learningResource($l['title'], $url, $l['en'], $l['intro'])]);
         Ads::allow();

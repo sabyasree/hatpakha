@@ -4,6 +4,8 @@
  * No sound is needed; a recording plays only where the desk has uploaded one (owner: human recordings, D321).
  */
 
+import { drawGlyph, drawStrokes, draftStrokes, paintStrokeCanvases } from './strokes.js';
+
 const KEY = 'hp-learn-v1';
 const FACES = ['🐟', '🐦', '🦚', '🐘', '🦉', '🐯'];
 const BN = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
@@ -132,16 +134,18 @@ function lesson(root) {
     const trace = (glyph) => () => {
         const size = Math.min(320, Math.round(window.innerWidth * 0.8));
         const guide = h('canvas', { width: size * 2, height: size * 2, class: 'absolute inset-0 h-full w-full', 'aria-hidden': 'true' });
+        const order = h('canvas', { width: size * 2, height: size * 2, class: 'absolute inset-0 h-full w-full opacity-70', 'aria-hidden': 'true' });
         const ink = h('canvas', { width: size * 2, height: size * 2, class: 'absolute inset-0 h-full w-full touch-none', role: 'img', 'aria-label': glyph + T(' লেখো', ' — write it') });
-        const box = h('div', { class: 'relative mt-4 rounded-3xl border-2 border-navy bg-white', style: `width:${size}px;height:${size}px` }, guide, ink);
+        const box = h('div', { class: 'relative mt-4 rounded-3xl border-2 border-navy bg-white', style: `width:${size}px;height:${size}px` }, guide, order, ink);
         const msg = h('p', { class: 'mt-3 min-h-8 text-xl font-bold', role: 'status' }, '');
         const g = guide.getContext('2d'); const k = ink.getContext('2d');
+        const strokes = (D.strokes || {})[glyph];   // D325: only drawings the desk approved
         const drawGuide = () => {
-            g.clearRect(0, 0, guide.width, guide.height); g.fillStyle = '#E8DCCB'; g.textAlign = 'center'; g.textBaseline = 'middle';
-            g.font = `800 ${size * 1.2}px "Anek Bangla", sans-serif`; g.fillText(glyph, guide.width / 2, guide.height / 2 + size * 0.08);
+            g.clearRect(0, 0, guide.width, guide.height); drawGlyph(g, guide.width, glyph, '#E8DCCB', 800);
             g.strokeStyle = '#E39A6A'; g.setLineDash([12, 12]); g.lineWidth = 3; g.beginPath(); g.moveTo(0, guide.height * 0.3); g.lineTo(guide.width, guide.height * 0.3); g.stroke();
+            if (strokes) drawStrokes(order.getContext('2d'), order.width, strokes, { color: '#F08D90' });
         };
-        (document.fonts ? document.fonts.load(`800 120px "Anek Bangla"`, glyph) : Promise.resolve()).then(drawGuide, drawGuide);
+        (document.fonts ? document.fonts.load('800 120px "Anek Bangla"', glyph) : Promise.resolve()).then(drawGuide, drawGuide);
         let down = false; let last = null; let done = false; let tries = 0;
         const pos = (e) => { const r = ink.getBoundingClientRect(); return [(e.clientX - r.left) * 2, (e.clientY - r.top) * 2]; };
         ink.addEventListener('pointerdown', (e) => { down = true; last = pos(e); ink.setPointerCapture(e.pointerId); });
@@ -158,7 +162,8 @@ function lesson(root) {
             else if (got) { tries++; msg.textContent = tries >= 3 ? T('বাবা-মা: আঙুল ধরে একবার ধূসর অক্ষরের ওপর দিয়ে টেনে দেখান। চাইলে "পরের" টিপে এগোনো যায়।', 'Grown-ups: guide the finger over the grey letter once. You can also tap "Next" to move on.') : T('আরও একটু, ধূসর অক্ষরের ওপর দিয়ে।', 'A little more, over the grey letter.'); }
         };
         ink.addEventListener('pointerup', check); ink.addEventListener('pointercancel', check);
-        put(h('h2', { class: 'font-display text-3xl font-extrabold', tabindex: '-1' }, T('আঙুল দিয়ে লেখো: ', 'Write it with your finger: '), glyph), box, msg);
+        put(h('h2', { class: 'font-display text-3xl font-extrabold', tabindex: '-1' }, T('আঙুল দিয়ে লেখো: ', 'Write it with your finger: '), glyph),
+            strokes ? h('p', { class: 'text-base' }, T('কালো ফোঁটা থেকে শুরু করো, নম্বর ধরে।', 'Start at the dark dot, follow the numbers.')) : null, box, msg);
         actions.append(h('button', { type: 'button', class: OUTLINE, onclick: () => { k.clearRect(0, 0, ink.width, ink.height); done = false; msg.textContent = ''; } }, T('মুছি', 'Clear')),
             h('button', { type: 'button', class: PRIMARY + ' opacity-50', onclick: next, 'data-next': true }, T('পরের →', 'Next →')));
     };
@@ -491,3 +496,5 @@ function certificate(root) {
 const pages = { '[data-learn-lesson]': lesson, '[data-learn-map]': map, '[data-learn-parents]': parents, '[data-learn-cert]': certificate };
 for (const [sel, fn] of Object.entries(pages)) { const el = document.querySelector(sel); if (el) fn(el); }
 document.querySelectorAll('[data-print]').forEach((b) => { b.hidden = false; b.addEventListener('click', () => window.print()); });
+paintStrokeCanvases();   // worksheets: the first box shows the approved stroke order
+window.hpStrokes = { draftStrokes, drawGlyph, drawStrokes, paintStrokeCanvases };   // the desk's stroke-order page

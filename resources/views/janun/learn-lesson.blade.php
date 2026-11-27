@@ -54,12 +54,23 @@
                 @endforeach
             </div>
         @elseif ($key === 'juktakkhor')
-            <ul class="mt-6 grid gap-2 sm:grid-cols-2">
-                @foreach ($l['rows'] as [$c, $parts, $w])
-                    <li class="flex items-center gap-3 rounded-xl border border-rule p-3"><span class="w-16 flex-none text-center font-display text-4xl font-extrabold text-red">{{ $c }}</span>
-                        <span><span class="block text-sm text-ink2">{{ $parts }}</span>{!! $word($w) !!}</span></li>
-                @endforeach
-            </ul>
+            @php($byLetter = collect($l['rows'])->groupBy(fn ($r) => mb_substr($r[0], 0, 1)))
+            <p class="mt-4 text-lg"><b>{{ \App\Support\Bn::num((string) count($l['rows'])) }}টি যুক্তাক্ষর</b>, প্রথম অক্ষর ধরে সাজানো। <a href="{{ \App\Support\LearnCourse::url('pdf/chart-juktakkhor-a4') }}" class="font-bold underline">ছাপার তালিকা (PDF)</a></p>
+            <nav aria-label="প্রথম অক্ষর" class="mt-3 flex flex-wrap gap-1">
+                @foreach ($byLetter->keys() as $k)<a href="#jl-{{ $loop->index }}" class="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-navy font-display text-xl font-extrabold hover:bg-peach-light">{{ $k }}</a>@endforeach
+            </nav>
+            @foreach ($byLetter as $k => $rows)
+                <section id="jl-{{ $loop->index }}" class="mt-6 scroll-mt-20">
+                    <h2 class="font-display text-2xl font-extrabold">{{ $k }} দিয়ে যুক্তাক্ষর</h2>
+                    <ul class="mt-2 grid gap-2 sm:grid-cols-2">
+                        @foreach ($rows as [$c, $parts, $w])
+                            <li class="flex items-center gap-3 rounded-xl border border-rule p-3"><span class="w-20 flex-none text-center font-display text-4xl font-extrabold text-red">{{ $c }}</span>
+                                <span><span class="block text-sm text-ink2">{{ $parts }}</span>{!! $word($w) !!}</span></li>
+                        @endforeach
+                    </ul>
+                </section>
+                @if ($loop->iteration === 10)<x-ad-slot spot="list" :height="250" />@endif
+            @endforeach
         @else
             @foreach ($l['groups'] as [$heading, $words])
                 <section class="mt-6">

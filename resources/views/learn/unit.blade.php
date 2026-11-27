@@ -36,6 +36,7 @@
             @endforeach
         </ol>
         <section class="mt-8 rounded-2xl bg-peach-light p-5">
+            @if ($img = \App\Http\Controllers\LearnController::preview($slug.'-1'))<img src="{{ $img }}" alt="{{ $u['title'] }}: ওয়ার্কশিট / {{ $u['en'] }} worksheet" width="794" height="1000" loading="lazy" class="float-right ml-3 h-auto w-28 rounded-lg border border-rule sm:w-40">@endif
             <h2 class="font-display text-2xl font-extrabold">বাংলা স্কুল আর শিক্ষকদের জন্য</h2>
             <p class="mt-2 font-serif text-lg">এই ধাপের সব ওয়ার্কশিট একসঙ্গে, প্রথম পাতায় কীভাবে ব্যবহার করবেন, শেষ পাতায় উত্তর। বিনা পয়সায় ছাপুন, ক্লাসে বিলি করুন।</p>
             <div class="mt-3 flex flex-wrap gap-2">

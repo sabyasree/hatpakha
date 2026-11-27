@@ -18,6 +18,18 @@
             </ul>
             @if ($loop->first)<x-ad-slot spot="list" :height="250" />@endif
         @endforeach
+        <section lang="en" class="mt-8">
+            <h2 class="font-display text-2xl font-extrabold">Bengali baby names A–Z</h2>
+            <p class="text-base text-ink2">By the English first letter (one English letter can be two Bengali letters, e.g. A = অ and আ).</p>
+            <dl class="mt-3 grid gap-2 sm:grid-cols-2">
+                @foreach (collect(\App\Support\NamePlan::EN_LETTER)->groupBy(fn ($v) => strtoupper(substr($v, 0, 1)), true)->sortKeys() as $first => $group)
+                    @php($pages = collect(array_keys($group->all()))->flatMap(fn ($l) => collect(['boy', 'girl'])->map(fn ($g) => $live->get($g.'|'.$l)))->filter())
+                    @continue($pages->isEmpty())
+                    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-rule p-2"><dt class="w-8 font-display text-xl font-extrabold">{{ $first }}</dt>
+                        <dd class="flex flex-wrap gap-2">@foreach ($pages as $pg)<a href="{{ $pg->url() }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-3 text-sm font-bold">{{ $pg->gender === 'boy' ? 'Boys' : 'Girls' }} · <span lang="bn" class="ml-1">{{ \App\Support\NamePlan::LETTERS[$pg->letter] }}</span></a>@endforeach</dd></div>
+                @endforeach
+            </dl>
+        </section>
         <p class="mt-6 text-sm text-ink2">অর্থ মেলানো হয় বাংলা একাডেমির বাংলা-ইংরেজি অভিধান (accessibledictionary.gov.bd) আর উইকিঅভিধানের সঙ্গে।</p>
     </article>
 </x-layouts.app>

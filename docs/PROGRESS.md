@@ -459,7 +459,10 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] Review round: UX, SEO, strategy/business, research; fixes (D319).
 - [x] বাংলা শিখি phases 1–3: 72 lessons, player, map, parents' page, worksheets as PDF, certificate, desk recordings (D321); English mode and guide (D322).
 - [ ] **Owner:** record the letters and words at /desk → বাংলা শিখি: রেকর্ডিং (start with unit 1).
-- [ ] Stroke-order drawings for the worksheets (designer); premium (phase 4) when the owner decides.
+- [x] Full joined-letter list (171), worksheet pictures, course share card (D324); stroke order as drafts with a desk page (D325); review leftovers (D326).
+- [x] Staging deploy fix: MySQL treated ড় as ড and stopped the stroke-order migration; Bengali letter columns now compare exactly (D327).
+- [ ] **Owner:** check and approve the stroke-order drafts at /desk → বাংলা শিখি: লেখার ক্রম (ideally with someone who teaches writing).
+- [ ] Premium (phase 4) when the owner decides price and payment.
 - [x] 49 greeting occasions; names with Arabic and Persian, four sources (D320).
 - [ ] **Owner:** Golam Mostofa among the poets (out of copyright since 2025)?
 - [ ] After release: read the first three greeting sets and the first two name pages within 48 hours (spot check), then one in five.

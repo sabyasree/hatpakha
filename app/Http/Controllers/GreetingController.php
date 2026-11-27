@@ -32,7 +32,8 @@ class GreetingController extends Controller
         abort_unless($s && $s->isLive(), 404);
         [$bn, $en, $festival] = GreetingPlan::OCCASIONS[$slug];
         $h1 = GreetingPlan::heading($slug);
-        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $h1.' · '.preg_replace('/\s*\(.*?\)/', '', $en),
+        $card = is_file(public_path('images/og/greetings/'.$slug.'.jpg')) ? asset('images/og/greetings/'.$slug.'.jpg') : asset('images/og/card-janun.jpg');   // D326: each occasion's own card
+        $seo = new Seo(image: $card, title: $h1.' · '.preg_replace('/\s*\(.*?\)/', '', $en),
             description: $s->seo_description ?: JanunPlan::clip($h1.': '.\App\Support\Bn::num((string) count($s->lines())).'টি নিজেদের লেখা বাংলা বার্তা, পরিবার, বন্ধু ও অফিসের জন্য, স্ট্যাটাস বা ছবি করে পাঠান। '.$en.'.', 155),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['শুভেচ্ছা বার্তা', Url::to('/janun/greetings')], [$bn, $s->url()]]),
                 JsonLd::festivalPage($h1, $s->url(), $s->checked_at, $s->published_at, $s->seo_description)]);

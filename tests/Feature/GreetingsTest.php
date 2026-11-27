@@ -91,7 +91,7 @@ class GreetingsTest extends TestCase
         $this->assertFalse(GreetingDesk::run($now->addMinutes(40)), 'two new sets a day');
 
         $this->get('/janun/greetings/birthday/')->assertOk()->assertSee('জন্মদিনের শুভেচ্ছা বার্তা')->assertSee('এসো হে বৈশাখ')->assertSee('a.org')
-            ->assertSee('wa.me/?text=', false)->assertSee('data-card=', false)->assertSee('Birthday Wishes in Bengali', false)->assertDontSee('🎉')->assertDontSee('example.com');
+            ->assertSee('wa.me/?text=', false)->assertSee('data-card=', false)->assertSee('Birthday Wishes in Bengali', false)->assertSee('images/og/greetings/birthday.jpg', false)->assertDontSee('🎉')->assertDontSee('https://example.com');   // the dropped line's link (the newsletter box's placeholder says name@example.com)
         $this->get('/janun/greetings/')->assertOk()->assertSee('জন্মদিনের শুভেচ্ছা');
         $this->get('/janun/greetings/christmas/')->assertNotFound();
         $this->get('/janun/greetings/nothing/')->assertNotFound();

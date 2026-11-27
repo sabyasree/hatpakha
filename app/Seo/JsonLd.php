@@ -191,7 +191,7 @@ final class JsonLd
             'url' => $url, 'inLanguage' => 'bn', 'isAccessibleForFree' => true, 'educationalLevel' => 'Beginner', 'provider' => self::org(),
             'offers' => ['@type' => 'Offer', 'price' => 0, 'priceCurrency' => 'USD', 'category' => 'Free'],
             'hasCourseInstance' => ['@type' => 'CourseInstance', 'courseMode' => 'Online', 'courseWorkload' => 'PT'.max(1, (int) round(\App\Support\LearnCourse::count() * 7 / 60)).'H'],
-            'image' => asset('images/og/card-janun.jpg'), 'teaches' => 'Bengali script: letters, vowel signs, phola, joined letters, first reading',
+            'image' => asset('images/og/card-learn.jpg'), 'teaches' => 'Bengali script: letters, vowel signs, phola, joined letters, first reading',
             'audience' => ['@type' => 'EducationalAudience', 'educationalRole' => 'student', 'suggestedMinAge' => 4],
             'hasPart' => array_map(fn ($slug) => ['@type' => 'LearningResource', 'name' => $units[$slug]['title'], 'url' => Url::to('/janun/learn-bengali/'.$slug)], array_keys($units))];
     }

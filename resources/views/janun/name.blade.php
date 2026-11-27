@@ -13,6 +13,8 @@
         @php($origins = collect($names)->countBy('origin')->sortDesc())
         <p class="mt-3 text-sm">এই পাতায় <b>{{ $N(count($names)) }}টি নাম</b>: {{ $origins->map(fn ($c, $o) => $N($c).'টি '.($o ?: 'অন্য').' থেকে')->implode(', ') }}।</p>
         @if ($p->intro)<p class="mt-4 font-serif text-lg leading-relaxed">{{ $p->intro }}</p>@endif
+        @php($twins = \App\Models\NamePage::where('status', 'live')->where('gender', $p->gender)->whereIn('letter', array_keys(array_filter($NP::EN_LETTER, fn ($v, $k) => $v === $en && $k !== $p->letter, ARRAY_FILTER_USE_BOTH)))->get()->filter->isLive())
+        @if ($twins->isNotEmpty())<p lang="en" class="mt-2 text-base">More {{ strtolower($gEn) }} names starting with "{{ $en }}" in English: @foreach ($twins as $t)<a href="{{ $t->url() }}" class="font-bold underline" lang="bn">{{ $NP::LETTERS[$t->letter] }} দিয়ে</a>@if (! $loop->last), @endif @endforeach</p>@endif
         <label class="mt-5 block font-bold" for="name-q">নাম বা অর্থ খুঁজুন</label>
         <input id="name-q" type="search" data-name-q autocomplete="off" enterkeyhint="search" inputmode="search" class="mt-1 block min-h-12 w-full rounded-xl border-2 border-navy bg-white px-4 text-lg" placeholder="যেমন: সূর্য, light">
         @if ($origins->count() > 1)
@@ -45,6 +47,7 @@
             @foreach ($same as $o)@if (! $o->is($p))<a href="{{ $o->url() }}" class="flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 border-navy px-3 font-display text-lg font-extrabold hover:bg-peach-light" title="{{ $o->title() }}">{{ $NP::LETTERS[$o->letter] }}<span class="sr-only"> দিয়ে {{ $gBn }} নাম</span></a>@endif @endforeach
             <a href="{{ $U('/janun/names') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">সব অক্ষর</a>
         </div>
+        @include('janun.partials.read-magazine')
     </article>
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
     (() => {

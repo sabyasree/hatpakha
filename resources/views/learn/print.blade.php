@@ -6,6 +6,7 @@
     $glyph = fn ($x) => match (\App\Http\Controllers\LearnController::kind($x)) { 'sign' => ($x === 'ঁ' ? 'কাঁ' : 'ক'.$x), 'phola' => ($x === 'র্' ? 'র্ক' : 'ক'.$x), default => $x };
     $order = fn (array $a, string $seed) => collect($a)->sortBy(fn ($w) => crc32($seed.$w[0]))->values()->all();
     $answers = [];
+    $strokeMap = \App\Models\LearnStroke::approved(collect($pages)->flatMap(fn ($p) => (array) ($C::lesson($p[0], $p[1])['new'] ?? []))->map(fn ($x) => $glyph($x))->all());   // D325
 @endphp
 <!doctype html>
 <html lang="bn">
@@ -81,6 +82,10 @@
                     <h2 class="mt-4 font-display text-xl font-extrabold">লিখে শিখি <span class="text-base font-normal">(প্রথম ঘর দেখো, পরের তিন ঘর ধূসরের ওপর, শেষ দুই ঘর নিজে)</span></h2>
                     <p lang="en" class="text-xs">Write it: look at the first box, write over the grey in the next three, then write it alone.</p>
                     @foreach ($l['new'] as $x)
+                        @if (isset($strokeMap[\App\Support\LearnCourse::nfc($glyph($x))]))
+                            <div class="mt-3 flex items-center gap-3" style="break-inside:avoid"><canvas width="600" height="600" style="width:34mm;height:34mm;border:1px solid #E39A6A;border-radius:2mm" data-stroke-glyph="{{ $glyph($x) }}" data-glyph-color="#E8DCCB" data-strokes="{{ json_encode($strokeMap[\App\Support\LearnCourse::nfc($glyph($x))]) }}" aria-label="{{ $glyph($x) }}: লেখার ক্রম"></canvas>
+                                <p class="text-base">লেখার ক্রম: কালো ফোঁটা থেকে শুরু, নম্বর ধরে, তীরের দিকে।<br><span lang="en" class="text-xs">Stroke order: start at the dark dot, follow the numbers and arrows.</span></p></div>
+                        @endif
                         <div class="row" aria-label="{{ $glyph($x) }}">@for ($i = 0; $i < 6; $i++)<div class="box {{ $i > 0 && $i < 4 ? 'trace' : '' }}">{{ $i < 4 ? $glyph($x) : '' }}</div>@endfor</div>
                         @if (count($pics) < 3 && count($l['new']) <= 2)<div class="row" aria-label="{{ $glyph($x) }}: নিজে">@for ($i = 0; $i < 6; $i++)<div class="box {{ $i < 2 ? 'trace' : '' }}">{{ $i < 2 ? $glyph($x) : '' }}</div>@endfor</div>@endif
                     @endforeach
