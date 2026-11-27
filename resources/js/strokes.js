@@ -19,11 +19,11 @@ export function drawStrokes(ctx, S, strokes, { color = '#CB1B32', width = 0.035,
         ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, S * width);
         ctx.beginPath(); ctx.moveTo(st[0][0] * k, st[0][1] * k); st.slice(1).forEach(([x, y]) => ctx.lineTo(x * k, y * k)); ctx.stroke();
         const [x1, y1] = st[st.length - 1]; const [x0, y0] = st[Math.max(0, st.length - 3)];
-        const a = Math.atan2(y1 - y0, x1 - x0); const L = S * 0.06;
+        const a = Math.atan2(y1 - y0, x1 - x0); const L = S * 0.075;
         ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x1 * k, y1 * k);
         ctx.lineTo(x1 * k - L * Math.cos(a - 0.5), y1 * k - L * Math.sin(a - 0.5)); ctx.lineTo(x1 * k - L * Math.cos(a + 0.5), y1 * k - L * Math.sin(a + 0.5)); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#13212C'; ctx.beginPath(); ctx.arc(st[0][0] * k, st[0][1] * k, S * 0.045, 0, Math.PI * 2); ctx.fill();
-        if (numbers) { ctx.fillStyle = '#FFFFFF'; ctx.font = `700 ${Math.round(S * 0.055)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), st[0][0] * k, st[0][1] * k + 0.5); }
+        ctx.fillStyle = '#13212C'; ctx.beginPath(); ctx.arc(st[0][0] * k, st[0][1] * k, S * 0.06, 0, Math.PI * 2); ctx.fill();
+        if (numbers) { ctx.fillStyle = '#FFFFFF'; ctx.font = `700 ${Math.round(S * 0.08)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), st[0][0] * k, st[0][1] * k + 0.5); }
     });
     ctx.restore();
 }
@@ -174,8 +174,12 @@ export function paintStrokeCanvases(root = document) {
     root.querySelectorAll('canvas[data-stroke-glyph]').forEach(async (c) => {
         const S = c.width; const ctx = c.getContext('2d'); const glyph = c.dataset.strokeGlyph;
         try { await document.fonts.load(GLYPH_FONT(S), glyph); } catch (e) { /* ignore */ }
-        ctx.clearRect(0, 0, S, S); drawGlyph(ctx, S, glyph, c.dataset.glyphColor || '#E8DCCB');
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, S, S);
+        // the letter sits in the middle of its 0–100 box: zoom in so it fills the picture (stroke points move with it)
+        const z = 1.3; ctx.translate(S / 2, S / 2); ctx.scale(z, z); ctx.translate(-S / 2, -S * 0.48);
+        drawGlyph(ctx, S, glyph, c.dataset.glyphColor || '#E8DCCB');
         let strokes = []; try { strokes = JSON.parse(c.dataset.strokes || '[]'); } catch (e) { /* none */ }
-        drawStrokes(ctx, S, strokes);
+        drawStrokes(ctx, S, strokes, { width: 0.03 });
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
     });
 }
