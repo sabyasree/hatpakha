@@ -120,7 +120,7 @@
 
     const shareText = () => {
         const longest = [...store.found].sort((a, b) => (words.get(b) || 0) - (words.get(a) || 0))[0];
-        return 'হাতপাখা অক্ষরজাল #' + bn(data.no) + '\n' + bn(store.found.length) + 'টা শব্দ · ' + bn(total()) + ' পয়েন্ট' + (longest ? '\nসবচেয়ে বড়: ' + longest : '') + '\nআপনিও খেলুন: ' + data.url;
+        return 'হাতপাখা অক্ষরজাল #' + bn(data.no) + '\n' + bn(store.found.length) + 'টা শব্দ · ' + bn(total()) + ' পয়েন্ট' + (longest ? '\nসবচেয়ে বড়: ' + longest : '') + '\nআপনি কত পান? খেলুন: ' + data.url;
     };
     function finish() {
         if (timer) clearInterval(timer);
@@ -139,6 +139,7 @@
             li.textContent = (got ? '✓ ' : '') + w; all.appendChild(li);
         });
         $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(shareText());
+        if (window.hpMagLine && (data.mag || []).length) { const box = $('mag-list'); box.textContent = ''; data.mag.forEach((m) => box.append(window.hpMagLine(m))); $('mag').hidden = false; }
         const url = root.dataset.scoreUrl;
         if (url) {
             fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': root.dataset.scoreToken },

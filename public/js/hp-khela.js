@@ -103,7 +103,7 @@
         const secs = Math.max(1, Math.round(((day.end || Date.now()) - day.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
         const grid = day.results.map((r) => ({ g: '🟦', y: '🟨', r: '🟥' }[r])).join('');
-        return { good, time, grid, text: (riddle ? (data.kind === 'riddle2' ? 'হাতপাখার কঠিন ধাঁধা #' : 'হাতপাখার ধাঁধা #') + bn(data.no) + '\n“' + data.words[0].clue + '”\n' + (good ? 'আমি পেরেছি ' : 'আমি পারিনি ') + grid + ' · ' + time : 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid) + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\nআপনিও খেলুন: ' + data.url };
+        return { good, time, grid, text: (riddle ? (data.kind === 'riddle2' ? 'হাতপাখার কঠিন ধাঁধা #' : 'হাতপাখার ধাঁধা #') + bn(data.no) + '\n“' + data.words[0].clue + '”\n' + (good ? 'আমি পেরেছি ' : 'আমি পারিনি ') + grid + ' · ' + time : 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid) + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\nআপনি কত পান? খেলুন: ' + data.url };
     };
     // D177: a signed-in player's result goes to the leaderboard (once a day)
     const sendScore = () => {
@@ -131,7 +131,9 @@
             const li = document.createElement('li'); li.className = 'py-2';
             const b = document.createElement('strong'); b.className = 'font-serif text-lg'; b.textContent = answer(w);
             const c = document.createElement('span'); c.className = 'block text-sm text-ink2'; c.textContent = w.clue;
-            li.append(b, c); ul.appendChild(li);
+            li.append(b, c);
+            if (w.m && window.hpMagLine) li.append(window.hpMagLine(w.m));
+            ul.appendChild(li);
         });
         if (window.hpReport) window.hpReport(root.querySelector('[data-report]'), data.kind, data.words.map((w) => ({ word: answer(w), clue: w.clue })));
         const tick = () => {

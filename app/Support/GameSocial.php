@@ -170,6 +170,26 @@ final class GameSocial
 
     // ---------------------------------------------------------------- পাড়ার দল
 
+    /**
+     * D330 (owner: no admin work for games): a team's name is read by the AI that screens comments before the team is
+     * made; a rude, hateful, political-campaign, advertising or personal-attack name is turned away with a kind word,
+     * so the desk never has to take one down. Without the AI the name goes through (it can still be hidden at the desk).
+     */
+    public static function teamNameOk(string $name): bool
+    {
+        if (\App\Ai\Claude::blocked()) {
+            return true;
+        }
+        [$d] = \App\Ai\Claude::json('comment_screen',
+            'You check the name of a team in a family-friendly Bengali word game (schools, clubs, families, associations abroad). '
+            .'ok=false if the name is rude, sexual, hateful, mocks a person, group, caste, religion or region, is a political or election slogan, or advertises something. Ordinary names, places, schools, jokes and nicknames are fine.',
+            '<name>'.e($name).'</name>',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['ok'], 'properties' => ['ok' => ['type' => 'boolean']]],
+            config('ai.anthropic.tags_model'), 200);
+
+        return ! is_array($d) || ($d['ok'] ?? true) !== false;
+    }
+
     public static function makeTeam(User $user, string $name): string
     {
         do {

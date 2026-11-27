@@ -144,27 +144,38 @@ class MoreGamesTest extends TestCase
         $this->assertSame(2, DB::table('game_scores')->where('user_id', $user->id)->count());
     }
 
-    public function test_the_weekly_quiz_waits_for_approval_and_counts_once_a_week(): void
+    public function test_the_weekly_quiz_is_written_checked_and_published_by_itself_and_counts_once_a_week(): void
     {
         config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
-        $posts = collect(range(1, 4))->map(fn ($i) => $this->makePost(['title' => 'লেখা '.$i, 'published_at' => Carbon::parse('2026-12-0'.(1 + $i).' 10:00', 'Asia/Kolkata')->utc()]));
-        Claude::$fake = fn ($purpose, $user) => ['questions' => $posts->map(fn ($p) => ['post_id' => $p->id, 'q' => $p->title.'-য় কোন ফুলের কথা?', 'options' => ['জবা', 'বেলি', 'টগর', 'শিউলি'], 'answer' => 2, 'why' => 'দ্বিতীয় অনুচ্ছেদে'])->all()];
+        $posts = collect(range(1, 4))->map(fn ($i) => $this->makePost(['title' => 'লেখা '.$i, 'body_html' => '<p>উঠোনে একটা টগর গাছ ছিল।</p>',
+            'published_at' => Carbon::parse('2026-12-0'.(1 + $i).' 10:00', 'Asia/Kolkata')->utc()]));
+        $checks = 0;
+        Claude::$fake = function ($purpose, $user, $schema) use ($posts, &$checks) {
+            if (isset($schema['properties']['checks'])) {   // D330: the second, strict reading; it turns one question down
+                $checks++;
+
+                return ['checks' => [['n' => 0, 'ok' => true, 'reason' => ''], ['n' => 1, 'ok' => true, 'reason' => ''], ['n' => 2, 'ok' => false, 'reason' => 'দুটো উত্তরই চলে'], ['n' => 3, 'ok' => true, 'reason' => '']]];
+            }
+
+            return ['questions' => $posts->map(fn ($p) => ['post_id' => $p->id, 'q' => $p->title.'-য় কোন ফুলের কথা?', 'options' => ['জবা', 'বেলি', 'টগর', 'শিউলি'], 'answer' => 2, 'why' => 'প্রথম অনুচ্ছেদে'])
+                ->push(['post_id' => $posts[0]->id, 'q' => 'কোন পাখি?', 'options' => ['কাক', 'চড়ুই', 'শালিক', 'টিয়া'], 'answer' => 1, 'why' => ''])   // not in the text: dropped by the server
+                ->all()];
+        };
         Carbon::setTestNow(Carbon::parse('2026-12-05 10:15', 'Asia/Kolkata'));   // Saturday
         $this->assertNull(WeeklyQuiz::draft());
+        $this->assertSame(1, $checks);
         $row = DB::table('game_quizzes')->first();
         $this->assertSame('2026-12-06', substr((string) $row->week, 0, 10));
-        $this->assertSame('draft', $row->status);
+        $this->assertSame('approved', $row->status, 'Nobody approves it (owner, D330)');
+        $this->assertCount(3, json_decode($row->questions, true), 'The made-up one and the one the check turned down are gone');
 
         Carbon::setTestNow(Carbon::parse('2026-12-07 09:00', 'Asia/Kolkata'));   // Monday of that week
-        $this->get('/khela/quiz/')->assertOk()->assertSee('এ সপ্তাহের কুইজ আসছে')->assertDontSee('কোন ফুলের কথা');
-        DB::table('game_quizzes')->update(['status' => 'approved']);
-        WeeklyQuiz::forget('2026-12-06');
-        $this->get('/khela/quiz/')->assertOk()->assertSee('data-choice', false)->assertSee('লেখা 1', false);
+        $this->get('/khela/quiz/')->assertOk()->assertSee('data-choice', false)->assertSee('লেখা 1', false)->assertDontSee('কোন পাখি');
 
         $user = $this->player();
-        $this->actingAs($user)->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-07', 'seconds' => 60, 'results' => ['g', 'g', 'g', 'r']])->assertOk()->assertJsonPath('points', 60);
+        $this->actingAs($user)->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-07', 'seconds' => 60, 'results' => ['g', 'g', 'r']])->assertOk()->assertJsonPath('points', 40);
         Carbon::setTestNow(Carbon::parse('2026-12-08 09:00', 'Asia/Kolkata'));
-        $this->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-08', 'seconds' => 60, 'results' => ['g', 'g', 'g', 'g']])->assertOk();
+        $this->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-08', 'seconds' => 60, 'results' => ['g', 'g', 'g']])->assertOk();
         $this->assertSame(1, DB::table('game_scores')->where('game', 'quiz')->count(), 'Once a week');
     }
 
@@ -209,6 +220,42 @@ class MoreGamesTest extends TestCase
         $this->assertSame(2, DB::table('game_challenge_plays')->where('started', true)->count());
         // the maker going back to the লড়াই page lands on their own link
         $this->withCookie('hp_pid', str_repeat('a', 32))->get('/khela/lorai/')->assertRedirect(\App\Support\Url::to('/khela/lorai/'.$code));
+    }
+
+    public function test_a_quiz_that_fails_its_check_is_never_published(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        $posts = collect(range(1, 3))->map(fn ($i) => $this->makePost(['title' => 'লেখা '.$i, 'body_html' => '<p>উঠোনে একটা টগর গাছ ছিল।</p>',
+            'published_at' => Carbon::parse('2026-12-0'.(1 + $i).' 10:00', 'Asia/Kolkata')->utc()]));
+        Claude::$fake = fn ($purpose, $user, $schema) => isset($schema['properties']['checks']) ? ['checks' => [['n' => 0, 'ok' => false, 'reason' => 'শেষটা ফাঁস']]]
+            : ['questions' => $posts->map(fn ($p) => ['post_id' => $p->id, 'q' => 'কোন ফুল?', 'options' => ['জবা', 'বেলি', 'টগর', 'শিউলি'], 'answer' => 2, 'why' => ''])->all()];
+        Carbon::setTestNow(Carbon::parse('2026-12-05 10:15', 'Asia/Kolkata'));
+        $this->assertNotNull(WeeklyQuiz::draft());
+        $this->assertSame(0, DB::table('game_quizzes')->where('status', 'approved')->count());
+        Carbon::setTestNow(Carbon::parse('2026-12-07 09:00', 'Asia/Kolkata'));
+        $this->get('/khela/quiz/')->assertOk()->assertSee('এ সপ্তাহের কুইজ আসছে');
+    }
+
+    public function test_an_answer_leads_to_a_line_from_the_magazine(): void
+    {
+        $p = $this->makePost(['title' => 'বৃষ্টির দিন', 'body_html' => '<p>আমরা সকলে গেলাম। সেই মুহূর্তে মেঘ ডাকল, আর সবাই হেসে উঠল।</p>']);
+        $line = \App\Support\InMagazine::line('মুহূর্ত');
+        $this->assertSame($p->url(), $line['u']);
+        $this->assertStringContainsString('মুহূর্তে', $line['s'], 'An ending after the word is fine');
+        $this->assertNull(\App\Support\InMagazine::line('কলে'), 'Never a part of a longer word (সকলে)');
+        $this->assertNull(\App\Support\InMagazine::line('ঘর'), 'Words of three letters or more');
+        // the page carries it encoded, so the answer is not in plain sight
+        $this->get('/khela/banan/')->assertOk()->assertDontSee('মুহূর্তে মেঘ');
+    }
+
+    public function test_a_rude_team_name_is_turned_away_without_the_desk(): void
+    {
+        config(['ai.enabled' => true, 'ai.anthropic.key' => 'k']);
+        Claude::$fake = fn ($purpose, $user) => ['ok' => ! str_contains($user, 'খারাপ')];
+        $this->actingAs($this->player())->post('/khela/dol', ['name' => 'খারাপ নাম'])->assertSessionHasErrors('name');
+        $this->assertSame(0, DB::table('game_teams')->count());
+        $this->post('/khela/dol', ['name' => 'বেহালা পাঠচক্র'])->assertRedirect();
+        $this->assertSame(1, DB::table('game_teams')->count());
     }
 
     public function test_teams_count_their_ten_best_and_the_desk_can_hide_one(): void

@@ -77,7 +77,7 @@
     const total = () => day.results.reduce((s, r) => s + (POINTS[r] || 0), 0);
     const shareText = () => {
         const grid = day.results.map((r) => ({ g: '🟦', y: '🟨', r: '🟥' }[r])).join('');
-        return { grid, text: 'হাতপাখা প্রবাদ পূরণ #' + bn(data.no) + '\n' + bn(total()) + ' / ১০০\n' + grid + '\nআপনিও খেলুন: ' + data.url };
+        return { grid, text: 'হাতপাখা প্রবাদ পূরণ #' + bn(data.no) + '\n' + bn(total()) + ' / ১০০\n' + grid + '\nআপনি কত পান? খেলুন: ' + data.url };
     };
     const finish = () => {
         $('board').hidden = true; $('done').hidden = false; dots();

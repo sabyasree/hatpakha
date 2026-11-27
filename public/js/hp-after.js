@@ -27,6 +27,21 @@ window.hpAfter = function (root, j) {
         $('level-next').textContent = j.level.nextName + ' হতে আর ' + bn(j.level.left);
         $('level-bar').style.width = j.level.percent + '%';
     } else { $('level-box').hidden = true; }
+    // D330: this week's seven days; a missed day is one empty dot, not a run lost
+    if (w.days && $('week')) {
+        const names = ['র', 'সো', 'ম', 'বু', 'বৃ', 'শু', 'শ']; const today = new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000).getDay();
+        const ol = $('week-dots'); ol.textContent = '';
+        w.days.forEach((on, i) => {
+            const li = document.createElement('li'); li.className = 'flex flex-col items-center gap-0.5';
+            const dot = document.createElement('span'); dot.className = 'flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-extrabold ' + (on ? 'border-navy bg-red text-white' : (i === today ? 'border-red bg-white' : 'border-rule bg-white'));
+            dot.textContent = on ? '✓' : '';
+            const n = document.createElement('span'); n.className = 'text-xs font-bold text-ink2'; n.textContent = names[i];
+            li.append(dot, n); ol.appendChild(li);
+        });
+        const c = w.days.filter(Boolean).length;
+        $('week-text').textContent = 'এ সপ্তাহে ' + bn(c) + ' দিন' + (c < 3 ? '। ' + bn(3) + ' দিন খেললেই সপ্তাহের সেরার দৌড়ে।' : '। সপ্তাহের সেরার দৌড়ে আছেন।');
+        $('week').hidden = false;
+    }
     $('streak').textContent = j.streak > 1 ? 'টানা ' + bn(j.streak) + ' দিন খেলছেন। সপ্তাহে একদিন বাদ গেলে ধারা ভাঙে না।' : '';
     box.hidden = false;
 };

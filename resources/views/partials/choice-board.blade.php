@@ -10,6 +10,7 @@
     <div class="mt-4 grid grid-cols-2 gap-3" data-c-options></div>
     <p class="mt-3 min-h-6 text-center text-lg font-bold" role="status" aria-live="polite" data-c-msg></p>
     <p class="rounded-2xl bg-peach-light p-3 text-lg" data-c-note hidden></p>
+    <div class="mt-2" data-c-mag hidden></div>
     <a href="#" class="mt-3 flex min-h-11 items-center font-bold text-sky-night underline" data-c-link hidden></a>
     <button type="button" data-c-next hidden class="mt-4 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">পরের প্রশ্ন →</button>
 </div>

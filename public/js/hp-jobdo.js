@@ -109,7 +109,7 @@
         const secs = Math.max(1, Math.round(((st.end || Date.now()) - st.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
         const points = st.gaveUp ? 0 : Math.max(LEAST, FULL - COST * st.hints);
-        return { secs, time, points, text: 'হাতপাখা শব্দজব্দ #' + bn(data.no) + (data.levelName ? ' (' + data.levelName + ')' : '') + '\n' + (st.gaveUp ? 'আজ পারিনি' : bn(points) + ' পয়েন্ট · ' + time + (st.hints ? ' · ' + bn(st.hints) + 'টি ঘর দেখে' : ' · কোনো সাহায্য ছাড়া')) + '\nআপনিও খেলুন: ' + data.url };
+        return { secs, time, points, text: 'হাতপাখা শব্দজব্দ #' + bn(data.no) + (data.levelName ? ' (' + data.levelName + ')' : '') + '\n' + (st.gaveUp ? 'আজ পারিনি' : bn(points) + ' পয়েন্ট · ' + time + (st.hints ? ' · ' + bn(st.hints) + 'টি ঘর দেখে' : ' · কোনো সাহায্য ছাড়া')) + '\nআপনি কত পান? খেলুন: ' + data.url };
     };
     const finish = (ok) => {
         if (!st.end) { st.end = Date.now(); save(); }

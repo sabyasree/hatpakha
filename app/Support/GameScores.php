@@ -338,6 +338,23 @@ final class GameScores
         return ['total' => self::dayTotal($games), 'games' => $games, 'groups' => $groups];
     }
 
+    /**
+     * D330 (a gentler streak): this week, Sunday to Saturday, which days were played. The hub and the panel after a
+     * game show it as seven dots, so a missed day is one empty dot, not a run lost. @return list<bool>
+     */
+    public static function weekDays(User $user): array
+    {
+        $from = WeeklyQuiz::week();
+        $played = DB::table('game_scores')->where('user_id', $user->id)->whereBetween('day', [$from, Carbon::parse($from)->addDays(6)->toDateString()])
+            ->distinct()->pluck('day')->map(fn ($d) => Carbon::parse($d)->toDateString())->flip();
+        $out = [];
+        for ($i = 0; $i < 7; $i++) {
+            $out[] = isset($played[Carbon::parse($from)->addDays($i)->toDateString()]);
+        }
+
+        return $out;
+    }
+
     /** Whole days from one date to a later one (dates as Y-m-d). */
     private static function gap(string $from, string $to): int
     {

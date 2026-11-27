@@ -40,7 +40,7 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @if ($quiz)
-        <script src="{{ asset('js/hp-after.js') }}?v=2" defer></script>
-        <script src="{{ asset('js/hp-choice.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
+        <script src="{{ asset('js/hp-choice.js') }}?v=3" defer></script>
     @endif
 </x-layouts.app>

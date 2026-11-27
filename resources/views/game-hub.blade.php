@@ -34,10 +34,19 @@
 
         @if ($me)
             <a href="{{ Url::to('/account/profile') }}#games" class="mt-4 grid grid-cols-3 items-center rounded-3xl border-2 border-navy bg-white px-2 py-3 text-center shadow-[4px_4px_0_#13212C]">
-                <span><span class="block font-display text-3xl font-extrabold leading-none">{{ Bn::num((string) $streak['now']) }}</span><span class="text-sm font-bold text-ink2">দিন টানা খেলছেন</span></span>
+                @php
+                    $weekDays = GameScores::weekDays($me);
+                @endphp
+                @if ($streak['now'] >= 2)
+                    <span><span class="block font-display text-3xl font-extrabold leading-none">{{ Bn::num((string) $streak['now']) }}</span><span class="text-sm font-bold text-ink2">দিন টানা খেলছেন</span></span>
+                @else
+                    {{-- D330: no "০ দিন টানা": the week's days instead --}}
+                    <span><span class="block font-display text-3xl font-extrabold leading-none">{{ Bn::num((string) count(array_filter($weekDays))) }}</span><span class="text-sm font-bold text-ink2">দিন এ সপ্তাহে</span></span>
+                @endif
                 <span class="border-x-2 border-rule"><span class="block font-display text-3xl font-extrabold leading-none text-red">{{ Bn::num((string) $today['total']) }}<span class="text-lg text-navy"> / {{ Bn::num((string) GameScores::DAY_MAX) }}</span></span><span class="text-sm font-bold text-ink2">আজকের পয়েন্ট</span></span>
                 <span><span class="block font-display text-xl font-extrabold leading-tight">{{ $level['name'] }}</span><span class="text-sm font-bold text-ink2">আপনার স্তর</span></span>
             </a>
+            <div class="mt-3 rounded-2xl border-2 border-navy bg-white px-3 py-2">@include('partials.game-week', ['days' => $weekDays])</div>
         @else
             <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট, লিডারবোর্ড আর খেতাবের জন্য অ্যাকাউন্ট লাগে।</p>
         @endif

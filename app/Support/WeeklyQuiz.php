@@ -13,7 +13,12 @@ use Illuminate\Support\Facades\DB;
 /**
  * D328 (owner: "সাপ্তাহিক পত্রিকা-কুইজ"): five questions on the week's pieces. On Saturday the AI drafts next week's
  * quiz from what was published in the last seven days (each question names its piece; nothing about an ending or a
- * twist); the desk edits and approves it (/desk → পত্রিকা-কুইজ). Nothing reaches readers before that click (D42).
+ * twist). D330 (owner, 2026-11-28: "for Magazine quiz, make it fully automatic. Don't ask me for approval. For games,
+ * I don't want to spend time as admin"): a second, separate AI check reads each question beside its piece and keeps
+ * only those whose answer the text plainly gives, with no second right option and nothing given away; the server
+ * also finds the answer's words in the piece. Three or more survive: the quiz goes live by itself. Fewer: tried again
+ * that evening and just after midnight, then the week has no quiz (the page says so kindly). The desk page can still
+ * change or withdraw a quiz, but nothing waits for it.
  * The quiz opens on Sunday (Kolkata) and stays for the week; it is worth 100 like a daily game and counts once, on
  * the day it is played. Every answer links to its piece, so the way to win is to read.
  */
@@ -67,12 +72,18 @@ final class WeeklyQuiz
             && in_array((int) ($q['answer'] ?? -1), [0, 1, 2, 3], true) && count(array_unique(array_map('trim', (array) $q['options']))) === 4;
     }
 
-    /** The pieces a week's quiz may ask about: published in the seven days before it opens, not the desk's own. */
-    public static function pieces(string $week)
+    /**
+     * The pieces a week's quiz may ask about: published in the seven days before it opens, not the desk's own. A quiet
+     * week reaches back three weeks so there is still a quiz.
+     */
+    public static function pieces(string $week, int $days = 7)
     {
         $to = Carbon::parse($week, 'Asia/Kolkata')->startOfDay();
+        if ($days === 7 && self::pieces($week, 0)->count() < 3) {
+            $days = 21;
+        }
 
-        return Post::published()->whereBetween('published_at', [$to->copy()->subDays(7)->utc(), $to->copy()->utc()])
+        return Post::published()->whereBetween('published_at', [$to->copy()->subDays($days ?: 7)->utc(), $to->copy()->utc()])
             ->whereDoesntHave('authors', fn ($q) => $q->where('is_desk', true))
             ->orderByDesc('published_at')->limit(14)->get();
     }
@@ -115,11 +126,64 @@ final class WeeklyQuiz
         }
         $qs = array_map(fn ($q) => ['q' => trim((string) $q['q']), 'options' => array_map(fn ($o) => trim((string) $o), array_slice((array) $q['options'], 0, 4)),
             'answer' => (int) $q['answer'], 'post_id' => (int) $q['post_id'], 'why' => trim((string) $q['why'])], array_slice($qs, 0, self::QUESTIONS));
-        DB::table('game_quizzes')->updateOrInsert(['week' => $week], ['status' => 'draft', 'questions' => json_encode($qs, JSON_UNESCAPED_UNICODE), 'note' => null,
-            'approved_by' => null, 'approved_at' => null, 'updated_at' => now(), 'created_at' => $row->created_at ?? now()]);
-        AuditLog::record('quiz.drafted', null, ['week' => $week, 'questions' => count($qs)]);
+        $plain = $posts->mapWithKeys(fn (Post $p) => [$p->id => self::plain((string) $p->body_html)])->all();
+        $checked = self::check($qs, $plain, $posts->pluck('title', 'id')->all());
+        if (count($checked) < 3) {
+            return self::note($week, 'প্রশ্নগুলো যাচাইয়ে টেকেনি ('.count($checked).'টা টিকেছে); আবার চেষ্টা হবে');
+        }
+        // D330: live by itself once checked; nobody has to approve it
+        DB::table('game_quizzes')->updateOrInsert(['week' => $week], ['status' => 'approved', 'questions' => json_encode($checked, JSON_UNESCAPED_UNICODE), 'note' => null,
+            'approved_by' => null, 'approved_at' => now(), 'updated_at' => now(), 'created_at' => $row->created_at ?? now()]);
+        self::forget($week);
+        AuditLog::record('quiz.published', null, ['week' => $week, 'questions' => count($checked), 'dropped' => count($qs) - count($checked)]);
 
         return null;
+    }
+
+    public static function plain(string $html): string
+    {
+        return \Normalizer::normalize(trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['</p>', '<br>', '<br/>', '<br />'], ' ', $html))))), \Normalizer::FORM_C) ?: '';
+    }
+
+    /**
+     * D330: the questions that pass both checks. (1) The server: a word of the right answer (two letters or more)
+     * stands in the piece's text. (2) A second AI reading, told to be strict, with only that piece in front of it: the
+     * text plainly gives the answer, no other option is also right, and the question gives away no ending or twist.
+     * Without an AI answer nothing passes (better no quiz than a wrong one).
+     *
+     * @param  array<int, string>  $plain  post id => text
+     */
+    public static function check(array $qs, array $plain, array $titles = []): array
+    {
+        $qs = array_values(array_filter($qs, function ($q) use ($plain) {
+            $text = $plain[$q['post_id']] ?? '';
+            $right = \Normalizer::normalize((string) $q['options'][$q['answer']], \Normalizer::FORM_C) ?: '';
+            foreach (preg_split('/[\s,;:।\-]+/u', $right) as $w) {
+                if (mb_strlen($w) >= 2 && mb_strpos($text, mb_substr($w, 0, max(2, mb_strlen($w) - 2))) !== false) {
+                    return true;   // the word, allowing a changed ending (চিঠি / চিঠিখানা, বটতলা / বটতলায়)
+                }
+            }
+
+            return false;
+        }));
+        if (! $qs) {
+            return [];
+        }
+        $items = collect($qs)->map(fn ($q, $i) => '<question n="'.$i.'"><piece title="'.e($titles[$q['post_id']] ?? '').'">'.e(mb_substr($plain[$q['post_id']] ?? '', 0, 6000)).'</piece>'
+            .'<q>'.e($q['q']).'</q>'.collect($q['options'])->map(fn ($o, $k) => '<option n="'.$k.'"'.($k === $q['answer'] ? ' marked="right"' : '').'>'.e($o).'</option>')->implode('').'</question>')->implode("
+");
+        [$d] = Claude::json('quiz',
+            'You are a strict fact-checker for a quiz in a Bengali literary magazine. For each question, read ONLY its piece. Answer ok=true only if ALL hold: '
+            .'(a) the piece itself plainly states the option marked right as the answer to this question; (b) none of the other three options is also correct or arguable; '
+            .'(c) the question and its options do not reveal or hint at an ending, a twist, a death, or who did it; (d) the wording is clear Bengali. When in doubt, ok=false. Give a short reason.',
+            $items,
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['checks'], 'properties' => ['checks' => ['type' => 'array', 'items' => [
+                'type' => 'object', 'additionalProperties' => false, 'required' => ['n', 'ok', 'reason'],
+                'properties' => ['n' => ['type' => 'integer'], 'ok' => ['type' => 'boolean'], 'reason' => ['type' => 'string']]]]]],
+            config('ai.anthropic.review_model'), 3000);
+        $ok = collect((array) ($d['checks'] ?? []))->filter(fn ($c) => ! empty($c['ok']))->pluck('n')->map(fn ($n) => (int) $n)->all();
+
+        return array_values(array_filter($qs, fn ($q, $i) => in_array($i, $ok, true), ARRAY_FILTER_USE_BOTH));
     }
 
     private static function note(string $week, string $why): string

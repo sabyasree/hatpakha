@@ -13,6 +13,10 @@
             <div class="flex justify-between text-sm font-bold"><span data-after-level></span><span data-after-level-next></span></div>
             <div class="mt-1 h-2.5 overflow-hidden rounded-full border-2 border-navy bg-rule"><i class="block h-full bg-sky" data-after-level-bar></i></div>
         </div>
+        <div class="mt-3 flex items-center gap-3" data-after-week hidden>
+            <ol class="flex gap-1.5" aria-hidden="true" data-after-week-dots></ol>
+            <p class="text-sm font-bold leading-tight" data-after-week-text></p>
+        </div>
         <p class="mt-3 font-bold" data-after-streak></p>
     </div>
     <a href="{{ \App\Support\Url::to('/khela/board') }}" class="mt-2 flex min-h-11 items-center justify-center font-bold text-sky-night underline">কারা এগিয়ে, দেখুন →</a>

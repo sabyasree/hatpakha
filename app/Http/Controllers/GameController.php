@@ -199,6 +199,9 @@ class GameController extends Controller
         if (! $name) {
             return back()->withErrors(['name' => 'দলের নাম অন্তত দুই অক্ষরের হোক, কোনো লিঙ্ক ছাড়া।'])->withInput();
         }
+        if (! GameSocial::teamNameOk($name)) {
+            return back()->withErrors(['name' => 'এই নামটা খেলার তালিকায় রাখা যাবে না। অন্য একটা নাম দিন।'])->withInput();
+        }
         $code = GameSocial::makeTeam($request->user(), $name);
         \App\Models\AuditLog::record('games.team_made', null, ['code' => $code, 'name' => $name]);
 
@@ -304,7 +307,7 @@ class GameController extends Controller
 
         return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
             'rank' => ['now' => $mine['rank'] ?? 0, 'up' => $new && $before && ($mine['rank'] ?? 0) ? max(0, $before - $mine['rank']) : 0, 'gap' => $mine['gap'] ?? null],
-            'week' => ['rank' => $week['rank'] ?? 0, 'gap' => $week['gap'] ?? null],
+            'week' => ['rank' => $week['rank'] ?? 0, 'gap' => $week['gap'] ?? null, 'days' => GameScores::weekDays($user)],
             'next' => $next, 'level' => ['name' => $level['name'], 'nextName' => $level['nextName'], 'left' => $level['left'], 'percent' => $level['percent']]]);
     }
 

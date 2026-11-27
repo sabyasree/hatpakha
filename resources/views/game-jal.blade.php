@@ -7,7 +7,9 @@
     $dict = \App\Support\Akshorjal::dictionary();
     $payload = ['date' => $game['date'], 'no' => $game['no'], 'grid' => $game['grid'], 'seconds' => \App\Support\Akshorjal::SECONDS, 'url' => Url::to('/khela/akshorjal'),
         // the day's words, so a find is checked at once; their tiles too, so a word is told apart from its letters
-        'w' => base64_encode(json_encode(array_map(fn ($w) => [$w, count($dict[$w])], $game['words']), JSON_UNESCAPED_UNICODE))];
+        'w' => base64_encode(json_encode(array_map(fn ($w) => [$w, count($dict[$w])], $game['words']), JSON_UNESCAPED_UNICODE)),
+        // D330: up to three of the grid's longer words as the magazine used them, shown at the end
+        'mag' => collect($game['words'])->filter(fn ($w) => mb_strlen($w) >= 3)->take(8)->map(fn ($w) => ($m = \App\Support\InMagazine::line($w)) ? base64_encode(json_encode($m, JSON_UNESCAPED_UNICODE)) : null)->filter()->take(3)->values()->all()];
 @endphp
 <x-layouts.app :seo="$seo">
     <style>html[data-playing] [data-bottom-nav] { display: none; }</style>
@@ -64,6 +66,7 @@
                 <h2 class="mt-4 font-display text-xl font-extrabold">আজকের জালের সব শব্দ</h2>
                 <p class="text-sm text-ink2">গাঢ় রঙে আপনার পাওয়া, হালকায় বাকি থাকা।</p>
                 <ul class="mt-2 flex flex-wrap gap-2" data-jal-all></ul>
+                <div data-jal-mag hidden class="mt-4"><h3 class="font-bold">এই শব্দগুলো হাতপাখার লেখায়</h3><div class="mt-1 grid gap-2" data-jal-mag-list></div></div>
                 <div class="mt-4 grid gap-2">
                     <button type="button" data-jal-share class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">বন্ধুদের দেখান</button>
                     <a data-jal-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
@@ -81,7 +84,8 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @unless ($locked)
-        <script src="{{ asset('js/hp-after.js') }}?v=2" defer></script>
-        <script src="{{ asset('js/hp-jal.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
+        <script src="{{ asset('js/hp-mag.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-jal.js') }}?v=2" defer></script>
     @endunless
 </x-layouts.app>
