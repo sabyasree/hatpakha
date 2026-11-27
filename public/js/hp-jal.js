@@ -54,7 +54,7 @@
         path = []; mode = null; paint();
         if (n < 2) { if (n) say('অন্তত দুটো অক্ষর লাগবে'); return; }
         if (store.found.includes(w)) { say(w + ': আগেই পেয়েছেন'); return; }
-        if (!words.has(w)) { say(w + ': এটা আজকের তালিকায় নেই'); return; }
+        if (!words.has(w)) { say(w + ': আমাদের তালিকায় এখনও নেই'); return; }
         store.found.push(w); save(); foundList();
         say('✓ ' + w + '  +' + bn(pointsFor(n)), true);
     };

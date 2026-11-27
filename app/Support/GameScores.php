@@ -111,7 +111,10 @@ final class GameScores
                 return null;
             }
 
-            return min(100, count(array_keys($res, 'g', true)) * WordChoice::POINTS);
+            // D330: a quiz of three or four questions is still worth 100 (it is not the player's fault it is short)
+            $good = count(array_keys($res, 'g', true));
+
+            return min(100, $game === 'quiz' ? (int) round(100 * $good / $n) : $good * WordChoice::POINTS);
         }
         if ($game === 'jal') {   // D328: the words found; only those the day's grid holds count
             $words = array_values(array_filter((array) ($r['words'] ?? []), 'is_string'));
@@ -176,6 +179,60 @@ final class GameScores
         return min(self::DAY_MAX, array_sum(array_slice($groups, 0, 3)));
     }
 
+    /**
+     * D330 (game designers: eight games is too much choice; a set of three makes the daily habit): today's three for
+     * a player: the two they played most in the last two weeks, and one they have not played this week, so they meet
+     * the others in turn. A guest or a new player: শব্দ-খেলা, বানান-যাচাই, ধাঁধা. @return list<string> group keys
+     */
+    public static function suggest(?User $user): array
+    {
+        $daily = array_values(array_diff(array_keys(self::GROUPS), ['quiz']));
+        $default = ['word', 'banan', 'riddle'];
+        if (! $user) {
+            return $default;
+        }
+        $groupOf = [];
+        foreach (self::GROUPS as $key => [, $games]) {
+            foreach ($games as $g) {
+                $groupOf[$g] = $key;
+            }
+        }
+        $counts = [];
+        foreach (DB::table('game_scores')->where('user_id', $user->id)->where('day', '>=', now('Asia/Kolkata')->subDays(14)->toDateString())->get(['game', 'day']) as $r) {
+            $k = $groupOf[$r->game] ?? null;
+            if ($k && $k !== 'quiz') {
+                $counts[$k][substr((string) $r->day, 0, 10)] = true;
+            }
+        }
+        $counts = array_map('count', $counts);
+        arsort($counts);
+        $pick = array_slice(array_keys($counts), 0, 2);
+        $week = DB::table('game_scores')->where('user_id', $user->id)->where('day', '>=', WeeklyQuiz::week())->pluck('game')->map(fn ($g) => $groupOf[$g] ?? null)->filter()->unique()->all();
+        // one they have not played this week, turn by turn through the list (the day of the year decides which)
+        $fresh = array_values(array_diff($daily, $pick, $week));
+        if ($fresh) {
+            $pick[] = $fresh[now('Asia/Kolkata')->dayOfYear % count($fresh)];
+        }
+        foreach ($default as $d) {
+            if (count($pick) < 3 && ! in_array($d, $pick, true)) {
+                $pick[] = $d;
+            }
+        }
+
+        return array_slice($pick, 0, 3);
+    }
+
+    /** Every game of a day, each at most 100 (up to 800): what the level counts and what settles a tie. */
+    public static function dayAll(array $byGame): int
+    {
+        $sum = 0;
+        foreach (self::GROUPS as [, $games]) {
+            $sum += min(100, array_sum(array_intersect_key($byGame, array_flip($games))));
+        }
+
+        return $sum;
+    }
+
     /** The best $n of a list of numbers, added up. */
     private static function best(array $values, int $n): int
     {
@@ -217,11 +274,12 @@ final class GameScores
             $rows = DB::table('game_scores')->join('users', 'users.id', '=', 'game_scores.user_id')->whereNull('users.spam_reason')
                 ->whereBetween('day', [$from, $to])
                 ->groupBy('game_scores.user_id', 'day', 'game')
-                ->selectRaw('game_scores.user_id, day, game, sum(points) as points, sum(seconds) as seconds')->get();
-            $days = $secs = [];
+                ->selectRaw('game_scores.user_id, day, game, sum(points) as points, sum(seconds) as seconds, min(game_scores.created_at) as at')->get();
+            $days = $secs = $first = [];
             foreach ($rows as $r) {
                 $days[$r->user_id][substr((string) $r->day, 0, 10)][$r->game] = (int) $r->points;
                 $secs[$r->user_id] = ($secs[$r->user_id] ?? 0) + (int) $r->seconds;
+                $first[$r->user_id] = min($first[$r->user_id] ?? '9999', (string) $r->at);
             }
             if (! $days) {
                 return [];
@@ -249,9 +307,12 @@ final class GameScores
                     $points = match ($range) { 'month' => self::best($totals, self::MONTH_DAYS), 'sweek' => self::best($totals, self::WEEK_DAYS), default => array_sum($totals) };
                 }
                 $out[] = ['user_id' => (int) $userId, 'name' => (string) ($names[$userId] ?? $users[$userId]->name), 'hidden' => $users[$userId]->board_hidden || $users[$userId]->game_blocked_at || $users[$userId]->role === \App\Enums\Role::Admin->value,   // D245: kept off by the desk counts as hidden; the site's admin never shows (owner, 2026-11-27)
-                    'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId]];
+                    'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId],
+                    'extra' => (int) array_sum(array_map(fn ($games) => self::dayAll($games), $byDay)), 'first' => (string) $first[$userId]];
             }
-            usort($out, fn ($a, $b) => [$b['points'], $b['days'], $b['full'], $a['seconds'], $a['user_id']] <=> [$a['points'], $a['days'], $a['full'], $b['seconds'], $b['user_id']]);
+            // D330 (game designers): with many full days the top is a tie. It no longer goes to whoever played fewer
+            // games faster (the time comes from the browser): more days, then more games finished, then who began first
+            usort($out, fn ($a, $b) => [$b['points'], $b['days'], $b['full'], $b['extra'], $a['first'], $a['user_id']] <=> [$a['points'], $a['days'], $a['full'], $a['extra'], $b['first'], $b['user_id']]);
 
             return $out;
         });

@@ -240,7 +240,8 @@ class GameTitlesTest extends TestCase
         }
 
         $this->postJson('/khela/score', ['game' => 'riddle2', 'day' => '2026-12-05', 'seconds' => 30, 'results' => ['g']])->assertOk()
-            ->assertJson(['ok' => true, 'points' => 60, 'today' => ['total' => 60, 'max' => 300], 'rank' => ['now' => 1], 'next' => ['name' => 'শব্দ-খেলা']]);
+            ->assertJson(['ok' => true, 'points' => 60, 'today' => ['total' => 60, 'max' => 300], 'rank' => ['now' => 1]])
+            ->assertJsonPath('next.name', fn ($n) => $n !== null && $n !== 'ধাঁধা');   // D330: the next of today's three
         $this->postJson('/khela/score', ['game' => 'riddle', 'day' => '2026-12-04', 'seconds' => 30, 'results' => ['g']])->assertJson(['points' => 40, 'next' => ['name' => 'কঠিন ধাঁধা']]);   // yesterday's, just after midnight: the hard one is offered next
         $this->postJson('/khela/score', ['game' => 'probad', 'day' => '2026-12-05', 'seconds' => 30, 'results' => ['g', 'g', 'g', 'y']])->assertJson(['points' => 85, 'today' => ['total' => 145]]);
         $this->get('/khela/aaj/')->assertOk()->assertSee('হয়ে গেছে · ৮৫ পয়েন্ট')->assertSee('আরও বাকি');

@@ -18,6 +18,12 @@
         $cards[] = ['ekshobde', 'এক শব্দে প্রকাশ', 'পাঁচটা কথা, এক শব্দে বলুন', Url::to('/khela/ek-shobde'), 100, false, ['এ', 'ক']];
         $cards[] = ['jal', 'অক্ষরজাল', 'ষোলোটা অক্ষর, তিন মিনিট, যত শব্দ পান', Url::to('/khela/akshorjal'), 100, false, ['জা', 'ল']];
     }
+    // D330: today's three on top, the rest below
+    $three = GameScores::suggest($me);
+    $byKey = collect($cards)->keyBy(0);
+    $top = collect($three)->map(fn ($k) => $byKey[$k] ?? null)->filter()->values()->all();
+    $others = collect($cards)->reject(fn ($c) => in_array($c[0], $three, true))->values()->all();
+    $startAt = collect($top)->first(fn ($c) => ! (($today['groups'] ?? null) && collect($today['groups'])->firstWhere('key', $c[0])['done']));
     $quiz = \App\Support\WeeklyQuiz::live();
     $quizDone = $me && $quiz && \App\Support\WeeklyQuiz::played($me, $day);
     $groups = collect($today['groups'] ?? [])->keyBy('key');
@@ -29,7 +35,7 @@
 <x-layouts.app :seo="$seo">
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6">
         @include('partials.game-nav', ['on' => 'hub'])
-        <p class="font-hand text-2xl text-red">রোজ {{ Bn::num((string) count($cards)) }}টা খেলা, সপ্তাহে একটা কুইজ</p>
+        <p class="font-hand text-2xl text-red">রোজ তিনটে খেলায় পুরো দিন</p>
         <h1 class="font-display text-4xl font-extrabold leading-tight">আজকের খেলা</h1>
 
         @if ($me)
@@ -51,8 +57,41 @@
             <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট, লিডারবোর্ড আর খেতাবের জন্য অ্যাকাউন্ট লাগে।</p>
         @endif
 
-        <ul class="mt-5 grid gap-3">
-            @foreach ($cards as [$key, $name, $line, $href, $max, $open, $tiles])
+        <div class="mt-5 flex items-end justify-between gap-2">
+            <h2 class="font-display text-2xl font-extrabold leading-tight">আজকের তিন <span class="block text-base font-bold text-ink2">সাত-আট মিনিটে পুরো দিন</span></h2>
+            @if ($startAt)<a href="{{ $startAt[3] }}" class="flex h-12 flex-none items-center rounded-full bg-red px-5 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন →</a>@endif
+        </div>
+        <ul class="mt-3 grid gap-3">
+            @foreach ($top as [$key, $name, $line, $href, $max, $open, $tiles])
+                @php
+                    $g = $groups[$key] ?? null;
+                    $isDone = (bool) ($g['done'] ?? false);
+                    $needsAccount = ! $me && ! $open;
+                    // ধাঁধা and শব্দজব্দ have more than one part a day: say how much is still to be had
+                    $more = $isDone && $g['points'] < 100 && in_array($key, ['riddle', 'cross'], true)
+                        && count(array_intersect_key($got, array_flip(GameScores::GROUPS[$key][1]))) < count(GameScores::GROUPS[$key][1]);
+                @endphp
+                <li>
+                    <a href="{{ $href }}" class="flex min-h-[5.5rem] items-center gap-3 rounded-3xl border-2 border-navy p-3 {{ $isDone && ! $more ? 'bg-peach-light' : 'bg-white shadow-[4px_4px_0_#13212C]' }}">
+                        <span class="flex flex-none gap-0.5" aria-hidden="true">@foreach ($tiles as $t)<span class="flex h-11 w-10 items-center justify-center rounded-xl border-2 border-navy bg-paper font-serif text-lg font-bold {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
+                        <span class="min-w-0 flex-1 leading-tight">
+                            <span class="block font-display text-[22px] font-extrabold">{{ $name }}@if (in_array($key, ['banan', 'ekshobde', 'jal'], true) && $day < '2026-12-15') <span class="ms-1 rounded-full bg-red px-2 py-0.5 align-middle font-sans text-xs font-bold text-white">নতুন</span>@endif</span>
+                            <span class="block text-base text-ink2">@if ($isDone)হয়ে গেছে · {{ Bn::num((string) $g['points']) }} পয়েন্ট@if ($more) · আরও বাকি@endif @elseif ($needsAccount)অ্যাকাউন্ট লাগে @else{{ $line }}@if (! $me && in_array($key, ['riddle', 'cross'], true))। সহজটা সবার জন্য খোলা@endif @endif</span>
+                        </span>
+                        @if ($isDone && ! $more)
+                            <span class="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-navy text-2xl font-extrabold text-white" aria-hidden="true">✓</span>
+                        @elseif ($needsAccount)
+                            <span class="flex h-12 flex-none items-center gap-1.5 rounded-full border-2 border-navy bg-white px-4 font-bold">@include('partials.lock-icon') খুলুন</span>
+                        @else
+                            <span class="flex h-12 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
+                        @endif
+                    </a>
+                </li>
+            @endforeach
+        </ul>
+        <h2 class="mt-7 font-display text-xl font-extrabold">আরও খেলা <span class="text-base font-bold text-ink2">· যেটা ইচ্ছে</span></h2>
+        <ul class="mt-3 grid gap-3">
+            @foreach ($others as [$key, $name, $line, $href, $max, $open, $tiles])
                 @php
                     $g = $groups[$key] ?? null;
                     $isDone = (bool) ($g['done'] ?? false);

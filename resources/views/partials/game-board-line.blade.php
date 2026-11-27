@@ -3,19 +3,23 @@
 @auth
     <div data-game-after hidden class="mt-4">
         <div class="rounded-2xl border-2 border-navy bg-white p-3">
+            <p data-after-full hidden class="mb-2 inline-block -rotate-2 rounded-lg border-2 border-red px-3 py-1 font-display text-xl font-extrabold text-red">আজকের দিন পূর্ণ ✓</p>
             <div class="flex justify-between font-extrabold"><span>আজ মোট</span><span data-after-total></span></div>
             <div class="mt-1.5 h-3 overflow-hidden rounded-full border-2 border-navy bg-rule"><i class="block h-full bg-red" data-after-bar></i></div>
             <div class="mt-2 grid grid-cols-2 gap-1.5 text-sm font-bold" data-after-games></div>
+            <p class="mt-3 text-sm font-bold" data-after-more-label></p>
+            <div class="mt-1 grid grid-cols-2 gap-1.5 text-sm font-bold" data-after-rest></div>
         </div>
         <p class="mt-3 text-lg font-bold" data-after-rank></p>
         <a href="#" data-after-next hidden class="mt-3 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]"></a>
         <div class="mt-4" data-after-level-box>
             <div class="flex justify-between text-sm font-bold"><span data-after-level></span><span data-after-level-next></span></div>
             <div class="mt-1 h-2.5 overflow-hidden rounded-full border-2 border-navy bg-rule"><i class="block h-full bg-sky" data-after-level-bar></i></div>
+            <p class="mt-1 text-xs text-ink2">স্তরে সব খেলার পয়েন্ট জমে, দিনের ৩০০-র বাইরেরগুলোও।</p>
         </div>
-        <div class="mt-3 flex items-center gap-3" data-after-week hidden>
+        <div class="mt-3" data-after-week hidden>
             <ol class="flex gap-1.5" aria-hidden="true" data-after-week-dots></ol>
-            <p class="text-sm font-bold leading-tight" data-after-week-text></p>
+            <p class="mt-1 text-sm font-bold leading-tight" data-after-week-text></p>
         </div>
         <p class="mt-3 font-bold" data-after-streak></p>
     </div>

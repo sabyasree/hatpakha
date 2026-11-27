@@ -104,6 +104,21 @@ class MoreGamesTest extends TestCase
         $this->assertSame(Akshorjal::score($day['words'], $day['date']), GameScores::points('jal', ['words' => $day['words']], $day['date']));
     }
 
+    public function test_akshorjal_learns_words_from_the_magazine_from_the_next_day(): void
+    {
+        foreach (range(1, 8) as $i) {
+            $this->makePost(['body_html' => '<p>ঝিঙেফুল ফুটেছে বাগানে, লেখা '.$i.'</p>']);
+        }
+        $this->makePost(['body_html' => '<p>একবারকারশব্দ</p>']);
+        $before = Akshorjal::day();
+        $this->assertGreaterThan(0, Akshorjal::learn());
+        $this->assertTrue(DB::table('jal_words')->where('word', 'ঝিঙেফুল')->exists(), 'Eight pieces: learnt');
+        $this->assertFalse(DB::table('jal_words')->where('word', 'একবারকারশব্দ')->exists(), 'Once only: not learnt');
+        $this->assertArrayNotHasKey('ঝিঙেফুল', Akshorjal::dictionary(now('Asia/Kolkata')->toDateString()), 'Not today: today\'s grid stays as it is');
+        $this->assertArrayHasKey('ঝিঙেফুল', Akshorjal::dictionary(now('Asia/Kolkata')->addDay()->toDateString()));
+        $this->assertSame($before, Akshorjal::day());
+    }
+
     public function test_points_stay_a_best_three_day_of_300(): void
     {
         $this->assertSame(100, GameScores::points('banan', ['results' => ['g', 'g', 'g', 'g', 'g']]));
@@ -173,7 +188,7 @@ class MoreGamesTest extends TestCase
         $this->get('/khela/quiz/')->assertOk()->assertSee('data-choice', false)->assertSee('লেখা 1', false)->assertDontSee('কোন পাখি');
 
         $user = $this->player();
-        $this->actingAs($user)->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-07', 'seconds' => 60, 'results' => ['g', 'g', 'r']])->assertOk()->assertJsonPath('points', 40);
+        $this->actingAs($user)->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-07', 'seconds' => 60, 'results' => ['g', 'g', 'r']])->assertOk()->assertJsonPath('points', 67);   // two of three: out of 100 (D330)
         Carbon::setTestNow(Carbon::parse('2026-12-08 09:00', 'Asia/Kolkata'));
         $this->postJson('/khela/score', ['game' => 'quiz', 'day' => '2026-12-08', 'seconds' => 60, 'results' => ['g', 'g', 'g']])->assertOk();
         $this->assertSame(1, DB::table('game_scores')->where('game', 'quiz')->count(), 'Once a week');

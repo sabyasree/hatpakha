@@ -34,14 +34,23 @@ final class Akshorjal
         return WordChoice::number('jal', $day);
     }
 
-    /** Every word the grid may hold, as its অক্ষর. @return array<string, list<string>> word => tiles */
-    public static function dictionary(): array
+    /** A word must stand in at least this many published pieces to join the list (D330). */
+    public const LEARN_MIN_POSTS = 8;
+
+    /**
+     * Every word the grid may hold, as its অক্ষর: the lists, and the words learnt from the magazine before $date (so a
+     * day's grid and its words never change while it is being played). @return array<string, list<string>> word => tiles
+     */
+    public static function dictionary(?string $date = null): array
     {
-        static $dict = null;
-        if ($dict !== null) {
-            return $dict;
+        static $dicts = [];
+        $date ??= now('Asia/Kolkata')->toDateString();
+        $key = $date.'|'.rescue(fn () => (int) \Illuminate\Support\Facades\DB::table('jal_words')->max('id'), 0, false);   // a new word, a new list
+        if (isset($dicts[$key])) {
+            return $dicts[$key];
         }
         $words = WordGame::file('akshorjal-words');
+        $words = array_merge($words, rescue(fn () => \Illuminate\Support\Facades\DB::table('jal_words')->where('added_on', '<', $date)->pluck('word')->all(), [], false));
         foreach (['word-game', 'word-game-2', 'word-game-hard', 'word-game-hard-2'] as $f) {
             $words = array_merge($words, array_column(WordGame::file($f), 0));
         }
@@ -54,7 +63,42 @@ final class Akshorjal
             }
         }
 
-        return $dict;
+        return $dicts[$key] = $dict;
+    }
+
+    /**
+     * D330: nightly, the words of 2-5 অক্ষর that stand in at least LEARN_MIN_POSTS published pieces and are not yet
+     * in the list are added; they count from tomorrow. Children's pieces and the desk's own are read too (they are
+     * ordinary Bengali). Returns how many were added.
+     */
+    public static function learn(): int
+    {
+        $known = self::dictionary(now('Asia/Kolkata')->addDays(2)->toDateString());
+        $seen = [];
+        \App\Models\Post::published()->select(['id', 'body_html'])->chunkById(200, function ($posts) use (&$seen) {
+            foreach ($posts as $p) {
+                preg_match_all('/[\x{0985}-\x{09B9}\x{09CE}\x{09DC}-\x{09DF}][\x{0980}-\x{09FF}]*/u', WeeklyQuiz::plain((string) $p->body_html), $m);
+                foreach (array_unique($m[0]) as $w) {
+                    $seen[$w] = ($seen[$w] ?? 0) + 1;
+                }
+            }
+        });
+        $add = [];
+        foreach ($seen as $w => $n) {
+            $w = (string) $w;
+            if ($n < self::LEARN_MIN_POSTS || isset($known[$w]) || mb_substr($w, -1) === "\u{09CD}") {
+                continue;
+            }
+            $tiles = WordGame::letters($w);
+            if (count($tiles) >= 2 && count($tiles) <= 5 && implode('', $tiles) === $w) {
+                $add[] = ['word' => $w, 'posts' => $n, 'added_on' => now('Asia/Kolkata')->toDateString(), 'created_at' => now(), 'updated_at' => now()];
+            }
+        }
+        foreach (array_chunk($add, 500) as $chunk) {
+            \Illuminate\Support\Facades\DB::table('jal_words')->insertOrIgnore($chunk);
+        }
+
+        return count($add);
     }
 
     /** @return array{no: int, date: string, grid: list<string>, words: list<string>} */
@@ -62,15 +106,15 @@ final class Akshorjal
     {
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $date = $day->toDateString();
-        $made = Cache::remember('hp.akshorjal.'.$date.'.'.count(self::dictionary()), 86400 * 3, fn () => self::make(crc32('akshorjal'.$date)));
+        $made = Cache::remember('hp.akshorjal.'.$date, 86400 * 3, fn () => self::make(crc32('akshorjal'.$date), $date));
 
         return ['no' => self::number($day), 'date' => $date] + $made;
     }
 
     /** @return array{grid: list<string>, words: list<string>} */
-    public static function make(int $seed): array
+    public static function make(int $seed, ?string $date = null): array
     {
-        $dict = self::dictionary();
+        $dict = self::dictionary($date);
         $trie = self::trie($dict);
         // how often each tile starts or sits in a word: the filling follows it, so the grid reads like Bengali
         $weights = [];
@@ -182,9 +226,9 @@ final class Akshorjal
     }
 
     /** Every word of the list the grid holds. @return list<string> */
-    public static function solve(array $grid, ?array $trie = null): array
+    public static function solve(array $grid, ?array $trie = null, ?string $date = null): array
     {
-        $trie ??= self::trie(self::dictionary());
+        $trie ??= self::trie(self::dictionary($date));
         $found = [];
         $walk = function (int $cell, array $node, array $used) use (&$walk, &$found, $grid) {
             $node = $node[$grid[$cell]] ?? null;
@@ -212,7 +256,7 @@ final class Akshorjal
     public static function score(array $words, string $date): int
     {
         $day = self::day(Carbon::parse($date, 'Asia/Kolkata'));
-        $dict = self::dictionary();
+        $dict = self::dictionary($date);
         $ok = array_intersect(array_unique(array_map(fn ($w) => \Normalizer::normalize((string) $w, \Normalizer::FORM_C) ?: '', $words)), $day['words']);
 
         return min(100, array_sum(array_map(fn ($w) => self::points(count($dict[$w])), $ok)));

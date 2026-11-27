@@ -291,7 +291,11 @@ class GameController extends Controller
         $urls = ['word' => Url::to('/khela'), 'riddle' => Url::to('/khela/dhadha'), 'cross' => WordGame::crosswordUrl('medium'), 'probad' => Url::to('/khela/probad'),
             'banan' => Url::to('/khela/banan'), 'ekshobde' => Url::to('/khela/ek-shobde'), 'jal' => Url::to('/khela/akshorjal'), 'quiz' => Url::to('/khela/quiz')];
         $next = $data['game'] === 'riddle' && ! isset($today['games']['riddle2']) ? ['name' => 'কঠিন ধাঁধা', 'url' => Url::to('/khela/dhadha/kothin')] : null;
-        foreach ($today['groups'] as $g) {
+        // D330: today's three first, then the rest in the menu's order
+        $order = array_flip(GameScores::suggest($user));
+        $byChoice = $today['groups'];
+        usort($byChoice, fn ($a, $b) => [$order[$a['key']] ?? 9] <=> [$order[$b['key']] ?? 9]);
+        foreach ($byChoice as $g) {
             if (! $g['done'] && ! $next && ($g['key'] !== 'quiz' || WeeklyQuiz::live())) {
                 $next = ['name' => $g['name'], 'url' => $urls[$g['key']]];
             }

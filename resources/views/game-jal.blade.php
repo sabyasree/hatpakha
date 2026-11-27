@@ -4,7 +4,7 @@
     use App\Support\Bn;
     use App\Support\Url;
     $locked = ! empty($locked);
-    $dict = \App\Support\Akshorjal::dictionary();
+    $dict = \App\Support\Akshorjal::dictionary($game['date']);
     $payload = ['date' => $game['date'], 'no' => $game['no'], 'grid' => $game['grid'], 'seconds' => \App\Support\Akshorjal::SECONDS, 'url' => Url::to('/khela/akshorjal'),
         // the day's words, so a find is checked at once; their tiles too, so a word is told apart from its letters
         'w' => base64_encode(json_encode(array_map(fn ($w) => [$w, count($dict[$w])], $game['words']), JSON_UNESCAPED_UNICODE)),

@@ -128,3 +128,5 @@ Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz dra
 Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz draft again')->weeklyOn(6, '19:15')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 // D330: the quiz goes live by itself once checked; a last try just after midnight on Sunday, for the week that has begun
 Schedule::call(fn () => \App\Support\WeeklyQuiz::draft(\App\Support\WeeklyQuiz::week()))->name('weekly quiz last try')->weeklyOn(0, '00:05')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+// D330: অক্ষরজাল learns words from the magazine (a word in 8 or more pieces), counted from the next day
+Schedule::call(fn () => \App\Support\Akshorjal::learn())->name('akshorjal learns words')->dailyAt('03:30')->timezone('Asia/Kolkata')->withoutOverlapping(60);

@@ -16,8 +16,9 @@
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
     if (!store.day || store.day.id !== data.id) store.day = { id: data.id, i: 0, results: [], picked: [], start: null, end: null, sent: false };
     const day = store.day;
-    const total = () => day.results.filter((r) => r === 'g').length * data.points;
-    const max = data.items.length * data.points;
+    // the quiz is out of 100 however many questions passed its check (D330)
+    const total = () => data.whole ? Math.round(data.whole * day.results.filter((r) => r === 'g').length / data.items.length) : day.results.filter((r) => r === 'g').length * data.points;
+    const max = data.whole || data.items.length * data.points;
 
     const dots = () => [...root.querySelectorAll('[data-dot]')].forEach((d, i) => {
         d.className = 'flex h-3 flex-1 rounded-full ' + ({ g: 'bg-sky-deep', r: 'bg-red' }[day.results[i]] || (i === day.i ? 'bg-navy' : 'bg-rule'));
