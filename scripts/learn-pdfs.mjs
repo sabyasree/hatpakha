@@ -18,6 +18,13 @@ for (const [file, path] of Object.entries(jobs)) {
     if (!res || res.status() !== 200) { console.error(`${file}: HTTP ${res && res.status()}`); process.exitCode = 1; continue; }
     await page.evaluate(() => document.fonts.ready);
     await page.pdf({ path: join(out, file + '.pdf'), format: file.endsWith('-letter') ? 'Letter' : 'A4', printBackground: true, preferCSSPageSize: true });
+    // a picture of the first page for the worksheets page and Google Images: the charts and each unit's first sheet (A4)
+    if (/^(chart-[a-z]+|[a-z0-9-]+-1)-a4$/.test(file)) {
+        await page.setViewportSize({ width: 794, height: 1123 });
+        await page.emulateMedia({ media: 'print' });
+        await page.screenshot({ path: join(out, 'preview-' + file.replace(/-a4$/, '') + '.jpg'), type: 'jpeg', quality: 80, clip: { x: 0, y: 0, width: 794, height: 1000 } });
+        await page.emulateMedia({ media: 'screen' });
+    }
     n++;
 }
 await browser.close();

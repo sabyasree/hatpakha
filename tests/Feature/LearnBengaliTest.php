@@ -138,7 +138,7 @@ class LearnBengaliTest extends TestCase
         $this->get('/janun/learn-bengali/pdf/not-a-file/')->assertNotFound();
         $this->assertStringEndsWith('/janun/learn-bengali/kar-1/2/print/?size=letter', (string) $this->get('/janun/learn-bengali/pdf/kar-1-2-letter/')->headers->get('Location'), 'Letter stays Letter, no redirect chain');
         $this->assertStringEndsWith('/a/print/?size=letter', \App\Support\Url::to('/a/print?size=letter'));
-        $this->assertCount(2 * (LearnCourse::count() + count(LearnCourse::units()) + 2), LearnController::pdfs());
+        $this->assertCount(2 * (LearnCourse::count() + count(LearnCourse::units()) + 3), LearnController::pdfs());
     }
 
     public function test_recordings_are_uploaded_at_the_desk_and_play_in_the_lesson(): void
