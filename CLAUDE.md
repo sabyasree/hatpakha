@@ -84,6 +84,7 @@ Admin panel: `/desk` (editor role or above, mandatory 2FA).
 - **ENV_FILE values with a space need double quotes** (`NAME="Two Words"`); say so every time the owner is asked to add one. Without them the deploy stops with "The environment file is invalid".
 - **Tests never depend on the clock or the day they run.** Fix the time (`Carbon::setTestNow`) and write dates out; a record made with `now()` before the clock is fixed breaks at some hour of the day.
 - **Editing a file by script: find the end of a block from its start**, never from the top of the file (a second "wa.me" link earlier in `post.blade.php` once made an edit duplicate half the page; `AdsTest` caught it). After a scripted edit of a Blade file, look at `git diff --stat` for that file: far more lines than intended means the edit went wrong.
+- **Tests run on SQLite, the site on MySQL, and MySQL's default comparison ignores the nukta** (ড় = ড, য় = য under `utf8mb4_unicode_ci`). A unique or looked-up column holding Bengali letters, words or sounds needs `->collation('utf8mb4_bin')` on MySQL (2026-11-27: the stroke-order release stopped the staging deploy on a duplicate ড়).
 - **What a test sets by hand, it cannot see missing.** A test that writes `config([...])` proves the code works with the setting, not that the setting arrives. For anything read from ENV_FILE, the settings test above and the live check after each release (deploy workflow, "Check the live site after the release") are the proof.
 
 ## 7. Language

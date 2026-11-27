@@ -13,9 +13,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The first release stopped half-way on MySQL (its default comparison ignores the nukta, so ড় clashed with ড)
+        // and left the table behind without recording the migration; it holds only machine drafts, so start again.
+        Schema::dropIfExists('learn_strokes');
         Schema::create('learn_strokes', function (Blueprint $t) {
             $t->id();
-            $t->string('glyph', 16)->unique();
+            $glyph = $t->string('glyph', 16);
+            if (DB::getDriverName() === 'mysql') {
+                $glyph->collation('utf8mb4_bin');         // exact letters: ড় ≠ ড, য় ≠ য
+            }
+            $glyph->unique();
             $t->json('strokes');                          // [[[x, y], …], …] in a 0–100 box
             $t->string('status', 10)->default('draft');   // draft | approved
             $t->string('source', 10)->default('machine'); // machine | desk

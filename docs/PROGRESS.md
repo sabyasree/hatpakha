@@ -460,6 +460,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] বাংলা শিখি phases 1–3: 72 lessons, player, map, parents' page, worksheets as PDF, certificate, desk recordings (D321); English mode and guide (D322).
 - [ ] **Owner:** record the letters and words at /desk → বাংলা শিখি: রেকর্ডিং (start with unit 1).
 - [x] Full joined-letter list (171), worksheet pictures, course share card (D324); stroke order as drafts with a desk page (D325); review leftovers (D326).
+- [x] Staging deploy fix: MySQL treated ড় as ড and stopped the stroke-order migration; Bengali letter columns now compare exactly (D327).
 - [ ] **Owner:** check and approve the stroke-order drafts at /desk → বাংলা শিখি: লেখার ক্রম (ideally with someone who teaches writing).
 - [ ] Premium (phase 4) when the owner decides price and payment.
 - [x] 49 greeting occasions; names with Arabic and Persian, four sources (D320).
