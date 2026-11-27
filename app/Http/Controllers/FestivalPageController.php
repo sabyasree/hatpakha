@@ -39,7 +39,7 @@ class FestivalPageController extends Controller
         $url = FestivalPlan::pageUrl($key, $year);
         $nameY = $name.' '.Bn::num((string) $year);
         $when = $day ? FestivalPlan::show($day, false) : '';
-        $seo = new Seo(title: $en.' '.$year.' Date & Time · '.$nameY.': তারিখ, তিথি ও সময়',
+        $seo = new Seo(image: asset('images/og/card-puja.jpg'), title: $en.' '.$year.' Date & Time · '.$nameY.': তারিখ, তিথি ও সময়',
             description: JanunPlan::clip($nameY.' কবে: '.$when.($wb ? ' ('.BanglaDate::text($wb).', পশ্চিমবঙ্গ)' : '').'। তিথি শুরু ও শেষের সময় ভারত, বাংলাদেশ, ব্রিটেন, আমেরিকা, কানাডা, অস্ট্রেলিয়ার সময়ে। '.$en.' '.$year.' date and tithi time.', 158),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['পুজো-পার্বণ', Url::to('/janun/puja')], ['পুজো-পার্বণ '.Bn::num((string) $year), Url::to('/janun/puja/'.$year)], [$nameY, $url]]),
                 JsonLd::festivalPage($nameY, $url, $rows->max('updated_at'))]);
@@ -64,7 +64,7 @@ class FestivalPageController extends Controller
                 'url' => FestivalPlan::pageUrl($p[0], $year)];
         });
         $url = Url::to('/janun/puja/'.$year);
-        $seo = new Seo(title: 'Bengali Festivals '.$year.' · পুজো-পার্বণ '.Bn::num((string) $year).': তারিখের তালিকা',
+        $seo = new Seo(image: asset('images/og/card-puja.jpg'), title: 'Bengali Festivals '.$year.' · পুজো-পার্বণ '.Bn::num((string) $year).': তারিখের তালিকা',
             description: JanunPlan::clip(Bn::num((string) $year).' সালের বাঙালি পুজো-পার্বণের তারিখ: '.$items->pluck('name')->take(6)->implode(', ').'। বাংলা তারিখ, তিথি আর বিদেশের সময়। Bengali festival list '.$year.'.', 158),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['পুজো-পার্বণ', Url::to('/janun/puja')], ['পুজো-পার্বণ '.Bn::num((string) $year), $url]])]);
         Ads::allow();

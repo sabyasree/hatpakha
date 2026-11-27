@@ -61,8 +61,11 @@ final class JanunDesk
 
     public static function publishDue(): int
     {
-        $n = JanunPage::where('status', 'scheduled')->where('publish_at', '<=', now())->update(['status' => 'published', 'updated_at' => now()]);
+        $due = JanunPage::where('status', 'scheduled')->where('publish_at', '<=', now())->get(['id', 'section', 'slug']);
+        $n = JanunPage::whereIn('id', $due->pluck('id'))->update(['status' => 'published', 'updated_at' => now()]);
         if ($n) {
+            // D312: tell the search engines at once
+            \App\Support\IndexNow::ping($due->flatMap(fn ($p) => [$p->url(), \App\Support\Url::to('/janun/'.$p->section)])->push(\App\Support\Url::to('/janun'))->all());
             cache()->forget('janun:any');
             AuditLog::record('janun.published', null, ['count' => $n]);
         }

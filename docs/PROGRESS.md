@@ -449,3 +449,5 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] জেনে রাখুন: search stays in view when typed far down a list; India shows as ভারত (Chromium's Asia/Calcutta); city search in English only with a "not found" note; booklet fits a phone; search and print buttons hidden without JavaScript; summaries, contents and trust-line links ≥ 44px.
 - [x] Festival pages per year and year lists, made by themselves from checked times (D308, FestivalPagesTest).
 - [x] Desk list for জেনে রাখুন (D309); tithi of the day on the calendar, published source checked by our own calculation (D310, TithiTest).
+- [x] জেনে রাখুন in the menus (D311); share pictures, IndexNow, date in the evening note (D312).
+- [ ] Owner: decide on the home-page জেনে রাখুন strip (mock-up sent 2026-11-27).

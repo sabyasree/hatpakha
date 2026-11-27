@@ -52,7 +52,7 @@ class BanglaCalendarController extends Controller
         // each calendar shows its own current month (on the days they fall in different months, the review found the Bangladesh tab a month behind)
         $grids = ['wb' => $wb ? self::grids($wb[0], $wb[1])['wb'] : null, 'bd' => self::grids($bd[0], $bd[1])['bd']];
         // timeless: Google keeps a snippet for days (SEO review)
-        $seo = new Seo(title: $title,
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: $title,
             description: 'আজ বাংলা কত তারিখ: পশ্চিমবঙ্গ আর বাংলাদেশের বাংলা ক্যালেন্ডার পাশাপাশি, মাস, ঋতু আর পুজো-পার্বণ। Bangla calendar '.$bd[0].' ('.($bd[0] + 593).'-'.substr((string) ($bd[0] + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()]])]);
         Ads::allow();
@@ -75,7 +75,7 @@ class BanglaCalendarController extends Controller
         $to = BanglaDate::bdStart($year + 1, 1)->addDays(2);
         $gy = Bn::num((string) ($year + 593)).'-'.Bn::num(substr((string) ($year + 594), 2));
         // English years first: people search "bengali calendar 2027" (SEO review, 2026-11-27)
-        $seo = new Seo(title: 'Bengali Calendar '.($year + 593).'-'.substr((string) ($year + 594), 2).' · বাংলা ক্যালেন্ডার '.Bn::num((string) $year).': মাস ও পার্বণ',
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: 'Bengali Calendar '.($year + 593).'-'.substr((string) ($year + 594), 2).' · বাংলা ক্যালেন্ডার '.Bn::num((string) $year).': মাস ও পার্বণ',
             description: 'বঙ্গাব্দ '.Bn::num((string) $year).': বৈশাখ থেকে চৈত্র, প্রতিটি মাস কবে শুরু, কত দিনের, পশ্চিমবঙ্গ আর বাংলাদেশে; পুজো-পার্বণ। Bangla Calendar '.$year.' ('.($year + 593).'-'.substr((string) ($year + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)]])]);
         Ads::allow();
@@ -98,7 +98,7 @@ class BanglaCalendarController extends Controller
         $latin = BanglaDate::EN[$m - 1].' '.$year.' Bengali calendar';
         $desc = $name.' '.Bn::num((string) $year).': '.($grids['wb'] ? 'পশ্চিমবঙ্গে '.$range($grids['wb']).', ' : '').'বাংলাদেশে '.$range($grids['bd']).', ঋতু '.BanglaDate::SEASONS[$m - 1].'।'
             .($first ? ' '.$first['events'][0][0].'।' : '').' '.$latin.'.';
-        $seo = new Seo(title: $name.' '.Bn::num((string) $year).': বাংলা ক্যালেন্ডার ('.$span.')',
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: $name.' '.Bn::num((string) $year).': বাংলা ক্যালেন্ডার ('.$span.')',
             description: \App\Support\JanunPlan::clip($desc, 160),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)], [$name, BanglaDate::url($year, $m)]])]);
         Ads::allow();

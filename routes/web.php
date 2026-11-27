@@ -19,6 +19,7 @@ Route::get('/', HomeController::class)->name('home');
 // Crawlers
 Route::get('/robots.txt', [SitemapController::class, 'robots']);
 Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
+Route::get('/indexnow.txt', fn () => response(\App\Support\IndexNow::key())->header('Content-Type', 'text/plain; charset=UTF-8'));   // D312
 
 // D127/D128: Hatpakha as an app, and phone notifications (with or without an account)
 // D175: পাঠকের কলম, the weekly reader theme

@@ -103,8 +103,12 @@ final class PushNotifier
         }
         Setting::put('push.daily_sent_on', now('Asia/Kolkata')->toDateString());
         $n = $posts->count();
+        // D312: today's Bengali date first (West Bengal when checked, else Bangladesh), e.g. "১১ অগ্রহায়ণ · আজ হাতপাখায় …"
+        $d = now('Asia/Kolkata');
+        $bn = rescue(fn () => BanglaDate::wb($d) ?? BanglaDate::bd($d), null, false);
+        $date = $bn ? Bn::num((string) $bn[2]).' '.BanglaDate::MONTHS[$bn[1] - 1].' · ' : '';
         $message = [
-            'title' => $n === 1 ? 'আজ হাতপাখায় নতুন লেখা' : 'আজ হাতপাখায় '.Bn::num((string) $n).'টি নতুন লেখা',
+            'title' => $date.($n === 1 ? 'আজ হাতপাখায় নতুন লেখা' : 'আজ হাতপাখায় '.Bn::num((string) $n).'টি নতুন লেখা'),
             'body' => $posts->take(3)->pluck('title')->implode(' · ').($n > 3 ? ' …' : ''),
             'url' => ($n === 1 ? $posts->first()->url() : url('/').'/').'?utm_source=hatpakha-push&utm_medium=push&utm_campaign=daily',
             'tag' => 'daily', 'kind' => 'daily',
