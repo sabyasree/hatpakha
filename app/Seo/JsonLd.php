@@ -158,6 +158,14 @@ final class JsonLd
         return $nodes;
     }
 
+    /** D308: a festival's yearly page (built from checked times): an Article by the magazine, no Event markup (a holiday is not an event to attend). */
+    public static function festivalPage(string $headline, string $url, $modified): array
+    {
+        return ['@type' => 'Article', '@id' => $url.'#article', 'headline' => $headline, 'inLanguage' => 'bn', 'url' => $url, 'mainEntityOfPage' => $url,
+            'dateModified' => $modified ? \Carbon\Carbon::parse($modified)->toIso8601String() : null,
+            'author' => ['@id' => Url::to('/').'#org'], 'publisher' => ['@id' => Url::to('/').'#org']];
+    }
+
     /** @param array<int,array{0:string,1:string}> $crumbs [name, url] */
     public static function breadcrumbs(array $crumbs): array
     {

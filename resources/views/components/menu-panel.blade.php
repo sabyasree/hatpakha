@@ -17,6 +17,9 @@
     {{-- Owner, 2026-11-14: the games and পাঠকের কলম were missing from the computer and tablet menus --}}
     <a href="{{ \App\Support\Url::to('/khela/aaj') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-peach-light px-4 font-bold hover:bg-peach">খেলা</a>
     <a href="{{ \App\Support\Url::to('/kolom') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy bg-sky-tint px-4 font-bold hover:bg-sky-light">পাঠকের কলম</a>
+    {{-- D311 (UX review): the calendar is used daily; জেনে রাখুন beside the literature, not in front of it --}}
+    <a href="{{ \App\Support\BanglaDate::url() }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">বাংলা ক্যালেন্ডার</a>
+    <a href="{{ \App\Support\Url::to('/janun') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">জেনে রাখুন</a>
     @if (\App\Models\Collection::live())
         <a href="{{ \App\Support\Url::to('/sonkolon') }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">সংকলন</a>
     @endif

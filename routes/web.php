@@ -19,6 +19,7 @@ Route::get('/', HomeController::class)->name('home');
 // Crawlers
 Route::get('/robots.txt', [SitemapController::class, 'robots']);
 Route::get('/llms.txt', [SitemapController::class, 'llms']);   // D126
+Route::get('/indexnow.txt', fn () => response(\App\Support\IndexNow::key())->header('Content-Type', 'text/plain; charset=UTF-8'));   // D312
 
 // D127/D128: Hatpakha as an app, and phone notifications (with or without an account)
 // D175: পাঠকের কলম, the weekly reader theme
@@ -72,6 +73,8 @@ Route::get('/janun', [\App\Http\Controllers\JanunController::class, 'index'])->n
 Route::get('/janun/bangla-calendar', [\App\Http\Controllers\BanglaCalendarController::class, 'index'])->name('calendar');   // D303
 Route::get('/janun/bangla-calendar/{year}', [\App\Http\Controllers\BanglaCalendarController::class, 'year'])->where('year', '1[45]\d\d');
 Route::get('/janun/bangla-calendar/{year}/{slug}', [\App\Http\Controllers\BanglaCalendarController::class, 'month'])->where('year', '1[45]\d\d')->where('slug', '[a-z]+');
+Route::get('/janun/puja/{year}', [\App\Http\Controllers\FestivalPageController::class, 'year'])->where('year', '20\d\d');   // D308: a year's festivals
+Route::get('/janun/puja/{festival}', [\App\Http\Controllers\FestivalPageController::class, 'show'])->where('festival', '('.implode('|', array_column(\App\Support\FestivalPlan::PAGES, 0)).')-20\d\d');   // D308
 Route::get('/janun/puja/pujor-somoy', [\App\Http\Controllers\JanunController::class, 'times'])->name('janun.times');   // D302: tithi times in any time zone
 Route::get('/janun/puja/{slug}/chhapun', [\App\Http\Controllers\JanunController::class, 'booklet'])->where('slug', '[a-z0-9-]+');   // D302: printable puja booklet
 Route::get('/janun/{section}', [\App\Http\Controllers\JanunController::class, 'section'])->whereIn('section', array_keys(\App\Support\JanunPlan::SECTIONS));

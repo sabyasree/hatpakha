@@ -30,7 +30,8 @@ final class BanglaDate
     /** Bangladesh: [year, month 1-12, day]. */
     public static function bd(\DateTimeInterface $date): array
     {
-        $d = CarbonImmutable::instance($date)->startOfDay();
+        // the calendar day as written, whatever its time zone (code review: a Kolkata 'now' gave the day before)
+        $d = CarbonImmutable::create((int) $date->format('Y'), (int) $date->format('n'), (int) $date->format('j'));
         $gy = $d->month < 4 || ($d->month === 4 && $d->day < 14) ? $d->year - 1 : $d->year;
         $start = CarbonImmutable::create($gy, 4, 14)->startOfDay();
         $left = (int) $start->diffInDays($d);

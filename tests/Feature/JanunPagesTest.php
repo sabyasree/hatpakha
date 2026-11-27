@@ -234,11 +234,13 @@ class JanunPagesTest extends TestCase
         $this->assertStringContainsString('জেনে রাখুন', $this->get('/llms.txt')->getContent());
     }
 
-    public function test_no_links_while_nothing_is_live(): void
+    public function test_the_hub_is_linked_from_the_start_because_it_holds_the_calendar(): void
     {
         JanunDesk::seed();
         cache()->forget('janun:any');
-        $this->get('/')->assertDontSee('href="'.\App\Support\Url::to('/janun').'"', false);
+        $this->get('/janun/')->assertOk();
+        $this->get('/')->assertSee('href="'.\App\Support\Url::to('/janun').'"', false)->assertSee('href="'.\App\Support\BanglaDate::url().'"', false);
+        $this->get('/janun/bhasha/')->assertNotFound();   // a part with no live page still does not exist
     }
 
     public function test_descriptions_are_cut_between_words(): void

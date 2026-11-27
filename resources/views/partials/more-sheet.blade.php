@@ -46,6 +46,11 @@
                     <span class="text-lg leading-tight">{{ __('খেলা') }}</span><span class="text-sm font-medium text-ink2">{{ __('রোজের ধাঁধা ও শব্দের খেলা') }}</span></a>
                 <a href="{{ Url::to('/kolom') }}" class="flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-sky-tint px-3 py-2 font-bold hover:bg-sky-light">
                     <span class="text-lg leading-tight">{{ __('পাঠকের কলম') }}</span><span class="text-sm font-medium text-ink2">{{ __('এ সপ্তাহে আপনিও লিখুন') }}</span></a>
+                {{-- D311 (UX review): today's date at a glance; the calendar and the puja times one tap away --}}
+                @if ($bnToday = rescue(fn () => \App\Http\Controllers\BanglaCalendarController::todayLine(), null, false))
+                    <a href="{{ \App\Support\BanglaDate::url() }}" class="col-span-2 flex min-h-16 flex-col justify-center rounded-2xl border-2 border-navy bg-white px-3 py-2 font-bold hover:bg-peach-light">
+                        <span class="text-lg leading-tight">{{ $bnToday[0] }}</span><span class="text-sm font-medium text-ink2">{{ __('বাংলা ক্যালেন্ডার · পুজোর তিথি ও সময়') }}</span></a>
+                @endif
             </div>
             @if ($me)
                 <div class="flex items-center gap-3 px-4 py-3">
@@ -86,6 +91,7 @@
                 <a href="{{ Url::to('/search') }}" class="{{ $row }}">{!! $icon($I['search']) !!}<span class="flex-1">{{ __('সার্চ') }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
                 <a href="{{ Url::to('/archive') }}" class="{{ $row }}">{!! $icon($I['archive']) !!}<span class="flex-1">{{ __('পুরনো লেখা') }}<span class="block text-sm font-medium text-ink2">{{ __(':year থেকে, বছর ধরে (আর্কাইভ)', ['year' => \App\Support\Bn::num(2012)]) }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
                 <a href="{{ Url::to('/lekhok') }}" class="{{ $row }}">{!! $icon($I['person']) !!}<span class="flex-1">{{ __('লেখকেরা') }}<span class="block text-sm font-medium text-ink2">{{ __('সব লেখক, নাম ধরে') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>
+                <a href="{{ Url::to('/janun') }}" class="{{ $row }}">{!! $icon($I['book']) !!}<span class="flex-1">{{ __('জেনে রাখুন') }}<span class="block text-sm font-medium text-ink2">{{ __('বাংলা ক্যালেন্ডার, পুজোর নিয়ম ও মন্ত্র, প্রবাদ, বানান') }}</span></span><span class="text-ink2" aria-hidden="true">›</span></a>   {{-- D311 --}}
                 @foreach (\App\Http\Controllers\ShelfController::live() as $shelfSlug => $shelfName)
                     <a href="{{ Url::to('/tak/'.$shelfSlug) }}" class="{{ $row }}">{!! $icon($I['stack']) !!}<span class="flex-1">{{ __($shelfName) }}</span><span class="text-ink2" aria-hidden="true">›</span></a>
                 @endforeach

@@ -48,16 +48,18 @@ class BanglaCalendarController extends Controller
         $wb = BanglaDate::wb($d);
         $bd = BanglaDate::bd($d);
         [$y, $m] = $wb ? [$wb[0], $wb[1]] : [$bd[0], $bd[1]];
-        $title = 'বাংলা ক্যালেন্ডার '.Bn::num((string) $bd[0]).': আজ বাংলা কত তারিখ';
+        $title = 'বাংলা ক্যালেন্ডার '.Bn::num((string) $bd[0]).': আজ বাংলা কত তারিখ, আজকের তিথি';
         // each calendar shows its own current month (on the days they fall in different months, the review found the Bangladesh tab a month behind)
         $grids = ['wb' => $wb ? self::grids($wb[0], $wb[1])['wb'] : null, 'bd' => self::grids($bd[0], $bd[1])['bd']];
         // timeless: Google keeps a snippet for days (SEO review)
-        $seo = new Seo(title: $title,
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: $title,
             description: 'আজ বাংলা কত তারিখ: পশ্চিমবঙ্গ আর বাংলাদেশের বাংলা ক্যালেন্ডার পাশাপাশি, মাস, ঋতু আর পুজো-পার্বণ। Bangla calendar '.$bd[0].' ('.($bd[0] + 593).'-'.substr((string) ($bd[0] + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()]])]);
         Ads::allow();
 
-        return view('janun.calendar.index', ['d' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
+        $tithi = \App\Models\TithiDay::where('status', 'verified')->whereDate('day', $d->toDateString())->first();
+
+        return view('janun.calendar.index', ['tithi' => $tithi,'nextFestival' => self::nextFestival(), 'd' => $d, 'wb' => $wb, 'bd' => $bd, 'grids' => $grids, 'year' => $y, 'month' => $m, 'seo' => $seo]);
     }
 
     public function year(int $year)
@@ -72,7 +74,8 @@ class BanglaCalendarController extends Controller
         $from = $rows->first()['bd']->min($rows->first()['wb'] ?? $rows->first()['bd']);
         $to = BanglaDate::bdStart($year + 1, 1)->addDays(2);
         $gy = Bn::num((string) ($year + 593)).'-'.Bn::num(substr((string) ($year + 594), 2));
-        $seo = new Seo(title: 'বাংলা ক্যালেন্ডার '.Bn::num((string) $year).' ('.$gy.'): মাস, তারিখ ও পার্বণ',
+        // English years first: people search "bengali calendar 2027" (SEO review, 2026-11-27)
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: 'Bengali Calendar '.($year + 593).'-'.substr((string) ($year + 594), 2).' · বাংলা ক্যালেন্ডার '.Bn::num((string) $year).': মাস ও পার্বণ',
             description: 'বঙ্গাব্দ '.Bn::num((string) $year).': বৈশাখ থেকে চৈত্র, প্রতিটি মাস কবে শুরু, কত দিনের, পশ্চিমবঙ্গ আর বাংলাদেশে; পুজো-পার্বণ। Bangla Calendar '.$year.' ('.($year + 593).'-'.substr((string) ($year + 594), 2).').',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)]])]);
         Ads::allow();
@@ -95,12 +98,36 @@ class BanglaCalendarController extends Controller
         $latin = BanglaDate::EN[$m - 1].' '.$year.' Bengali calendar';
         $desc = $name.' '.Bn::num((string) $year).': '.($grids['wb'] ? 'পশ্চিমবঙ্গে '.$range($grids['wb']).', ' : '').'বাংলাদেশে '.$range($grids['bd']).', ঋতু '.BanglaDate::SEASONS[$m - 1].'।'
             .($first ? ' '.$first['events'][0][0].'।' : '').' '.$latin.'.';
-        $seo = new Seo(title: $name.' '.Bn::num((string) $year).': বাংলা ক্যালেন্ডার ('.$span.')',
+        $seo = new Seo(image: asset('images/og/card-calendar.jpg'), title: $name.' '.Bn::num((string) $year).': বাংলা ক্যালেন্ডার ('.$span.')',
             description: \App\Support\JanunPlan::clip($desc, 160),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['বাংলা ক্যালেন্ডার', BanglaDate::url()], ['বঙ্গাব্দ '.Bn::num((string) $year), BanglaDate::url($year)], [$name, BanglaDate::url($year, $m)]])]);
         Ads::allow();
 
-        return view('janun.calendar.month', ['latin' => $latin, 'year' => $year, 'month' => $m, 'grids' => $grids, 'seo' => $seo]);
+        return view('janun.calendar.month', ['nextFestival' => self::nextFestival(), 'span' => $span, 'latin' => $latin, 'year' => $year, 'month' => $m, 'grids' => $grids, 'seo' => $seo]);
+    }
+
+    /** The next festival with a checked day: [name, day (Carbon), link to its page or the times page], or null. */
+    public static function nextFestival(): ?array
+    {
+        // cached for a quarter of an hour, scalars only (D18): the home page and the calendar ask on every visit (code review)
+        $c = cache()->remember('janun:next:'.self::today()->toDateString(), 900, fn () => ($n = self::nextFestivalNow()) ? [$n[0], $n[1]->toDateString(), $n[2]] : false);
+
+        return $c ? [$c[0], CarbonImmutable::parse($c[1]), $c[2]] : null;
+    }
+
+    private static function nextFestivalNow(): ?array
+    {
+        $f = FestivalPlan::upcoming()->first();
+        if (! $f) {
+            return null;
+        }
+        [$key, $name, , $rows] = $f;
+        $day = $rows->map(fn ($t) => $t->day)->filter()->min();
+        $page = \App\Models\JanunPage::live()->where('key', FestivalPlan::FESTIVALS[$key][1] ?? '')->first(['id', 'section', 'slug']);
+
+        $link = FestivalPlan::yearRows($key, $f[2]) ? FestivalPlan::pageUrl($key, $f[2]) : ($page?->url() ?? Url::to('/janun/puja/pujor-somoy'));   // D308
+
+        return $day ? [$name, CarbonImmutable::parse($day->toDateString()), $link] : null;
     }
 
     /** Years with pages: from launch to next year. */
@@ -128,12 +155,16 @@ class BanglaCalendarController extends Controller
         $bdStart = BanglaDate::bdStart($year, $month);
         $bdLen = BanglaDate::bdLengths($year + 594)[$month - 1];
         $events = self::events(($wbStart ?? $bdStart)->min($bdStart), ($wbStart ?? $bdStart)->max($bdStart)->addDays(32));
-        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events) {
+        // D310: each day's checked tithi (Kolkata)
+        $tithis = \App\Models\TithiDay::where('status', 'verified')->whereDate('day', '>=', ($wbStart ?? $bdStart)->min($bdStart)->toDateString())->whereDate('day', '<=', ($wbStart ?? $bdStart)->max($bdStart)->addDays(32)->toDateString())
+            ->get()->keyBy(fn ($t) => $t->day->toDateString());
+        $grid = fn (CarbonImmutable $start, int $len, string $other) => ['year' => $year, 'month' => $month, 'lead' => $start->dayOfWeek, 'days' => collect(range(0, $len - 1))->map(function ($i) use ($start, $other, $events, $tithis) {
             $g = $start->addDays($i);
 
             $cal = $other === 'bd' ? 'wb' : 'bd';   // a calendar shows its own days and the shared ones
 
             return ['n' => $i + 1, 'g' => $g, 'today' => $g->equalTo(self::today()), 'other' => $other === 'bd' ? BanglaDate::bd($g) : BanglaDate::wb($g),
+                'tithi' => isset($tithis[$g->toDateString()]) ? $tithis[$g->toDateString()]->text() : null,
                 'events' => array_values(array_filter($events[$g->toDateString()] ?? [], fn ($e) => in_array($e[2], ['both', $cal], true)))];
         })->all()];
 
@@ -145,11 +176,13 @@ class BanglaCalendarController extends Controller
     {
         $out = [];
         $pages = \App\Models\JanunPage::live()->whereIn('key', collect(FestivalPlan::FESTIVALS)->pluck(1)->filter()->all())->get(['id', 'key', 'section', 'slug'])->keyBy('key');
-        foreach (FestivalTime::where('status', 'verified')->whereBetween('day', [$from->toDateString(), $to->toDateString()])->orderBy('position')->get() as $t) {
+        $livePages = FestivalPlan::livePages()->map(fn ($p) => $p[0].'|'.$p[1])->flip();   // once, not per row (code review)
+        foreach (FestivalTime::where('status', 'verified')->whereDate('day', '>=', $from->toDateString())->whereDate('day', '<=', $to->toDateString())->orderBy('position')->get() as $t) {
             [$name, $pageKey] = FestivalPlan::FESTIVALS[$t->festival] ?? [null, null];
             if ($name) {
                 $label = $t->festival === 'durga' || count(FestivalPlan::FESTIVALS[$t->festival][2]) > 1 ? $name.': '.$t->label : $name;
-                $out[$t->day->toDateString()][] = [$label, isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null, 'wb'];
+                $link = isset($livePages[$t->festival.'|'.$t->cycle]) ? FestivalPlan::pageUrl($t->festival, $t->cycle) : (isset($pages[$pageKey]) ? $pages[$pageKey]->url() : null);   // D308
+                $out[$t->day->toDateString()][] = [$label, $link, 'wb'];
             }
         }
         for ($g = $from; $g->lte($to); $g = $g->addDay()) {

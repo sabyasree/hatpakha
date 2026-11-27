@@ -75,6 +75,7 @@ final class FestivalDesk
             ->reject(fn ($u) => str_contains(strtolower((string) parse_url((string) $u, PHP_URL_HOST)), 'hatpakha'))
             ->mapWithKeys(fn ($u) => [(string) $u => JanunDesk::fetchText((string) $u)])->filter()->map(fn ($t) => self::digits($t));
         $kept = 0;
+        $hadPage = (bool) FestivalPlan::yearRows($key, $year);
         $labels = array_keys($events);
         foreach ((array) ($d['events'] ?? []) as $e) {
             $label = (string) ($e['label'] ?? '');
@@ -90,6 +91,9 @@ final class FestivalDesk
             $kept += $ok ? 1 : 0;
         }
         AuditLog::record('festival.found', null, ['festival' => $key, 'year' => $year, 'kept' => $kept, 'pages' => $pages->count()]);
+        if (! $hadPage && FestivalPlan::yearRows($key, $year)) {   // D312: a festival page has just appeared
+            \App\Support\IndexNow::ping([FestivalPlan::pageUrl($key, $year), \App\Support\Url::to('/janun/puja/'.$year), \App\Support\Url::to('/janun/puja/pujor-somoy')]);
+        }
 
         return $kept;
     }

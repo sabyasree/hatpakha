@@ -6,6 +6,14 @@
             {{-- D302 --}}
             <a href="{{ \App\Support\Url::to('/janun/puja/pujor-somoy') }}" class="mt-5 flex min-h-12 items-center gap-2 rounded-2xl border-2 border-sky-deep bg-sky-tint px-4 font-bold">পুজোর তিথি ও সময়: আপনার দেশের ঘড়িতে →</a>
         @endif
+        @if ($section === 'puja' && ($festPages = \App\Support\FestivalPlan::livePages())->isNotEmpty())
+            {{-- D308: each festival's yearly page, and each year's list --}}
+            <h2 class="mt-8 font-display text-xl font-extrabold">পুজো-পার্বণের তারিখ</h2>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach ($festPages->groupBy(1)->filter(fn ($g) => $g->count() >= 2)->keys() as $y)<a href="{{ \App\Support\Url::to('/janun/puja/'.$y) }}" class="flex min-h-11 items-center rounded-full bg-navy px-4 font-bold text-white">পুজো-পার্বণ {{ \App\Support\Bn::num((string) $y) }}</a>@endforeach
+                @foreach ($festPages as [$k, $y])<a href="{{ \App\Support\FestivalPlan::pageUrl($k, $y) }}" class="flex min-h-11 items-center rounded-full border-2 border-navy px-4 font-bold hover:bg-peach-light">{{ \App\Support\FestivalPlan::FESTIVALS[$k][0] }} {{ \App\Support\Bn::num((string) $y) }}</a>@endforeach
+            </div>
+        @endif
         @if ($pages->isEmpty())<p class="mt-6 rounded-xl bg-peach-light p-4">পুজোর নিয়ম, উপকরণ আর মন্ত্রের পাতা শিগগির আসছে; প্রথমটি সরস্বতী পুজো।</p>@endif
         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
             @foreach ($pages as $pg)

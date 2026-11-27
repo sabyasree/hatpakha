@@ -42,7 +42,7 @@ class JanunController extends Controller
     {
         $live = self::live();
         // D303: the hub exists from the start, because the calendar is always there
-        $seo = new Seo(title: 'জেনে রাখুন: প্রবাদ, বাগধারা, পুজোর মন্ত্র, ভাবসম্প্রসারণ',
+        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: 'জেনে রাখুন: প্রবাদ, বাগধারা, পুজোর মন্ত্র, ভাবসম্প্রসারণ',
             description: 'হাতপাখার জেনে রাখুন: বাংলা প্রবাদ-প্রবচন ও বাগধারার অর্থ, শুদ্ধ বানান, পুজোর নিয়ম ও মন্ত্র অর্থসহ, আর ছাত্রছাত্রীদের জন্য ভাবসম্প্রসারণ ও রচনা।',
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')]])]);
         Ads::allow();
@@ -54,9 +54,9 @@ class JanunController extends Controller
     {
         $pages = self::live()[$section] ?? collect();
         // the puja part opens as soon as the times page does (that page links here), even before its first guide is live
-        abort_if($pages->isEmpty() && ! ($section === 'puja' && FestivalPlan::pageLive()), 404);
+        abort_if($pages->isEmpty() && ! ($section === 'puja' && (FestivalPlan::pageLive() || FestivalPlan::livePages()->isNotEmpty())), 404);
         [$name, $kicker, $intro] = JanunPlan::SECTIONS[$section];
-        $seo = new Seo(title: $name.': '.$kicker, description: JanunPlan::clip($intro),
+        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $name.': '.$kicker, description: JanunPlan::clip($intro),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], [$name, Url::to('/janun/'.$section)]])]);
         Ads::allow();
 
@@ -69,7 +69,7 @@ class JanunController extends Controller
         $festivals = FestivalPlan::upcoming();
         abort_unless(FestivalPlan::pageLive(), 404);
         $url = Url::to('/janun/puja/pujor-somoy');
-        $seo = new Seo(title: 'পুজোর তিথি ও সময়: পৃথিবীর যে কোনো দেশের ঘড়িতে',
+        $seo = new Seo(image: asset('images/og/card-puja.jpg'), title: 'পুজোর তিথি ও সময়: পৃথিবীর যে কোনো দেশের ঘড়িতে',
             description: JanunPlan::clip('দুর্গাপুজো, সরস্বতী পুজো, কালীপুজো, লক্ষ্মী পুজোর তিথি শুরু ও শেষের সময়, আমেরিকা, ব্রিটেন, জাপান বা যে কোনো দেশের নিজের সময়ে, প্রকাশিত সূত্রে মিলিয়ে।'),
             jsonLd: [JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], ['পুজো-পার্বণ', Url::to('/janun/puja')], ['পুজোর তিথি ও সময়', $url]])]);
         Ads::allow();
@@ -94,7 +94,7 @@ class JanunController extends Controller
     public function page(string $section, string $slug)
     {
         $p = JanunPage::live()->where('section', $section)->where('slug', $slug)->firstOrFail();
-        $seo = new Seo(title: $p->seo_title ?: $p->title, description: (string) $p->seo_description, type: 'article',
+        $seo = new Seo(image: asset('images/og/card-janun.jpg'), title: $p->seo_title ?: $p->title, description: (string) $p->seo_description, type: 'article',
             jsonLd: array_merge([JsonLd::breadcrumbs([['হাতপাখা', Url::to('/')], ['জেনে রাখুন', Url::to('/janun')], [$p->sectionName(), Url::to('/janun/'.$section)], [$p->title, $p->url()]])], JsonLd::janunPage($p)),
             publishedAt: $p->publish_at?->toIso8601String());
         Ads::allow();

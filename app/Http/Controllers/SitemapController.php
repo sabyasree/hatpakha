@@ -154,6 +154,14 @@ class SitemapController extends Controller
     {
         $times = \App\Support\FestivalPlan::pageLive()
             ? [['loc' => Url::to('/janun/puja/pujor-somoy'), 'lastmod' => \App\Models\FestivalTime::where('status', 'verified')->max('updated_at'), 'image' => null]] : [];   // D302
+        // D308: each festival's yearly page and each year's list
+        $fest = \App\Support\FestivalPlan::livePages();
+        foreach ($fest as [$k, $y]) {
+            $times[] = ['loc' => \App\Support\FestivalPlan::pageUrl($k, $y), 'lastmod' => \App\Models\FestivalTime::where(['festival' => $k, 'cycle' => $y, 'status' => 'verified'])->max('updated_at'), 'image' => null];
+        }
+        foreach ($fest->groupBy(1)->filter(fn ($g) => $g->count() >= 2)->keys() as $y) {
+            $times[] = ['loc' => Url::to('/janun/puja/'.$y), 'lastmod' => null, 'image' => null];
+        }
         // D303: the calendar (hub, this year and next, their months) is always there, and so is the জেনে রাখুন hub
         $cal = collect([['loc' => Url::to('/janun'), 'lastmod' => null, 'image' => null], ['loc' => \App\Support\BanglaDate::url(), 'lastmod' => now()->startOfDay(), 'image' => null]]);
         foreach (range(BanglaCalendarController::FIRST_YEAR, \App\Support\BanglaDate::bd(BanglaCalendarController::today())[0] + 1) as $y) {

@@ -142,6 +142,9 @@ class BanglaCalendarTest extends TestCase
         cache()->flush();
         $this->get('/')->assertOk()->assertSee('আজ ১০ অগ্রহায়ণ ১৪৩৩ (পশ্চিমবঙ্গ)')->assertSee('· বাংলাদেশে ১১ অগ্রহায়ণ ১৪৩৩')->assertSee(BanglaDate::url(), false);
         $this->get('/janun/')->assertOk()->assertSee('বাংলা ক্যালেন্ডার');
+        // the home strip (D311): today's date, puja times, ভাষার ভাণ্ডার, after the literature
+        $home = $this->get('/')->assertSee('id="janun-h"', false)->assertSee('ভাষার ভাণ্ডার')->getContent();
+        $this->assertGreaterThan(strpos($home, 'id="janun-h"'), strpos($home, 'ভ্রমণের ডাকটিকিট') ?: PHP_INT_MAX);
     }
 
     public function test_the_desk_checks_once_an_hour(): void
@@ -258,5 +261,41 @@ class BanglaCalendarTest extends TestCase
         $this->assertSame([], collect($g['wb']['days'])->filter(fn ($d) => $d['events'])->all(), 'nothing of Bangladesh in West Bengal\'s পৌষ');
         // the year page lists both, saying whose day it is
         $this->get('/janun/bangla-calendar/1433/')->assertSee('বাংলাদেশের বিজয় দিবস (বাংলাদেশ)')->assertSee('রবীন্দ্রজয়ন্তী (পঁচিশে বৈশাখ) (পশ্চিমবঙ্গ)');
+    }
+
+    public function test_checking_a_year_also_checks_the_next_first_of_boishakh(): void
+    {
+        BanglaCalendarDesk::seed(1434);
+        $this->published['https://myastrology.in/bangla-calendar/baishakh-1435'] = '<p>১ বৈশাখ ১৪৩৫ বঙ্গাব্দ শুরু শুক্রবার ১৪ এপ্রিল — মোট ৩১ দিন।</p>';
+        $this->answer = ['months' => [], 'sources' => []];
+        BanglaCalendarDesk::check(1434);
+        $this->assertSame('verified', BanglaMonth::where(['year' => 1435, 'month' => 1])->value('status'), 'so চৈত্র ১৪৩৪ can show West Bengal dates');
+    }
+
+    public function test_seo_headings_the_answer_sentence_and_the_next_puja(): void
+    {
+        $this->checkAll();
+        \App\Models\FestivalTime::create(['festival' => 'saraswati', 'cycle' => 2027, 'label' => 'পঞ্চমী তিথি', 'day' => '2027-02-11',
+            'starts_at' => '2027-02-10 21:34:00', 'ends_at' => '2027-02-11 21:48:00', 'status' => 'verified', 'sources' => ['https://a.org/p']]);
+        $this->get('/janun/bangla-calendar/')->assertOk()->assertSee('<h1', false)->assertSee('আজ বাংলা কত তারিখ?')
+            ->assertSee('পশ্চিমবঙ্গে <b>১০ অগ্রহায়ণ ১৪৩৩</b>, বাংলাদেশে <b>১১ অগ্রহায়ণ ১৪৩৩</b>', false)
+            ->assertSee('পরের পুজো:')->assertSee('সরস্বতী পুজো')->assertSee('১১ ফেব্রুয়ারি ২০২৭');
+        $this->get('/janun/bangla-calendar/1433/')->assertSee('<title>Bengali Calendar 2026-27 · বাংলা ক্যালেন্ডার ১৪৩৩', false);
+        $this->get('/janun/bangla-calendar/1433/ogrohayon/')->assertSee('অগ্রহায়ণ ১৪৩৩ (নভেম্বর-ডিসেম্বর ২০২৬)')->assertSee('পরের পুজো:');
+    }
+
+    public function test_code_review_fixes(): void
+    {
+        // 1. a Kolkata "now" gives that calendar day, not the day before
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(CarbonImmutable::parse('2026-11-27 09:00', 'Asia/Kolkata')));
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(CarbonImmutable::parse('2026-11-27 23:50', 'Asia/Kolkata')));
+        $this->assertSame([1433, 8, 12], BanglaDate::bd(new \DateTime('2026-11-27')));
+
+        // 2. the web search never judges the next year's বৈশাখ against this year's
+        BanglaCalendarDesk::seed(1433);
+        $this->answer = ['months' => [['month' => 'বৈশাখ', 'first_day' => '2026-04-15']], 'sources' => [['url' => 'https://a.org/c']]];
+        Http::fake(['https://a.org/*' => Http::response('<p>15 April 2026</p>')]);
+        BanglaCalendarDesk::check(1433);
+        $this->assertNotSame('held', BanglaMonth::where(['year' => 1434, 'month' => 1])->value('status'), 'not compared with last April');
     }
 }

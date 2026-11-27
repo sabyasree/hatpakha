@@ -1,4 +1,5 @@
 {{-- D302: festival times in any time zone. $festivals = FestivalPlan::upcoming(); $heading; $links (bool) --}}
+@php($livePages = ($links ?? true) ? \App\Support\FestivalPlan::livePages()->map(fn ($p) => $p[0].'|'.$p[1])->flip() : collect())
 @php($pages = ($links ?? true) ? \App\Models\JanunPage::live()->whereIn('key', collect(\App\Support\FestivalPlan::FESTIVALS)->pluck(1)->filter()->all())->get(['id', 'key', 'section', 'slug'])->keyBy('key') : collect())
 <section data-tz-box class="mt-6 rounded-2xl border-2 border-sky-deep bg-sky-tint p-4">
     <h2 class="font-display text-xl font-extrabold">{{ $heading ?? 'তিথির সময়' }}</h2>
@@ -14,7 +15,8 @@
     @foreach ($festivals as [$key, $name, $cycle, $rows])
         <div data-festival class="mt-4 rounded-xl bg-white p-3">
             <h3 class="font-display text-lg font-extrabold">
-                @if ($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null)<a href="{{ $pg->url() }}" class="inline-flex min-h-11 items-center underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
+                @php($fp = ($links ?? true) && $livePages->has($key.'|'.$cycle) ? \App\Support\FestivalPlan::pageUrl($key, $cycle) : (($pg = $pages[\App\Support\FestivalPlan::FESTIVALS[$key][1] ?? ''] ?? null) ? $pg->url() : null))
+                @if ($fp)<a href="{{ $fp }}" class="inline-flex min-h-11 items-center underline">{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}</a>@else{{ $name }} {{ \App\Support\Bn::num((string) $cycle) }}@endif
             </h3>
             <dl class="mt-2 space-y-3">
                 @foreach ($rows as $t)

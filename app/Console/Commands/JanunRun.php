@@ -62,6 +62,13 @@ class JanunRun extends Command
             }
         }
 
+        $this->line('1b. তিথি (the published month pages checked by our calculation)');
+        foreach ([$now, $now->addDays(35)] as $d) {
+            if ($url = BanglaCalendarDesk::sourceUrlFor(CarbonImmutable::create($d->year, $d->month, $d->day))) {
+                $this->line('   '.basename($url).': '.\App\Ai\TithiDesk::fill($url).' days confirmed');
+            }
+        }
+
         $this->line('2. Festival times');
         foreach (FestivalDesk::years($now) as $y) {
             foreach (array_keys(FestivalPlan::FESTIVALS) as $key) {

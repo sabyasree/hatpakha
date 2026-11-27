@@ -31,6 +31,48 @@ final class FestivalPlan
         'bhaiphonta' => ['ভাইফোঁটা', 'bhaiphonta', ['দ্বিতীয়া তিথি' => 'Kartik Shukla Dwitiya tithi (Bhai Phonta)']],
     ];
 
+    /**
+     * D308 (owner, 2026-11-27: "build the festival pages… it should create every year automatically"): each festival's
+     * yearly page /janun/puja/{slug}-{year}/ and its English name for titles. A page exists once at least half of that
+     * year's events are checked (D302/D304); a year's pages stay once shown, so no address Google knows disappears.
+     */
+    public const PAGES = [
+        'saraswati' => ['saraswati-puja', 'Saraswati Puja'], 'shiboratri' => ['shivaratri', 'Shivaratri'], 'dol' => ['dol-jatra', 'Dol Jatra'],
+        'boishakh' => ['poila-boishakh', 'Poila Boishakh'], 'jamai' => ['jamai-shashthi', 'Jamai Shashthi'], 'bishwokarma' => ['vishwakarma-puja', 'Vishwakarma Puja'],
+        'durga' => ['durga-puja', 'Durga Puja'], 'kojagori' => ['lakshmi-puja', 'Kojagori Lakshmi Puja'], 'kali' => ['kali-puja', 'Kali Puja'], 'bhaiphonta' => ['bhai-phonta', 'Bhai Phonta'],
+    ];
+
+    /** The cities every festival page shows, in this order (the diaspora research, D302). */
+    public const CITIES = [
+        'Asia/Kolkata' => 'কলকাতা', 'Asia/Dhaka' => 'ঢাকা', 'Europe/London' => 'লন্ডন', 'America/New_York' => 'নিউ ইয়র্ক',
+        'America/Toronto' => 'টরন্টো', 'America/Los_Angeles' => 'ক্যালিফোর্নিয়া', 'Australia/Sydney' => 'সিডনি', 'Asia/Dubai' => 'দুবাই',
+    ];
+
+    /** The checked times of one festival's year, or null when fewer than half its events are checked (no page then). */
+    public static function yearRows(string $key, int $year): ?\Illuminate\Support\Collection
+    {
+        if (! isset(self::FESTIVALS[$key])) {
+            return null;
+        }
+        $rows = \App\Models\FestivalTime::where(['festival' => $key, 'cycle' => $year, 'status' => 'verified'])->orderBy('position')->get();
+
+        return $rows->count() * 2 >= count(self::FESTIVALS[$key][2]) && $rows->isNotEmpty() ? $rows : null;
+    }
+
+    /** Every festival page that exists: list of [key, year], soonest first within a year. */
+    public static function livePages(): \Illuminate\Support\Collection
+    {
+        return \App\Models\FestivalTime::where('status', 'verified')->get(['festival', 'cycle', 'day'])->groupBy(fn ($t) => $t->festival.'|'.$t->cycle)
+            ->filter(fn ($rows, $k) => isset(self::PAGES[explode('|', $k)[0]]) && $rows->count() * 2 >= count(self::FESTIVALS[explode('|', $k)[0]][2]))
+            ->map(fn ($rows, $k) => [explode('|', $k)[0], (int) explode('|', $k)[1], $rows->pluck('day')->filter()->min()])
+            ->sortBy(fn ($f) => $f[1].'-'.($f[2]?->format('m-d') ?? '99'))->values()->map(fn ($f) => [$f[0], $f[1]]);
+    }
+
+    public static function pageUrl(string $key, int $year): string
+    {
+        return Url::to('/janun/puja/'.self::PAGES[$key][0].'-'.$year);
+    }
+
     /** Common time zones first in the picker (the browser offers every other one). */
     public const ZONES = [
         'Asia/Kolkata' => 'ভারত', 'Asia/Dhaka' => 'বাংলাদেশ', 'Europe/London' => 'ব্রিটেন', 'America/New_York' => 'আমেরিকা (নিউ ইয়র্ক)',
@@ -60,12 +102,15 @@ final class FestivalPlan
     }
 
     /** "১৩ ফেব্রুয়ারি ২০২৭, শনিবার, ৫:১২" in India time: what readers without JavaScript see. */
-    public static function show(\Carbon\CarbonInterface $t, bool $withTime = true): string
+    public static function show(\Carbon\CarbonInterface $t, bool $withTime = true, string $zone = 'Asia/Kolkata'): string
     {
-        $t = \Carbon\CarbonImmutable::instance($t)->setTimezone('Asia/Kolkata');
+        $t = \Carbon\CarbonImmutable::instance($t)->setTimezone($zone);
         $days = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
 
-        return Bn::date($t).', '.$days[$t->dayOfWeek].($withTime ? ', '.self::part($t->hour).' '.Bn::num($t->format('g:i')) : '');
+        // the date in the chosen zone itself (Bn::date always shows India's day; a city table needs New York's)
+        $date = Bn::num($t->format('j')).' '.Bn::MONTHS[(int) $t->format('n') - 1].' '.Bn::num($t->format('Y'));
+
+        return $date.', '.$days[$t->dayOfWeek].($withTime ? ', '.self::part($t->hour).' '.Bn::num($t->format('g:i')) : '');
     }
 
     /** সকাল, দুপুর, বিকেল, সন্ধ্যা or রাত (the same rule as public/js/hp-tz.js). */

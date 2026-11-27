@@ -404,6 +404,9 @@
     <div class="mx-auto max-w-[1320px] px-5 pb-6"><x-newsletter-signup variant="home" /></div>
 
 
+    {{-- D311 (owner approved the mock-up, 2026-11-27): জেনে রাখুন near the end, after the literature --}}
+    @include('partials.janun-strip')
+
     {{-- Travel stamps. Owner (2026-11-08): new first, then archive pieces that change daily; read ones swapped out. --}}
     @if ($travel->isNotEmpty())
     <section class="mx-auto max-w-[1320px] px-5 pb-12">
