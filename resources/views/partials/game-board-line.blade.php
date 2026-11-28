@@ -13,6 +13,7 @@
             <p class="mt-3 text-sm font-bold" data-after-more-label></p>
             <div class="mt-1 grid grid-cols-2 gap-1.5 text-sm font-bold" data-after-rest></div>
         </div>
+        <p class="mt-3 rounded-2xl bg-peach px-3 py-2 text-lg font-bold" data-after-keepsake hidden></p>
         <p class="mt-3 text-lg font-bold" data-after-rank></p>
         <a href="#" data-after-next hidden class="mt-3 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]"></a>
         <div class="mt-4" data-after-level-box>

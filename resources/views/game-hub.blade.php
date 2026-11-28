@@ -56,6 +56,9 @@
                 <span><span class="block font-display text-xl font-extrabold leading-tight">{{ $level['name'] }}</span><span class="text-sm font-bold text-ink2">আপনার স্তর</span></span>
             </a>
             <div class="mt-3 rounded-2xl border-2 border-navy bg-white px-3 py-2">@include('partials.game-week', ['days' => $weekDays])</div>
+            @if (now('Asia/Kolkata')->day <= 7)
+                @include('partials.game-month', ['user' => $me])
+            @endif
             @if ($streak['mend'])
                 {{-- D330: an offer, never "your streak is lost" --}}
                 <p class="mt-3 rounded-2xl bg-sky-tint px-4 py-3 font-bold text-sky-night">কাল খেলা হয়নি। আজ {{ Bn::num((string) GameScores::MEND_GAMES) }}টা খেলা খেললেই টানা {{ Bn::num((string) $streak['now']) }} দিনের ধারা জোড়া লাগবে।</p>
@@ -173,6 +176,34 @@
                 <p class="mt-2 text-center"><a href="{{ Url::to('/login') }}?next={{ rawurlencode('/khela/aaj/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">আগে থেকে আছে? সাইন ইন</a></p>
             </div>
         @endguest
+
+        {{-- D331: today's talk, open to those who have played today (so answers spoil nothing); the AI reads every message --}}
+        @php
+            $played = $me && \App\Support\GameCommunity::playedToday($me);
+            $talk = $played ? \App\Support\GameCommunity::today($me) : [];
+        @endphp
+        <div id="adda" class="mt-8 scroll-mt-24 rounded-3xl border-2 border-navy bg-white p-4">
+            <h2 class="font-display text-2xl font-extrabold">আজকের আড্ডা</h2>
+            @if (session('adda'))<p class="mt-2 rounded-xl bg-sky-tint px-3 py-2 font-bold text-sky-night" role="status">{{ session('adda') }}</p>@endif
+            @if (! $me)
+                <p class="mt-1 text-ink2">আজকের খেলা নিয়ে গল্প: কোনটা কঠিন লাগল, কোন শব্দটা মনে পড়ছিল না। সাইন ইন করে আজকের একটা খেলা খেললেই আড্ডা খোলে।</p>
+            @elseif (! $played)
+                <p class="mt-1 text-ink2">আজকের একটা খেলা খেললেই আড্ডা খুলবে। (যাতে কেউ না খেলে উত্তর জেনে না ফেলেন।)</p>
+            @else
+                <form method="POST" action="{{ route('game.talk') }}" class="mt-2">@csrf
+                    <label for="hp-adda" class="sr-only">আড্ডায় লিখুন</label>
+                    <textarea id="hp-adda" name="body" rows="2" maxlength="300" required class="w-full rounded-2xl border-2 border-navy bg-paper p-3 text-lg" placeholder="আজকের খেলা কেমন লাগল?"></textarea>
+                    <button class="mt-2 flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white">লিখুন</button>
+                </form>
+                <ul class="mt-3 divide-y divide-rule">
+                    @forelse ($talk as $t)
+                        <li class="py-2"><p class="text-sm font-bold text-ink2">{{ $t['name'] }} · {{ Bn::num($t['at']) }}@if ($t['waiting']) · <span class="text-red">শুধু আপনি দেখছেন</span>@endif</p><p class="text-lg">{{ $t['body'] }}</p></li>
+                    @empty
+                        <li class="py-2 text-ink2">আজ এখনও কেউ লেখেননি। প্রথম কথাটা আপনার হোক।</li>
+                    @endforelse
+                </ul>
+            @endif
+        </div>
 
         <p class="mt-6 font-bold">নতুন খেলা আসে রোজ রাত বারোটায় (ভারতের সময়)।</p>
         <a href="{{ Url::to('/khela/purono') }}" class="mt-2 flex min-h-11 w-fit items-center font-bold text-sky-night underline">কোনো দিন বাদ গেছে? পুরোনো খেলা, অনুশীলনের জন্য →</a>

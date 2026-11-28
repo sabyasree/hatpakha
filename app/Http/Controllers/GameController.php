@@ -236,6 +236,46 @@ class GameController extends Controller
         };
     }
 
+    /** D331: আজকের আড্ডা, a short message under today's games, for players who have played today. */
+    public function talk(Request $request)
+    {
+        $request->validate(['body' => ['required', 'string', 'min:2', 'max:300']]);
+        $user = $request->user();
+        if (! \App\Support\GameCommunity::playedToday($user)) {
+            return back()->with('adda', 'আগে আজকের একটা খেলা খেলুন, তারপর আড্ডায় লিখতে পারবেন।');
+        }
+        if (\Illuminate\Support\Facades\DB::table('game_talk')->where('user_id', $user->id)->where('day', now('Asia/Kolkata')->toDateString())->count() >= \App\Support\GameCommunity::TALK_PER_DAY) {
+            return back()->with('adda', 'আজ অনেক লিখেছেন; কাল আবার।');
+        }
+        $status = \App\Support\GameCommunity::talk($user, (string) $request->input('body'));
+
+        return redirect(Url::to('/khela/aaj').'#adda')->with('adda', ['shown' => 'লেখা উঠেছে।', 'hidden' => 'এই লেখাটা আড্ডায় দেখানো গেল না।', 'wait' => 'লেখাটা একটু পরে দেখা যাবে।'][$status] ?? '');
+    }
+
+    /** D331: a reader sends a riddle; the AI decides, one a day is shown with their name. */
+    public function sendRiddle(Request $request)
+    {
+        $data = $request->validate(['riddle' => ['required', 'string', 'min:10', 'max:300'], 'answer' => ['required', 'string', 'min:2', 'max:40']]);
+        if (\Illuminate\Support\Facades\DB::table('reader_riddles')->where('user_id', $request->user()->id)->where('created_at', '>=', now()->subDay())->count() >= 3) {
+            return back()->with('riddle_sent', 'আজ তিনটে পাঠিয়েছেন; কাল আবার পাঠান।');
+        }
+        $status = \App\Support\GameCommunity::sendRiddle($request->user(), $data['riddle'], $data['answer']);
+
+        return redirect(Url::to('/khela/dhadha').'#reader-riddle')->with('riddle_sent', ['ok' => 'ধন্যবাদ! ধাঁধাটা রাখা হল; কোনো একদিন এখানে আপনার নামসহ দেখা যাবে।', 'used' => 'ধন্যবাদ! ধাঁধাটা রাখা হল।',
+            'no' => 'এই ধাঁধাটা খেলায় নেওয়া গেল না (উত্তরটা মেলেনি বা ধাঁধাটা খুব খোলা)। অন্য একটা পাঠিয়ে দেখুন।', 'wait' => 'ধন্যবাদ! ধাঁধাটা দেখে নেওয়া হবে।'][$status] ?? '');
+    }
+
+    /** D331: where a player plays from, for the contest between places. */
+    public function region(Request $request)
+    {
+        $r = (string) $request->input('region', '');
+        abort_unless($r === '' || \App\Support\GameCommunity::regionOk($r), 422);
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $request->user()->id)->update(['game_region' => $r ?: null]);
+        \Illuminate\Support\Facades\Cache::forget('hp.regions.'.now('Asia/Kolkata')->format('Y-m'));
+
+        return redirect(Url::to('/khela/dol').'#regions')->with('team_done', 'region');
+    }
+
     /** D328: পাড়ার দল. The teams this month, the player's own team, and making one. */
     public function teams(Request $request)
     {
@@ -272,7 +312,7 @@ class GameController extends Controller
         if (! GameSocial::teamNameOk($name)) {
             return back()->withErrors(['name' => 'এই নামটা খেলার তালিকায় রাখা যাবে না। অন্য একটা নাম দিন।'])->withInput();
         }
-        $code = GameSocial::makeTeam($request->user(), $name);
+        $code = GameSocial::makeTeam($request->user(), $name, $request->boolean('private'));
         \App\Models\AuditLog::record('games.team_made', null, ['code' => $code, 'name' => $name]);
 
         return redirect(Url::to('/khela/dol/'.$code))->with('team_done', 'made');
@@ -354,6 +394,7 @@ class GameController extends Controller
         $user = $request->user();
         $before = GameScores::board('month', $user, 0)['mine']['rank'] ?? 0;
         $new = GameScores::record($user, $data['game'], $data['day'], $points, (int) $data['seconds']);
+        $keepsake = $new ? \App\Support\GameFestival::keep($user->id, $data['day']) : null;   // D331: once a festival
         $today = GameScores::today($user, $data['day']);
         $mine = GameScores::board('month', $user, 0)['mine'];
         $streak = GameScores::streak($user);
@@ -379,7 +420,7 @@ class GameController extends Controller
         $quizOpen = (bool) WeeklyQuiz::live();
         $groups = array_values(array_filter($today['groups'], fn ($g) => $g['key'] !== 'quiz' || $g['done'] || $quizOpen));
 
-        return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'mend' => $streak['mend'], 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
+        return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'mend' => $streak['mend'], 'keepsake' => $keepsake, 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
             'rank' => ['now' => $mine['rank'] ?? 0, 'up' => $new && $before && ($mine['rank'] ?? 0) ? max(0, $before - $mine['rank']) : 0, 'gap' => $mine['gap'] ?? null],
             'week' => ['rank' => $week['rank'] ?? 0, 'gap' => $week['gap'] ?? null, 'days' => GameScores::weekDays($user)],
             'next' => $next, 'level' => ['name' => $level['name'], 'nextName' => $level['nextName'], 'left' => $level['left'], 'percent' => $level['percent']]]);

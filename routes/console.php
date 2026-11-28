@@ -130,3 +130,5 @@ Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz dra
 Schedule::call(fn () => \App\Support\WeeklyQuiz::draft(\App\Support\WeeklyQuiz::week()))->name('weekly quiz last try')->weeklyOn(0, '00:05')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 // D330: অক্ষরজাল learns words from the magazine (a word in 8 or more pieces), counted from the next day
 Schedule::call(fn () => \App\Support\Akshorjal::learn())->name('akshorjal learns words')->dailyAt('03:30')->timezone('Asia/Kolkata')->withoutOverlapping(60);
+// D331: anything the AI could not read at once (আড্ডা messages, readers' riddles) is read within the hour
+Schedule::call(function () { \App\Support\GameCommunity::screen(); \App\Support\GameCommunity::screenRiddles(); })->name('game talk and riddles screened')->hourlyAt(12)->withoutOverlapping(30);

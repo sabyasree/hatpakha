@@ -50,6 +50,9 @@ Route::post('/khela/lorai/{code}', [\App\Http\Controllers\GameController::class,
 Route::post('/khela/lorai/{code}/own', [\App\Http\Controllers\GameController::class, 'loraiOwn'])->where('code', '[a-z0-9]{8}')->middleware('throttle:6,1')->name('game.lorai.own');
 Route::get('/khela/purono', [\App\Http\Controllers\GameController::class, 'practiceIndex'])->name('game.practice');   // D330
 Route::get('/khela/purono/{game}/{date}', [\App\Http\Controllers\GameController::class, 'practice'])->where(['game' => 'shobdo|dhadha|shobdojobdo|probad|banan|ek-shobde|akshorjal', 'date' => '\d{4}-\d{2}-\d{2}'])->name('game.practice.day');
+Route::post('/khela/adda', [\App\Http\Controllers\GameController::class, 'talk'])->middleware(['auth', 'throttle:6,10'])->name('game.talk');   // D331
+Route::post('/khela/dhadha/pathan', [\App\Http\Controllers\GameController::class, 'sendRiddle'])->middleware(['auth', 'throttle:5,60'])->name('game.riddle.send');
+Route::post('/khela/region', [\App\Http\Controllers\GameController::class, 'region'])->middleware(['auth', 'throttle:10,1'])->name('game.region');
 Route::get('/khela/dol', [\App\Http\Controllers\GameController::class, 'teams'])->name('game.teams');
 Route::post('/khela/dol', [\App\Http\Controllers\GameController::class, 'teamStore'])->middleware(['auth', 'throttle:5,1'])->name('game.teams.store');
 Route::post('/khela/dol/leave', [\App\Http\Controllers\GameController::class, 'teamLeave'])->middleware('auth')->name('game.teams.leave');

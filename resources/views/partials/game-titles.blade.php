@@ -20,6 +20,17 @@
     <div class="mt-1.5 h-3 overflow-hidden rounded-full border-2 border-navy bg-rule"><i class="block h-full bg-red" style="width: {{ $level['percent'] }}%"></i></div>
     <p class="mt-1.5 text-sm text-ink2">@foreach (GameScores::LEVELS as $i => [, $name])@if ($i) → @endif<span class="{{ $i === $level['index'] ? 'font-extrabold text-navy' : '' }}">{{ $name }}</span>@endforeach</p>
 
+    @include('partials.game-month', ['user' => $user])
+    @php $keepsakes = \App\Support\GameFestival::keepsakes($user->id); @endphp
+    @if ($keepsakes)
+        {{-- D331: one-time festival keepsakes --}}
+        <h3 class="mt-5 font-display text-xl font-extrabold">{{ __('উৎসবের স্মারক') }}</h3>
+        <ul class="mt-2 flex flex-wrap gap-2">
+            @foreach ($keepsakes as $k)
+                <li class="rounded-full border-2 border-navy bg-peach-light px-3 py-1 font-bold">{{ $k['name'] }} {{ Bn::year($k['year']) }}</li>
+            @endforeach
+        </ul>
+    @endif
     <h3 class="mt-5 font-display text-xl font-extrabold">{{ __('খেতাব') }}</h3>
     @if ($t['any'])
         <ul class="mt-2 grid grid-cols-3 gap-1 rounded-3xl border-2 border-navy bg-peach-light px-2 py-4 text-center shadow-[4px_4px_0_#13212C]">

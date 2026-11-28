@@ -18,7 +18,7 @@
         @include('partials.game-nav', ['on' => 'cross'])
         <div class="flex items-end justify-between gap-3">
             <div>
-                <p class="font-hand text-2xl text-red">রোজ একটা ছোট ছক</p>
+                <p class="font-hand text-2xl text-red">{{ \App\Support\WordGame::bigSunday(\Illuminate\Support\Carbon::parse($game['date'], 'Asia/Kolkata'), $level) ? 'রবিবারের বড় ছক' : 'রোজ একটা ছোট ছক' }}</p>
                 <h1 class="font-display text-4xl font-extrabold leading-tight">শব্দজব্দ</h1>
             </div>
             <p class="text-right text-sm font-bold text-ink2">ছক নং {{ Bn::num((string) $game['no']) }}</p>
@@ -85,7 +85,7 @@
     </section>
     @unless ($locked)
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-after.js') }}?v=4" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=5" defer></script>
     <script src="{{ asset('js/hp-jobdo.js') }}?v=6" defer></script>
     @endunless
 </x-layouts.app>

@@ -30,6 +30,7 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \App\Support\GameFestival::$enabled = true;   // a test that switched festivals off does not leak (D331)
         $this->withoutVite();
         // Test the live-site behaviour by default; staging (noindex) has its own test.
         config(['seo.indexable' => true]);

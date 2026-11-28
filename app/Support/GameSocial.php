@@ -265,12 +265,12 @@ final class GameSocial
         return ! is_array($d) || ($d['ok'] ?? true) !== false;
     }
 
-    public static function makeTeam(User $user, string $name): string
+    public static function makeTeam(User $user, string $name, bool $private = false): string
     {
         do {
             $code = Str::lower(Str::random(7));
         } while (DB::table('game_teams')->where('code', $code)->exists());
-        $id = DB::table('game_teams')->insertGetId(['code' => $code, 'name' => $name, 'user_id' => $user->id, 'created_at' => now(), 'updated_at' => now()]);
+        $id = DB::table('game_teams')->insertGetId(['code' => $code, 'name' => $name, 'user_id' => $user->id, 'private' => $private, 'created_at' => now(), 'updated_at' => now()]);
         self::join($user, $id);
 
         return $code;
@@ -317,7 +317,7 @@ final class GameSocial
             foreach ($members as $userId => $teamId) {
                 $byTeam[$teamId][] = (int) ($points[$userId] ?? 0);
             }
-            $teams = DB::table('game_teams')->whereIn('id', array_keys($byTeam))->whereNull('hidden_at')->get()->keyBy('id');
+            $teams = DB::table('game_teams')->whereIn('id', array_keys($byTeam))->whereNull('hidden_at')->where('private', false)->get()->keyBy('id');   // D331: a private circle is never listed
             $out = [];
             foreach ($byTeam as $teamId => $list) {
                 if (! isset($teams[$teamId]) || count($list) < 2) {

@@ -36,3 +36,8 @@
 </nav>
 @endif
 <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">(function(){var a=document.querySelector('[data-nav-on]');if(!a)return;var u=a.closest('ul');u.scrollLeft=a.parentElement.offsetLeft-u.clientWidth/2+a.offsetWidth/2;})();</script>
+@php $hpFest = \App\Support\GameFestival::current(); @endphp
+@if ($hpFest)
+    {{-- D331: a festival's week --}}
+    <p class="-mt-1 mb-4 rounded-2xl border-2 border-red bg-white px-4 py-2 font-bold text-red">{{ $hpFest['name'] }}-এর সপ্তাহ: {{ $hpFest['line'] }} · খেললেই {{ $hpFest['name'] }}-এর স্মারক</p>
+@endif

@@ -132,7 +132,19 @@
             </div>
         @endif
 
-                @if ($b['mine'] && ! collect($b['rows'])->contains('me', true))
+                @if (! empty($b['near']))
+                    {{-- D331: the player's own neighbourhood on the list --}}
+                    <p class="mt-4 font-bold">আপনার আশেপাশে</p>
+                    <ol class="mt-1 overflow-hidden rounded-2xl border-2 border-navy bg-white">
+                        @foreach ($b['near'] as $r)
+                            <li class="flex min-h-12 items-center gap-2.5 border-b border-rule px-3.5 py-1 last:border-b-0 {{ $r['me'] ? 'bg-sky-tint font-extrabold' : '' }}">
+                                <span class="flex h-8 min-w-8 flex-none items-center justify-center rounded-full bg-peach-light px-1 font-extrabold">{{ Bn::num((string) $r['rank']) }}</span>
+                                <span class="min-w-0 flex-1 truncate font-serif text-lg">{{ $r['name'] }}@if ($r['me']) <span class="font-sans text-sm text-ink2">(আপনি)</span>@endif</span>
+                                <span class="flex-none font-extrabold">{{ $n($r['points']) }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @elseif ($b['mine'] && ! collect($b['rows'])->contains('me', true))
                     <p class="mt-2 rounded-2xl border-2 border-navy bg-sky-tint px-4 py-3 font-bold">আপনি: {{ $b['mine']['rank'] ? Bn::num((string) $b['mine']['rank']).' নম্বরে · ' : 'নাম লুকোনো আছে · ' }}{{ $n($b['mine']['points']) }} পয়েন্ট</p>
                 @endif
             </div>

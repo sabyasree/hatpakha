@@ -222,6 +222,43 @@ final class GameScores
         return array_slice($pick, 0, 3);
     }
 
+    /**
+     * D331 (owner's list: "a monthly 'your month' card to share"): a player's month in a few numbers, or null when
+     * they did not play. @return ?array{label: string, days: int, points: int, best: int, bestDay: string, favourite: ?string, rank: int, weeks: int}
+     */
+    public static function month(User $user, string $ym): ?array
+    {
+        $rows = DB::table('game_scores')->where('user_id', $user->id)->whereBetween('day', [$ym.'-01', Carbon::parse($ym.'-01')->endOfMonth()->toDateString()])->get(['day', 'game', 'points']);
+        if ($rows->isEmpty()) {
+            return null;
+        }
+        $byDay = [];
+        $groupDays = [];
+        foreach ($rows as $r) {
+            $d = Carbon::parse($r->day)->toDateString();
+            $byDay[$d][$r->game] = (int) $r->points;
+            foreach (self::GROUPS as $key => [$name, $games]) {
+                if (in_array($r->game, $games, true)) {
+                    $groupDays[$name][$d] = true;
+                }
+            }
+        }
+        $totals = array_map(fn ($g) => self::dayTotal($g), $byDay);
+        arsort($totals);
+        $groupDays = array_map('count', $groupDays);
+        arsort($groupDays);
+        $rank = 0;
+        foreach (self::ranking('month', $ym) as $i => $r) {
+            if ($r['user_id'] === $user->id) {
+                $rank = $i + 1;
+            }
+        }
+
+        return ['label' => Feelings::monthLabel($ym), 'days' => count($byDay), 'points' => self::best(array_values($totals), self::MONTH_DAYS), 'best' => (int) reset($totals),
+            'bestDay' => (string) key($totals), 'favourite' => array_key_first($groupDays), 'rank' => $rank,
+            'weeks' => DB::table('game_titles')->where('user_id', $user->id)->where('kind', 'week')->where('period', 'like', $ym.'%')->count()];
+    }
+
     /** Every game of a day, each at most 100 (up to 800): what the level counts and what settles a tie. */
     public static function dayAll(array $byGame): int
     {
@@ -328,6 +365,7 @@ final class GameScores
         $rank = 0;
         $above = null;
         $count = 0;
+        $all = [];
         foreach (self::ranking($range) as $r) {
             if ($r['hidden'] && $r['user_id'] !== $me?->id) {
                 continue;   // plays, but not listed
@@ -341,13 +379,20 @@ final class GameScores
             }
             if (! $r['hidden']) {
                 $above = $r['points'];
+                $all[] = $row;
                 if (count($rows) < $top) {
                     $rows[] = $row;
                 }
             }
         }
+        // D331 (owner's list: "the main board would show your neighbours"): a player below the first rows sees the two
+        // just above and below them, a race they can win, not only a top they may never reach
+        $near = [];
+        if ($mine && $mine['rank'] > $top) {
+            $near = array_slice($all, max(0, $mine['rank'] - 3), 5);
+        }
 
-        return ['rows' => $rows, 'mine' => $mine, 'count' => $count];
+        return ['rows' => $rows, 'mine' => $mine, 'count' => $count, 'near' => $near];
     }
 
     /** All the points a player ever earned (what the level and the শব্দ-শিকারি badge count). */

@@ -250,6 +250,7 @@ class GameTitlesTest extends TestCase
 
     public function test_nothing_repeats_for_a_year_from_the_first_of_december(): void
     {
+        \App\Support\GameFestival::$enabled = false;   // the lists' own order (festival words come back every year, D331)
         $from = Carbon::parse(WordGame::NEW_FROM, 'Asia/Kolkata');
         $before = [];
         for ($d = Carbon::parse(WordGame::START, 'Asia/Kolkata'); $d->lt($from); $d = $d->copy()->addDay()) {

@@ -22,6 +22,7 @@ window.hpAfter = function (root, j) {
     j.today.groups.filter((g) => g.done).forEach((g) => games.appendChild(chip(g)));
     const rest = $('rest'); rest.textContent = '';
     j.today.groups.filter((g) => !g.done).forEach((g) => rest.appendChild(chip(g)));
+    if (j.keepsake && $('keepsake')) { $('keepsake').textContent = '🎉 ' + j.keepsake + '-এর স্মারক পেলেন! আপনার পাতায় থেকে যাবে।'; $('keepsake').hidden = false; }   // D331
     const r = j.rank || {};
     $('rank').textContent = !r.now ? '' : (r.up > 0 ? '⬆ ' + bn(r.up) + ' জনকে পেরিয়ে এ মাসে এখন ' + bn(r.now) + ' নম্বরে'
         : (r.now === 1 ? 'এ মাসে আপনিই সবার আগে' : 'এ মাসে আপনি ' + bn(r.now) + ' নম্বরে' + (r.gap ? '। আর ' + bn(r.gap) + ' পয়েন্ট পেলে ' + bn(r.now - 1) + ' নম্বরে' : '')));
