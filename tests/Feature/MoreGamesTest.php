@@ -40,7 +40,7 @@ class MoreGamesTest extends TestCase
 
     public function test_the_word_lists_are_well_formed(): void
     {
-        $spelling = WordGame::file('spelling');
+        $spelling = array_merge(WordGame::file('spelling'), WordGame::file('spelling-2'));   // D331: the second list joins from 6 December
         $this->assertGreaterThanOrEqual(200, count($spelling));
         $seen = [];
         foreach ($spelling as $row) {
