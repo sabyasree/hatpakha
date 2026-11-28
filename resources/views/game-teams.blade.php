@@ -16,17 +16,18 @@
         </div>
 
         @if ($done)
-            <p class="mb-4 rounded-2xl bg-sky-tint p-3 text-lg font-bold text-sky-night" role="status">{{ ['made' => 'দল তৈরি হয়েছে! এবার নিচের লিঙ্কটা বন্ধুদের পাঠান।', 'joined' => 'আপনি এই দলে যোগ দিয়েছেন। আপনার পয়েন্ট এখন দলের হিসেবেও যোগ হবে।', 'left' => 'আপনি দল ছেড়েছেন।'][$done] ?? '' }}</p>
+            <p class="mb-4 rounded-2xl bg-sky-tint p-3 text-lg font-bold text-sky-night" role="status">{{ ['region' => 'আপনার জায়গা রাখা হল।', 'made' => 'দল তৈরি হয়েছে! এবার নিচের লিঙ্কটা বন্ধুদের পাঠান।', 'joined' => 'আপনি এই দলে যোগ দিয়েছেন। আপনার পয়েন্ট এখন দলের হিসেবেও যোগ হবে।', 'left' => 'আপনি দল ছেড়েছেন।'][$done] ?? '' }}</p>
         @endif
 
         @if ($team)
             <p class="font-hand text-2xl text-red">পাড়ার দল</p>
             <h1 class="font-display text-4xl font-extrabold leading-tight">{{ $team->name }}</h1>
+            @if ($team->private)<p class="mt-1 text-ink2">পরিবার-বন্ধুদের দল: কোনো তালিকায় দেখায় না।</p>@endif
             @if ($team->hidden_at)
                 <p class="mt-2 rounded-2xl bg-peach-light p-3">এই দলকে আপাতত তালিকা থেকে সরানো হয়েছে।</p>
             @elseif ($row)
                 <p class="mt-2 text-lg">এ মাসে দলের তালিকায় <b>{{ Bn::num((string) $row['rank']) }}</b> নম্বরে · <b>{{ Bn::num(number_format($row['points'])) }}</b> পয়েন্ট</p>
-            @else
+            @elseif (! $team->private)
                 <p class="mt-2 text-lg text-ink2">দুজন খেলোয়াড় হলে দলটা তালিকায় উঠবে।</p>
             @endif
 
@@ -55,6 +56,22 @@
                 <p class="mt-1 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-copy-msg></p>
             </div>
             @endif
+
+            {{-- D330 (game designers): the family's own scoreboard for today, to send to the group --}}
+            @php
+                $named = collect($members)->filter(fn ($m) => $m['name'] !== null);
+                $todayText = 'আমাদের দল "'.$team->name.'" আজ: '.$named->map(fn ($m) => $m['name'].' '.($m['today'] !== null ? Bn::num((string) $m['today']).' ✓' : 'বাকি…'))->implode(', ')."\n".$teamUrl;
+            @endphp
+            <h2 class="mt-6 font-display text-2xl font-extrabold">আজ দলে</h2>
+            <ul class="mt-2 grid gap-1.5 rounded-2xl border-2 border-navy bg-white p-3">
+                @foreach ($members as $m)
+                    <li class="flex items-center justify-between gap-3 {{ $m['me'] ? 'font-extrabold' : '' }}">
+                        <span class="min-w-0 truncate">{{ $m['name'] ?? 'নাম না-দেখানো খেলোয়াড়' }}@if ($m['me']) · আপনি@endif</span>
+                        <span class="flex-none {{ $m['today'] !== null ? 'font-bold text-navy' : 'text-ink2' }}">{{ $m['today'] !== null ? Bn::num((string) $m['today']).' ✓' : 'এখনও খেলেননি' }}</span>
+                    </li>
+                @endforeach
+            </ul>
+            <a href="https://wa.me/?text={{ rawurlencode($todayText) }}" target="_blank" rel="noopener" class="mt-2 flex h-12 items-center justify-center rounded-full bg-navy px-5 font-bold text-white">দলে আজকের ফল পাঠান</a>
 
             <h2 class="mt-6 font-display text-2xl font-extrabold">দলের খেলোয়াড়, এ মাসে</h2>
             <ol class="mt-2 divide-y divide-rule rounded-2xl border-2 border-navy bg-white px-3">
@@ -91,6 +108,8 @@
                         <label for="hp-team-name" class="block text-lg font-bold">নতুন দল তৈরি করুন</label>
                         <input id="hp-team-name" name="name" type="text" required maxlength="40" value="{{ old('name') }}" class="mt-2 h-14 w-full rounded-2xl border-2 border-navy bg-paper px-4 text-xl" placeholder="যেমন: সপ্তম শ্রেণি খ, বেহালা পাঠচক্র">
                         @error('name')<p class="mt-1 font-bold text-red">{{ $message }}</p>@enderror
+                        <label class="mt-3 flex min-h-11 items-start gap-3 text-lg"><input type="checkbox" name="private" value="1" class="mt-1.5 h-5 w-5 flex-none" @checked(old('private'))>
+                            <span>পরিবার বা বন্ধুদের দল: তালিকায় দেখাবে না, শুধু লিঙ্ক যাঁদের কাছে, তাঁরাই দেখবেন</span></label>
                         <button class="mt-3 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">দল তৈরি করুন</button>
                         <p class="mt-2 text-sm text-ink2">তৈরি হলে একটা লিঙ্ক পাবেন; সেটা যাঁরা খুলে "যোগ দিন" টিপবেন, তাঁরাই দলে। কারও দলের লিঙ্ক পেলে সেটা খুলে যোগ দিন।</p>
                     </form>
@@ -118,6 +137,41 @@
                 <p class="mt-2 rounded-2xl bg-sky-tint p-4 text-lg">এ মাসে এখনও কোনো দল তালিকায় ওঠেনি (দলে অন্তত দুজন লাগে)। প্রথম দলটা আপনার হোক।</p>
             @endif
             <p class="mt-2 text-sm text-ink2">দলের পয়েন্ট = দলের সেরা {{ Bn::num((string) \App\Support\GameSocial::TEAM_BEST) }} জনের এ মাসের পয়েন্ট যোগ করে। প্রতি মাসের ১ তারিখে নতুন করে শুরু।</p>
+
+            {{-- D331 (owner's list: "a friendly contest between districts, Bangladesh and Bengalis abroad") --}}
+            @php
+                $regions = \App\Support\GameCommunity::regions();
+                $myRegion = $me ? \Illuminate\Support\Facades\DB::table('users')->where('id', $me->id)->value('game_region') : null;
+            @endphp
+            <div id="regions" class="mt-8 scroll-mt-24">
+                <h2 class="font-display text-2xl font-extrabold">জায়গার লড়াই</h2>
+                <p class="mt-1 text-ink2">জেলা, বিভাগ আর প্রবাসের বাঙালিদের বন্ধুত্বের লড়াই। হিসেব হয় সেখানকার খেলোয়াড়দের এ মাসের গড় পয়েন্টে, তাই ছোট জায়গাও জিততে পারে। অন্তত তিনজন হলে জায়গাটা তালিকায় ওঠে।</p>
+                @auth
+                    <form method="POST" action="{{ route('game.region') }}" class="mt-3 flex flex-wrap items-center gap-2">@csrf
+                        <label for="hp-region" class="w-full font-bold">আপনি কোথা থেকে খেলছেন?</label>
+                        <select id="hp-region" name="region" class="h-12 min-w-0 flex-1 rounded-xl border-2 border-navy bg-white px-2 text-lg">
+                            <option value="">বলতে চাই না</option>
+                            @foreach (\App\Support\GameCommunity::REGIONS as $group => $list)
+                                <optgroup label="{{ $group }}">@foreach ($list as $r)<option value="{{ $r }}" @selected($myRegion === $r)>{{ $r }}</option>@endforeach</optgroup>
+                            @endforeach
+                        </select>
+                        <button class="flex h-12 items-center rounded-full bg-navy px-5 font-bold text-white">রাখুন</button>
+                    </form>
+                @endauth
+                @if ($regions)
+                    <ol class="mt-3 divide-y divide-rule rounded-2xl border-2 border-navy bg-white px-3">
+                        @foreach (array_slice($regions, 0, 20) as $i => $r)
+                            <li class="flex min-h-12 items-center gap-3 py-2 {{ $myRegion === $r['region'] ? 'font-extrabold' : '' }}">
+                                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full {{ $i === 0 ? 'bg-red text-white' : 'border-2 border-navy' }}">{{ Bn::num((string) ($i + 1)) }}</span>
+                                <span class="min-w-0 flex-1"><span class="block truncate">{{ $r['region'] }}</span><span class="block text-sm text-ink2">{{ Bn::num((string) $r['players']) }} জন</span></span>
+                                <span class="font-bold">গড় {{ Bn::num(number_format($r['average'])) }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @else
+                    <p class="mt-3 rounded-2xl bg-sky-tint p-4">এ মাসে এখনও কোনো জায়গায় তিনজন খেলোয়াড় হয়নি। নিজের জায়গাটা বেছে নিন, বন্ধুদেরও বলুন।</p>
+                @endif
+            </div>
         @endif
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>

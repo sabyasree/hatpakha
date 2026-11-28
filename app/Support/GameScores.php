@@ -45,6 +45,15 @@ final class GameScores
      */
     public const RULES_FROM = '2026-12-01';
 
+    /**
+     * D329 (owner: "smaller titles like সপ্তাহের সেরা too, so people will get engaged"): a calendar week, Sunday to
+     * Saturday (Kolkata), the same week as the quiz and the লড়াই. It counts the best six days, so one day off costs
+     * nothing (as the streak allows); a title needs three days played.
+     */
+    public const WEEK_DAYS = 6;
+
+    public const WEEK_MIN_DAYS = 3;
+
     /** A month's score is the best this-many days; a year's is the best this-many months. */
     public const MONTH_DAYS = 20;
 
@@ -102,7 +111,10 @@ final class GameScores
                 return null;
             }
 
-            return min(100, count(array_keys($res, 'g', true)) * WordChoice::POINTS);
+            // D330: a quiz of three or four questions is still worth 100 (it is not the player's fault it is short)
+            $good = count(array_keys($res, 'g', true));
+
+            return min(100, $game === 'quiz' ? (int) round(100 * $good / $n) : $good * WordChoice::POINTS);
         }
         if ($game === 'jal') {   // D328: the words found; only those the day's grid holds count
             $words = array_values(array_filter((array) ($r['words'] ?? []), 'is_string'));
@@ -150,7 +162,7 @@ final class GameScores
     /** The boards are kept for two minutes; a new result (or a name hidden or shown) is seen at once. */
     public static function forget(): void
     {
-        foreach (['today', 'week', 'month', 'year'] as $range) {
+        foreach (['today', 'week', 'sweek', 'month', 'year'] as $range) {
             Cache::forget('hp.board.'.$range.'.'.self::period($range));
         }
     }
@@ -167,6 +179,97 @@ final class GameScores
         return min(self::DAY_MAX, array_sum(array_slice($groups, 0, 3)));
     }
 
+    /**
+     * D330 (game designers: eight games is too much choice; a set of three makes the daily habit): today's three for
+     * a player: the two they played most in the last two weeks, and one they have not played this week, so they meet
+     * the others in turn. A guest or a new player: শব্দ-খেলা, বানান-যাচাই, ধাঁধা. @return list<string> group keys
+     */
+    public static function suggest(?User $user): array
+    {
+        $daily = array_values(array_diff(array_keys(self::GROUPS), ['quiz']));
+        $default = ['word', 'banan', 'riddle'];
+        if (! $user) {
+            return $default;
+        }
+        $groupOf = [];
+        foreach (self::GROUPS as $key => [, $games]) {
+            foreach ($games as $g) {
+                $groupOf[$g] = $key;
+            }
+        }
+        $counts = [];
+        foreach (DB::table('game_scores')->where('user_id', $user->id)->where('day', '>=', now('Asia/Kolkata')->subDays(14)->toDateString())->get(['game', 'day']) as $r) {
+            $k = $groupOf[$r->game] ?? null;
+            if ($k && $k !== 'quiz') {
+                $counts[$k][substr((string) $r->day, 0, 10)] = true;
+            }
+        }
+        $counts = array_map('count', $counts);
+        arsort($counts);
+        $pick = array_slice(array_keys($counts), 0, 2);
+        $week = DB::table('game_scores')->where('user_id', $user->id)->where('day', '>=', WeeklyQuiz::week())->pluck('game')->map(fn ($g) => $groupOf[$g] ?? null)->filter()->unique()->all();
+        // one they have not played this week, turn by turn through the list (the day of the year decides which)
+        $fresh = array_values(array_diff($daily, $pick, $week));
+        if ($fresh) {
+            $pick[] = $fresh[now('Asia/Kolkata')->dayOfYear % count($fresh)];
+        }
+        foreach ($default as $d) {
+            if (count($pick) < 3 && ! in_array($d, $pick, true)) {
+                $pick[] = $d;
+            }
+        }
+
+        return array_slice($pick, 0, 3);
+    }
+
+    /**
+     * D331 (owner's list: "a monthly 'your month' card to share"): a player's month in a few numbers, or null when
+     * they did not play. @return ?array{label: string, days: int, points: int, best: int, bestDay: string, favourite: ?string, rank: int, weeks: int}
+     */
+    public static function month(User $user, string $ym): ?array
+    {
+        $rows = DB::table('game_scores')->where('user_id', $user->id)->whereBetween('day', [$ym.'-01', Carbon::parse($ym.'-01')->endOfMonth()->toDateString()])->get(['day', 'game', 'points']);
+        if ($rows->isEmpty()) {
+            return null;
+        }
+        $byDay = [];
+        $groupDays = [];
+        foreach ($rows as $r) {
+            $d = Carbon::parse($r->day)->toDateString();
+            $byDay[$d][$r->game] = (int) $r->points;
+            foreach (self::GROUPS as $key => [$name, $games]) {
+                if (in_array($r->game, $games, true)) {
+                    $groupDays[$name][$d] = true;
+                }
+            }
+        }
+        $totals = array_map(fn ($g) => self::dayTotal($g), $byDay);
+        arsort($totals);
+        $groupDays = array_map('count', $groupDays);
+        arsort($groupDays);
+        $rank = 0;
+        foreach (self::ranking('month', $ym) as $i => $r) {
+            if ($r['user_id'] === $user->id) {
+                $rank = $i + 1;
+            }
+        }
+
+        return ['label' => Feelings::monthLabel($ym), 'days' => count($byDay), 'points' => self::best(array_values($totals), self::MONTH_DAYS), 'best' => (int) reset($totals),
+            'bestDay' => (string) key($totals), 'favourite' => array_key_first($groupDays), 'rank' => $rank,
+            'weeks' => DB::table('game_titles')->where('user_id', $user->id)->where('kind', 'week')->where('period', 'like', $ym.'%')->count()];
+    }
+
+    /** Every game of a day, each at most 100 (up to 800): what the level counts and what settles a tie. */
+    public static function dayAll(array $byGame): int
+    {
+        $sum = 0;
+        foreach (self::GROUPS as [, $games]) {
+            $sum += min(100, array_sum(array_intersect_key($byGame, array_flip($games))));
+        }
+
+        return $sum;
+    }
+
     /** The best $n of a list of numbers, added up. */
     private static function best(array $values, int $n): int
     {
@@ -180,7 +283,7 @@ final class GameScores
         $at ??= now('Asia/Kolkata');
 
         return match ($range) {
-            'month' => $at->format('Y-m'), 'year' => $at->format('Y'), default => $at->toDateString(),
+            'month' => $at->format('Y-m'), 'year' => $at->format('Y'), 'sweek' => WeeklyQuiz::week($at), default => $at->toDateString(),
         };
     }
 
@@ -198,6 +301,7 @@ final class GameScores
         [$from, $to] = match ($range) {
             'today' => [$period, $period],
             'week' => [Carbon::parse($period)->subDays(6)->toDateString(), $period],
+            'sweek' => [$period, Carbon::parse($period)->addDays(6)->toDateString()],   // D329: Sunday to Saturday
             'month' => [$period.'-01', Carbon::parse($period.'-01')->endOfMonth()->toDateString()],
             default => [$period.'-01-01', $period.'-12-31'],
         };
@@ -207,11 +311,12 @@ final class GameScores
             $rows = DB::table('game_scores')->join('users', 'users.id', '=', 'game_scores.user_id')->whereNull('users.spam_reason')
                 ->whereBetween('day', [$from, $to])
                 ->groupBy('game_scores.user_id', 'day', 'game')
-                ->selectRaw('game_scores.user_id, day, game, sum(points) as points, sum(seconds) as seconds')->get();
-            $days = $secs = [];
+                ->selectRaw('game_scores.user_id, day, game, sum(points) as points, sum(seconds) as seconds, min(game_scores.created_at) as at')->get();
+            $days = $secs = $first = [];
             foreach ($rows as $r) {
                 $days[$r->user_id][substr((string) $r->day, 0, 10)][$r->game] = (int) $r->points;
                 $secs[$r->user_id] = ($secs[$r->user_id] ?? 0) + (int) $r->seconds;
+                $first[$r->user_id] = min($first[$r->user_id] ?? '9999', (string) $r->at);
             }
             if (! $days) {
                 return [];
@@ -236,12 +341,15 @@ final class GameScores
                     }
                     $points = self::best($scores, self::YEAR_MONTHS);
                 } else {
-                    $points = $range === 'month' ? self::best($totals, self::MONTH_DAYS) : array_sum($totals);
+                    $points = match ($range) { 'month' => self::best($totals, self::MONTH_DAYS), 'sweek' => self::best($totals, self::WEEK_DAYS), default => array_sum($totals) };
                 }
                 $out[] = ['user_id' => (int) $userId, 'name' => (string) ($names[$userId] ?? $users[$userId]->name), 'hidden' => $users[$userId]->board_hidden || $users[$userId]->game_blocked_at || $users[$userId]->role === \App\Enums\Role::Admin->value,   // D245: kept off by the desk counts as hidden; the site's admin never shows (owner, 2026-11-27)
-                    'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId]];
+                    'points' => (int) $points, 'days' => count($totals), 'months' => $months, 'full' => (int) array_sum($totals), 'seconds' => (int) $secs[$userId],
+                    'extra' => (int) array_sum(array_map(fn ($games) => self::dayAll($games), $byDay)), 'first' => (string) $first[$userId]];
             }
-            usort($out, fn ($a, $b) => [$b['points'], $b['days'], $b['full'], $a['seconds'], $a['user_id']] <=> [$a['points'], $a['days'], $a['full'], $b['seconds'], $b['user_id']]);
+            // D330 (game designers): with many full days the top is a tie. It no longer goes to whoever played fewer
+            // games faster (the time comes from the browser): more days, then more games finished, then who began first
+            usort($out, fn ($a, $b) => [$b['points'], $b['days'], $b['full'], $b['extra'], $a['first'], $a['user_id']] <=> [$a['points'], $a['days'], $a['full'], $a['extra'], $b['first'], $b['user_id']]);
 
             return $out;
         });
@@ -257,6 +365,7 @@ final class GameScores
         $rank = 0;
         $above = null;
         $count = 0;
+        $all = [];
         foreach (self::ranking($range) as $r) {
             if ($r['hidden'] && $r['user_id'] !== $me?->id) {
                 continue;   // plays, but not listed
@@ -270,13 +379,20 @@ final class GameScores
             }
             if (! $r['hidden']) {
                 $above = $r['points'];
+                $all[] = $row;
                 if (count($rows) < $top) {
                     $rows[] = $row;
                 }
             }
         }
+        // D331 (owner's list: "the main board would show your neighbours"): a player below the first rows sees the two
+        // just above and below them, a race they can win, not only a top they may never reach
+        $near = [];
+        if ($mine && $mine['rank'] > $top) {
+            $near = array_slice($all, max(0, $mine['rank'] - 3), 5);
+        }
 
-        return ['rows' => $rows, 'mine' => $mine, 'count' => $count];
+        return ['rows' => $rows, 'mine' => $mine, 'count' => $count, 'near' => $near];
     }
 
     /** All the points a player ever earned (what the level and the শব্দ-শিকারি badge count). */
@@ -328,6 +444,23 @@ final class GameScores
         return ['total' => self::dayTotal($games), 'games' => $games, 'groups' => $groups];
     }
 
+    /**
+     * D330 (a gentler streak): this week, Sunday to Saturday, which days were played. The hub and the panel after a
+     * game show it as seven dots, so a missed day is one empty dot, not a run lost. @return list<bool>
+     */
+    public static function weekDays(User $user): array
+    {
+        $from = WeeklyQuiz::week();
+        $played = DB::table('game_scores')->where('user_id', $user->id)->whereBetween('day', [$from, Carbon::parse($from)->addDays(6)->toDateString()])
+            ->distinct()->pluck('day')->map(fn ($d) => Carbon::parse($d)->toDateString())->flip();
+        $out = [];
+        for ($i = 0; $i < 7; $i++) {
+            $out[] = isset($played[Carbon::parse($from)->addDays($i)->toDateString()]);
+        }
+
+        return $out;
+    }
+
     /** Whole days from one date to a later one (dates as Y-m-d). */
     private static function gap(string $from, string $to): int
     {
@@ -357,23 +490,45 @@ final class GameScores
      *
      * @return array{best: int, now: int, rest: list<string>}
      */
+    /** D330: a missed day is made up by finishing this many games the day after (one more than a full day). */
+    public const MEND_GAMES = 4;
+
     public static function streak(User $user): array
     {
-        $days = DB::table('game_scores')->where('user_id', $user->id)->distinct()->orderBy('day')->pluck('day')->map(fn ($d) => Carbon::parse($d)->toDateString())->all();
+        $groupOf = [];
+        foreach (self::GROUPS as $key => [, $games]) {
+            foreach ($games as $g) {
+                $groupOf[$g] = $key;
+            }
+        }
+        $byDay = [];
+        foreach (DB::table('game_scores')->where('user_id', $user->id)->get(['day', 'game']) as $r) {
+            $byDay[Carbon::parse($r->day)->toDateString()][$groupOf[$r->game] ?? $r->game] = true;
+        }
+        ksort($byDay);
+        $days = array_keys($byDay);
         $best = $run = 0;
         $prev = $lastRest = null;
         $rest = [];
+        $mended = [];
         foreach ($days as $d) {
             $gap = $prev ? self::gap($prev, $d) : 0;
+            $restFree = ! $lastRest || self::gap($lastRest, $d) >= 7;
             if ($gap === 1) {
                 $run++;
-            } elseif ($gap === 2 && (! $lastRest || self::gap($lastRest, $d) >= 7)) {
+            } elseif ($gap === 2 && $restFree) {
                 $lastRest = Carbon::parse($d)->subDay()->toDateString();
                 $rest[] = $lastRest;
+                $run++;
+            } elseif ($gap === 2 && count($byDay[$d]) >= self::MEND_GAMES) {
+                // D330 (owner's list: "let a missed day be made up with one extra game"): the rest day was used,
+                // but four games the next day join the run again
+                $mended[] = Carbon::parse($d)->subDay()->toDateString();
                 $run++;
             } else {
                 $run = 1;
                 $rest = [];
+                $mended = [];
                 $lastRest = null;   // a new run has its own rest day
             }
             $best = max($best, $run);
@@ -381,9 +536,13 @@ final class GameScores
         }
         $today = now('Asia/Kolkata')->toDateString();
         $since = $prev ? self::gap($prev, $today) : 99;
-        // still alive: played today or yesterday, or missed only yesterday with no other rest day in the week
-        $live = $since <= 1 || ($since === 2 && (! $lastRest || self::gap($lastRest, $today) >= 7));
+        $restFree = ! $lastRest || self::gap($lastRest, $today) >= 7;
+        // still alive: played today or yesterday, or missed only yesterday with the week's rest day free; with it used,
+        // the run can still be joined by playing four games today ("mend"), never told as lost
+        $live = $since <= 1 || ($since === 2 && $restFree);
+        $mend = ! $live && $since === 2 && $run >= 2;
 
-        return ['best' => $best, 'now' => $live ? $run : 0, 'rest' => $live ? $rest : []];
+        return ['best' => $best, 'now' => $live || $mend ? $run : 0, 'rest' => $live || $mend ? $rest : [], 'mended' => $mended, 'mend' => $mend,
+            'restFree' => $live && $restFree && $since <= 1];
     }
 }

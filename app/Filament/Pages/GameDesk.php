@@ -13,9 +13,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * D328: the desk side of the new games. (1) পত্রিকা-কুইজ: the AI drafts next week's five questions on Saturday; here
- * they are read, changed and approved (nothing reaches readers before that, D42), or drafted again, or written by
- * hand. (2) পাড়ার দল: every team, and a switch to take one off the boards (a name that should not be there).
+ * D328, D330: the desk side of the new games, for a look when wanted; nothing waits here. (1) পত্রিকা-কুইজ: written,
+ * checked and published by itself every Saturday; here it can be read, changed, withdrawn or written again. (2) পাড়ার
+ * দল: every team; names are screened by themselves when a team is made, and a team can still be taken off the boards.
  */
 class GameDesk extends Page
 {
@@ -43,23 +43,7 @@ class GameDesk extends Page
         return auth()->user()?->hasRole(Role::Editor) ?? false;
     }
 
-    /** A red count while next week's quiz waits for approval. */
-    public static function getNavigationBadge(): ?string
-    {
-        $n = DB::table('game_quizzes')->where('status', 'draft')->where('week', '>=', WeeklyQuiz::week())->where('questions', '!=', '[]')->count();
-
-        return $n ? \App\Support\Bn::num((string) $n) : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'danger';
-    }
-
-    public static function getNavigationBadgeTooltip(): ?string
-    {
-        return __('কুইজ অনুমোদনের অপেক্ষায়');
-    }
+    // D330 (owner: "For games, I don't want to spend time as admin"): no badge; nothing here waits for anyone.
 
     public function mount(): void
     {

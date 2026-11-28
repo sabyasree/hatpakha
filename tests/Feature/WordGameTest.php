@@ -74,6 +74,7 @@ class WordGameTest extends TestCase
 
     public function test_everyone_gets_the_same_five_words_each_day_and_no_repeats_for_six_months(): void
     {
+        \App\Support\GameFestival::$enabled = false;   // the lists' own order (festival words come back every year, D331)
         $day = Carbon::parse('2026-11-20', 'Asia/Kolkata');
         $a = WordGame::day($day);
         $this->assertSame($a, WordGame::day($day->copy()->addHours(20)), 'Same all day');
@@ -99,7 +100,7 @@ class WordGameTest extends TestCase
         $page = $this->get('/khela/')->assertOk()->assertSee('শব্দ-খেলা')->assertSee('js/hp-khela.js', false)->assertSee($game['words'][0]['clue']);
         $json = $page->getContent();
         $this->assertStringNotContainsString('"'.$game['words'][0]['answer'].'"', $json, 'The answer is not in plain sight');
-        $this->get('/')->assertSee('আজকের শব্দ-খেলা')->assertSee('/khela/', false);
+        $this->get('/')->assertSee('আজকের খেলা')->assertSee('/khela/aaj/', false);   // D330: the games' own page
         $this->get('/sitemap-sections.xml')->assertSee('/khela/', false);
     }
 

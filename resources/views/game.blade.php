@@ -10,11 +10,13 @@
     $locked = ! empty($locked);
     $done = auth()->check() && $riddle ? \App\Support\GameScores::today(auth()->user())['games'] : [];
     $pts = fn ($k) => \App\Support\GameScores::riddlePoints($k, $game['date'])[0];
-    $payload = ['kind' => $kind, 'no' => $no, 'date' => $game['date'], 'url' => Url::to($hard ? '/khela/dhadha/kothin' : ($riddle ? '/khela/dhadha' : '/khela')),
-        'words' => array_map(fn ($w) => ['a' => base64_encode($w['answer']), 'n' => count(\App\Support\WordGame::letters($w['answer'])), 'f' => base64_encode(\App\Support\WordGame::letters($w['answer'])[0]), 'clue' => $w['clue'], 'tiles' => $w['tiles']], $game['words'])];
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor(($kind === 'word' ? 'shobdo' : 'dhadha'), $game['date']) + ['kind' => $kind, 'no' => $no, 'date' => $game['date'], 'url' => Url::to($hard ? '/khela/dhadha/kothin' : ($riddle ? '/khela/dhadha' : '/khela')),
+        'words' => array_map(fn ($w) => ['a' => base64_encode($w['answer']), 'n' => count(\App\Support\WordGame::letters($w['answer'])), 'f' => base64_encode(\App\Support\WordGame::letters($w['answer'])[0]), 'clue' => $w['clue'], 'tiles' => $w['tiles'],
+            'm' => (($m = \App\Support\InMagazine::line($w['answer'])) ? base64_encode(json_encode($m, JSON_UNESCAPED_UNICODE)) : null)], $game['words'])];   // D330: a line from the magazine with the word, shown after the answer
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-khela @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-khela @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => $riddle ? 'riddle' : 'word'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -105,10 +107,43 @@
         @unless ($locked)<script type="application/json" data-khela-data>{!! json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>@endunless
         {{-- D237: far below the letters a player taps, so no ad is touched by mistake --}}
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
+        {{-- D331: a riddle sent by a reader, one a day, with their name (no points); and a way to send one --}}
+        @if ($kind === 'riddle' && empty($practice))
+            @php
+                $rr = \App\Support\GameCommunity::todaysRiddle();
+            @endphp
+            <div id="reader-riddle" class="mt-8 scroll-mt-24 rounded-3xl border-2 border-navy bg-white p-4">
+                <h2 class="font-display text-2xl font-extrabold">পাঠকের ধাঁধা</h2>
+                @if (session('riddle_sent'))<p class="mt-2 rounded-xl bg-sky-tint px-3 py-2 font-bold text-sky-night" role="status">{{ session('riddle_sent') }}</p>@endif
+                @if ($rr)
+                    <p class="mt-2 font-serif text-xl font-bold leading-relaxed">“{{ $rr['riddle'] }}”</p>
+                    <p class="mt-1 text-sm text-ink2">পাঠিয়েছেন {{ $rr['name'] }} · এই ধাঁধায় পয়েন্ট নেই, শুধু মজা</p>
+                    <details class="mt-2"><summary class="inline-flex min-h-11 cursor-pointer items-center font-bold text-sky-night underline">উত্তর দেখুন</summary><p class="font-serif text-2xl font-bold">{{ $rr['answer'] }}</p></details>
+                @else
+                    <p class="mt-1 text-ink2">পাঠকদের পাঠানো ধাঁধা এখানে রোজ একটা করে আসে, পাঠানো মানুষের নামসহ।</p>
+                @endif
+                @auth
+                    <details class="mt-3 rounded-2xl border-2 border-dashed border-navy p-3">
+                        <summary class="flex min-h-11 cursor-pointer items-center font-bold">আপনার জানা একটা ধাঁধা পাঠান</summary>
+                        <form method="POST" action="{{ route('game.riddle.send') }}" class="mt-2 grid gap-2">@csrf
+                            <label class="font-bold" for="hp-rr">ধাঁধা</label>
+                            <textarea id="hp-rr" name="riddle" rows="3" maxlength="300" required class="w-full rounded-2xl border-2 border-navy bg-paper p-3 text-lg"></textarea>
+                            <label class="font-bold" for="hp-rr-a">উত্তর (এক শব্দে)</label>
+                            <input id="hp-rr-a" name="answer" maxlength="40" required class="h-12 w-full rounded-2xl border-2 border-navy bg-paper px-3 text-lg">
+                            <button class="flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white">পাঠান</button>
+                            <p class="text-sm text-ink2">ধাঁধাটা ঠিক আছে কিনা যন্ত্র দেখে নেয়; চললে কোনো একদিন এখানে আপনার নামসহ উঠবে।</p>
+                        </form>
+                    </details>
+                @else
+                    <p class="mt-2"><a href="{{ Url::to('/login') }}?next={{ rawurlencode('/khela/dhadha/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সাইন ইন করে ধাঁধা পাঠান</a></p>
+                @endauth
+            </div>
+        @endif
     </section>
     @unless ($locked)
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-khela.js') }}?v=4" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=5" defer></script>
+    <script src="{{ asset('js/hp-mag.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-khela.js') }}?v=6" defer></script>
     @endunless
 </x-layouts.app>

@@ -145,6 +145,13 @@
         <p class="mt-3 text-center text-sm text-ink2"><span aria-hidden="true" class="font-serif text-lg text-red">❝</span> কোনো লাইন ভালো লাগল? আঙুল চেপে ধরে লাইনটা বেছে নিন, তারপর “এই লাইন শেয়ার করুন” টিপুন। হাতপাখার কার্ড হয়ে যাবে।</p>
     @endif
     <a href="{{ Url::to('/pathoker-pochhondo') }}" class="mx-auto flex min-h-11 w-fit items-center font-bold text-sky-night underline">পাঠকের পছন্দের লেখা দেখুন</a>
+    {{-- D330 (UX panel): one quiet way from a piece into the games --}}
+    @unless ($kids)
+        @php
+            $hpQuiz = \App\Support\WeeklyQuiz::live();
+        @endphp
+        <a href="{{ Url::to($hpQuiz ? '/khela/quiz' : '/khela/dhadha') }}" class="mx-auto flex min-h-11 w-fit items-center text-center font-bold text-sky-night underline">{{ $hpQuiz ? 'এ সপ্তাহের লেখা থেকে পাঁচটা প্রশ্ন: পত্রিকা-কুইজ →' : 'পড়া শেষ? আজকের ধাঁধাটা একবার দেখবেন? →' }}</a>
+    @endunless
 </div>
 
 {{-- 4. The first ad: a rule and clear space above it, so it is never under a thumb that was aiming at a button --}}

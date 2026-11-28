@@ -10,14 +10,15 @@
     const dec = (b) => new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0)));
     const answer = (q) => dec(q.a);
     const time = (s) => (s >= 60 ? bn(Math.floor(s / 60)) + ' মিনিট ' : '') + bn(s % 60) + ' সেকেন্ড';
-    const KEY = 'hp-c-' + data.key;
+    const KEY = 'hp-c-' + data.key + (data.practice ? '-practice' : '');
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
     if (!store.day || store.day.id !== data.id) store.day = { id: data.id, i: 0, results: [], picked: [], start: null, end: null, sent: false };
     const day = store.day;
-    const total = () => day.results.filter((r) => r === 'g').length * data.points;
-    const max = data.items.length * data.points;
+    // the quiz is out of 100 however many questions passed its check (D330)
+    const total = () => data.whole ? Math.round(data.whole * day.results.filter((r) => r === 'g').length / data.items.length) : day.results.filter((r) => r === 'g').length * data.points;
+    const max = data.whole || data.items.length * data.points;
 
     const dots = () => [...root.querySelectorAll('[data-dot]')].forEach((d, i) => {
         d.className = 'flex h-3 flex-1 rounded-full ' + ({ g: 'bg-sky-deep', r: 'bg-red' }[day.results[i]] || (i === day.i ? 'bg-navy' : 'bg-rule'));
@@ -29,6 +30,7 @@
         $('count').textContent = data.label + ' ' + bn(day.i + 1) + ' / ' + bn(data.items.length) + (q.h ? ' · ' + q.h : '');
         $('prompt').textContent = q.p;
         $('msg').textContent = ''; $('note').hidden = true; $('next').hidden = true;
+        if ($('mag')) $('mag').hidden = true;
         const link = $('link'); if (link) link.hidden = true;
         const box = $('options'); box.textContent = '';
         q.o.forEach((o) => {
@@ -52,6 +54,7 @@
         $('msg').textContent = day.results[day.i] === 'g' ? '✓ ঠিক! ' + bn(data.points) + ' পয়েন্ট' : 'হয়নি। ঠিক উত্তর: ' + right;
         $('msg').className = 'mt-3 min-h-6 text-center text-lg font-bold ' + (day.results[day.i] === 'g' ? 'text-sky-night' : 'text-red');
         if (q.n) { $('note').textContent = q.n; $('note').hidden = false; }
+        const mag = $('mag'); if (mag) { mag.textContent = ''; mag.hidden = !(q.m && window.hpMagLine); if (!mag.hidden) mag.append(window.hpMagLine(q.m)); }
         const link = $('link');
         if (link && q.l) { link.href = q.l.u; link.textContent = 'লেখাটা পড়ুন: ' + q.l.t + ' →'; link.hidden = false; }
         const last = day.i >= data.items.length - 1;
@@ -75,7 +78,7 @@
     const seconds = () => Math.max(1, Math.round(((day.end || Date.now()) - (day.start || Date.now())) / 1000));
     const shareText = () => {
         const grid = day.results.map((r) => (r === 'g' ? '🟦' : '🟥')).join('');
-        return data.title + (data.no ? ' #' + bn(data.no) : '') + '\n' + bn(total()) + ' / ' + bn(max) + '\n' + grid + '\n' + (data.shareLine || 'আপনিও খেলুন: ') + (store.link || data.url);
+        return data.title + (data.no ? ' #' + bn(data.no) : '') + '\n' + bn(total()) + ' / ' + bn(max) + '\n' + grid + '\n' + (data.shareLine || (data.familyLine ? data.familyLine + ' ' : 'আপনি কত পান? খেলুন: ')) + (store.link || data.dayUrl || data.url);
     };
     const token = () => fetch('/csrf-token', { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then((r) => r.json()).then((j) => j.token);
     const finish = () => {
@@ -85,7 +88,7 @@
         $('score').textContent = bn(total()) + ' / ' + bn(max) + ' পয়েন্ট';
         const gridBox = $('grid'); gridBox.textContent = '';
         day.results.forEach((r) => { const i = document.createElement('i'); i.className = 'block h-7 w-7 rounded-lg border-2 border-navy ' + (r === 'g' ? 'bg-sky-deep' : 'bg-red'); gridBox.appendChild(i); });
-        const ul = $('answers'); ul.textContent = '';
+        const ul = $('answers'); ul.textContent = ''; let shownMag = false;
         data.items.forEach((q, i) => {
             const li = document.createElement('li'); li.className = 'py-2';
             const top = document.createElement('span'); top.className = 'flex items-start gap-2';
@@ -94,6 +97,7 @@
             b.textContent = (q.p && data.showPrompt && q.sp !== false ? q.p + ': ' : '') + answer(q);
             top.append(mark, b); li.append(top);
             if (q.n) { const c = document.createElement('span'); c.className = 'block ps-6 text-base text-ink2'; c.textContent = q.n; li.append(c); }
+            if (q.m && window.hpMagLine && !shownMag) { li.append(window.hpMagLine(q.m)); shownMag = true; }   // once: the share buttons stay near (UX panel)
             if (q.l) { const a = document.createElement('a'); a.className = 'ms-6 inline-flex min-h-11 items-center font-bold text-sky-night underline'; a.href = q.l.u; a.textContent = 'পড়ুন: ' + q.l.t; li.append(a); }
             ul.appendChild(li);
         });

@@ -28,7 +28,8 @@ final class GameSocial
 
     public const POINTS = 10;
 
-    public const TEAM_BEST = 10;
+    /** D330 (game designers): five, so a family of four is not lost against a school. */
+    public const TEAM_BEST = 5;
 
     /** A name a player typed: plain, short, and never a link. Null when it cannot be used. */
     public static function name(?string $raw, int $max = 30): ?string
@@ -57,32 +58,76 @@ final class GameSocial
      */
     public static function questions(string $week): array
     {
-        return Cache::remember('hp.lorai.'.$week, 86400 * 8, function () use ($week) {
+        return Cache::remember('hp.lorai.v2.'.$week, 86400 * 8, function () use ($week) {
             $seed = crc32('lorai'.$week);
+            // D330 (game designers): a revision round of the last sixty days' daily questions, so the লড়াই neither
+            // wears the lists out nor shows tomorrow's answers; the first weeks, with little past, use the whole lists
+            $past = ['banan' => [], 'ekshobde' => [], 'probad' => []];
+            for ($d = 1; $d <= 60; $d++) {
+                $day = Carbon::parse($week, 'Asia/Kolkata')->subDays($d);
+                if ($day->toDateString() < WordChoice::START) {
+                    break;
+                }
+                foreach (['banan', 'ekshobde'] as $g) {
+                    foreach (WordChoice::day($g, $day)['items'] as $q) {
+                        $past[$g][$q['answer']] = ['kind' => $g, 'prompt' => $g === 'banan' ? 'কোন বানানটি ঠিক?' : $q['prompt'], 'options' => $q['options'], 'answer' => $q['answer'], 'note' => $q['note']];
+                    }
+                }
+                foreach (Proverbs::day($day)['items'] as $q) {
+                    $past['probad'][$q['full']] = ['kind' => 'probad', 'prompt' => trim($q['before'].' ____ '.$q['after']), 'options' => $q['options'], 'answer' => $q['answer'], 'note' => $q['meaning']];
+                }
+            }
+            $need = ['banan' => 4, 'ekshobde' => 3, 'probad' => 3];
             $out = [];
-            $pick = function (array $list, int $n, int $salt) use ($seed) {
-                $list = array_values(array_filter($list));
-                mt_srand($seed + $salt);
-                $keys = $list ? (array) array_rand($list, min($n, count($list))) : [];
-                mt_srand();
+            foreach ($need as $g => $n) {
+                $pool = array_values($past[$g]);
+                if (count($pool) >= $n * 3) {
+                    mt_srand($seed + strlen($g));
+                    shuffle($pool);
+                    mt_srand();
+                    $out = array_merge($out, array_slice($pool, 0, $n));
+                } else {
+                    $out = array_merge($out, self::fromLists($g, $n, $seed));
+                }
+            }
+            // the kinds mixed, the same order for everyone this week
+            mt_srand($seed + 99);
+            shuffle($out);
+            mt_srand();
 
-                return array_map(fn ($k) => $list[$k], $keys);
-            };
-            foreach ($pick(WordChoice::all('banan'), 4, 1) as $i => [$answer, $wrong, $note]) {
+            return $out;
+        });
+    }
+
+    /** The first weeks: $n questions of a kind from the whole list. */
+    private static function fromLists(string $g, int $n, int $seed): array
+    {
+        $pick = function (array $list, int $n, int $salt) use ($seed) {
+            $list = array_values(array_filter($list));
+            mt_srand($seed + $salt);
+            $keys = $list ? (array) array_rand($list, min($n, count($list))) : [];
+            mt_srand();
+
+            return array_map(fn ($k) => $list[$k], $keys);
+        };
+        $out = [];
+        if ($g === 'banan') {
+            foreach ($pick(WordChoice::all('banan'), $n, 1) as $i => [$answer, $wrong, $note]) {
                 $out[] = ['kind' => 'banan', 'prompt' => 'কোন বানানটি ঠিক?', 'options' => self::shuffled(array_merge([$answer], array_slice((array) $wrong, 0, 3)), $seed + 10 + $i), 'answer' => $answer, 'note' => (string) $note];
             }
-            $one = array_values(array_filter(WordChoice::all('ekshobde')));
-            $answers = array_column($one, 1);
-            foreach ($pick($one, 3, 2) as $i => $row) {
+        } elseif ($g === 'ekshobde') {
+            $answers = array_column(array_values(array_filter(WordChoice::all('ekshobde'))), 1);
+            foreach ($pick(WordChoice::all('ekshobde'), $n, 2) as $i => $row) {
                 [$phrase, $answer, $note] = $row + [2 => ''];
                 mt_srand($seed + 20 + $i);
                 $decoys = WordChoice::decoys($answer, $phrase, $answers);
                 mt_srand();
                 $out[] = ['kind' => 'ekshobde', 'prompt' => $phrase, 'options' => self::shuffled(array_merge([$answer], $decoys), $seed + 30 + $i), 'answer' => $answer, 'note' => (string) $note];
             }
-            $proverbs = Proverbs::all();
+        } else {
+            $proverbs = array_values(array_filter(Proverbs::all()));
             $words = array_values(array_unique(array_column($proverbs, 1)));
-            foreach ($pick($proverbs, 3, 3) as $i => [$full, $answer, $meaning]) {
+            foreach ($pick($proverbs, $n, 3) as $i => [$full, $answer, $meaning]) {
                 $parts = preg_split('/\s+/u', trim($full));
                 $at = (int) array_search($answer, $parts, true);
                 $others = array_values(array_filter($words, fn ($w) => $w !== $answer && ! in_array($w, $parts, true)));
@@ -92,13 +137,22 @@ final class GameSocial
                 $out[] = ['kind' => 'probad', 'prompt' => trim(implode(' ', array_slice($parts, 0, $at)).' ____ '.implode(' ', array_slice($parts, $at + 1))),
                     'options' => self::shuffled(array_merge([$answer], array_slice($others, 0, 3)), $seed + 50 + $i), 'answer' => $answer, 'note' => (string) $meaning];
             }
-            // the kinds mixed, the same order for everyone this week
-            mt_srand($seed + 99);
-            shuffle($out);
-            mt_srand();
+        }
 
-            return $out;
-        });
+        return $out;
+    }
+
+    /** D330: one spelling question to answer in the chat itself ("বলুন তো, কোনটা ঠিক: দায়িত্ব না দায়িত্ত্ব?"). */
+    public static function teaser(string $week): ?string
+    {
+        $q = collect(self::questions($week))->firstWhere('kind', 'banan');
+        if (! $q) {
+            return null;
+        }
+        $wrong = collect($q['options'])->first(fn ($o) => $o !== $q['answer']);
+        $pair = crc32($week) % 2 ? [$q['answer'], $wrong] : [$wrong, $q['answer']];
+
+        return 'বলুন তো, কোনটা ঠিক: '.$pair[0].' না '.$pair[1].'?';
     }
 
     private static function shuffled(array $a, int $seed): array
@@ -153,6 +207,27 @@ final class GameSocial
         ]);
     }
 
+    /**
+     * D330 (game designers: a link pays off when you hear who answered): a signed-in maker who asked for game notes
+     * on their phone hears that a friend played, at most once a day ("মিতা আপনার লড়াইয়ে পেলেন ৭০ (আপনি ৫০)").
+     */
+    public static function tellMaker(int $challengeId, string $friend, int $score): void
+    {
+        $maker = DB::table('game_challenge_plays')->where('game_challenge_id', $challengeId)->where('started', true)->first();
+        if (! $maker || ! $maker->user_id || ! \App\Support\WebPush::configured()) {
+            return;
+        }
+        $key = 'hp.lorai.told.'.$maker->user_id.'.'.now('Asia/Kolkata')->toDateString();
+        if (! Cache::add($key, true, 86400)) {
+            return;
+        }
+        $code = DB::table('game_challenges')->where('id', $challengeId)->value('code');
+        foreach (\App\Models\PushSubscription::where('user_id', $maker->user_id)->whereJsonContains('topics', 'games')->get() as $sub) {
+            \App\Support\WebPush::send($sub, ['title' => $friend.' আপনার লড়াইয়ে খেললেন', 'body' => $friend.' পেলেন '.Bn::num((string) $score).' (আপনি '.Bn::num((string) $maker->score).')। কে এগিয়ে, দেখুন।',
+                'url' => Url::to('/khela/lorai/'.$code), 'tag' => 'lorai', 'kind' => 'lorai']);
+        }
+    }
+
     /** @return ?array{id: int, code: string, week: string, open: bool, plays: list<array{name: string, score: int, seconds: int, started: bool, mine: bool}>} */
     public static function find(string $code, ?Request $r = null): ?array
     {
@@ -170,12 +245,32 @@ final class GameSocial
 
     // ---------------------------------------------------------------- পাড়ার দল
 
-    public static function makeTeam(User $user, string $name): string
+    /**
+     * D330 (owner: no admin work for games): a team's name is read by the AI that screens comments before the team is
+     * made; a rude, hateful, political-campaign, advertising or personal-attack name is turned away with a kind word,
+     * so the desk never has to take one down. Without the AI the name goes through (it can still be hidden at the desk).
+     */
+    public static function teamNameOk(string $name): bool
+    {
+        if (\App\Ai\Claude::blocked()) {
+            return true;
+        }
+        [$d] = \App\Ai\Claude::json('comment_screen',
+            'You check the name of a team in a family-friendly Bengali word game (schools, clubs, families, associations abroad). '
+            .'ok=false if the name is rude, sexual, hateful, mocks a person, group, caste, religion or region, is a political or election slogan, or advertises something. Ordinary names, places, schools, jokes and nicknames are fine.',
+            '<name>'.e($name).'</name>',
+            ['type' => 'object', 'additionalProperties' => false, 'required' => ['ok'], 'properties' => ['ok' => ['type' => 'boolean']]],
+            config('ai.anthropic.tags_model'), 200);
+
+        return ! is_array($d) || ($d['ok'] ?? true) !== false;
+    }
+
+    public static function makeTeam(User $user, string $name, bool $private = false): string
     {
         do {
             $code = Str::lower(Str::random(7));
         } while (DB::table('game_teams')->where('code', $code)->exists());
-        $id = DB::table('game_teams')->insertGetId(['code' => $code, 'name' => $name, 'user_id' => $user->id, 'created_at' => now(), 'updated_at' => now()]);
+        $id = DB::table('game_teams')->insertGetId(['code' => $code, 'name' => $name, 'user_id' => $user->id, 'private' => $private, 'created_at' => now(), 'updated_at' => now()]);
         self::join($user, $id);
 
         return $code;
@@ -222,7 +317,7 @@ final class GameSocial
             foreach ($members as $userId => $teamId) {
                 $byTeam[$teamId][] = (int) ($points[$userId] ?? 0);
             }
-            $teams = DB::table('game_teams')->whereIn('id', array_keys($byTeam))->whereNull('hidden_at')->get()->keyBy('id');
+            $teams = DB::table('game_teams')->whereIn('id', array_keys($byTeam))->whereNull('hidden_at')->where('private', false)->get()->keyBy('id');   // D331: a private circle is never listed
             $out = [];
             foreach ($byTeam as $teamId => $list) {
                 if (! isset($teams[$teamId]) || count($list) < 2) {
@@ -246,11 +341,16 @@ final class GameSocial
         $ranking = collect(GameScores::ranking('month'))->keyBy('user_id');
         $users = DB::table('users')->where('game_team_id', $teamId)->get(['id', 'name', 'board_hidden', 'game_blocked_at', 'role']);
         $names = \App\Models\Author::whereIn('user_id', $users->pluck('id'))->whereNotNull('display_name_bn')->pluck('display_name_bn', 'user_id');
+        // D330: who has played today, for the family's own scoreboard
+        $today = [];
+        foreach (DB::table('game_scores')->whereIn('user_id', $users->pluck('id'))->where('day', now('Asia/Kolkata')->toDateString())->get(['user_id', 'game', 'points'])->groupBy('user_id') as $uid => $rows) {
+            $today[$uid] = GameScores::dayTotal($rows->mapWithKeys(fn ($r) => [$r->game => (int) $r->points])->all());
+        }
         $out = [];
         foreach ($users as $u) {
             $hidden = $u->board_hidden || $u->game_blocked_at || $u->role === \App\Enums\Role::Admin->value;
             $out[] = ['name' => $hidden && $u->id !== $me?->id ? null : (string) ($names[$u->id] ?? $u->name), 'points' => (int) ($ranking[$u->id]['points'] ?? 0), 'me' => $u->id === $me?->id,
-                'counts' => ! $u->game_blocked_at && $u->role !== \App\Enums\Role::Admin->value];
+                'counts' => ! $u->game_blocked_at && $u->role !== \App\Enums\Role::Admin->value, 'today' => $today[$u->id] ?? null];
         }
         usort($out, fn ($a, $b) => $b['points'] <=> $a['points']);
 

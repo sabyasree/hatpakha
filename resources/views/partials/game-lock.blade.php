@@ -9,7 +9,7 @@
         <li>✓ সেরাদের তালিকায় নাম, মাসের সেরা আর বছরের সেরার খেতাব</li>
         <li>✓ ব্যাজ আর টানা দিনের হিসেব</li>
     </ul>
-    <p class="mt-3 text-lg">অ্যাকাউন্ট খুলতে লাগে শুধু নাম, ই-মেল আর একটা পাসওয়ার্ড। এক মিনিটের কাজ, বিনামূল্যে।</p>
+    <p class="mt-3 text-lg">অ্যাকাউন্ট খুলতে লাগে শুধু নাম, ই-মেল আর একটা পাসওয়ার্ড। লাগে এক মিনিট, টাকা লাগে না।</p>
     <div class="mt-4 grid gap-2">
         <a href="{{ \App\Support\Url::to('/register') }}?next={{ $next }}" class="flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">বিনামূল্যে অ্যাকাউন্ট খুলুন</a>
         <a href="{{ \App\Support\Url::to('/login') }}?next={{ $next }}" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">আগে থেকে আছে? সাইন ইন</a>

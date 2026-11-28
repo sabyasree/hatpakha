@@ -6,7 +6,7 @@
     $today = now('Asia/Kolkata')->toDateString();
     $ends = $quiz ? \Illuminate\Support\Carbon::parse($quiz['week'])->addDays(6) : null;
     $payload = $quiz ? ['mode' => 'quiz', 'game' => 'quiz', 'key' => 'quiz', 'id' => $quiz['week'], 'date' => $today, 'no' => null, 'title' => 'হাতপাখা পত্রিকা-কুইজ, '.Bn::date(\Illuminate\Support\Carbon::parse($quiz['week'])).'-এর সপ্তাহ',
-        'url' => Url::to('/khela/quiz'), 'points' => \App\Support\WordChoice::POINTS, 'label' => 'প্রশ্ন', 'report' => false, 'showPrompt' => true, 'again' => 'লেখাগুলো পড়ে দেখুন, পরের রবিবার আবার',
+        'url' => Url::to('/khela/quiz'), 'points' => (int) round(100 / max(1, count($quiz['questions']))), 'whole' => 100, 'label' => 'প্রশ্ন', 'report' => false, 'showPrompt' => true, 'again' => 'লেখাগুলো পড়ে দেখুন, পরের রবিবার আবার',
         'items' => array_map(fn ($q) => ['p' => $q['q'], 'a' => base64_encode($q['options'][$q['answer']]), 'o' => $q['options'], 'n' => $q['why'] ?? '',
             'l' => isset($posts[$q['post_id']]) ? ['u' => $posts[$q['post_id']]->url(), 't' => $posts[$q['post_id']]->title] : null], $quiz['questions'])] : null;
     $recent = $quiz ? $posts : \App\Models\Post::published()->whereDoesntHave('authors', fn ($q) => $q->where('is_desk', true))->latest('published_at')->limit(5)->get();
@@ -17,7 +17,7 @@
         <p class="font-hand text-xl text-red">প্রতি রবিবার (ভারতের সময়) পাঁচটা প্রশ্ন</p>
         <h1 class="font-display text-4xl font-extrabold leading-tight">পত্রিকা-কুইজ</h1>
         @if ($quiz)
-            <p class="mt-2 text-ink2">এ সপ্তাহে হাতপাখায় যা বেরিয়েছে, তা থেকে পাঁচটা প্রশ্ন। পড়ে থাকলে সহজ; না পড়লে প্রতিটি উত্তরের পরে লেখাটার লিঙ্ক থাকবে। ঠিক উত্তরে ২০ পয়েন্ট। চলবে {{ Bn::date($ends) }} পর্যন্ত।</p>
+            <p class="mt-2 text-ink2">এ সপ্তাহে হাতপাখায় যা বেরিয়েছে, তা থেকে পাঁচটা প্রশ্ন। পড়ে থাকলে সহজ; না পড়লে প্রতিটি উত্তরের পরে লেখাটার লিঙ্ক থাকবে। সব ঠিক হলে ১০০ পয়েন্ট। চলবে {{ Bn::date($ends) }} পর্যন্ত।</p>
             @if ($played)<p class="mt-2 rounded-2xl bg-sky-tint p-3 font-bold text-sky-night">এ সপ্তাহের কুইজের পয়েন্ট আপনার খাতায় আগেই উঠেছে। আবার খেলতে পারেন, পয়েন্ট আর বাড়বে না।</p>@endif
             <details class="mt-4 rounded-2xl border-2 border-navy bg-white p-4">
                 <summary class="flex min-h-11 cursor-pointer items-center justify-between font-bold">আগে লেখাগুলো পড়ে নিতে চান? <span aria-hidden="true">▾</span></summary>
@@ -40,7 +40,7 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @if ($quiz)
-        <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
-        <script src="{{ asset('js/hp-choice.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=5" defer></script>
+        <script src="{{ asset('js/hp-choice.js') }}?v=4" defer></script>
     @endif
 </x-layouts.app>

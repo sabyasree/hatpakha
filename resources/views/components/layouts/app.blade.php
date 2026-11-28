@@ -110,10 +110,10 @@
                 {{-- D166: a labelled way to one's own page ("আমার"), or "ঢুকুন" before signing in --}}
                 @auth
                     @php $hdrAcct = \App\Support\AccountMenu::for(auth()->user()); @endphp
-                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 flex-none items-center gap-2 rounded-full border-2 border-navy bg-white py-0 pl-1 pr-4 font-bold hover:bg-peach-light {{ request()->is('account*') ? '!bg-navy text-white' : '' }}" aria-label="{{ __('আমার অ্যাকাউন্ট') }}">
+                    <a href="{{ \App\Support\Url::to('/account') }}" class="flex h-11 flex-none items-center gap-2 rounded-full border-2 border-navy bg-white py-0 pl-1 pr-1 font-bold hover:bg-peach-light min-[400px]:pr-4 {{ request()->is('account*') ? '!bg-navy text-white' : '' }}" aria-label="{{ __('আমার অ্যাকাউন্ট') }}">
                         @if ($hdrAcct['avatar'])<img src="{{ $hdrAcct['avatar'] }}" alt="" class="h-8 w-8 rounded-full border-2 border-navy object-cover">
                         @else<span class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-navy bg-peach text-sm font-extrabold text-navy" aria-hidden="true">{{ $hdrAcct['initial'] }}</span>@endif
-                        <span aria-hidden="true">{{ __('অ্যাকাউন্ট') }}</span>
+                        <span aria-hidden="true" class="hidden min-[400px]:inline">{{ __('অ্যাকাউন্ট') }}</span>{{-- D330: on a 360px phone the word pushed the page sideways --}}
                     </a>
                 @else
                     <a href="{{ \App\Support\Url::to('/login') }}" class="flex h-11 flex-none items-center whitespace-nowrap rounded-full border-2 border-navy bg-white px-4 font-bold hover:bg-peach-light">{{ __('সাইন ইন') }}</a>

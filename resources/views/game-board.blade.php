@@ -8,13 +8,16 @@
     use App\Support\GameTitles;
     use App\Support\Url;
     $now = now('Asia/Kolkata');
-    $tabs = ['today' => 'আজ', 'month' => 'এ মাস', 'year' => 'এ বছর', 'hall' => 'সম্মান-ফলক'];
+    $tabs = ['today' => 'আজ', 'sweek' => 'এ সপ্তাহ', 'month' => 'এ মাস', 'year' => 'এ বছর', 'hall' => 'সম্মান-ফলক'];
+    $weekStart = \Illuminate\Support\Carbon::parse(\App\Support\WeeklyQuiz::week(), 'Asia/Kolkata');
+    $weekLeft = 6 - (int) $now->dayOfWeek;   // days after today till Saturday
     $lead = $boards['month']['rows'][0] ?? null;
     $left = (int) $now->daysInMonth - (int) $now->day;
     $judged = $now->format('Y-m') >= GameTitles::FIRST_MONTH;
     $n = fn ($x) => Bn::num(number_format((int) $x));
     $notes = [
         'today' => 'আজকের পয়েন্ট। প্রতিটি খেলা ১০০, দিনের সেরা তিনটে খেলা গোনা হয়: পুরো দিন ৩০০।',
+        'sweek' => 'রবিবার থেকে শনিবার (ভারতের সময়)। সপ্তাহের সেরা '.Bn::num((string) GameScores::WEEK_DAYS).' দিনের পয়েন্ট গোনা হয়, তাই এক দিন বাদ গেলে ক্ষতি নেই। সপ্তাহের সেরা হতে অন্তত '.Bn::num((string) GameScores::WEEK_MIN_DAYS).' দিন খেলতে হয়।',
         'month' => 'মাসের সেরা '.Bn::num((string) GameScores::MONTH_DAYS).' দিনের পয়েন্ট গোনা হয়, তাই এক-আধ দিন বাদ গেলেও ক্ষতি নেই। মাসের সেরা হতে অন্তত '.Bn::num((string) GameScores::MONTH_MIN_DAYS).' দিন খেলতে হয়।',
         'year' => 'বছরের সেরা '.Bn::num((string) GameScores::YEAR_MONTHS).' মাসের পয়েন্ট গোনা হয়। বছরের সেরা হতে অন্তত '.Bn::num((string) GameScores::YEAR_MIN_MONTHS).' মাস নিয়মিত খেলতে হয়।',
     ];
@@ -25,7 +28,7 @@
     <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" data-board>
         @include('partials.game-nav', ['on' => 'board'])
         <p class="font-hand text-2xl text-red">কারা এগিয়ে</p>
-        <h1 class="font-display text-4xl font-extrabold leading-tight">লিডারবোর্ড</h1>
+        <h1 class="font-display text-4xl font-extrabold leading-tight">সেরাদের তালিকা</h1>
 
         @if ($hall['year'])
             <div class="mt-3 flex items-center gap-3 rounded-2xl bg-navy px-4 py-2.5 text-white">
@@ -33,6 +36,23 @@
                 <div class="min-w-0"><p class="text-sm font-bold text-peach">বছরের সেরা {{ $hall['year']['label'] }}</p><p class="truncate font-serif text-xl font-bold">{{ $hall['year']['name'] }}</p></div>
             </div>
         @endif
+
+        {{-- D329: who is ahead this week: a title every Sunday, so most players have one within reach --}}
+        @php
+            $wlead = $boards['sweek']['rows'][0] ?? null;
+        @endphp
+        <div class="mt-3 flex items-center gap-3 rounded-3xl border-2 border-navy bg-sky-tint p-4 shadow-[4px_4px_0_#13212C]">
+            {!! GameTitles::svg('week', 1, 58, 'সপ্তাহ') !!}
+            <div class="min-w-0 flex-1">
+                <p class="font-hand text-xl leading-tight text-red">এ সপ্তাহে এগিয়ে</p>
+                @if ($wlead)
+                    <p class="truncate font-serif text-xl font-bold leading-tight">{{ $wlead['name'] }} <span class="font-sans text-base font-extrabold">· {{ $n($wlead['points']) }}</span></p>
+                @else
+                    <p class="font-serif text-xl font-bold leading-tight">এখনও কেউ নেই</p>
+                @endif
+                <p class="text-sm font-semibold">{{ $weekLeft ? 'শনিবার শেষ, আর '.Bn::num((string) $weekLeft).' দিন।' : 'আজই শেষ দিন।' }} সেরা তিন জন পান সপ্তাহের সেরার খেতাব।</p>
+            </div>
+        </div>
 
         {{-- who is ahead this month --}}
         <div class="mt-3 flex items-center gap-3 rounded-3xl border-2 border-navy bg-red p-4 text-white shadow-[4px_4px_0_#13212C]">
@@ -45,19 +65,23 @@
                     <p class="font-serif text-2xl font-bold leading-tight">এখনও কেউ নেই</p>
                     <p class="text-lg font-bold">প্রথম নামটা আপনার হোক</p>
                 @endif
-                <p class="mt-1 text-sm font-semibold">@if ($judged){{ Bn::MONTHS[$now->month - 1] }} শেষ হতে আর {{ Bn::num((string) $left) }} দিন। সেরা তিন জন খেতাব পাবেন।@else মাসের সেরার খেতাব শুরু {{ GameTitles::label('month', GameTitles::FIRST_MONTH) }} থেকে।@endif</p>
+                <p class="mt-1 text-sm font-semibold">@if ($judged){{ Bn::MONTHS[$now->month - 1] }} শেষ হতে আর {{ Bn::num((string) $left) }} দিন। সেরা তিন জন খেতাব পাবেন।@else মাসের সেরার খেতাব দেওয়া শুরু হবে {{ GameTitles::label('month', GameTitles::FIRST_MONTH) }} থেকে।@endif</p>
             </div>
             @if ($judged){!! GameTitles::svg('month', 1, 84, Bn::MONTHS[$now->month - 1]) !!}@endif
         </div>
 
         {{-- the four lists; without the script all four simply show, one under the other --}}
-        <div class="mt-5 grid grid-cols-[1fr_1fr_1fr_1.45fr] overflow-hidden rounded-2xl border-2 border-navy bg-white text-center font-bold" role="tablist" aria-label="কোন তালিকা" data-board-tabs hidden>
+        {{-- D330: a title needs a checked e-mail; say so to a player who would otherwise be passed over without knowing --}}
+        @if ($me && ! $me->hasVerifiedEmail() && ($boards['sweek']['mine']['rank'] ?? 0) >= 1 && $boards['sweek']['mine']['rank'] <= 3)
+            <p class="mt-3 rounded-2xl border-2 border-red bg-white p-3 font-bold">আপনি এ সপ্তাহের সেরা তিনে! খেতাব পেতে <a href="{{ Url::to('/email/verify') }}" class="text-sky-night underline">ই-মেল যাচাই করুন</a>।</p>
+        @endif
+        <div class="mt-5 grid grid-cols-[1fr_1.25fr_1.1fr_1.1fr_1.6fr] overflow-hidden rounded-2xl border-2 border-navy bg-white text-center font-bold" role="tablist" aria-label="কোন তালিকা" data-board-tabs hidden>
             @foreach ($tabs as $key => $label)
-                <button type="button" role="tab" data-tab="{{ $key }}" aria-selected="{{ $key === 'month' ? 'true' : 'false' }}" class="min-h-12 px-1 text-[15px] leading-tight {{ $loop->first ? '' : 'border-l-2 border-navy' }} aria-selected:bg-navy aria-selected:text-white">{{ $label }}</button>
+                <button type="button" role="tab" data-tab="{{ $key }}" aria-selected="{{ $key === 'sweek' ? 'true' : 'false' }}" class="min-h-12 px-0.5 text-[14px] leading-tight {{ $loop->first ? '' : 'border-l-2 border-navy' }} aria-selected:bg-navy aria-selected:text-white">{{ $label }}</button>
             @endforeach
         </div>
 
-        @foreach (['today', 'month', 'year'] as $key)
+        @foreach (['today', 'sweek', 'month', 'year'] as $key)
             @php
                 $b = $boards[$key];
                 $few = count($b['rows']) < 5;
@@ -71,14 +95,14 @@
                         <a href="{{ Url::to('/khela/aaj') }}" class="mt-3 flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white shadow-[3px_3px_0_#13212C]">খেলুন</a>
                     </div>
                 @else
-                    @if ($few)<p class="mt-3 rounded-2xl bg-peach-light px-4 py-3 font-bold">এখনও কম জন খেলেছেন। প্রথম দিকে নাম তুলুন।</p>@endif
+                    @if ($few)<p class="mt-3 rounded-2xl bg-peach-light px-4 py-3 font-bold">এখনও অল্প কয়েকজন খেলেছেন। এই বেলা নাম তুলে ফেলুন।</p>@endif
                     <ol class="mt-3 overflow-hidden rounded-3xl border-2 border-navy bg-white">
                         @foreach ($b['rows'] as $r)
                             <li class="flex min-h-[3.75rem] items-center gap-2.5 border-b border-rule px-3.5 py-1.5 last:border-b-0 {{ $r['me'] ? 'bg-sky-tint' : '' }}">
                                 <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full font-extrabold {{ [1 => 'bg-red text-white', 2 => 'bg-navy text-white', 3 => 'bg-sky'][$r['rank']] ?? 'bg-peach-light' }}">{{ Bn::num((string) $r['rank']) }}</span>
                                 <span class="min-w-0 flex-1 leading-tight">
                                     <span class="flex items-center gap-1.5"><span class="truncate font-serif text-lg font-semibold">{{ $r['name'] }}</span>@foreach ($marks[$r['user_id']] ?? [] as $m){!! GameTitles::mark($m) !!}@endforeach @if ($r['me'])<span class="flex-none text-sm font-bold text-ink2">(আপনি)</span>@endif @if ($desk)<a href="{{ url('/desk/users/'.$r['user_id'].'/edit') }}" class="flex-none text-sm font-bold text-sky-night underline">ডেস্ক</a>@endif</span>
-                                    <span class="block text-[15px] text-ink2">{{ $levels[$r['user_id']] ?? GameScores::LEVELS[0][1] }}@if ($key === 'month') · {{ Bn::num((string) $r['days']) }} দিন খেলেছেন@elseif ($key === 'year') · {{ Bn::num((string) $r['months']) }} মাস নিয়মিত@endif</span>
+                                    <span class="block text-[15px] text-ink2">{{ $levels[$r['user_id']] ?? GameScores::LEVELS[0][1] }}@if ($key === 'month' || $key === 'sweek') · {{ Bn::num((string) $r['days']) }} দিন খেলেছেন@elseif ($key === 'year') · {{ Bn::num((string) $r['months']) }} মাস নিয়মিত@endif</span>
                                 </span>
                                 <span class="flex-none text-lg font-extrabold">{{ $n($r['points']) }}</span>
                             </li>
@@ -86,7 +110,17 @@
                     </ol>
                     @if ($b['count'] > count($b['rows']))<p class="mt-2 text-sm text-ink2">প্রথম {{ Bn::num((string) count($b['rows'])) }} জন দেখানো হল; মোট {{ Bn::num((string) $b['count']) }} জন খেলেছেন।</p>@endif
                 @endif
-                @if ($marks && ! empty($b['rows']))<p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-ink2"><span class="flex items-center gap-1">{!! GameTitles::mark('m') !!} মাসের সেরা হয়েছেন</span><span class="flex items-center gap-1">{!! GameTitles::mark('y') !!} বছরের সেরা</span><span class="flex items-center gap-1">{!! GameTitles::mark('yy') !!} একাধিক বছর</span></p>@endif
+                @if ($marks && ! empty($b['rows']))<p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-ink2"><span class="flex items-center gap-1">{!! GameTitles::mark('w') !!} গত সপ্তাহের সেরা</span><span class="flex items-center gap-1">{!! GameTitles::mark('m') !!} মাসের সেরা হয়েছেন</span><span class="flex items-center gap-1">{!! GameTitles::mark('y') !!} বছরের সেরা</span><span class="flex items-center gap-1">{!! GameTitles::mark('yy') !!} একাধিক বছর</span></p>@endif
+                @if ($key === 'sweek' && $hall['lastWeek'])
+                    <div class="mt-4 rounded-2xl border-2 border-navy bg-white px-3 py-2.5">
+                        <p class="text-sm font-extrabold">গত সপ্তাহের সেরা তিন ({{ $hall['lastWeek'][0]['label'] }})</p>
+                        <ul class="mt-1 grid gap-1">
+                            @foreach ($hall['lastWeek'] as $w)
+                                <li class="flex items-center gap-2 font-serif text-lg font-semibold">{!! GameTitles::svg('week', $w['place'], 28) !!}<span class="min-w-0 flex-1 truncate">{{ $w['name'] }}</span><span class="font-sans text-base font-extrabold">{{ $n($w['points']) }}</span></li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 @if ($key === 'month' && $hall['lastMonth'])
             <div class="mt-4 rounded-2xl border-2 border-navy bg-white px-3 py-2.5">
                 <p class="text-sm font-extrabold">{{ $hall['lastMonth'][0]['label'] }}-এর সেরা তিন</p>
@@ -98,7 +132,19 @@
             </div>
         @endif
 
-                @if ($b['mine'] && ! collect($b['rows'])->contains('me', true))
+                @if (! empty($b['near']))
+                    {{-- D331: the player's own neighbourhood on the list --}}
+                    <p class="mt-4 font-bold">আপনার আশেপাশে</p>
+                    <ol class="mt-1 overflow-hidden rounded-2xl border-2 border-navy bg-white">
+                        @foreach ($b['near'] as $r)
+                            <li class="flex min-h-12 items-center gap-2.5 border-b border-rule px-3.5 py-1 last:border-b-0 {{ $r['me'] ? 'bg-sky-tint font-extrabold' : '' }}">
+                                <span class="flex h-8 min-w-8 flex-none items-center justify-center rounded-full bg-peach-light px-1 font-extrabold">{{ Bn::num((string) $r['rank']) }}</span>
+                                <span class="min-w-0 flex-1 truncate font-serif text-lg">{{ $r['name'] }}@if ($r['me']) <span class="font-sans text-sm text-ink2">(আপনি)</span>@endif</span>
+                                <span class="flex-none font-extrabold">{{ $n($r['points']) }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @elseif ($b['mine'] && ! collect($b['rows'])->contains('me', true))
                     <p class="mt-2 rounded-2xl border-2 border-navy bg-sky-tint px-4 py-3 font-bold">আপনি: {{ $b['mine']['rank'] ? Bn::num((string) $b['mine']['rank']).' নম্বরে · ' : 'নাম লুকোনো আছে · ' }}{{ $n($b['mine']['points']) }} পয়েন্ট</p>
                 @endif
             </div>
@@ -111,16 +157,17 @@
         {{-- the roll of honour: every past month and year, kept for good --}}
         <div data-panel="hall" class="mt-6">
             <h2 class="font-display text-2xl font-extrabold" data-panel-title>সম্মান-ফলক</h2>
-            <p class="mt-1 text-ink2">প্রতি মাসের আর প্রতি বছরের সেরা তিন জনের নাম এখানে থেকে যায়। দু বছর বছরের সেরা হলে <b class="text-navy">{{ GameTitles::MULTI[2] }}</b>, তিন বছর বা বেশি হলে <b class="text-navy">{{ GameTitles::MULTI[3] }}</b>।</p>
-            <div class="mt-3 grid grid-cols-3 items-end gap-2 rounded-3xl border-2 border-navy bg-peach-light px-2 py-4 text-center">
+            <p class="mt-1 text-ink2">প্রতি সপ্তাহের, প্রতি মাসের আর প্রতি বছরের সেরা তিন জনের নাম এখানে থেকে যায় (সপ্তাহের নাম গত আট সপ্তাহের)। দু বছর বছরের সেরা হলে <b class="text-navy">{{ GameTitles::MULTI[2] }}</b>, তিন বছর বা বেশি হলে <b class="text-navy">{{ GameTitles::MULTI[3] }}</b>।</p>
+            <div class="mt-3 grid grid-cols-4 items-end gap-1 rounded-3xl border-2 border-navy bg-peach-light px-1 py-4 text-center">
+                <div class="flex flex-col items-center justify-end">{!! GameTitles::svg('week', 1, 54, 'সপ্তাহ') !!}<p class="mt-1 text-sm font-extrabold leading-tight">সপ্তাহের সেরা</p></div>
                 <div class="flex flex-col items-center justify-end">{!! GameTitles::svg('month', 1, 66, 'মাস') !!}<p class="mt-1 text-sm font-extrabold leading-tight">মাসের সেরা</p></div>
                 <div class="flex flex-col items-center justify-end">{!! GameTitles::svg('year', 1, 78, 'বছর') !!}<p class="mt-1 text-sm font-extrabold leading-tight">বছরের সেরা</p></div>
                 <div class="flex flex-col items-center justify-end">{!! GameTitles::svg('multi', 1, 90, 'রত্ন') !!}<p class="mt-1 text-sm font-extrabold leading-tight">{{ GameTitles::MULTI[2] }}<span class="block">{{ GameTitles::MULTI[3] }}</span></p></div>
             </div>
-            @if (! $hall['months'] && ! $hall['years'])
-                <p class="mt-3 rounded-2xl border-2 border-dashed border-navy bg-white p-4 text-lg">ফলক এখনও ফাঁকা। প্রথম নাম উঠবে <b>{{ GameTitles::label('month', GameTitles::FIRST_MONTH) }}</b>-এর সেরা তিন জনের, মাস শেষ হলেই।</p>
+            @if (! $hall['months'] && ! $hall['years'] && ! $hall['weeks'])
+                <p class="mt-3 rounded-2xl border-2 border-dashed border-navy bg-white p-4 text-lg">ফলক এখনও ফাঁকা। প্রথম নাম উঠবে <b>{{ GameTitles::label('week', GameTitles::FIRST_WEEK) }}</b> সপ্তাহের সেরা তিন জনের, সপ্তাহ শেষ হলেই।</p>
             @endif
-            @foreach ([['years', 'বছরের সেরা', 'year'], ['months', 'মাসের সেরা', 'month']] as [$set, $title, $kind])
+            @foreach ([['years', 'বছরের সেরা', 'year'], ['months', 'মাসের সেরা', 'month'], ['weeks', 'সপ্তাহের সেরা', 'week']] as [$set, $title, $kind])
                 @if ($hall[$set])
                     <h3 class="mt-5 font-display text-xl font-extrabold">{{ $title }}</h3>
                     <ul class="mt-2 overflow-hidden rounded-3xl border-2 border-navy bg-white">
@@ -157,6 +204,6 @@
         bar.querySelectorAll('[data-tab]').forEach(function (t) { t.setAttribute('aria-selected', t.dataset.tab === key ? 'true' : 'false'); }); };
       bar.hidden = false; root.querySelectorAll('[data-panel-title]').forEach(function (h) { h.classList.add('sr-only'); });
       bar.addEventListener('click', function (e) { var t = e.target.closest('[data-tab]'); if (t) { show(t.dataset.tab); try { history.replaceState(null, '', '#' + t.dataset.tab); } catch (x) {} } });
-      var want = location.hash.slice(1); show(bar.querySelector('[data-tab="' + want + '"]') ? want : 'month'); })();
+      var want = location.hash.slice(1); show(bar.querySelector('[data-tab="' + want + '"]') ? want : 'sweek'); })();
     </script>
 </x-layouts.app>

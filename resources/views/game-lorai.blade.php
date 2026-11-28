@@ -77,7 +77,7 @@
                         <p class="text-lg font-extrabold">লিঙ্কটা বন্ধুদের পাঠান</p>
                         <input readonly value="{{ $link }}" aria-label="লড়াইয়ের লিঙ্ক" class="mt-2 h-12 w-full rounded-xl border-2 border-navy bg-paper px-3 text-base" data-lorai-url>
                         <div class="mt-2 grid gap-2">
-                            <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার সাপ্তাহিক লড়াইয়ে আমি পেয়েছি '.Bn::num((string) ($me['score'] ?? 0)).' / '.Bn::num((string) $max).'। একই দশটা প্রশ্ন, আপনি কত পান? '.$link) }}" target="_blank" rel="noopener" class="flex h-14 items-center justify-center rounded-full bg-red px-4 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">WhatsApp-এ পাঠান</a>
+                            <a href="https://wa.me/?text={{ rawurlencode('হাতপাখার লড়াই: আমি পেয়েছি '.Bn::num((string) ($me['score'] ?? 0)).' / '.Bn::num((string) $max).'।'.(($t = \App\Support\GameSocial::teaser($week)) ? "\n".$t : '')."\nবাকি প্রশ্ন এখানে, আপনি কত পান? ".$link) }}" target="_blank" rel="noopener" class="flex h-14 items-center justify-center rounded-full bg-red px-4 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">WhatsApp-এ পাঠান</a>
                             <button type="button" data-copy="{{ $link }}" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white font-bold">লিঙ্ক কপি করুন</button>
                         </div>
                         <p class="mt-1 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-copy-msg></p>
@@ -104,7 +104,7 @@
                 <input id="hp-lorai-name" data-c-name type="text" maxlength="30" autocomplete="nickname" class="mt-2 h-14 w-full rounded-2xl border-2 border-navy bg-paper px-4 text-xl" placeholder="যেমন: মিতা, রাজুদা">
                 <p class="mt-1 min-h-5 text-sm font-bold text-red" role="status" data-c-name-msg></p>
                 <button type="button" data-c-go class="mt-2 flex h-14 w-full items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">শুরু করুন →</button>
-                <p class="mt-3 text-sm text-ink2">অ্যাকাউন্ট আছে? <a class="font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}">সাইন ইন করে খেলুন</a>, নামটা নিজে থেকে বসবে।</p>
+                <p class="mt-3 text-sm text-ink2">অ্যাকাউন্ট আছে? <a class="inline-flex min-h-11 items-center font-bold text-sky-night underline" href="{{ Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}">সাইন ইন করে খেলুন</a>, নামটা নিজে থেকে বসবে।</p>
             </div>
             @include('partials.choice-board', ['count' => count($questions), 'after' => false, 'noShare' => true,
                 'extra' => '<a href="#" data-c-results hidden class="mt-4 flex h-14 items-center justify-center rounded-full bg-red px-6 text-lg font-bold text-white shadow-[3px_3px_0_#13212C]">'.($maker ? 'সবার পয়েন্ট দেখুন →' : 'সবার পয়েন্ট দেখুন ও লিঙ্ক পাঠান →').'</a>'])
@@ -113,7 +113,7 @@
         @endif
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
-    @if ($open && ! $played)<script src="{{ asset('js/hp-choice.js') }}?v=2" defer></script>@endif
+    @if ($open && ! $played)<script src="{{ asset('js/hp-choice.js') }}?v=4" defer></script>@endif
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
             const m = document.querySelector('[data-copy-msg]');

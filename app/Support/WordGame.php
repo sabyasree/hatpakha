@@ -235,6 +235,9 @@ final class WordGame
             shuffle($order);
             [$riddle, $answer] = self::at($list, $order[$index % $count]);
         }
+        if ($level === 'easy' && ($fr = GameFestival::riddle($day))) {   // D331: the festival's riddle in its week
+            [$riddle, $answer] = $fr;
+        }
         mt_srand(($level === 'hard' ? 6143 : 5519) + $index);
         $letters = self::letters($answer);
         $pool = [];
@@ -270,6 +273,12 @@ final class WordGame
         'hard' => ['কঠিন', 'kothin', 'cross3', 7, 9, 12, 150, 25],
     ];
 
+    /** D331: on a Sunday (Kolkata) the medium and the hard crossword are bigger. The points stay the same. */
+    public static function bigSunday(Carbon $day, string $level): bool
+    {
+        return $level !== 'easy' && $day->copy()->setTimezone('Asia/Kolkata')->isSunday();
+    }
+
     public static function crosswordUrl(string $level = 'medium'): string
     {
         return Url::to('/khela/shobdojobdo'.(self::LEVELS[$level][1] !== '' ? '/'.self::LEVELS[$level][1] : ''));
@@ -280,6 +289,9 @@ final class WordGame
         $day = ($day ?? now('Asia/Kolkata'))->copy()->startOfDay();
         $index = max(0, self::number($day) - 1);
         [, , , $maxLetters, $want, $board] = self::LEVELS[$level];
+        if (self::bigSunday($day ?? now('Asia/Kolkata'), $level)) {   // D331: the Sunday crossword is bigger, in the newspaper way
+            [$want, $board] = [$want + ($level === 'hard' ? 3 : 2), min(12, $board + 1)];   // more words, still a phone's width
+        }
 
         return \Illuminate\Support\Facades\Cache::remember('hp.cross.'.$level.'.'.$day->toDateString().'.'.count(self::words($day)).'.'.count(self::fixes('word', $day)), 90000, function () use ($day, $index, $level, $maxLetters, $want, $board) {
             $today = array_column(self::day($day)['words'], 'answer');
@@ -466,6 +478,9 @@ final class WordGame
             }
         }
 
+        if (($fw = GameFestival::word($day)) && ! in_array($fw[0], array_column($words, 0), true)) {   // D331: a festival's week: one of the everyday words is the festival's
+            $words[1] = $fw;
+        }
         mt_srand(4421 + $index);
         $out = [];
         foreach ($words as [$word, $clue]) {

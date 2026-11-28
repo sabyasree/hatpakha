@@ -122,7 +122,13 @@ Schedule::call(function () {   // D271: one failing job never stops the others
     }
 })->name('comments told to writers')->everyTenMinutes()->withoutOverlapping(10);   // D217, D252: comments, replies, a piece going live
 
-// D328: Saturday morning the AI drafts next week's পত্রিকা-কুইজ from the week's pieces (tried again in the evening if
-// it failed); it waits at /desk → খেলা: কুইজ ও দল for approval. Nothing reaches readers before that.
+// D328, D330: Saturday morning the AI writes next week's পত্রিকা-কুইজ from the week's pieces, a second AI reading checks
+// every question against its piece, and the checked quiz goes live by itself (owner: "fully automatic").
 Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz draft')->weeklyOn(6, '10:15')->timezone('Asia/Kolkata')->withoutOverlapping(30);
 Schedule::call(fn () => \App\Support\WeeklyQuiz::draft())->name('weekly quiz draft again')->weeklyOn(6, '19:15')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+// D330: the quiz goes live by itself once checked; a last try just after midnight on Sunday, for the week that has begun
+Schedule::call(fn () => \App\Support\WeeklyQuiz::draft(\App\Support\WeeklyQuiz::week()))->name('weekly quiz last try')->weeklyOn(0, '00:05')->timezone('Asia/Kolkata')->withoutOverlapping(30);
+// D330: অক্ষরজাল learns words from the magazine (a word in 8 or more pieces), counted from the next day
+Schedule::call(fn () => \App\Support\Akshorjal::learn())->name('akshorjal learns words')->dailyAt('03:30')->timezone('Asia/Kolkata')->withoutOverlapping(60);
+// D331: anything the AI could not read at once (আড্ডা messages, readers' riddles) is read within the hour
+Schedule::call(function () { \App\Support\GameCommunity::screen(); \App\Support\GameCommunity::screenRiddles(); })->name('game talk and riddles screened')->hourlyAt(12)->withoutOverlapping(30);

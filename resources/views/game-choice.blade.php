@@ -7,12 +7,14 @@
     $banan = $kind === 'banan';
     $name = $banan ? 'বানান-যাচাই' : 'এক শব্দে প্রকাশ';
     $url = Url::to($banan ? '/khela/banan' : '/khela/ek-shobde');
-    $payload = ['mode' => 'daily', 'game' => $kind, 'key' => $kind, 'id' => $game['date'], 'date' => $game['date'], 'no' => $game['no'], 'title' => 'হাতপাখা '.$name,
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor(($kind === 'banan' ? 'banan' : 'ek-shobde'), $game['date']) + ['mode' => 'daily', 'game' => $kind, 'key' => $kind, 'id' => $game['date'], 'date' => $game['date'], 'no' => $game['no'], 'title' => 'হাতপাখা '.$name,
         'url' => $url, 'points' => \App\Support\WordChoice::POINTS, 'label' => $banan ? 'শব্দ' : 'প্রশ্ন', 'report' => true, 'showPrompt' => ! $banan,
-        'items' => array_map(fn ($q) => ['p' => $banan ? 'কোন বানানটি ঠিক?' : $q['prompt'], 'a' => base64_encode($q['answer']), 'o' => $q['options'], 'n' => $q['note']], $game['items'])];
+        'items' => array_map(fn ($q) => ['p' => $banan ? 'কোন বানানটি ঠিক?' : $q['prompt'], 'a' => base64_encode($q['answer']), 'o' => $q['options'], 'n' => $q['note'],
+            'm' => (($m = \App\Support\InMagazine::line($q['answer'])) ? base64_encode(json_encode($m, JSON_UNESCAPED_UNICODE)) : null)], $game['items'])];
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-choice @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-choice @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => $kind])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -47,8 +49,9 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @unless ($locked)
-        <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=5" defer></script>
         <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-        <script src="{{ asset('js/hp-choice.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-mag.js') }}?v=1" defer></script>
+        <script src="{{ asset('js/hp-choice.js') }}?v=4" defer></script>
     @endunless
 </x-layouts.app>

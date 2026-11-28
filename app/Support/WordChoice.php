@@ -28,13 +28,36 @@ final class WordChoice
      * The list with readers' reports applied (D179): an entry taken out becomes null and is skipped, so the days that
      * follow do not shift. @return list<array|null>
      */
+    /**
+     * D331 (owner's list: "longer বানান-যাচাই and এক শব্দে প্রকাশ lists"): from this Sunday the second files join the
+     * lists (a new round starts; nothing changes in the middle of a day).
+     */
+    public const LIST2_FROM = '2026-12-06';
+
     public static function all(string $game, ?Carbon $day = null): array
     {
-        $list = WordGame::file(self::GAMES[$game][1]);
+        $name = self::GAMES[$game][1];
+        $list = WordGame::file($name);
+        if (($day ?? now('Asia/Kolkata'))->toDateString() >= self::LIST2_FROM) {
+            $list = array_merge($list, WordGame::file($name.'-2'));
+        }
         $fixes = WordGame::fixes($game, $day);
         $key = self::answerKey($game);
 
         return $fixes ? array_map(fn ($row) => isset($fixes[$row[$key]]) ? null : $row, $list) : $list;
+    }
+
+    /** The answers asked before LIST2_FROM (kept for the end of the first round of the longer list). @return list<string> */
+    private static function askedBefore(string $game): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('hp.choice.before.'.$game.'.'.self::LIST2_FROM, 86400 * 30, function () use ($game) {
+            $out = [];
+            for ($d = Carbon::parse(self::START, 'Asia/Kolkata'); $d->toDateString() < self::LIST2_FROM; $d = $d->copy()->addDay()) {
+                $out = array_merge($out, array_column(self::day($game, $d)['items'], 'answer'));
+            }
+
+            return $out;
+        });
     }
 
     /** Where the answer sits in an entry. */
@@ -57,16 +80,22 @@ final class WordChoice
                 $clash[] = $a;
             }
         }
-        $length = count(WordGame::letters($answer));
+        $tiles = WordGame::letters($answer);
+        $length = count($tiles);
         $fits = fn ($w) => $w !== $answer && ! in_array($w, $clash, true) && ! str_contains($prompt, $w);
-        $same = array_values(array_filter($answers, fn ($w) => $fits($w) && ($section[$w] ?? 0) === ($section[$answer] ?? -1) && abs(count(WordGame::letters($w)) - $length) <= 2));
-        shuffle($same);
-        $out = array_slice($same, 0, 3);
-        if (count($out) < 3) {
-            $rest = array_values(array_filter($answers, fn ($w) => $fits($w) && ! in_array($w, $out, true) && abs(count(WordGame::letters($w)) - $length) <= 1));
-            shuffle($rest);
-            $out = array_merge($out, array_slice($rest, 0, 3 - count($out)));
-        }
+        // D330 (game designers: "too easy, the wrong ones are not believable"): the wrong choices look like the answer:
+        // the same first letter or the same ending (-হীন, -বান, অ-…), the same part of the list, about as long
+        $score = function ($w) use ($tiles, $length, $section, $answer) {
+            $t = WordGame::letters($w);
+            return (($t[0] ?? '') === $tiles[0] ? 3 : 0) + (end($t) === end($tiles) ? 3 : 0)
+                + (($section[$w] ?? 0) === ($section[$answer] ?? -1) ? 2 : 0) + (abs(count($t) - $length) <= 1 ? 1 : 0);
+        };
+        $cands = array_values(array_filter($answers, $fits));
+        shuffle($cands);   // ties broken by the day's seed
+        usort($cands, fn ($a, $b) => $score($b) <=> $score($a));
+        $top = array_slice($cands, 0, 6);
+        shuffle($top);
+        $out = array_slice($top, 0, 3);
 
         return $out;
     }
@@ -74,10 +103,11 @@ final class WordChoice
     /** Pairs that must never be the right answer and a wrong choice together: both could be said to fit. */
     public const CLASH = [
         'পাঠক' => ['শিক্ষার্থী', 'সহপাঠী', 'ছাত্র'], 'ক্ষণস্থায়ী' => ['নশ্বর', 'অস্থায়ী'], 'অমর' => ['অক্ষয়', 'নশ্বর', 'অবিনশ্বর'],
-        'প্রবাসী' => ['নির্বাসিত'], 'প্রত্যাগত' => ['নবাগত'],
+        'প্রবাসী' => ['নির্বাসিত'], 'প্রত্যাগত' => ['নবাগত'], 'অতল' => ['অসীম', 'অগাধ', 'অতলস্পর্শী'], 'অসীম' => ['অনন্ত', 'অপার'],
+        'অজেয়' => ['অদম্য', 'অপরাজেয়'], 'অসংখ্য' => ['অগণিত', 'অগণ্য'],
     ];
 
-    /** Which part of one-word.php (its "//" headings) each answer is in. @return array<string, int> */
+    /** Which part of one-word.php and one-word-2.php (their "//" headings) each answer is in. @return array<string, string> */
     public static function sections(): array
     {
         static $map = null;
@@ -85,12 +115,15 @@ final class WordChoice
             return $map;
         }
         $map = [];
-        $n = 0;
-        foreach (file(database_path('content/one-word.php')) ?: [] as $line) {
-            if (preg_match('~^\s*//~u', $line)) {
-                $n++;
-            } elseif (preg_match("~^\s*\['[^']*',\s*'([^']+)'~u", $line, $m)) {
-                $map[$m[1]] = $n;
+        // grouped by the heading's words, so both files' groups of the same name are one group (D331)
+        foreach (['one-word', 'one-word-2'] as $f) {
+            $n = $f.'-0';
+            foreach ((is_file($p = database_path('content/'.$f.'.php')) ? file($p) : []) ?: [] as $line) {
+                if (preg_match('~^\s*//\s*(.+)$~u', $line, $h)) {
+                    $n = trim($h[1]);
+                } elseif (preg_match("~^\s*\['[^']*',\s*'([^']+)'~u", $line, $m)) {
+                    $map[$m[1]] = $n;
+                }
             }
         }
 
@@ -118,7 +151,11 @@ final class WordChoice
         $all = self::all($game, $day);
         $items = [];
         $answers = $game === 'ekshobde' ? array_values(array_unique(array_column(array_filter($all), 1))) : [];
-        foreach (WordGame::rota($all, self::PER_DAY, $no - 1, $seed) as $n => $row) {
+        // D331: from LIST2_FROM a new round over the longer list; what was asked before goes to its end
+        $longer = $day->toDateString() >= self::LIST2_FROM;
+        $i = $longer ? (int) Carbon::parse(self::LIST2_FROM, 'Asia/Kolkata')->diffInDays($day, false) : $no - 1;
+        $late = $longer ? self::askedBefore($game) : [];
+        foreach (WordGame::rota($all, self::PER_DAY, $i, $seed, $late, self::answerKey($game)) as $n => $row) {
             mt_srand($seed + $no * 11 + $n);
             if ($game === 'banan') {
                 [$answer, $wrong, $note] = $row;

@@ -67,9 +67,15 @@
 
     {{-- D174: the daily word game, one tap from the front page --}}
     <section class="border-b-2 border-navy bg-peach-light">
-        <a href="{{ \App\Support\Url::to('/khela') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 hover:bg-white sm:flex-nowrap">
-            <span class="flex flex-none gap-1" aria-hidden="true">@foreach (['শ', 'ব্দ', 'খে', 'লা'] as $t)<span class="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-navy bg-white font-serif text-lg font-bold shadow-[2px_2px_0_#13212C] {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
-            <span class="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-0"><span class="block text-lg font-extrabold leading-tight">আজকের শব্দ-খেলা</span><span class="block text-sm text-ink2">শব্দ-খেলা, ধাঁধা, শব্দজব্দ, প্রবাদ, বানান, অক্ষরজাল আর সাপ্তাহিক কুইজ: রোজ নতুন। বন্ধুদের সঙ্গে লড়াই, দল বেঁধে খেলা।</span></span>
+        {{-- D330 (UX panel): to the games' own page, not one game; a signed-in player sees how today stands --}}
+        @php
+            $gToday = auth()->check() ? \App\Support\GameScores::today(auth()->user()) : null;
+            $gDone = $gToday ? collect($gToday['groups'])->where('done', true)->count() : 0;
+        @endphp
+        <a href="{{ \App\Support\Url::to('/khela/aaj') }}" class="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 hover:bg-white sm:flex-nowrap">
+            <span class="flex flex-none gap-1" aria-hidden="true">@foreach (['খে', 'লা'] as $t)<span class="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-navy bg-white font-serif text-lg font-bold shadow-[2px_2px_0_#13212C] {{ $loop->even ? '-rotate-3' : 'rotate-2' }}">{{ $t }}</span>@endforeach</span>
+            <span class="order-last min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-0"><span class="block text-lg font-extrabold leading-tight">আজকের খেলা</span>
+                <span class="block text-sm text-ink2">@if ($gToday && $gDone >= 3)আজকের দিন পূর্ণ ✓ · {{ \App\Support\Bn::num((string) $gToday['total']) }} / ৩০০ @elseif ($gToday && $gDone)আজ {{ \App\Support\Bn::num((string) $gToday['total']) }} / ৩০০ · আর {{ \App\Support\Bn::num((string) (3 - $gDone)) }}টা খেলা বাকি @else রোজ নতুন শব্দ-খেলা, ধাঁধা, শব্দজব্দ, বানান আর আরও কয়েকটা খেলা। মিনিট দশেক লাগে।@endif</span></span>
             <span class="flex h-11 flex-none items-center rounded-full bg-red px-5 font-bold text-white">খেলুন</span>
         </a>
     </section>

@@ -4,11 +4,12 @@
     use App\Support\Bn;
     use App\Support\Url;
     $locked = ! empty($locked);
-    $payload = ['no' => $game['no'], 'date' => $game['date'], 'url' => Url::to('/khela/probad'),
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor('probad', $game['date']) + ['no' => $game['no'], 'date' => $game['date'], 'url' => Url::to('/khela/probad'),
         'items' => array_map(fn ($q) => ['before' => $q['before'], 'after' => $q['after'], 'a' => base64_encode($q['answer']), 'options' => $q['options'], 'meaning' => $q['meaning']], $game['items'])];
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-probad @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-probad @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => 'probad'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -48,7 +49,8 @@
                 <a data-probad-wa href="#" target="_blank" rel="noopener" class="flex h-12 items-center justify-center rounded-full border-2 border-navy bg-white px-6 font-bold">WhatsApp-এ পাঠান</a>
             </div>
             <p class="mt-2 min-h-5 text-center text-sm font-semibold text-sky-night" role="status" data-probad-share-msg></p>
-            <p class="mt-4 font-bold">নতুন প্রবাদ আসবে রাত বারোটায়।</p>
+            <div data-report></div>
+            <p class="mt-4 font-bold">নতুন প্রবাদ আসবে রাত বারোটায় (ভারতের সময়)।</p>
         </div>
         @endif
 
@@ -70,7 +72,8 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @unless ($locked)
-    <script src="{{ asset('js/hp-after.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-probad.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=5" defer></script>
+    <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
+    <script src="{{ asset('js/hp-probad.js') }}?v=4" defer></script>
     @endunless
 </x-layouts.app>
