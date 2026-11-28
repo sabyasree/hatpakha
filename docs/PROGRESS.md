@@ -465,7 +465,7 @@ Update this file at the end of every work session. ✅ done · 🟡 in progress 
 - [x] সপ্তাহের সেরা: a title every week, Sunday to Saturday, best six days, three days to qualify; told by a phone notice (D329).
 - [x] Games run themselves and were reworked with a UX panel and game designers: automatic checked quiz, no admin, today's three, a finish line, the week's dots, a line from the magazine after each answer, অক্ষরজাল learns words, লড়াই and দল improvements (D330).
 - [x] The research list built (D331): softer streak, day links and family lines in shares, private circles and neighbours, festival weeks with keepsakes, bigger Sunday crossword, practice pages, your month, আজকের আড্ডা, পাঠকের ধাঁধা, জায়গার লড়াই, longer lists from 6 December.
-- [ ] A native Bengali copy editor reads festival-games.php, spelling-2.php and one-word-2.php.
+- [ ] A native Bengali copy editor reads festival-games.php, spelling-2.php (716) and one-word-2.php (636); a reserve of 556 more checked spellings exists from the writing pass if wanted.
 - [ ] A native Bengali copy editor reads database/content/spelling.php, one-word.php and akshorjal-words.php (players' reports fix the rest, D179).
 - [ ] **Owner:** check and approve the stroke-order drafts at /desk → বাংলা শিখি: লেখার ক্রম (ideally with someone who teaches writing).
 - [ ] Premium (phase 4) when the owner decides price and payment.

@@ -54,7 +54,7 @@ class MoreGamesTest extends TestCase
             }
             $seen[$right] = true;
         }
-        $one = WordGame::file('one-word');
+        $one = array_merge(WordGame::file('one-word'), WordGame::file('one-word-2'));   // D331
         $this->assertGreaterThanOrEqual(200, count($one));
         $answers = array_column($one, 1);
         $this->assertSame(count($answers), count(array_unique($answers)), 'Every answer once, since the others are the wrong choices');
