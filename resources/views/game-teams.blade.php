@@ -27,7 +27,7 @@
                 <p class="mt-2 rounded-2xl bg-peach-light p-3">এই দলকে আপাতত তালিকা থেকে সরানো হয়েছে।</p>
             @elseif ($row)
                 <p class="mt-2 text-lg">এ মাসে দলের তালিকায় <b>{{ Bn::num((string) $row['rank']) }}</b> নম্বরে · <b>{{ Bn::num(number_format($row['points'])) }}</b> পয়েন্ট</p>
-            @else
+            @elseif (! $team->private)
                 <p class="mt-2 text-lg text-ink2">দুজন খেলোয়াড় হলে দলটা তালিকায় উঠবে।</p>
             @endif
 
@@ -148,7 +148,7 @@
                 <p class="mt-1 text-ink2">জেলা, বিভাগ আর প্রবাসের বাঙালিদের বন্ধুত্বের লড়াই। হিসেব হয় সেখানকার খেলোয়াড়দের এ মাসের গড় পয়েন্টে, তাই ছোট জায়গাও জিততে পারে। অন্তত তিনজন হলে জায়গাটা তালিকায় ওঠে।</p>
                 @auth
                     <form method="POST" action="{{ route('game.region') }}" class="mt-3 flex flex-wrap items-center gap-2">@csrf
-                        <label for="hp-region" class="font-bold">আপনি কোথা থেকে খেলছেন?</label>
+                        <label for="hp-region" class="w-full font-bold">আপনি কোথা থেকে খেলছেন?</label>
                         <select id="hp-region" name="region" class="h-12 min-w-0 flex-1 rounded-xl border-2 border-navy bg-white px-2 text-lg">
                             <option value="">বলতে চাই না</option>
                             @foreach (\App\Support\GameCommunity::REGIONS as $group => $list)
