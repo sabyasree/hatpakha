@@ -7,7 +7,7 @@
     const $ = (s) => root.querySelector('[data-probad-' + s + ']');
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const answer = (q) => new TextDecoder().decode(Uint8Array.from(atob(q.a), (c) => c.charCodeAt(0)));
-    const KEY = 'hp-probad';
+    const KEY = 'hp-probad' + (data.practice ? '-practice' : '');
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
@@ -77,7 +77,7 @@
     const total = () => day.results.reduce((s, r) => s + (POINTS[r] || 0), 0);
     const shareText = () => {
         const grid = day.results.map((r) => ({ g: '🟦', y: '🟨', r: '🟥' }[r])).join('');
-        return { grid, text: 'হাতপাখা প্রবাদ পূরণ #' + bn(data.no) + '\n' + bn(total()) + ' / ১০০\n' + grid + '\nআপনি কত পান? খেলুন: ' + data.url };
+        return { grid, text: 'হাতপাখা প্রবাদ পূরণ #' + bn(data.no) + '\n' + bn(total()) + ' / ১০০\n' + grid + '\n' + (data.familyLine || 'আপনি কত পান? খেলুন:') + ' ' + (data.dayUrl || data.url) };
     };
     const finish = () => {
         $('board').hidden = true; $('done').hidden = false; dots();

@@ -113,7 +113,7 @@
         @endif
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
-    @if ($open && ! $played)<script src="{{ asset('js/hp-choice.js') }}?v=3" defer></script>@endif
+    @if ($open && ! $played)<script src="{{ asset('js/hp-choice.js') }}?v=4" defer></script>@endif
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
             const m = document.querySelector('[data-copy-msg]');

@@ -1,5 +1,8 @@
 {{-- D177, D243: under a finished game. A signed-in player sees today's total, what is left, the place on the board and
      the next level (filled in by public/js/hp-after.js from the score's answer). A guest is told what an account gives. --}}
+@if (! empty($practice))
+    <a href="{{ \App\Support\Url::to('/khela/purono') }}" class="mt-4 flex h-12 items-center justify-center rounded-full bg-red px-6 font-bold text-white">আরেকটা পুরোনো খেলা →</a>
+@else
 @auth
     <div data-game-after hidden class="mt-4">
         <div class="rounded-2xl border-2 border-navy bg-white p-3">
@@ -41,3 +44,4 @@
         <p class="mt-2 text-center"><a href="{{ \App\Support\Url::to('/login') }}?next={{ rawurlencode('/'.trim(request()->path(), '/').'/') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">সাইন ইন</a> · <a href="{{ \App\Support\Url::to('/khela/board') }}" class="inline-flex min-h-11 items-center font-bold text-sky-night underline">কারা এগিয়ে, দেখুন</a></p>
     </div>
 @endauth
+@endif

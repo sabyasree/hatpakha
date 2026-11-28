@@ -8,12 +8,13 @@
     [$levelName, , $levelKey] = WordGame::LEVELS[$level];
     [$full, $cost, $least] = \App\Support\GameScores::crossPoints($level, $game['date']);
     $locked = ! empty($locked);
-    $payload = ['no' => $game['no'], 'date' => $game['date'], 'size' => $game['size'], 'url' => WordGame::crosswordUrl($level), 'bank' => $game['bank'],
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor('shobdojobdo', $game['date']) + ['no' => $game['no'], 'date' => $game['date'], 'size' => $game['size'], 'url' => WordGame::crosswordUrl($level), 'bank' => $game['bank'],
         'level' => $level, 'levelName' => $levelName, 'key' => $levelKey, 'full' => $full, 'cost' => $cost, 'least' => $least,
         'words' => array_map(fn ($w) => ['s' => base64_encode(json_encode($w['letters'], JSON_UNESCAPED_UNICODE)), 'n' => count($w['letters']), 'clue' => $w['clue'], 'row' => $w['row'], 'col' => $w['col'], 'down' => $w['down']], $game['words'])];
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jobdo @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jobdo @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => 'cross'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -84,7 +85,7 @@
     </section>
     @unless ($locked)
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
-    <script src="{{ asset('js/hp-jobdo.js') }}?v=5" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=4" defer></script>
+    <script src="{{ asset('js/hp-jobdo.js') }}?v=6" defer></script>
     @endunless
 </x-layouts.app>

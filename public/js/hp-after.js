@@ -54,6 +54,10 @@ window.hpAfter = function (root, j) {
         $('week-text').textContent = 'এ সপ্তাহে ' + bn(c) + ' দিন' + (c < 3 ? '। ' + bn(3) + ' দিন খেললেই সপ্তাহের সেরার দৌড়ে।' : '। সপ্তাহের সেরার দৌড়ে আছেন।');
         $('week').hidden = false;
     }
-    $('streak').textContent = j.streak > 1 ? 'টানা ' + bn(j.streak) + ' দিন খেলছেন। সপ্তাহে একদিন বাদ গেলে ধারা ভাঙে না।' : '';
+    // D330: a missed day made up with one more game: told as an offer, never as a loss
+    if (j.mend) {
+        const left = Math.max(0, 4 - done);
+        $('streak').textContent = left ? 'আর ' + bn(left) + 'টা খেললেই টানা ' + bn(j.streak) + ' দিনের ধারা জোড়া লাগবে।' : 'ধারা জোড়া লেগেছে, টানা ' + bn(j.streak + 1) + ' দিন!';
+    } else $('streak').textContent = j.streak > 1 ? 'টানা ' + bn(j.streak) + ' দিন খেলছেন। সপ্তাহে একদিন বাদ গেলে ধারা ভাঙে না।' : '';
     box.hidden = false;
 };

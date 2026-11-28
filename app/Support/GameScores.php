@@ -445,23 +445,45 @@ final class GameScores
      *
      * @return array{best: int, now: int, rest: list<string>}
      */
+    /** D330: a missed day is made up by finishing this many games the day after (one more than a full day). */
+    public const MEND_GAMES = 4;
+
     public static function streak(User $user): array
     {
-        $days = DB::table('game_scores')->where('user_id', $user->id)->distinct()->orderBy('day')->pluck('day')->map(fn ($d) => Carbon::parse($d)->toDateString())->all();
+        $groupOf = [];
+        foreach (self::GROUPS as $key => [, $games]) {
+            foreach ($games as $g) {
+                $groupOf[$g] = $key;
+            }
+        }
+        $byDay = [];
+        foreach (DB::table('game_scores')->where('user_id', $user->id)->get(['day', 'game']) as $r) {
+            $byDay[Carbon::parse($r->day)->toDateString()][$groupOf[$r->game] ?? $r->game] = true;
+        }
+        ksort($byDay);
+        $days = array_keys($byDay);
         $best = $run = 0;
         $prev = $lastRest = null;
         $rest = [];
+        $mended = [];
         foreach ($days as $d) {
             $gap = $prev ? self::gap($prev, $d) : 0;
+            $restFree = ! $lastRest || self::gap($lastRest, $d) >= 7;
             if ($gap === 1) {
                 $run++;
-            } elseif ($gap === 2 && (! $lastRest || self::gap($lastRest, $d) >= 7)) {
+            } elseif ($gap === 2 && $restFree) {
                 $lastRest = Carbon::parse($d)->subDay()->toDateString();
                 $rest[] = $lastRest;
+                $run++;
+            } elseif ($gap === 2 && count($byDay[$d]) >= self::MEND_GAMES) {
+                // D330 (owner's list: "let a missed day be made up with one extra game"): the rest day was used,
+                // but four games the next day join the run again
+                $mended[] = Carbon::parse($d)->subDay()->toDateString();
                 $run++;
             } else {
                 $run = 1;
                 $rest = [];
+                $mended = [];
                 $lastRest = null;   // a new run has its own rest day
             }
             $best = max($best, $run);
@@ -469,9 +491,13 @@ final class GameScores
         }
         $today = now('Asia/Kolkata')->toDateString();
         $since = $prev ? self::gap($prev, $today) : 99;
-        // still alive: played today or yesterday, or missed only yesterday with no other rest day in the week
-        $live = $since <= 1 || ($since === 2 && (! $lastRest || self::gap($lastRest, $today) >= 7));
+        $restFree = ! $lastRest || self::gap($lastRest, $today) >= 7;
+        // still alive: played today or yesterday, or missed only yesterday with the week's rest day free; with it used,
+        // the run can still be joined by playing four games today ("mend"), never told as lost
+        $live = $since <= 1 || ($since === 2 && $restFree);
+        $mend = ! $live && $since === 2 && $run >= 2;
 
-        return ['best' => $best, 'now' => $live ? $run : 0, 'rest' => $live ? $rest : []];
+        return ['best' => $best, 'now' => $live || $mend ? $run : 0, 'rest' => $live || $mend ? $rest : [], 'mended' => $mended, 'mend' => $mend,
+            'restFree' => $live && $restFree && $since <= 1];
     }
 }

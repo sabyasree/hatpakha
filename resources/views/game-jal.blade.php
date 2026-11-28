@@ -5,7 +5,7 @@
     use App\Support\Url;
     $locked = ! empty($locked);
     $dict = \App\Support\Akshorjal::dictionary($game['date']);
-    $payload = ['date' => $game['date'], 'no' => $game['no'], 'grid' => $game['grid'], 'seconds' => \App\Support\Akshorjal::SECONDS, 'url' => Url::to('/khela/akshorjal'),
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor('akshorjal', $game['date']) + ['date' => $game['date'], 'no' => $game['no'], 'grid' => $game['grid'], 'seconds' => \App\Support\Akshorjal::SECONDS, 'url' => Url::to('/khela/akshorjal'),
         // the day's words, so a find is checked at once; their tiles too, so a word is told apart from its letters
         'w' => base64_encode(json_encode(array_map(fn ($w) => [$w, count($dict[$w])], $game['words']), JSON_UNESCAPED_UNICODE)),
         // D330: up to three of the grid's longer words as the magazine used them, shown at the end
@@ -15,7 +15,8 @@
     <style>html[data-playing] [data-bottom-nav] { display: none; }
         @keyframes hpPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } } .hp-pop { animation: hpPop .45s ease-out; }
         @media (prefers-reduced-motion: reduce) { .hp-pop { animation: none; } }</style>
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jal @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-jal @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => 'jal'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -86,8 +87,8 @@
         <x-ad-slot spot="list" :height="250" class="!mt-16" />
     </section>
     @unless ($locked)
-        <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
+        <script src="{{ asset('js/hp-after.js') }}?v=4" defer></script>
         <script src="{{ asset('js/hp-mag.js') }}?v=1" defer></script>
-        <script src="{{ asset('js/hp-jal.js') }}?v=2" defer></script>
+        <script src="{{ asset('js/hp-jal.js') }}?v=3" defer></script>
     @endunless
 </x-layouts.app>

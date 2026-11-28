@@ -168,6 +168,74 @@ class GameController extends Controller
         return redirect(Url::to('/khela/lorai/'.$own));
     }
 
+    /**
+     * D330 (owner's list: "old puzzles to replay for practice, without points"): the last 30 days of each daily game.
+     * slug => [name, first day it existed]
+     */
+    public const PRACTICE = [
+        'shobdo' => ['শব্দ-খেলা', WordGame::START], 'dhadha' => ['ধাঁধা', WordGame::START], 'shobdojobdo' => ['শব্দজব্দ (সহজ)', WordGame::START],
+        'probad' => ['প্রবাদ পূরণ', WordGame::EXTRA_FROM], 'banan' => ['বানান-যাচাই', WordChoice::START], 'ek-shobde' => ['এক শব্দে প্রকাশ', WordChoice::START],
+        'akshorjal' => ['অক্ষরজাল', WordChoice::START],
+    ];
+
+    public const PRACTICE_DAYS = 30;
+
+    /**
+     * D330 (owner's list: "a link to that exact day's game, and a family line"): what a shared result carries. The
+     * link names the day, so a friend opening it tomorrow plays the same puzzle (as practice); the line changes daily.
+     * @return array{dayUrl: string, familyLine: string}
+     */
+    public static function shareFor(string $slug, string $date): array
+    {
+        $lines = ['দাদু বনাম নাতি: আজ কে জিতবে?', 'পরিবারে আজ কে সেরা? খেলে দেখুন:', 'মা না মেয়ে, আজ কে এগিয়ে?', 'অফিসের গ্রুপে আজ কে পারবেন?', 'বন্ধুরা, আপনি কত পান?', 'ভাই-বোনের লড়াই: আজ কে জিতবে?'];
+
+        return ['dayUrl' => Url::to('/khela/purono/'.$slug.'/'.$date), 'familyLine' => $lines[crc32($date) % count($lines)]];
+    }
+
+    public function practiceIndex()
+    {
+        \App\Support\Ads::allow();
+        $days = [];
+        for ($i = 1; $i <= self::PRACTICE_DAYS; $i++) {
+            $d = now('Asia/Kolkata')->subDays($i)->toDateString();
+            $games = array_filter(self::PRACTICE, fn ($g) => $d >= $g[1]);
+            if ($games) {
+                $days[$d] = $games;
+            }
+        }
+
+        return view('game-practice', ['days' => $days, 'seo' => new Seo(
+            title: 'পুরোনো খেলা: গত দিনের বাংলা শব্দের খেলা, অনুশীলনের জন্য',
+            description: 'হাতপাখার গত তিরিশ দিনের শব্দ-খেলা, ধাঁধা, শব্দজব্দ, প্রবাদ, বানান আর অক্ষরজাল। যে দিনটা বাদ গেছে, খেলে নিন; পয়েন্ট ওঠে না, শুধু মজা।',
+            canonical: Url::to('/khela/purono'),
+        )]);
+    }
+
+    public function practice(Request $request, string $game, string $date)
+    {
+        [$name, $from] = self::PRACTICE[$game] ?? abort(404);
+        $day = \Illuminate\Support\Carbon::parse($date, 'Asia/Kolkata');
+        $today = now('Asia/Kolkata')->startOfDay();
+        if ($day->isSameDay($today)) {   // a shared link opened the same day: the live game, with points
+            return redirect(Url::to(['shobdo' => '/khela', 'dhadha' => '/khela/dhadha', 'shobdojobdo' => '/khela/shobdojobdo/sohoj', 'probad' => '/khela/probad', 'banan' => '/khela/banan', 'ek-shobde' => '/khela/ek-shobde', 'akshorjal' => '/khela/akshorjal'][$game]));
+        }
+        abort_if($date < $from || $day->gt($today) || $day->lt($today->copy()->subDays(self::PRACTICE_DAYS)), 404);
+        $me = $request->user();
+        $seo = new Seo(title: $name.', '.\App\Support\Bn::date($day).': অনুশীলন', description: 'হাতপাখার '.$name.', '.\App\Support\Bn::date($day).'-এর খেলা। অনুশীলনের জন্য; পয়েন্ট ওঠে না।',
+            canonical: Url::to('/khela/purono/'.$game.'/'.$date), noindex: true);
+        $common = ['practice' => true, 'seo' => $seo];
+
+        return match ($game) {
+            'shobdo' => view('game', $common + ['game' => WordGame::day($day), 'kind' => 'word']),
+            'dhadha' => view('game', $common + ['game' => WordGame::riddle($day), 'kind' => 'riddle', 'locked' => false, 'yesterday' => null]),
+            'shobdojobdo' => view('crossword', $common + ['game' => WordGame::crossword($day, 'easy'), 'level' => 'easy', 'locked' => false]),
+            'probad' => view('game-probad', $common + ['game' => Proverbs::day($day), 'locked' => ! $me]),
+            'banan' => view('game-choice', $common + ['game' => WordChoice::day('banan', $day), 'kind' => 'banan', 'locked' => false]),
+            'ek-shobde' => view('game-choice', $common + ['game' => WordChoice::day('ekshobde', $day), 'kind' => 'ekshobde', 'locked' => ! $me]),
+            'akshorjal' => view('game-jal', $common + ['game' => \App\Support\Akshorjal::day($day), 'locked' => ! $me]),
+        };
+    }
+
     /** D328: পাড়ার দল. The teams this month, the player's own team, and making one. */
     public function teams(Request $request)
     {
@@ -311,7 +379,7 @@ class GameController extends Controller
         $quizOpen = (bool) WeeklyQuiz::live();
         $groups = array_values(array_filter($today['groups'], fn ($g) => $g['key'] !== 'quiz' || $g['done'] || $quizOpen));
 
-        return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
+        return response()->json(['ok' => true, 'points' => $points, 'streak' => $streak['now'], 'mend' => $streak['mend'], 'today' => ['total' => $today['total'], 'max' => GameScores::DAY_MAX, 'groups' => $groups],
             'rank' => ['now' => $mine['rank'] ?? 0, 'up' => $new && $before && ($mine['rank'] ?? 0) ? max(0, $before - $mine['rank']) : 0, 'gap' => $mine['gap'] ?? null],
             'week' => ['rank' => $week['rank'] ?? 0, 'gap' => $week['gap'] ?? null, 'days' => GameScores::weekDays($user)],
             'next' => $next, 'level' => ['name' => $level['name'], 'nextName' => $level['nextName'], 'left' => $level['left'], 'percent' => $level['percent']]]);

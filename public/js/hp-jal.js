@@ -9,7 +9,7 @@
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const words = new Map(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(data.w), (c) => c.charCodeAt(0)))));
     const pointsFor = (n) => (n >= 4 ? 20 : n === 3 ? 10 : n === 2 ? 5 : 0);
-    const KEY = 'hp-jal';
+    const KEY = 'hp-jal' + (data.practice ? '-practice' : '');
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
@@ -130,7 +130,7 @@
 
     const shareText = () => {
         const longest = [...store.found].sort((a, b) => (words.get(b) || 0) - (words.get(a) || 0))[0];
-        return 'হাতপাখা অক্ষরজাল #' + bn(data.no) + '\n' + bn(store.found.length) + 'টা শব্দ · ' + bn(total()) + ' পয়েন্ট' + (longest ? '\nসবচেয়ে বড়: ' + longest : '') + '\nআপনি কত পান? খেলুন: ' + data.url;
+        return 'হাতপাখা অক্ষরজাল #' + bn(data.no) + '\n' + bn(store.found.length) + 'টা শব্দ · ' + bn(total()) + ' পয়েন্ট' + (longest ? '\nসবচেয়ে বড়: ' + longest : '') + '\n' + (data.familyLine || 'আপনি কত পান? খেলুন:') + ' ' + (data.dayUrl || data.url);
     };
     function finish() {
         if (timer) clearInterval(timer);

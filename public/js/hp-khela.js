@@ -7,7 +7,7 @@
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const answer = (w) => new TextDecoder().decode(Uint8Array.from(atob(w.a), (c) => c.charCodeAt(0)));
     const riddle = data.kind === 'riddle' || data.kind === 'riddle2';
-    const KEY = data.kind === 'riddle2' ? 'hp-dhadha2' : (riddle ? 'hp-dhadha' : 'hp-khela');
+    const KEY = (data.kind === 'riddle2' ? 'hp-dhadha2' : (riddle ? 'hp-dhadha' : 'hp-khela')) + (data.practice ? '-practice' : '');   // D330: practice keeps its own store
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window: play without saving */ } };
@@ -103,7 +103,7 @@
         const secs = Math.max(1, Math.round(((day.end || Date.now()) - day.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
         const grid = day.results.map((r) => ({ g: '🟦', y: '🟨', r: '🟥' }[r])).join('');
-        return { good, time, grid, text: (riddle ? (data.kind === 'riddle2' ? 'হাতপাখার কঠিন ধাঁধা #' : 'হাতপাখার ধাঁধা #') + bn(data.no) + '\n“' + data.words[0].clue + '”\n' + (good ? 'আমি পেরেছি ' : 'আমি পারিনি ') + grid + ' · ' + time : 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid) + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\nআপনি কত পান? খেলুন: ' + data.url };
+        return { good, time, grid, text: (riddle ? (data.kind === 'riddle2' ? 'হাতপাখার কঠিন ধাঁধা #' : 'হাতপাখার ধাঁধা #') + bn(data.no) + '\n“' + data.words[0].clue + '”\n' + (good ? 'আমি পেরেছি ' : 'আমি পারিনি ') + grid + ' · ' + time : 'হাতপাখা শব্দ-খেলা #' + bn(data.no) + '\n' + bn(good) + '/' + bn(data.words.length) + ' · ' + time + '\n' + grid) + (streakNow() > 1 ? '\n🔥 টানা ' + bn(streakNow()) + ' দিন' : '') + '\n' + (data.familyLine || 'আপনি কত পান? খেলুন:') + ' ' + (data.dayUrl || data.url) };
     };
     // D177: a signed-in player's result goes to the leaderboard (once a day)
     const sendScore = () => {

@@ -56,6 +56,10 @@
                 <span><span class="block font-display text-xl font-extrabold leading-tight">{{ $level['name'] }}</span><span class="text-sm font-bold text-ink2">আপনার স্তর</span></span>
             </a>
             <div class="mt-3 rounded-2xl border-2 border-navy bg-white px-3 py-2">@include('partials.game-week', ['days' => $weekDays])</div>
+            @if ($streak['mend'])
+                {{-- D330: an offer, never "your streak is lost" --}}
+                <p class="mt-3 rounded-2xl bg-sky-tint px-4 py-3 font-bold text-sky-night">কাল খেলা হয়নি। আজ {{ Bn::num((string) GameScores::MEND_GAMES) }}টা খেলা খেললেই টানা {{ Bn::num((string) $streak['now']) }} দিনের ধারা জোড়া লাগবে।</p>
+            @endif
         @else
             <p class="mt-3 text-lg text-ink2">অ্যাকাউন্ট ছাড়াও সহজ খেলাগুলো খেলা যায়। পয়েন্ট জমাতে, সেরাদের তালিকায় নাম তুলতে আর খেতাব পেতে অ্যাকাউন্ট লাগে (বিনামূল্যে)।</p>
         @endif
@@ -171,6 +175,7 @@
         @endguest
 
         <p class="mt-6 font-bold">নতুন খেলা আসে রোজ রাত বারোটায় (ভারতের সময়)।</p>
+        <a href="{{ Url::to('/khela/purono') }}" class="mt-2 flex min-h-11 w-fit items-center font-bold text-sky-night underline">কোনো দিন বাদ গেছে? পুরোনো খেলা, অনুশীলনের জন্য →</a>
         {{-- one ad, under everything a player taps --}}
         <x-ad-slot spot="list" :height="250" class="!mt-12" />
     </section>

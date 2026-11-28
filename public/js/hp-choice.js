@@ -10,7 +10,7 @@
     const dec = (b) => new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0)));
     const answer = (q) => dec(q.a);
     const time = (s) => (s >= 60 ? bn(Math.floor(s / 60)) + ' মিনিট ' : '') + bn(s % 60) + ' সেকেন্ড';
-    const KEY = 'hp-c-' + data.key;
+    const KEY = 'hp-c-' + data.key + (data.practice ? '-practice' : '');
     let store = {};
     try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* private window */ } };
@@ -78,7 +78,7 @@
     const seconds = () => Math.max(1, Math.round(((day.end || Date.now()) - (day.start || Date.now())) / 1000));
     const shareText = () => {
         const grid = day.results.map((r) => (r === 'g' ? '🟦' : '🟥')).join('');
-        return data.title + (data.no ? ' #' + bn(data.no) : '') + '\n' + bn(total()) + ' / ' + bn(max) + '\n' + grid + '\n' + (data.shareLine || 'আপনি কত পান? খেলুন: ') + (store.link || data.url);
+        return data.title + (data.no ? ' #' + bn(data.no) : '') + '\n' + bn(total()) + ' / ' + bn(max) + '\n' + grid + '\n' + (data.shareLine || (data.familyLine ? data.familyLine + ' ' : 'আপনি কত পান? খেলুন: ')) + (store.link || data.dayUrl || data.url);
     };
     const token = () => fetch('/csrf-token', { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then((r) => r.json()).then((j) => j.token);
     const finish = () => {

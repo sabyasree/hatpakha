@@ -10,12 +10,13 @@
     $locked = ! empty($locked);
     $done = auth()->check() && $riddle ? \App\Support\GameScores::today(auth()->user())['games'] : [];
     $pts = fn ($k) => \App\Support\GameScores::riddlePoints($k, $game['date'])[0];
-    $payload = ['kind' => $kind, 'no' => $no, 'date' => $game['date'], 'url' => Url::to($hard ? '/khela/dhadha/kothin' : ($riddle ? '/khela/dhadha' : '/khela')),
+    $payload = ['practice' => ! empty($practice)] + \App\Http\Controllers\GameController::shareFor(($kind === 'word' ? 'shobdo' : 'dhadha'), $game['date']) + ['kind' => $kind, 'no' => $no, 'date' => $game['date'], 'url' => Url::to($hard ? '/khela/dhadha/kothin' : ($riddle ? '/khela/dhadha' : '/khela')),
         'words' => array_map(fn ($w) => ['a' => base64_encode($w['answer']), 'n' => count(\App\Support\WordGame::letters($w['answer'])), 'f' => base64_encode(\App\Support\WordGame::letters($w['answer'])[0]), 'clue' => $w['clue'], 'tiles' => $w['tiles'],
             'm' => (($m = \App\Support\InMagazine::line($w['answer'])) ? base64_encode(json_encode($m, JSON_UNESCAPED_UNICODE)) : null)], $game['words'])];   // D330: a line from the magazine with the word, shown after the answer
 @endphp
 <x-layouts.app :seo="$seo">
-    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-khela @endunless @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth>
+    <section class="mx-auto max-w-[560px] px-5 pb-12 pt-6" @unless ($locked) data-khela @endunless @if (empty($practice)) @auth data-score-url="{{ route('game.score') }}" data-score-token="{{ csrf_token() }}" @endauth @endif>
+        @include('partials.practice-banner')
         @include('partials.game-nav', ['on' => $riddle ? 'riddle' : 'word'])
         <div class="flex items-end justify-between gap-3">
             <div>
@@ -109,8 +110,8 @@
     </section>
     @unless ($locked)
     <script src="{{ asset('js/hp-report.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-after.js') }}?v=3" defer></script>
+    <script src="{{ asset('js/hp-after.js') }}?v=4" defer></script>
     <script src="{{ asset('js/hp-mag.js') }}?v=1" defer></script>
-    <script src="{{ asset('js/hp-khela.js') }}?v=5" defer></script>
+    <script src="{{ asset('js/hp-khela.js') }}?v=6" defer></script>
     @endunless
 </x-layouts.app>

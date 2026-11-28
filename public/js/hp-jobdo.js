@@ -6,7 +6,7 @@
     const $ = (s) => root.querySelector('[data-jobdo-' + s + ']');
     const bn = (n) => String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]);
     const dec = (b) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0))));
-    const KEY = 'hp-jobdo' + (data.level && data.level !== 'medium' ? '-' + data.level : '');   // D201: each level keeps its own progress
+    const KEY = 'hp-jobdo' + (data.level && data.level !== 'medium' ? '-' + data.level : '') + (data.practice ? '-practice' : '');   // D201: each level keeps its own progress
     const FULL = data.full || 100, COST = data.cost || 10, LEAST = data.least || 10, GAME = data.key || 'cross';
     let st = {};
     try { st = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { st = {}; }
@@ -109,7 +109,7 @@
         const secs = Math.max(1, Math.round(((st.end || Date.now()) - st.start) / 1000));
         const time = bn(Math.floor(secs / 60)) + ':' + bn(String(secs % 60).padStart(2, '0'));
         const points = st.gaveUp ? 0 : Math.max(LEAST, FULL - COST * st.hints);
-        return { secs, time, points, text: 'হাতপাখা শব্দজব্দ #' + bn(data.no) + (data.levelName ? ' (' + data.levelName + ')' : '') + '\n' + (st.gaveUp ? 'আজ পারিনি' : bn(points) + ' পয়েন্ট · ' + time + (st.hints ? ' · ' + bn(st.hints) + 'টি ঘর দেখে' : ' · কোনো সাহায্য ছাড়া')) + '\nআপনি কত পান? খেলুন: ' + data.url };
+        return { secs, time, points, text: 'হাতপাখা শব্দজব্দ #' + bn(data.no) + (data.levelName ? ' (' + data.levelName + ')' : '') + '\n' + (st.gaveUp ? 'আজ পারিনি' : bn(points) + ' পয়েন্ট · ' + time + (st.hints ? ' · ' + bn(st.hints) + 'টি ঘর দেখে' : ' · কোনো সাহায্য ছাড়া')) + '\n' + (data.familyLine || 'আপনি কত পান? খেলুন:') + ' ' + (data.dayUrl || data.url) };
     };
     const finish = (ok) => {
         if (!st.end) { st.end = Date.now(); save(); }
